@@ -1,83 +1,48 @@
-// src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
-
 import Dashboard from "./pages/Dashboard";
 import AddEmployee from "./pages/AddEmployee";
 import AllEmployees from "./pages/AllEmployees";
-import Tasks from "./pages/Tasks";
-import Inbox from "./pages/Inbox";
-import Notifications from "./pages/Notifications";
-import Reporting from "./pages/Reporting";
-import Goals from "./pages/Goals";
+import Login from "./pages/Login"; // Import the login page
+import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
 
 const App = () => {
   return (
     <Router>
       <Routes>
+        <Route path="/login" element={<Login />} /> {/* Login route */}
+        
+        {/* Protected Route */}
         <Route
           path="/"
           element={
-            <MainLayout>
-              <Dashboard />
-            </MainLayout>
+            <ProtectedRoute>
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            </ProtectedRoute>
           }
         />
+
+        {/* Other routes */}
         <Route
           path="/add-employee"
           element={
-            <MainLayout>
-              <AddEmployee />
-            </MainLayout>
+            <ProtectedRoute>
+              <MainLayout>
+                <AddEmployee />
+              </MainLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/all-employees"
           element={
-            <MainLayout>
-              <AllEmployees />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/tasks"
-          element={
-            <MainLayout>
-              <Tasks />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/inbox"
-          element={
-            <MainLayout>
-              <Inbox />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <MainLayout>
-              <Notifications />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/reporting"
-          element={
-            <MainLayout>
-              <Reporting />
-            </MainLayout>
-          }
-        />
-       
-        <Route
-          path="/goals"
-          element={
-            <MainLayout>
-              <Goals />
-            </MainLayout>
+            <ProtectedRoute>
+              <MainLayout>
+                <AllEmployees />
+              </MainLayout>
+            </ProtectedRoute>
           }
         />
       </Routes>

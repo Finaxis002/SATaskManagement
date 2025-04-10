@@ -3,17 +3,17 @@ import Sidebar from "../Components/Sidebar";
 import Header from "../Components/Header";
 
 const MainLayout = ({ children }) => {
-    return (
-      <div className="flex h-screen w-full bg-gray-900 text-white">
-        <Sidebar />
-        <div className="flex flex-col flex-1">
-          <Header />
-          <main className="flex-1 p-6 bg-gray-100 text-gray-800 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+  return (
+    <div className="flex h-screen w-full bg-gray-900 text-white">
+      <Sidebar />
+      <div className="flex flex-col flex-1">
+        <Header />
+        <main className="flex-1 text-gray-800 overflow-y-auto w-full">
+          {children}
+        </main>
       </div>
-    );
-  };
-  
-  export default MainLayout;
+    </div>
+  );
+};
+
+export default MainLayout;

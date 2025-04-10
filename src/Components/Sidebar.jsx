@@ -14,9 +14,19 @@ import {
   FaBell,
   FaClipboardList,
 } from "react-icons/fa";
+import AddEmployee from "../pages/AddEmployee";
 
 const Sidebar = () => {
   const [projectsOpen, setProjectsOpen] = useState(true);
+  const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
+
+  const openAddEmployeeModal = () => {
+    setIsAddEmployeeModalOpen(true);
+  };
+
+  const closeAddEmployeeModal = () => {
+    setIsAddEmployeeModalOpen(false);
+  };
 
   return (
     <div className="bg-[#1e1f21] text-white w-64 h-screen flex flex-col justify-between border-r border-gray-700">
@@ -40,16 +50,22 @@ const Sidebar = () => {
 
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
-        {/* Core nav */}
+      
         {/* Core nav */}
         <SidebarItem
+          icon={<FaHome />}
+          label="Home"
+          to="/"
+        />
+        <SidebarItem
           icon={<FaPlus />}
-          label="Add Employee"
+          label="Add User"
           to="/add-employee"
+          onClick={openAddEmployeeModal}
         />
         <SidebarItem
           icon={<FaUsers />}
-          label="All Employees"
+          label="All Users"
           to="/all-employees"
         />
         <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/tasks" />
@@ -77,6 +93,8 @@ const Sidebar = () => {
       <div className="px-4 py-3 border-t border-gray-700 text-xs text-gray-400">
         © 2025 Finaxis
       </div>
+
+      
     </div>
   );
 };
