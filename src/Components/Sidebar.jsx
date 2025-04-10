@@ -1,33 +1,98 @@
 // src/components/Sidebar.jsx
-import { useState } from 'react';
-import { FaTasks, FaUsers, FaChartPie, FaBars } from 'react-icons/fa';
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import {
+  FaHome,
+  FaTasks,
+  FaInbox,
+  FaChartBar,
+  FaProjectDiagram,
+  FaBullseye,
+  FaChevronDown,
+  FaPlus,
+  FaUsers,
+  FaBell,
+  FaClipboardList,
+} from "react-icons/fa";
 
 const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [projectsOpen, setProjectsOpen] = useState(true);
 
   return (
-    <div className={`bg-[#1e293b] ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 h-full p-4`}>
-      <div className="flex items-center justify-between mb-10">
-        <h1 className={`text-2xl font-bold text-white ${!isOpen && 'hidden'}`}>TaskFlow</h1>
-        <FaBars className="text-white cursor-pointer" onClick={() => setIsOpen(!isOpen)} />
+    <div className="bg-[#1e1f21] text-white w-64 h-screen flex flex-col justify-between border-r border-gray-700">
+      {/* Top Bar */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <div className="bg-gray-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+            Fi
+          </div>
+          <button className="bg-yellow-600 text-white text-sm px-3 py-1 rounded hover:bg-yellow-700">
+            <FaPlus className="inline mr-2" />
+            Create
+          </button>
+        </div>
+        <input
+          type="text"
+          placeholder="Search"
+          className="w-full px-3 py-2 text-sm rounded bg-[#2b2c2f] placeholder-gray-400 text-white focus:outline-none"
+        />
       </div>
 
-      <nav className="flex flex-col gap-6">
-        <a href="#" className="flex items-center gap-3 text-white hover:text-blue-400 transition">
-          <FaTasks />
-          {isOpen && <span>Tasks</span>}
-        </a>
-        <a href="#" className="flex items-center gap-3 text-white hover:text-blue-400 transition">
-          <FaUsers />
-          {isOpen && <span>Teams</span>}
-        </a>
-        <a href="#" className="flex items-center gap-3 text-white hover:text-blue-400 transition">
-          <FaChartPie />
-          {isOpen && <span>Analytics</span>}
-        </a>
-      </nav>
+      {/* Main Navigation */}
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        {/* Core nav */}
+        {/* Core nav */}
+        <SidebarItem
+          icon={<FaPlus />}
+          label="Add Employee"
+          to="/add-employee"
+        />
+        <SidebarItem
+          icon={<FaUsers />}
+          label="All Employees"
+          to="/all-employees"
+        />
+        <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/tasks" />
+        <SidebarItem icon={<FaInbox />} label="Inbox" to="/inbox" />
+        <SidebarItem
+          icon={<FaBell />}
+          label="Notifications"
+          to="/notifications"
+        />
+
+        {/* Insights */}
+        {/* <div className="mt-6">
+          <p className="text-xs text-gray-400 uppercase px-2 mb-2">Insights</p>
+          <SidebarItem
+            icon={<FaChartBar />}
+            label="Reporting"
+            to="/reporting"
+          />
+         
+          <SidebarItem icon={<FaBullseye />} label="Goals" to="/goals" />
+        </div> */}
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-3 border-t border-gray-700 text-xs text-gray-400">
+        © 2025 Finaxis
+      </div>
     </div>
   );
 };
+
+const SidebarItem = ({ icon, label, to }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) =>
+      `flex items-center gap-3 px-3 py-2 rounded transition-colors text-sm ${
+        isActive ? "bg-gray-800 text-white" : "hover:bg-[#2b2c2f] text-white"
+      }`
+    }
+  >
+    <span className="text-base text-white">{icon}</span>
+    <span className="text-white">{label}</span>
+  </NavLink>
+);
 
 export default Sidebar;
