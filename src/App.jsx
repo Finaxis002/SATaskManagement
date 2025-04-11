@@ -5,6 +5,7 @@ import AddEmployee from "./pages/AddEmployee";
 import AllEmployees from "./pages/AllEmployees";
 import Login from "./pages/Login"; // Import the login page
 import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
+import Tasks from "./pages/Tasks";
 
 const App = () => {
   return (
@@ -44,6 +45,17 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
+        />
+
+        <Route 
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Tasks />
+            </MainLayout>
+          </ProtectedRoute>
+        }
         />
       </Routes>
     </Router>
