@@ -6,9 +6,9 @@ const initialState = {
     {
       title: 'Recently assigned',
       tasks: [
-        { name: 'Nexa Report', due: 'Monday' },
-        { name: 'New Task', due: 'Today' },
-        { name: 'Schedule kickoff meeting', due: 'Today – Apr 14' },
+        { name: 'Nexa Report', due: 'Monday' , completed: false },
+        { name: 'New Task', due: 'Today' ,completed: false },
+        { name: 'Schedule kickoff meeting', due: 'Today – Apr 14' , completed: false },
       ],
     },
     { title: 'Do today', tasks: [] },
@@ -25,8 +25,18 @@ const taskSlice = createSlice({
       const { columnIndex, task } = action.payload;
       state.taskColumns[columnIndex].tasks.push(task);
     },
+    toggleTaskCompletion: (state, action) => {
+      const { columnIndex, taskIndex } = action.payload;
+      const task = state.taskColumns[columnIndex].tasks[taskIndex];
+      task.completed = !task.completed;
+    },
+    removeTaskFromColumn: (state, action) => {
+      const { columnIndex, taskIndex } = action.payload;
+      state.taskColumns[columnIndex].tasks.splice(taskIndex, 1);
+    }
+    
   },
 });
 
-export const { addTaskToColumn } = taskSlice.actions;
+export const { addTaskToColumn , toggleTaskCompletion, removeTaskFromColumn} = taskSlice.actions;
 export default taskSlice.reducer;
