@@ -68,7 +68,7 @@ const Sidebar = () => {
           label="All Users"
           to="/all-employees"
         />
-        <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/tasks" />
+        <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/Tasks" />
         <SidebarItem icon={<FaInbox />} label="Inbox" to="/inbox" />
         <SidebarItem
           icon={<FaBell />}
