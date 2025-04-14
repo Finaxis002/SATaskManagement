@@ -38,19 +38,70 @@ const TaskBoard = () => {
     return date;
   };
 
-  const handleAddTask = () => {
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const role = localStorage.getItem("role");
+      const userId = localStorage.getItem("userId");
+
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/tasks?role=${role}&userId=${userId}`
+        );
+        const tasks = await response.json();
+
+        // Group tasks by column
+        const updatedColumns = [...taskColumns];
+        tasks.forEach((task) => {
+          updatedColumns[task.column || 0].tasks.push(task);
+        });
+
+        // You should dispatch here to update redux, or maintain your own local state
+      } catch (error) {
+        console.error("Failed to load tasks:", error);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
+  const handleAddTask = async () => {
     if (!newTaskName || !selectedDate) return;
+
+    const taskData = {
+      name: newTaskName,
+      due: getDueLabel(selectedDate),
+      completed: false,
+      assignedTo: assignee?._id,
+      assignedToName: assignee?.name,
+      column: currentColumnIndex,
+    };
+
+    // ✅ Dispatch locally to Redux
     dispatch(
       addTaskToColumn({
         columnIndex: currentColumnIndex,
-        task: {
-          name: newTaskName,
-          due: getDueLabel(selectedDate),
-          completed: false,
-          assignee: assignee,
-        },
+        task: taskData,
       })
     );
+
+    // ✅ Send to backend
+    try {
+      const response = await fetch("http://localhost:5000/api/tasks/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskData),
+      });
+
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.message || "Failed to save task");
+
+      console.log("Saved to DB:", result.task);
+    } catch (error) {
+      console.error("Error saving to DB:", error);
+      alert("Task created locally, but failed to sync with server.");
+    }
+
     closePopup();
   };
 
@@ -103,6 +154,15 @@ const TaskBoard = () => {
   }, []);
 
   const TaskCard = ({ task, columnIndex, taskIndex }) => {
+    const role = localStorage.getItem("role");
+
+    {
+      role === "admin" && task.assignedToName && (
+        <p className="text-xs text-gray-500 mt-1">
+          Assigned to: {task.assignedToName}
+        </p>
+      );
+    }
     const [{ isDragging }, drag] = useDrag(() => ({
       type: ItemTypes.TASK,
       item: { columnIndex, taskIndex, task },
@@ -218,45 +278,6 @@ const TaskBoard = () => {
           </button>
         </div>
 
-        {/* {showPopup && (
-          <div
-            ref={popupRef}
-            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-medium">Create Task</h3>
-              <FontAwesomeIcon
-                icon={faTimes}
-                onClick={closePopup}
-                className="text-gray-500 hover:text-gray-700 cursor-pointer"
-              />
-            </div>
-            <input
-              type="text"
-              value={newTaskName}
-              onChange={(e) => setNewTaskName(e.target.value)}
-              placeholder="Task name"
-              className="w-full p-2 border border-gray-300 rounded mb-2"
-            />
-            <div className="flex justify-between items-center">
-              <label className="flex items-center text-sm text-gray-600">
-                <FontAwesomeIcon icon={faCalendarAlt} className="h-5 w-5 mr-2" />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="text-sm border border-gray-300 rounded p-1"
-                />
-              </label>
-              <button
-                onClick={handleAddTask}
-                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        )} */}
         {showPopup && (
           <div
             ref={popupRef}
@@ -301,35 +322,27 @@ const TaskBoard = () => {
               </button>
             </div>
 
-            {/* Assignee Section */}
-            <div className="relative mt-2 flex items-center gap-2 text-sm text-gray-600">
-              <FontAwesomeIcon
-                icon={["fas", "user"]}
-                onClick={() => setShowAssigneeList((prev) => !prev)}
-                className="cursor-pointer h-4 w-4 hover:text-gray-800"
-                title="Assign task"
-              />
-              <span className="text-xs">
-                {assignee ? `Assigned to: ${assignee.name}` : "No assignee"}
-              </span>
-
-              {showAssigneeList && (
-                <div className="absolute left-0 top-6 z-50 w-full max-h-40 overflow-y-auto bg-white shadow border rounded p-2">
-                  {employees.map((emp) => (
-                    <div
-                      key={emp._id}
-                      onClick={() => {
-                        setAssignee({ name: emp.name, email: emp.email });
-                        setShowAssigneeList(false);
-                      }}
-                      className="hover:bg-gray-100 p-1 cursor-pointer text-sm"
-                    >
-                      {emp.name} ({emp.email})
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* ✅ New Dropdown for Assigning User */}
+            <label className="block text-sm text-gray-600 mb-1">
+              Assign to
+            </label>
+            <select
+              onChange={(e) => {
+                const user = employees.find(
+                  (emp) => emp._id === e.target.value
+                );
+                setAssignee(user);
+              }}
+              value={assignee?._id || ""}
+              className="w-full border border-gray-300 rounded p-2 text-sm mb-3"
+            >
+              <option value="">Select a user</option>
+              {employees.map((emp) => (
+                <option key={emp._id} value={emp._id}>
+                  {emp.name} ({emp.email})
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
