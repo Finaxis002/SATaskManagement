@@ -18,20 +18,27 @@ const Login = () => {
     e.preventDefault();
   
     try {
-      const response = await axios.post("http://localhost:5000/api/employees/login", formData);
-      const { token, name } = response.data;  // Ensure name is part of the response from your backend
+      const response = await axios.post(
+        "http://localhost:5000/api/employees/login",
+        formData,
+        {
+          withCredentials: true, // 🔑 Allow cookies to be sent & received
+        }
+      );
   
-      // Store token and name in localStorage
-      localStorage.setItem("authToken", token);  // Store JWT token
-      localStorage.setItem("name", name);  // Store username
+      const { name } = response.data;
   
-      // Redirect user to Dashboard after successful login
-      window.location.href = "/";  // Alternatively, you can use React Router's `useNavigate`
+      // Optional: store non-sensitive info like name in memory or sessionStorage
+      sessionStorage.setItem("name", name);
+  
+      // Redirect to dashboard
+      window.location.href = "/";
     } catch (err) {
       alert("Failed to log in. Please check your credentials.");
       console.error(err);
     }
   };
+  
   
   
 
