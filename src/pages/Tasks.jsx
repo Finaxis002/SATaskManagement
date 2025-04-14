@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addTaskToColumn, toggleTaskCompletion } from "../redux/taskSlice";
+import { addTaskToColumn, toggleTaskCompletion, removeTaskFromColumn,fetchTasks ,fetchAssignees } from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendarAlt,
   faCheckCircle,
 } from "@fortawesome/free-regular-svg-icons";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
@@ -17,13 +17,20 @@ const ItemTypes = {
 const TaskBoard = () => {
   const taskColumns = useSelector((state) => state.tasks.taskColumns);
   const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(fetchTasks());
+    dispatch(fetchAssignees());
+  }, [dispatch]);
+  
   const [showPopup, setShowPopup] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
-  const [employees, setEmployees] = useState([]);
+  
   const [showAssigneeList, setShowAssigneeList] = useState(false);
   const [assignee, setAssignee] = useState(null);
+
+  const assignees = useSelector((state) => state.tasks.assignees);
 
   const popupRef = useRef(null);
 
@@ -38,22 +45,47 @@ const TaskBoard = () => {
     return date;
   };
 
-  const handleAddTask = () => {
-    if (!newTaskName || !selectedDate) return;
-    dispatch(
-      addTaskToColumn({
-        columnIndex: currentColumnIndex,
-        task: {
-          name: newTaskName,
-          due: getDueLabel(selectedDate),
-          completed: false,
-          assignee: assignee,
-        },
-      })
-    );
-    closePopup();
-  };
+  // const handleAddTask = () => {
+  //   if (!newTaskName || !selectedDate) return;
+  //   dispatch(
+  //     addTaskToColumn({
+  //       columnIndex: currentColumnIndex,
+  //       task: {
+  //         name: newTaskName,
+  //         due: getDueLabel(selectedDate),
+  //         completed: false,
+  //         assignee: assignee,
+  //       },
+  //     })
+  //   );
+  //   closePopup();
+  // };
 
+  const handleAddTask = async () => {
+    if (!newTaskName || !selectedDate) return;
+  
+    const newTask = {
+      name: newTaskName,
+      due: getDueLabel(selectedDate),
+      completed: false,
+      assignee,
+      column: taskColumns[currentColumnIndex].title,
+    };
+  
+    try {
+      await fetch("http://localhost:5000/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTask),
+      });
+  
+      dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+      closePopup();
+    } catch (err) {
+      console.error("Failed to save task", err);
+    }
+  };
+  
   const handleToggleCompletion = (columnIndex, taskIndex) => {
     dispatch(toggleTaskCompletion({ columnIndex, taskIndex }));
   };
@@ -89,18 +121,7 @@ const TaskBoard = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/employees");
-        const data = await response.json();
-        setEmployees(data);
-      } catch (error) {
-        console.error("Failed to fetch employees", error);
-      }
-    };
-    fetchEmployees();
-  }, []);
+  
 
   const TaskCard = ({ task, columnIndex, taskIndex }) => {
     const [{ isDragging }, drag] = useDrag(() => ({
@@ -132,6 +153,14 @@ const TaskBoard = () => {
             <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-1" />
             {task.due}
           </div>
+
+          {/* ✅ Assignee display */}
+        {task.assignee?.name && (
+          <div className="text-xs text-gray-500 flex items-center">
+            <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-1" />
+            {task.assignee.name}
+          </div>
+        )}
         </div>
         <FontAwesomeIcon
           icon={faCheckCircle}
@@ -301,32 +330,44 @@ const TaskBoard = () => {
               </button>
             </div>
 
-            {/* Assignee Section */}
+            {/* Assignee Section (bottom left) */}
             <div className="relative mt-2 flex items-center gap-2 text-sm text-gray-600">
               <FontAwesomeIcon
-                icon={["fas", "user"]}
+                // icon={['fas', 'user']}
+                icon={faUser}
                 onClick={() => setShowAssigneeList((prev) => !prev)}
                 className="cursor-pointer h-4 w-4 hover:text-gray-800"
                 title="Assign task"
               />
-              <span className="text-xs">
-                {assignee ? `Assigned to: ${assignee.name}` : "No assignee"}
-              </span>
 
+              {/* Show selected name if available */}
+              {assignee && (
+                <span className="text-xs text-gray-700">
+                  Assigned to: {assignee.name}
+                </span>
+              )}
+
+              {/* Dropdown */}
               {showAssigneeList && (
-                <div className="absolute left-0 top-6 z-50 w-full max-h-40 overflow-y-auto bg-white shadow border rounded p-2">
-                  {employees.map((emp) => (
-                    <div
-                      key={emp._id}
-                      onClick={() => {
-                        setAssignee({ name: emp.name, email: emp.email });
-                        setShowAssigneeList(false);
-                      }}
-                      className="hover:bg-gray-100 p-1 cursor-pointer text-sm"
-                    >
-                      {emp.name} ({emp.email})
-                    </div>
-                  ))}
+                <div className="absolute left-0 top-6 z-50 w-64 max-h-40 overflow-y-auto bg-white shadow border rounded p-2">
+                  {assignees.length === 0 ? (
+                    <p className="text-xs text-gray-500 text-center">
+                      No users found
+                    </p>
+                  ) : (
+                    assignees.map((emp) => (
+                      <div
+                        key={emp._id}
+                        onClick={() => {
+                          setAssignee({ name: emp.name, email: emp.email });
+                          setShowAssigneeList(false);
+                        }}
+                        className="hover:bg-gray-100 p-1 cursor-pointer text-sm"
+                      >
+                        {emp.name} ({emp.email})
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
