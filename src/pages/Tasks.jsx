@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addTaskToColumn, toggleTaskCompletion } from "../redux/taskSlice";
+import { addTaskToColumn, toggleTaskCompletion, removeTaskFromColumn,fetchTasks ,fetchAssignees } from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendarAlt,
   faCheckCircle,
 } from "@fortawesome/free-regular-svg-icons";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
@@ -17,13 +17,20 @@ const ItemTypes = {
 const TaskBoard = () => {
   const taskColumns = useSelector((state) => state.tasks.taskColumns);
   const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(fetchTasks());
+    dispatch(fetchAssignees());
+  }, [dispatch]);
+  
   const [showPopup, setShowPopup] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
-  const [employees, setEmployees] = useState([]);
+  
   const [showAssigneeList, setShowAssigneeList] = useState(false);
   const [assignee, setAssignee] = useState(null);
+
+  const assignees = useSelector((state) => state.tasks.assignees);
 
   const popupRef = useRef(null);
 
@@ -38,73 +45,48 @@ const TaskBoard = () => {
     return date;
   };
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      const role = localStorage.getItem("role");
-      const userId = localStorage.getItem("userId");
-
-      try {
-        const response = await fetch(
-          `http://localhost:5000/api/tasks?role=${role}&userId=${userId}`
-        );
-        const tasks = await response.json();
-
-        // Group tasks by column
-        const updatedColumns = [...taskColumns];
-        tasks.forEach((task) => {
-          updatedColumns[task.column || 0].tasks.push(task);
-        });
-
-        // You should dispatch here to update redux, or maintain your own local state
-      } catch (error) {
-        console.error("Failed to load tasks:", error);
-      }
-    };
-
-    fetchTasks();
-  }, []);
+  // const handleAddTask = () => {
+  //   if (!newTaskName || !selectedDate) return;
+  //   dispatch(
+  //     addTaskToColumn({
+  //       columnIndex: currentColumnIndex,
+  //       task: {
+  //         name: newTaskName,
+  //         due: getDueLabel(selectedDate),
+  //         completed: false,
+  //         assignee: assignee,
+  //       },
+  //     })
+  //   );
+  //   closePopup();
+  // };
 
   const handleAddTask = async () => {
     if (!newTaskName || !selectedDate) return;
-
-    const taskData = {
+  
+    const newTask = {
       name: newTaskName,
       due: getDueLabel(selectedDate),
       completed: false,
-      assignedTo: assignee?._id,
-      assignedToName: assignee?.name,
-      column: currentColumnIndex,
+      assignee,
+      column: taskColumns[currentColumnIndex].title,
     };
-
-    // ✅ Dispatch locally to Redux
-    dispatch(
-      addTaskToColumn({
-        columnIndex: currentColumnIndex,
-        task: taskData,
-      })
-    );
-
-    // ✅ Send to backend
+  
     try {
-      const response = await fetch("http://localhost:5000/api/tasks/create", {
+      await fetch("http://localhost:5000/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(taskData),
+        body: JSON.stringify(newTask),
       });
-
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.message || "Failed to save task");
-
-      console.log("Saved to DB:", result.task);
-    } catch (error) {
-      console.error("Error saving to DB:", error);
-      alert("Task created locally, but failed to sync with server.");
+  
+      dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+      closePopup();
+    } catch (err) {
+      console.error("Failed to save task", err);
     }
 
-    closePopup();
   };
-
+  
   const handleToggleCompletion = (columnIndex, taskIndex) => {
     dispatch(toggleTaskCompletion({ columnIndex, taskIndex }));
   };
@@ -140,18 +122,7 @@ const TaskBoard = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/employees");
-        const data = await response.json();
-        setEmployees(data);
-      } catch (error) {
-        console.error("Failed to fetch employees", error);
-      }
-    };
-    fetchEmployees();
-  }, []);
+  
 
   const TaskCard = ({ task, columnIndex, taskIndex }) => {
     const role = localStorage.getItem("role");
@@ -192,6 +163,14 @@ const TaskBoard = () => {
             <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-1" />
             {task.due}
           </div>
+
+          {/* ✅ Assignee display */}
+        {task.assignee?.name && (
+          <div className="text-xs text-gray-500 flex items-center">
+            <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-1" />
+            {task.assignee.name}
+          </div>
+        )}
         </div>
         <FontAwesomeIcon
           icon={faCheckCircle}
@@ -322,27 +301,48 @@ const TaskBoard = () => {
               </button>
             </div>
 
-            {/* ✅ New Dropdown for Assigning User */}
-            <label className="block text-sm text-gray-600 mb-1">
-              Assign to
-            </label>
-            <select
-              onChange={(e) => {
-                const user = employees.find(
-                  (emp) => emp._id === e.target.value
-                );
-                setAssignee(user);
-              }}
-              value={assignee?._id || ""}
-              className="w-full border border-gray-300 rounded p-2 text-sm mb-3"
-            >
-              <option value="">Select a user</option>
-              {employees.map((emp) => (
-                <option key={emp._id} value={emp._id}>
-                  {emp.name} ({emp.email})
-                </option>
-              ))}
-            </select>
+            {/* Assignee Section (bottom left) */}
+            <div className="relative mt-2 flex items-center gap-2 text-sm text-gray-600">
+              <FontAwesomeIcon
+                // icon={['fas', 'user']}
+                icon={faUser}
+                onClick={() => setShowAssigneeList((prev) => !prev)}
+                className="cursor-pointer h-4 w-4 hover:text-gray-800"
+                title="Assign task"
+              />
+
+              {/* Show selected name if available */}
+              {assignee && (
+                <span className="text-xs text-gray-700">
+                  Assigned to: {assignee.name}
+                </span>
+              )}
+
+              {/* Dropdown */}
+              {showAssigneeList && (
+                <div className="absolute left-0 top-6 z-50 w-64 max-h-40 overflow-y-auto bg-white shadow border rounded p-2">
+                  {assignees.length === 0 ? (
+                    <p className="text-xs text-gray-500 text-center">
+                      No users found
+                    </p>
+                  ) : (
+                    assignees.map((emp) => (
+                      <div
+                        key={emp._id}
+                        onClick={() => {
+                          setAssignee({ name: emp.name, email: emp.email });
+                          setShowAssigneeList(false);
+                        }}
+                        className="hover:bg-gray-100 p-1 cursor-pointer text-sm"
+                      >
+                        {emp.name} ({emp.email})
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
 
