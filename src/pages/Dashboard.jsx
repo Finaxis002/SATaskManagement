@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import bgImage from "../assets/bg.png"; // adjust path as needed
+import bgImage from "../assets/bg.png"; 
+import TaskOverview from "../Components/TaskOverview";
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState("");
@@ -68,7 +69,7 @@ const Dashboard = () => {
         {/* Task Container */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Title + Tabs */}
-          <div className="flex justify-between items-center px-6 py-4 border-b">
+          {/* <div className="flex justify-between items-center px-6 py-4 border-b">
             <h2 className="text-lg font-semibold text-gray-800">My tasks</h2>
             <div className="flex gap-6 text-sm">
               <button className="pb-1 border-b-2 border-gray-600 text-black font-medium">
@@ -77,15 +78,15 @@ const Dashboard = () => {
               <button className="hover:text-black text-gray-500">Overdue</button>
               <button className="hover:text-black text-gray-500">Completed</button>
             </div>
-          </div>
+          </div> */}
 
           {/* Task List */}
-          <div className="divide-y">
+          {/* <div className="divide-y">
             <div className="px-6 py-3 text-sm text-gray-500 cursor-pointer hover:bg-gray-50">
               + Create task
             </div>
 
-            {/* Render tasks based on user role */}
+            
             {(role === "admin" ? adminTasks : tasks).map((task, index) => (
               <div key={index} className="flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition">
                 <div className="flex items-center gap-3">
@@ -102,8 +103,10 @@ const Dashboard = () => {
                 </div>
               </div>
             ))}
-          </div>
+          </div> */}
         </div>
+
+        <TaskOverview />
       </div>
     </div>
   );
