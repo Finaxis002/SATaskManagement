@@ -1,6 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { FaUserAlt, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { useDispatch } from "react-redux";
+import { setAuth } from "../redux/authSlice"; // adjust path
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,30 +12,38 @@ const Login = () => {
 
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  const dispatch = useDispatch();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
-      const response = await axios.post("http://localhost:5000/api/employees/login", formData);
-      const { token, name } = response.data;  // Ensure name is part of the response from your backend
-  
-      // Store token and name in localStorage
-      localStorage.setItem("authToken", token);  // Store JWT token
-      localStorage.setItem("name", name);  // Store username
-  
-      // Redirect user to Dashboard after successful login
-      window.location.href = "/";  // Alternatively, you can use React Router's `useNavigate`
+      const response = await axios.post(
+        "http://localhost:5000/api/employees/login",
+        formData
+      );
+      const { token, name, role, email } = response.data;
+
+      // ✅ Store to localStorage
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("name", name);
+      localStorage.setItem("role", role);
+      localStorage.setItem("userId", email); // ✅ this is critical for TaskOverview
+
+      // ✅ Dispatch to Redux
+      dispatch(setAuth({ name, role, userId: email }));
+
+      // ✅ Redirect to dashboard or home
+      window.location.href = "/";
     } catch (err) {
       alert("Failed to log in. Please check your credentials.");
       console.error(err);
     }
   };
-  
-  
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
@@ -42,7 +52,9 @@ const Login = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r p-6">
       <div className="max-w-md w-full bg-white p-10 rounded-xl shadow-lg border border-gray-300">
-        <h2 className="text-4xl font-bold text-center mb-6 text-gray-800">Login</h2>
+        <h2 className="text-4xl font-bold text-center mb-6 text-gray-800">
+          Login
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* UserId Input */}

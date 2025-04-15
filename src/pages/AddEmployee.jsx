@@ -1,7 +1,14 @@
 import { useState } from "react";
 import axios from "axios";
-import { FaUserAlt, FaEnvelope, FaSuitcase, FaBuilding, FaEye, FaEyeSlash } from "react-icons/fa"; // Added eye icons for password visibility
-import bgImage from "../assets/bg.png"; // Adjust path as needed
+import {
+  FaUserAlt,
+  FaEnvelope,
+  FaSuitcase,
+  FaBuilding,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
+import bgImage from "../assets/bg.png";
 
 const AddEmployee = () => {
   const [formData, setFormData] = useState({
@@ -25,7 +32,6 @@ const AddEmployee = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       await axios.post("http://localhost:5000/api/employees", formData);
       alert("Employee added successfully!");
@@ -48,20 +54,25 @@ const AddEmployee = () => {
   };
 
   return (
-    <div className="relative w-full h-screen text-gray-800 bg-gray-100 p-14">
+    <div className="relative w-full min-h-screen text-gray-800 bg-gray-100 py-14 px-6">
       <img
         src={bgImage}
         alt="Background"
-        className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        className="absolute top-0 left-0 w-full h-full object-cover z-0 opacity-10"
       />
-      <div className="relative max-w-lg mx-auto bg-white p-8 rounded-xl shadow-lg">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
-          Add New Employee
+
+      <div className="relative z-10 max-w-4xl mx-auto bg-white p-10 rounded-xl shadow-lg">
+        <h2 className="text-3xl font-semibold text-center text-[#102E50] mb-10">
+          Add New User
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Name Input */}
-          <div className="flex items-center border border-gray-300 rounded-md">
-            <FaUserAlt className="text-gray-400 mx-4" />
+
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          {/* Full Name */}
+          <div className="relative">
+            <FaUserAlt className="absolute top-4 left-4 text-gray-400" />
             <input
               type="text"
               name="name"
@@ -69,13 +80,13 @@ const AddEmployee = () => {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full py-3 px-4 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Email Input */}
-          <div className="flex items-center border border-gray-300 rounded-md">
-            <FaEnvelope className="text-gray-400 mx-4" />
+          {/* Email */}
+          <div className="relative">
+            <FaEnvelope className="absolute top-4 left-4 text-gray-400" />
             <input
               type="email"
               name="email"
@@ -83,13 +94,13 @@ const AddEmployee = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full py-3 px-4 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Position Input */}
-          <div className="flex items-center border border-gray-300 rounded-md">
-            <FaSuitcase className="text-gray-400 mx-4" />
+          {/* Position */}
+          <div className="relative">
+            <FaSuitcase className="absolute top-4 left-4 text-gray-400" />
             <input
               type="text"
               name="position"
@@ -97,26 +108,26 @@ const AddEmployee = () => {
               value={formData.position}
               onChange={handleChange}
               required
-              className="w-full py-3 px-4 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Department Input */}
-          <div className="flex items-center border border-gray-300 rounded-md">
-            <FaBuilding className="text-gray-400 mx-4" />
+          {/* Department */}
+          <div className="relative">
+            <FaBuilding className="absolute top-4 left-4 text-gray-400" />
             <input
               type="text"
               name="department"
               placeholder="Department"
               value={formData.department}
               onChange={handleChange}
-              className="w-full py-3 px-4 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* UserId Input */}
-          <div className="flex items-center border border-gray-300 rounded-md mb-4">
-            <FaUserAlt className="text-gray-400 mx-4" />
+          {/* User ID */}
+          <div className="relative">
+            <FaUserAlt className="absolute top-4 left-4 text-gray-400" />
             <input
               type="text"
               name="userId"
@@ -124,13 +135,13 @@ const AddEmployee = () => {
               value={formData.userId}
               onChange={handleChange}
               required
-              className="w-full py-3 px-4 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Password Input */}
-          <div className="flex items-center border border-gray-300 rounded-md mb-6">
-            <FaSuitcase className="text-gray-400 mx-4" />
+          {/* Password */}
+          <div className="relative">
+            <FaSuitcase className="absolute top-4 left-4 text-gray-400" />
             <input
               type={passwordVisible ? "text" : "password"}
               name="password"
@@ -138,22 +149,22 @@ const AddEmployee = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full py-3 px-4 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 pr-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="button"
               onClick={togglePasswordVisibility}
-              className="text-gray-400 ml-2"
+              className="absolute top-4 right-4 text-gray-400"
             >
               {passwordVisible ? <FaEyeSlash /> : <FaEye />}
             </button>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-center">
+          {/* Submit Button (Full Width) */}
+          <div className="md:col-span-2 flex justify-center mt-6">
             <button
               type="submit"
-              className="w-full py-3 bg-blue-600 text-white text-lg font-semibold rounded-md hover:bg-blue-700 transition duration-300 ease-in-out"
+              className="inline-flex items-center justify-center gap-2 w-full md:w-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-full shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 ease-in-out transform hover:scale-105"
             >
               Add Employee
             </button>
