@@ -1,40 +1,50 @@
 import { useState, useEffect } from "react";
 import { FaBell, FaUserCircle, FaSearch } from "react-icons/fa";
 import { FiHelpCircle } from "react-icons/fi";
-import { LuSparkles } from "react-icons/lu"; // Use lucide-react or any sparkle icon lib
+import { LuSparkles } from "react-icons/lu";
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // Track if the dropdown menu is open
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [profileInitial, setProfileInitial] = useState("Fi");
 
-  // Close the dropdown menu when clicking outside of it
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (e.target.closest("#profile-menu") === null) {
-        setIsMenuOpen(false); // Close the dropdown if clicked outside
+        setIsMenuOpen(false);
       }
     };
 
     document.addEventListener("click", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const handleMenuToggle = () => {
-    setIsMenuOpen((prevState) => !prevState); // Toggle the menu visibility
-  };
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    const name = localStorage.getItem("name");
+
+    if (role === "admin") {
+      setProfileInitial("Fi");
+    } else if (name) {
+      // Get first letter(s) from name, e.g., "John Doe" => "JD"
+      const initials = name
+        .split(" ")
+        .map((n) => n[0]?.toUpperCase())
+        .join("")
+        .substring(0, 2);
+      setProfileInitial(initials);
+    }
+  }, []);
+
+  const handleMenuToggle = () => setIsMenuOpen((prev) => !prev);
 
   const handleLogout = () => {
-    // Clear the auth token or session
     localStorage.removeItem("authToken");
-
-    // Redirect to the login page after logout
-    window.location.href = "/login"; // Use React Router's `useNavigate()` if needed
+    localStorage.removeItem("name");
+    localStorage.removeItem("role");
+    window.location.href = "/login";
   };
 
   return (
-
     <header className="bg-[#1e1f21] w-full text-white px-4 py-2 flex items-center justify-between border-b border-gray-700">
       {/* Search Bar */}
       <div className="flex-1 flex justify-center">
@@ -57,28 +67,25 @@ const Header = () => {
 
         {/* Profile Icon */}
         <div
-          id="profile-menu" // Added ID for easier click outside detection
-          onClick={handleMenuToggle} // Toggle the menu when profile is clicked
+          id="profile-menu"
+          onClick={handleMenuToggle}
           className="bg-purple-500 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold cursor-pointer"
         >
-          Fi
+          {profileInitial}
         </div>
 
         {/* Dropdown Menu */}
         {isMenuOpen && (
-         <div
-         id="profile-menu-dropdown"
-         style={{
-           marginTop: "100%", // Use camelCase for CSS property names
-           position: "absolute",
-           zIndex: 12, // Ensure it's a number, not a string
-         }}
-         className="absolute right-0 mt-2 w-40 bg-white text-black rounded-lg shadow-lg p-2"
-         onClick={(e) => e.stopPropagation()} // Prevent menu from closing on click
-       >
-         {/* Menu contents */}
-  
-       
+          <div
+            id="profile-menu-dropdown"
+            style={{
+              marginTop: "100%",
+              position: "absolute",
+              zIndex: 12,
+            }}
+            className="absolute right-0 mt-2 w-40 bg-white text-black rounded-lg shadow-lg p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={handleLogout}
               className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100 rounded-md"
@@ -87,7 +94,6 @@ const Header = () => {
             </button>
           </div>
         )}
-
       </div>
     </header>
   );

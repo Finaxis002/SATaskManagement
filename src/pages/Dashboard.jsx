@@ -1,18 +1,22 @@
-import { useState, useEffect } from "react";
-import bgImage from "../assets/bg.png"; 
+
+
+
+
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import bgImage from "../assets/bg.png";
+import AdminDashboard from "./AdminDashboard";
+import UserDashboard from "./UserDashboard";
 import TaskOverview from "../Components/TaskOverview";
+
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState("");
   const [currentDate, setCurrentDate] = useState("");
-  const [role, setRole] = useState(""); // State to store role (admin/user)
-  
+
+  const { name, role } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    // Get user role from localStorage
-    const storedRole = localStorage.getItem("role");
-    setRole(storedRole);
-
     const now = new Date();
     const hour = now.getHours();
 
@@ -24,47 +28,18 @@ const Dashboard = () => {
     setCurrentDate(now.toLocaleDateString("en-US", options));
   }, []);
 
-  const tasks = [
-    { title: "New Task", date: "Today" },
-    { title: "Draft project brief", date: "Monday" },
-    { title: "Nexa Report", tag: "Cross-functional project", date: "Apr 9 - 11" },
-  ];
-
-  const adminTasks = [
-    { title: "Assign tasks to users", date: "Today" },
-    { title: "Review user performance", date: "Tomorrow" },
-  ];
-
   return (
     <div className="relative w-full min-h-screen text-gray-800 bg-gray-100">
-      {/* Fixed Background Image */}
       <img src={bgImage} alt="Background" className="absolute top-0 left-0 w-full h-full object-cover z-0" />
 
-      {/* Content Layer */}
       <div className="relative z-10 px-6 py-8 max-w-5xl mx-auto w-full backdrop-blur-sm">
-        {/* Header Section */}
         <div className="text-center mb-10">
           <p className="text-sm text-gray-500">{currentDate}</p>
           <h1 className="text-3xl font-semibold text-gray-800 mt-1">
-            {greeting}, <span className="text-black">Finaxis</span>
+            {greeting}, <span className="text-black">{name || "User"}</span>
           </h1>
-
-          {/* Extra Info Container */}
-          <div className="mt-6 flex justify-center gap-6 items-center bg-white py-3 px-6 rounded-full shadow text-sm text-gray-600 max-w-fit mx-auto">
-            <div className="flex items-center gap-1 border-r pr-4">
-              <span className="font-medium">My week</span>
-              <span className="text-xs">▼</span>
-            </div>
-            <div className="flex items-center gap-2 border-r px-4">
-              <span>✔</span>
-              <span>1 task completed</span>
-            </div>
-            <div className="flex items-center gap-2 pl-4">
-              <span>👥</span>
-              <span>2 collaborators</span>
-            </div>
-          </div>
         </div>
+
 
         {/* Task Container */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -107,6 +82,9 @@ const Dashboard = () => {
         </div>
 
         <TaskOverview />
+
+        {role === "admin" ? <AdminDashboard /> : <UserDashboard />}
+
       </div>
     </div>
   );
