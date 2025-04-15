@@ -1,55 +1,3 @@
-// // src/redux/taskSlice.js
-// import { createSlice } from '@reduxjs/toolkit';
-// import axios from 'axios';
-
-// export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
-//   const res = await axios.get("http://localhost:5000/api/tasks");
-//   return res.data;
-// }); 
-
-// const initialState = {
-//   taskColumns: [
-//     {
-//       title: 'Recently assigned',
-//       tasks: [
-//         { name: 'Nexa Report', due: 'Monday' , completed: false },
-//         { name: 'New Task', due: 'Today' ,completed: false },
-//         { name: 'Schedule kickoff meeting', due: 'Today – Apr 14' , completed: false },
-//       ],
-//     },
-//     { title: 'Do today', tasks: [] },
-//     { title: 'Do next week', tasks: [] },
-//     { title: 'Do later', tasks: [] },
-//   ],
-// };
-
-// const taskSlice = createSlice({
-//   name: 'tasks',
-//   initialState,
-//   reducers: {
-//     addTaskToColumn: (state, action) => {
-//       const { columnIndex, task } = action.payload;
-//       state.taskColumns[columnIndex].tasks.push(task);
-//     },
-//     toggleTaskCompletion: (state, action) => {
-//       const { columnIndex, taskIndex } = action.payload;
-//       const task = state.taskColumns[columnIndex].tasks[taskIndex];
-//       task.completed = !task.completed;
-//     },
-//     removeTaskFromColumn: (state, action) => {
-//       const { columnIndex, taskIndex } = action.payload;
-//       state.taskColumns[columnIndex].tasks.splice(taskIndex, 1);
-//     }
-    
-//   },
-// });
-
-// export const { addTaskToColumn , toggleTaskCompletion, removeTaskFromColumn} = taskSlice.actions;
-// export default taskSlice.reducer;
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
@@ -65,6 +13,16 @@ export const fetchAssignees = createAsyncThunk("tasks/fetchAssignees", async () 
   const res = await axios.get("http://localhost:5000/api/employees");
   return res.data;
 });
+
+export const updateTaskCompletion = createAsyncThunk(
+  "tasks/updateTaskCompletion",
+  async ({ taskId, completed }) => {
+    const res = await axios.patch(`http://localhost:5000/api/tasks/${taskId}`, {
+      completed
+    });
+    return res.data;
+  }
+);
 
 const initialState = {
   taskColumns: [
@@ -144,6 +102,18 @@ const taskSlice = createSlice({
       // 📥 Fetching Assignees
       .addCase(fetchAssignees.fulfilled, (state, action) => {
         state.assignees = action.payload;
+      })
+
+      .addCase(updateTaskCompletion.fulfilled, (state, action) => {
+        const updatedTask = action.payload;
+
+        for (let col of state.taskColumns) {
+          const idx = col.tasks.findIndex(t => t._id === updatedTask._id);
+          if (idx !== -1) {
+            col.tasks[idx].completed = updatedTask.completed;
+            break;
+          }
+        }
       });
   }
 });
