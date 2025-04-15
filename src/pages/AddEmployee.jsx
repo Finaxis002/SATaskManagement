@@ -33,7 +33,7 @@ const AddEmployee = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/employees", formData);
+      await axios.post("https://sa-task-management-backend.vercel.app/api/employees", formData);
       alert("Employee added successfully!");
       setFormData({
         name: "",

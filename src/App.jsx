@@ -4,10 +4,10 @@ import Dashboard from "./pages/Dashboard";
 import AddEmployee from "./pages/AddEmployee";
 import AllEmployees from "./pages/AllEmployees";
 import Login from "./pages/Login"; // Import the login page
-import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
+import ProtectedRoute from "./Components/ProtectedRoute";
 import Tasks from "./pages/Tasks";
 import Reminders from "./pages/Reminders";
-import ReminderAlertManager from "./Components/ReminderAlertManager";
+
 
 const App = () => {
   return (
