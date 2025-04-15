@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
+
+import { format, isToday, isTomorrow } from "date-fns";
+
 import {
   addTaskToColumn,
   toggleTaskCompletion,
   removeTaskFromColumn,
   fetchTasks,
   fetchAssignees,
+
+  updateTaskCompletion,
+
 } from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -40,23 +46,66 @@ const TaskBoard = () => {
 
   const popupRef = useRef(null);
 
-  const getDueLabel = (date) => {
-    const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
+  // const getDueLabel = (date) => {
+  //   const today = new Date();
+  //   const tomorrow = new Date();
+  //   tomorrow.setDate(today.getDate() + 1);
 
-    const inputDate = new Date(date);
-    if (inputDate.toDateString() === today.toDateString()) return "Today";
-    if (inputDate.toDateString() === tomorrow.toDateString()) return "Tomorrow";
-    return date;
+  //   const inputDate = new Date(date);
+  //   if (inputDate.toDateString() === today.toDateString()) return "Today";
+  //   if (inputDate.toDateString() === tomorrow.toDateString()) return "Tomorrow";
+  //   return date;
+  // };
+
+
+  // const handleAddTask = () => {
+  //   if (!newTaskName || !selectedDate) return;
+  //   dispatch(
+  //     addTaskToColumn({
+  //       columnIndex: currentColumnIndex,
+  //       task: {
+  //         name: newTaskName,
+  //         due: getDueLabel(selectedDate),
+  //         completed: false,
+  //         assignee: assignee,
+  //       },
+  //     })
+  //   );
+  //   closePopup();
+  // };
+
+  // const getDisplayDate = (due) => {
+  //   const date = new Date(due);
+  //   if (isToday(date)) return "Today";
+  //   if (isTomorrow(date)) return "Tomorrow";
+  //   return format(date, "MMM dd"); // fallback to formatted date
+  // };
+
+  const getDisplayDate = (due) => {
+    // If it's already labeled as Today/Tomorrow from backend, return it
+    if (due === "Today" || due === "Tomorrow") return due;
+  
+    // Try to parse the string into a Date
+    const parsedDate = new Date(due);
+  
+    // If parsing fails, return raw string as fallback
+    if (isNaN(parsedDate.getTime())) return due;
+  
+    if (isToday(parsedDate)) return "Today";
+    if (isTomorrow(parsedDate)) return "Tomorrow";
+  
+    return format(parsedDate, "MMM dd");
   };
+  
 
+  
   const handleAddTask = async () => {
     if (!newTaskName || !selectedDate) return;
+    const isoDueDate = new Date(selectedDate).toISOString();
 
     const newTask = {
       name: newTaskName,
-      due: getDueLabel(selectedDate),
+      due: isoDueDate,
       completed: false,
       assignee,
       column: taskColumns[currentColumnIndex].title,
@@ -79,7 +128,10 @@ const TaskBoard = () => {
   };
 
   const handleToggleCompletion = (columnIndex, taskIndex) => {
-    dispatch(toggleTaskCompletion({ columnIndex, taskIndex }));
+    const task = taskColumns[columnIndex].tasks[taskIndex];
+    dispatch(
+      updateTaskCompletion({ taskId: task._id, completed: !task.completed })
+    );
   };
 
   const handleOpenPopup = (columnIndex) => {
@@ -141,7 +193,9 @@ const TaskBoard = () => {
           </h4>
           <div className="text-xs text-gray-500 flex items-center">
             <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-1" />
-            {task.due}
+            {/* {task.due} */}
+            {getDisplayDate(task.due)}
+
           </div>
 
           {/* ✅ Assignee display */}
@@ -152,13 +206,26 @@ const TaskBoard = () => {
             </div>
           )}
         </div>
-        <FontAwesomeIcon
+        {/* <FontAwesomeIcon
           icon={faCheckCircle}
-          onClick={() => handleToggleCompletion(columnIndex, taskIndex)}
+          // onClick={() => handleToggleCompletion(columnIndex, taskIndex)}
+          onClick={() => {
+            dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }));
+          }}
           className={`h-5 w-5 ml-2 cursor-pointer ${
             task.completed ? "text-green-500" : "text-gray-300"
           }`}
-        />
+        /> */}
+        <FontAwesomeIcon
+  icon={faCheckCircle}
+  onClick={() =>
+    dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }))
+  }
+  className={`h-5 w-5 ml-2 cursor-pointer ${
+    task.completed ? "text-green-500" : "text-gray-300"
+  }`}
+/>
+
       </div>
     );
   };

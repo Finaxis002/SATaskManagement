@@ -1,3 +1,4 @@
+
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
@@ -12,6 +13,16 @@ export const fetchAssignees = createAsyncThunk("tasks/fetchAssignees", async () 
   const res = await axios.get("http://localhost:5000/api/employees");
   return res.data;
 });
+
+export const updateTaskCompletion = createAsyncThunk(
+  "tasks/updateTaskCompletion",
+  async ({ taskId, completed }) => {
+    const res = await axios.patch(`http://localhost:5000/api/tasks/${taskId}`, {
+      completed
+    });
+    return res.data;
+  }
+);
 
 const initialState = {
   taskColumns: [
@@ -91,6 +102,18 @@ const taskSlice = createSlice({
       // 📥 Fetching Assignees
       .addCase(fetchAssignees.fulfilled, (state, action) => {
         state.assignees = action.payload;
+      })
+
+      .addCase(updateTaskCompletion.fulfilled, (state, action) => {
+        const updatedTask = action.payload;
+
+        for (let col of state.taskColumns) {
+          const idx = col.tasks.findIndex(t => t._id === updatedTask._id);
+          if (idx !== -1) {
+            col.tasks[idx].completed = updatedTask.completed;
+            break;
+          }
+        }
       });
   }
 });
