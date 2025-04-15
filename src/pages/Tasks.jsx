@@ -46,40 +46,6 @@ const TaskBoard = () => {
 
   const popupRef = useRef(null);
 
-  // const getDueLabel = (date) => {
-  //   const today = new Date();
-  //   const tomorrow = new Date();
-  //   tomorrow.setDate(today.getDate() + 1);
-
-  //   const inputDate = new Date(date);
-  //   if (inputDate.toDateString() === today.toDateString()) return "Today";
-  //   if (inputDate.toDateString() === tomorrow.toDateString()) return "Tomorrow";
-  //   return date;
-  // };
-
-
-  // const handleAddTask = () => {
-  //   if (!newTaskName || !selectedDate) return;
-  //   dispatch(
-  //     addTaskToColumn({
-  //       columnIndex: currentColumnIndex,
-  //       task: {
-  //         name: newTaskName,
-  //         due: getDueLabel(selectedDate),
-  //         completed: false,
-  //         assignee: assignee,
-  //       },
-  //     })
-  //   );
-  //   closePopup();
-  // };
-
-  // const getDisplayDate = (due) => {
-  //   const date = new Date(due);
-  //   if (isToday(date)) return "Today";
-  //   if (isTomorrow(date)) return "Tomorrow";
-  //   return format(date, "MMM dd"); // fallback to formatted date
-  // };
 
   const getDisplayDate = (due) => {
     // If it's already labeled as Today/Tomorrow from backend, return it
@@ -97,7 +63,6 @@ const TaskBoard = () => {
     return format(parsedDate, "MMM dd");
   };
   
-
   
   const handleAddTask = async () => {
     if (!newTaskName || !selectedDate) return;
@@ -127,23 +92,19 @@ const TaskBoard = () => {
     }
   };
 
-  const handleToggleCompletion = (columnIndex, taskIndex) => {
-    const task = taskColumns[columnIndex].tasks[taskIndex];
-    dispatch(
-      updateTaskCompletion({ taskId: task._id, completed: !task.completed })
-    );
-  };
 
   const handleOpenPopup = (columnIndex) => {
     setCurrentColumnIndex(columnIndex);
     setShowPopup(true);
   };
 
+
   const closePopup = () => {
     setNewTaskName("");
     setSelectedDate("");
     setShowPopup(false);
   };
+  
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
