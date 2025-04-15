@@ -6,13 +6,14 @@ import AllEmployees from "./pages/AllEmployees";
 import Login from "./pages/Login"; // Import the login page
 import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
 import Tasks from "./pages/Tasks";
+import Reminders from "./pages/Reminders";
+import ReminderAlertManager from "./Components/ReminderAlertManager";
 
 const App = () => {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} /> {/* Login route */}
-        
         {/* Protected Route */}
         <Route
           path="/"
@@ -24,7 +25,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         {/* Other routes */}
         <Route
           path="/add-employee"
@@ -46,17 +46,27 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        <Route 
-        path="/tasks"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <Tasks />
-            </MainLayout>
-          </ProtectedRoute>
-        }
+        <Route
+          path="/reminders"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Reminders />
+              </MainLayout>
+            </ProtectedRoute>
+          }
         />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Tasks />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        
       </Routes>
     </Router>
   );

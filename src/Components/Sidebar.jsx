@@ -13,6 +13,7 @@ import {
   FaUsers,
   FaBell,
   FaClipboardList,
+  FaClock
 } from "react-icons/fa";
 import AddEmployee from "../pages/AddEmployee";
 
@@ -80,6 +81,11 @@ const Sidebar = () => {
           icon={<FaBell />}
           label="Notifications"
           to="/notifications"
+        />
+         <SidebarItem
+          icon={<FaClock />}
+          label="Reminders"
+          to="/reminders"
         />
 
         {/* Insights */}

@@ -1,6 +1,7 @@
 // src/layout/MainLayout.jsx
 import Sidebar from "../Components/Sidebar";
 import Header from "../Components/Header";
+import ReminderAlertManager from "../Components/ReminderAlertManager";
 
 const MainLayout = ({ children }) => {
   return (
@@ -10,6 +11,7 @@ const MainLayout = ({ children }) => {
         <Header />
         <main className="flex-1 text-gray-800 overflow-y-auto w-full">
           {children}
+          <ReminderAlertManager />
         </main>
       </div>
     </div>
