@@ -228,7 +228,7 @@ console.log("Filtered Tasks:", filteredTasks);
 
               {tab}
 
-//               {tab.charAt(0).toUpperCase() + tab.slice(1)}
+
 
             </button>
           ))}
