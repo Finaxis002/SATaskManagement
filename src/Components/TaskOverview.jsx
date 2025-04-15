@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useSelector } from "react-redux";
 import { format, isBefore, isToday } from "date-fns";
+
 
 const TaskOverview = () => {
   const [tasks, setTasks] = useState([]);
   const [activeTab, setActiveTab] = useState("upcoming");
+
+  // ✅ Get logged-in user info
+  const { role, userId } = useSelector((state) => state.auth);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -19,11 +24,25 @@ const TaskOverview = () => {
     fetchTasks();
   }, []);
 
-  // Categorize tasks
+  // ✅ Filter tasks based on role
+  const filteredTasks = tasks.filter((task) => {
+    if (role === "admin") return true;
+    return task.assignee?.email?.toLowerCase() === userId?.toLowerCase();
+  });
+  
+
+  console.log("Logged-in User:", userId);
+console.log("All Tasks:", tasks);
+console.log("Filtered Tasks:", filteredTasks);
+
+
+  // ✅ Categorize filtered tasks
   const now = new Date();
-  const completed = tasks.filter((t) => t.completed);
-  const overdue = tasks.filter((t) => !t.completed && isBefore(new Date(t.due), now));
-  const upcoming = tasks.filter((t) => !t.completed && (isToday(new Date(t.due)) || new Date(t.due) > now));
+  const completed = filteredTasks.filter((t) => t.completed);
+  const overdue = filteredTasks.filter((t) => !t.completed && isBefore(new Date(t.due), now));
+  const upcoming = filteredTasks.filter(
+    (t) => !t.completed && (isToday(new Date(t.due)) || new Date(t.due) > now)
+  );
 
   const getTasksByTab = () => {
     switch (activeTab) {
@@ -40,32 +59,21 @@ const TaskOverview = () => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mt-10">
       <div className="flex justify-between items-center px-6 py-4 border-b">
-        <h2 className="text-lg font-semibold text-gray-800">My tasks</h2>
+        <h2 className="text-lg font-semibold text-gray-800">My Tasks</h2>
         <div className="flex gap-6 text-sm">
-          <button
-            onClick={() => setActiveTab("upcoming")}
-            className={`pb-1 border-b-2 ${
-              activeTab === "upcoming" ? "border-gray-600 text-black font-medium" : "border-transparent text-gray-500"
-            }`}
-          >
-            Upcoming
-          </button>
-          <button
-            onClick={() => setActiveTab("overdue")}
-            className={`pb-1 border-b-2 ${
-              activeTab === "overdue" ? "border-gray-600 text-black font-medium" : "border-transparent text-gray-500"
-            }`}
-          >
-            Overdue
-          </button>
-          <button
-            onClick={() => setActiveTab("completed")}
-            className={`pb-1 border-b-2 ${
-              activeTab === "completed" ? "border-gray-600 text-black font-medium" : "border-transparent text-gray-500"
-            }`}
-          >
-            Completed
-          </button>
+          {["upcoming", "overdue", "completed"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-1 border-b-2 ${
+                activeTab === tab
+                  ? "border-gray-600 text-black font-medium"
+                  : "border-transparent text-gray-500"
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -80,7 +88,9 @@ const TaskOverview = () => {
             >
               <div className="flex items-center gap-3">
                 <input type="checkbox" checked={task.completed} readOnly className="accent-blue-600" />
-                <span className={`text-gray-800 ${task.completed ? "line-through" : ""}`}>{task.name}</span>
+                <span className={`text-gray-800 ${task.completed ? "line-through" : ""}`}>
+                  {task.name}
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 {task?.assignee?.name && (

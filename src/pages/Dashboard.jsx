@@ -1,14 +1,10 @@
-
-
-
-
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import bgImage from "../assets/bg.png";
 import AdminDashboard from "./AdminDashboard";
 import UserDashboard from "./UserDashboard";
 import TaskOverview from "../Components/TaskOverview";
-
+import UserGrid from "../Components/UserGrid";
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState("");
@@ -30,7 +26,11 @@ const Dashboard = () => {
 
   return (
     <div className="relative w-full min-h-screen text-gray-800 bg-gray-100">
-      <img src={bgImage} alt="Background" className="absolute top-0 left-0 w-full h-full object-cover z-0" />
+      <img
+        src={bgImage}
+        alt="Background"
+        className="absolute top-0 left-0 w-full h-full object-cover z-0"
+      />
 
       <div className="relative z-10 px-6 py-8 max-w-5xl mx-auto w-full backdrop-blur-sm">
         <div className="text-center mb-10">
@@ -40,17 +40,15 @@ const Dashboard = () => {
           </h1>
         </div>
 
-
         {/* Task Container */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-         
-        
+        <div className="bg-white rounded-lg shadow-md overflow-hidden"></div>
+
+        <div className="flex flex-col gap-4">
+          <TaskOverview />
+
+          {/* {role === "admin" ? <AdminDashboard /> : <UserDashboard />} */}
+          {role == "admin" ? <UserGrid /> : null}
         </div>
-
-        <TaskOverview />
-
-        {/* {role === "admin" ? <AdminDashboard /> : <UserDashboard />} */}
-
       </div>
     </div>
   );

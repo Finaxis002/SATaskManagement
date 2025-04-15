@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addTaskToColumn, toggleTaskCompletion, removeTaskFromColumn,fetchTasks ,fetchAssignees } from "../redux/taskSlice";
+import {
+  addTaskToColumn,
+  toggleTaskCompletion,
+  removeTaskFromColumn,
+  fetchTasks,
+  fetchAssignees,
+} from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendarAlt,
@@ -21,12 +27,12 @@ const TaskBoard = () => {
     dispatch(fetchTasks());
     dispatch(fetchAssignees());
   }, [dispatch]);
-  
+
   const [showPopup, setShowPopup] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
-  
+
   const [showAssigneeList, setShowAssigneeList] = useState(false);
   const [assignee, setAssignee] = useState(null);
 
@@ -45,25 +51,9 @@ const TaskBoard = () => {
     return date;
   };
 
-  // const handleAddTask = () => {
-  //   if (!newTaskName || !selectedDate) return;
-  //   dispatch(
-  //     addTaskToColumn({
-  //       columnIndex: currentColumnIndex,
-  //       task: {
-  //         name: newTaskName,
-  //         due: getDueLabel(selectedDate),
-  //         completed: false,
-  //         assignee: assignee,
-  //       },
-  //     })
-  //   );
-  //   closePopup();
-  // };
-
   const handleAddTask = async () => {
     if (!newTaskName || !selectedDate) return;
-  
+
     const newTask = {
       name: newTaskName,
       due: getDueLabel(selectedDate),
@@ -71,21 +61,23 @@ const TaskBoard = () => {
       assignee,
       column: taskColumns[currentColumnIndex].title,
     };
-  
+
     try {
       await fetch("http://localhost:5000/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
       });
-  
-      dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+
+      dispatch(
+        addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
+      );
       closePopup();
     } catch (err) {
       console.error("Failed to save task", err);
     }
   };
-  
+
   const handleToggleCompletion = (columnIndex, taskIndex) => {
     dispatch(toggleTaskCompletion({ columnIndex, taskIndex }));
   };
@@ -121,8 +113,6 @@ const TaskBoard = () => {
     };
   }, []);
 
-  
-
   const TaskCard = ({ task, columnIndex, taskIndex }) => {
     const [{ isDragging }, drag] = useDrag(() => ({
       type: ItemTypes.TASK,
@@ -155,12 +145,12 @@ const TaskBoard = () => {
           </div>
 
           {/* ✅ Assignee display */}
-        {task.assignee?.name && (
-          <div className="text-xs text-gray-500 flex items-center">
-            <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-1" />
-            {task.assignee.name}
-          </div>
-        )}
+          {task.assignee?.name && (
+            <div className="text-xs text-gray-500 flex items-center">
+              <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-1" />
+              {task.assignee.name}
+            </div>
+          )}
         </div>
         <FontAwesomeIcon
           icon={faCheckCircle}
@@ -247,45 +237,6 @@ const TaskBoard = () => {
           </button>
         </div>
 
-        {/* {showPopup && (
-          <div
-            ref={popupRef}
-            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-medium">Create Task</h3>
-              <FontAwesomeIcon
-                icon={faTimes}
-                onClick={closePopup}
-                className="text-gray-500 hover:text-gray-700 cursor-pointer"
-              />
-            </div>
-            <input
-              type="text"
-              value={newTaskName}
-              onChange={(e) => setNewTaskName(e.target.value)}
-              placeholder="Task name"
-              className="w-full p-2 border border-gray-300 rounded mb-2"
-            />
-            <div className="flex justify-between items-center">
-              <label className="flex items-center text-sm text-gray-600">
-                <FontAwesomeIcon icon={faCalendarAlt} className="h-5 w-5 mr-2" />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="text-sm border border-gray-300 rounded p-1"
-                />
-              </label>
-              <button
-                onClick={handleAddTask}
-                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        )} */}
         {showPopup && (
           <div
             ref={popupRef}
