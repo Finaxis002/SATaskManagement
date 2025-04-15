@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
+
 import { format, isToday, isTomorrow } from "date-fns";
 
 import {
@@ -8,7 +9,9 @@ import {
   removeTaskFromColumn,
   fetchTasks,
   fetchAssignees,
+
   updateTaskCompletion,
+
 } from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -30,7 +33,7 @@ const TaskBoard = () => {
     dispatch(fetchTasks());
     dispatch(fetchAssignees());
   }, [dispatch]);
- 
+
   const [showPopup, setShowPopup] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
@@ -53,6 +56,7 @@ const TaskBoard = () => {
   //   if (inputDate.toDateString() === tomorrow.toDateString()) return "Tomorrow";
   //   return date;
   // };
+
 
   // const handleAddTask = () => {
   //   if (!newTaskName || !selectedDate) return;
@@ -98,6 +102,7 @@ const TaskBoard = () => {
   const handleAddTask = async () => {
     if (!newTaskName || !selectedDate) return;
     const isoDueDate = new Date(selectedDate).toISOString();
+
     const newTask = {
       name: newTaskName,
       due: isoDueDate,
@@ -120,7 +125,6 @@ const TaskBoard = () => {
     } catch (err) {
       console.error("Failed to save task", err);
     }
-
   };
 
   const handleToggleCompletion = (columnIndex, taskIndex) => {
@@ -162,15 +166,6 @@ const TaskBoard = () => {
   }, []);
 
   const TaskCard = ({ task, columnIndex, taskIndex }) => {
-    const role = localStorage.getItem("role");
-
-    {
-      role === "admin" && task.assignedToName && (
-        <p className="text-xs text-gray-500 mt-1">
-          Assigned to: {task.assignedToName}
-        </p>
-      );
-    }
     const [{ isDragging }, drag] = useDrag(() => ({
       type: ItemTypes.TASK,
       item: { columnIndex, taskIndex, task },
@@ -394,7 +389,6 @@ const TaskBoard = () => {
                 </div>
               )}
             </div>
-
           </div>
         )}
 

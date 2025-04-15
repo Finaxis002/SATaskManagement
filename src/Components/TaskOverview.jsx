@@ -112,11 +112,19 @@
 ///////////////////////////////////////////////////////////////////////////////
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+
 import { format, isBefore, isToday, isTomorrow } from "date-fns";
+
+import { useSelector } from "react-redux";
+
+
 
 const TaskOverview = () => {
   const [tasks, setTasks] = useState([]);
   const [activeTab, setActiveTab] = useState("today");
+
+  // ✅ Get logged-in user info
+  const { role, userId } = useSelector((state) => state.auth);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -130,6 +138,7 @@ const TaskOverview = () => {
 
     fetchTasks();
   }, []);
+
 
   const now = new Date();
 
@@ -161,6 +170,27 @@ const TaskOverview = () => {
 
   const completed = tasks.filter((t) => t.completed);
 
+  // ✅ Filter tasks based on role
+  const filteredTasks = tasks.filter((task) => {
+    if (role === "admin") return true;
+    return task.assignee?.email?.toLowerCase() === userId?.toLowerCase();
+  });
+  
+
+  console.log("Logged-in User:", userId);
+console.log("All Tasks:", tasks);
+console.log("Filtered Tasks:", filteredTasks);
+
+
+  // ✅ Categorize filtered tasks
+//   const now = new Date();
+//   const completed = filteredTasks.filter((t) => t.completed);
+//   const overdue = filteredTasks.filter((t) => !t.completed && isBefore(new Date(t.due), now));
+//   const upcoming = filteredTasks.filter(
+//     (t) => !t.completed && (isToday(new Date(t.due)) || new Date(t.due) > now)
+//   );
+
+
   const getTasksByTab = () => {
     switch (activeTab) {
       case "today":
@@ -182,18 +212,24 @@ const TaskOverview = () => {
     <div className="bg-white rounded-lg shadow-md overflow-hidden mt-10">
       <div className="flex justify-between items-center px-6 py-4 border-b">
         <h2 className="text-lg font-semibold text-gray-800">My Tasks</h2>
+
         <div className="flex gap-4 text-sm">
           {["today", "tomorrow", "upcoming", "overdue", "completed"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`pb-1 capitalize border-b-2 ${
+
                 activeTab === tab
                   ? "border-gray-600 text-black font-medium"
                   : "border-transparent text-gray-500"
               }`}
             >
+
               {tab}
+
+//               {tab.charAt(0).toUpperCase() + tab.slice(1)}
+
             </button>
           ))}
         </div>
@@ -209,6 +245,7 @@ const TaskOverview = () => {
               className="flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition"
             >
               <div className="flex items-center gap-3">
+
                 <input
                   type="checkbox"
                   checked={task.completed}
@@ -220,6 +257,7 @@ const TaskOverview = () => {
                     task.completed ? "line-through" : ""
                   }`}
                 >
+
                   {task.name}
                 </span>
               </div>

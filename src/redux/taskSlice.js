@@ -1,5 +1,4 @@
 
-
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
@@ -42,25 +41,23 @@ const initialState = {
   assignees: [],        // ✅ Store employee list
   selectedAssignee: {}, // optional: store currently selected assignee
   loading: false,
-
 };
 
 const taskSlice = createSlice({
-  name: "tasks",
+  name: 'tasks',
   initialState,
   reducers: {
     // Add a task to a column
     addTaskToColumn: (state, action) => {
       const { columnIndex, task } = action.payload;
       state.taskColumns[columnIndex].tasks.push(task);
-      saveToLocalStorage(state); // ✅ Save after update
     },
 
+    // Toggle completed status
     toggleTaskCompletion: (state, action) => {
       const { columnIndex, taskIndex } = action.payload;
       const task = state.taskColumns[columnIndex].tasks[taskIndex];
       task.completed = !task.completed;
-      saveToLocalStorage(state); // ✅ Save after update
     },
 
     // Remove a task from a column
@@ -73,7 +70,6 @@ const taskSlice = createSlice({
     setSelectedAssignee: (state, action) => {
       state.selectedAssignee = action.payload;
     }
-
   },
 
   extraReducers: (builder) => {
@@ -126,9 +122,7 @@ export const {
   addTaskToColumn,
   toggleTaskCompletion,
   removeTaskFromColumn,
-
   setSelectedAssignee
 } = taskSlice.actions;
-
 
 export default taskSlice.reducer;
