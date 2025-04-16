@@ -38,6 +38,7 @@ const TaskBoard = () => {
   const [newTaskName, setNewTaskName] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
+  const { role, userId } = useSelector((state) => state.auth);
 
   const [showAssigneeList, setShowAssigneeList] = useState(false);
   const [assignee, setAssignee] = useState(null);
@@ -106,8 +107,7 @@ const TaskBoard = () => {
     };
 
     try {
-      // Create task via task API
-      const taskResponse = await fetch("http://localhost:5000/api/tasks", {
+      await fetch("https://sa-task-management-backend.vercel.app/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
@@ -151,7 +151,7 @@ const TaskBoard = () => {
     setSelectedDate("");
     setShowPopup(false);
   };
-  
+
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
@@ -299,6 +299,23 @@ const TaskBoard = () => {
     );
   };
 
+
+  // Filter tasks per column based on role
+const filteredTaskColumns = taskColumns.map((column) => {
+  const filteredTasks =
+    role === "admin"
+      ? column.tasks // admin sees all tasks
+      : column.tasks.filter(
+          (task) => task.assignee?.email?.toLowerCase() === userId?.toLowerCase()
+        );
+
+  return {
+    ...column,
+    tasks: filteredTasks,
+  };
+});
+
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="p-6 bg-white w-full min-h-screen">
@@ -401,7 +418,8 @@ const TaskBoard = () => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {taskColumns.map((column, columnIndex) => (
+        {filteredTaskColumns.map((column, columnIndex) => (
+
             <TaskColumn
               key={columnIndex}
               column={column}

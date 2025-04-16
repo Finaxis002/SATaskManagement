@@ -13,6 +13,7 @@ import {
   FaUsers,
   FaBell,
   FaClipboardList,
+  FaClock
 } from "react-icons/fa";
 import AddEmployee from "../pages/AddEmployee";
 import useSocketSetup from "../hook/useSocketSetup";
@@ -104,6 +105,11 @@ const Sidebar = () => {
           }
           label="Notifications"
           to="/notifications"
+        />
+         <SidebarItem
+          icon={<FaClock />}
+          label="Reminders"
+          to="/reminders"
         />
 
 
