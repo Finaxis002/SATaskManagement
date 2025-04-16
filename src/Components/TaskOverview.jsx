@@ -18,7 +18,7 @@ const TaskOverview = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/tasks");
+        const res = await axios.get("https://sa-task-management-backend.vercel.app/api/tasks");
         setTasks(res.data);
       } catch (err) {
         console.error("Failed to fetch tasks", err);
