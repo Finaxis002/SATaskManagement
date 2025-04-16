@@ -4,20 +4,20 @@ import axios from 'axios';
 
 // 🔁 Fetch tasks from backend
 export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
-  const res = await axios.get("http://localhost:5000/api/tasks");
+  const res = await axios.get("https://sa-task-management-backend.vercel.app/api/tasks");
   return res.data;
 });
 
 // 🔁 Fetch assignees (employees) from backend
 export const fetchAssignees = createAsyncThunk("tasks/fetchAssignees", async () => {
-  const res = await axios.get("http://localhost:5000/api/employees");
+  const res = await axios.get("https://sa-task-management-backend.vercel.app/api/employees");
   return res.data;
 });
 
 export const updateTaskCompletion = createAsyncThunk(
   "tasks/updateTaskCompletion",
   async ({ taskId, completed }) => {
-    const res = await axios.patch(`http://localhost:5000/api/tasks/${taskId}`, {
+    const res = await axios.patch(`https://sa-task-management-backend.vercel.app/api/tasks/${taskId}`, {
       completed
     });
     return res.data;
