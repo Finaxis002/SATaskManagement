@@ -64,10 +64,39 @@ const TaskBoard = () => {
   };
   
   
-  const handleAddTask = async () => {
-    if (!newTaskName || !selectedDate) return;
-    const isoDueDate = new Date(selectedDate).toISOString();
+  // const handleAddTask = async () => {
+  //   if (!newTaskName || !selectedDate) return;
+  //   const isoDueDate = new Date(selectedDate).toISOString();
 
+  //   const newTask = {
+  //     name: newTaskName,
+  //     due: isoDueDate,
+  //     completed: false,
+  //     assignee,
+  //     column: taskColumns[currentColumnIndex].title,
+  //   };
+
+  //   try {
+  //     await fetch("http://localhost:5000/api/tasks", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(newTask),
+  //     });
+
+  //     dispatch(
+  //       addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
+  //     );
+  //     closePopup();
+  //   } catch (err) {
+  //     console.error("Failed to save task", err);
+  //   }
+  // };
+
+  const handleAddTask = async () => {
+    if (!newTaskName || !selectedDate || !assignee) return;  // Ensure assignee is selected
+  
+    const isoDueDate = new Date(selectedDate).toISOString();
+  
     const newTask = {
       name: newTaskName,
       due: isoDueDate,
@@ -75,23 +104,45 @@ const TaskBoard = () => {
       assignee,
       column: taskColumns[currentColumnIndex].title,
     };
-
+  
     try {
-      await fetch("http://localhost:5000/api/tasks", {
+      // Create the task
+      const taskResponse = await fetch("http://localhost:5000/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
       });
-
-      dispatch(
-        addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
-      );
-      closePopup();
+  
+      const taskData = await taskResponse.json();
+  
+      if (taskResponse.status === 201) {
+        // Once the task is successfully created, create a notification
+        const notification = {
+          recipientEmail: assignee.email, // Send to the assignee's email
+          message: `New task assigned: ${newTask.name} (Due: ${new Date(newTask.due).toLocaleDateString()})`,
+          taskId: taskData._id,  // Use the created task ID
+        };
+  
+        // Send the notification creation request to the backend
+        await fetch("http://localhost:5000/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(notification),
+        });
+  
+        // Add task to Redux state
+        dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+  
+        // Close the popup
+        closePopup();
+      } else {
+        console.error("Failed to create task", taskData);
+      }
     } catch (err) {
-      console.error("Failed to save task", err);
+      console.error("Error creating task or notification:", err);
     }
   };
-
+  
 
   const handleOpenPopup = (columnIndex) => {
     setCurrentColumnIndex(columnIndex);
