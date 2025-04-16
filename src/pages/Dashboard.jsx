@@ -5,10 +5,13 @@ import AdminDashboard from "./AdminDashboard";
 import UserDashboard from "./UserDashboard";
 import TaskOverview from "../Components/TaskOverview";
 import UserGrid from "../Components/UserGrid";
+import useSocketSetup from "../hook/useSocketSetup";
+
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState("");
-  const [currentDate, setCurrentDate] = useState("");
+  const [currentDate, setCurrentDate] = useState(""); 
+  useSocketSetup();
 
   const { name, role } = useSelector((state) => state.auth);
 

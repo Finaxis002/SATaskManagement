@@ -16,16 +16,25 @@ import {
   FaClock
 } from "react-icons/fa";
 import AddEmployee from "../pages/AddEmployee";
+import useSocketSetup from "../hook/useSocketSetup";
 
 const Sidebar = () => {
   const [projectsOpen, setProjectsOpen] = useState(true);
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [role, setRole] = useState("");
+  const [notificationCount, setNotificationCount] = useState(0);
 
+  useEffect(() => {
+    console.log("setNotificationCount:", setNotificationCount);  // This should log the function
+  }, []);
+
+  useSocketSetup(setNotificationCount);
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
   }, []);
+ 
+  
 
   const openAddEmployeeModal = () => {
     setIsAddEmployeeModalOpen(true);
@@ -77,8 +86,23 @@ const Sidebar = () => {
 
         <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/Tasks" />
         <SidebarItem icon={<FaInbox />} label="Inbox" to="/inbox" />
-        <SidebarItem
+        {/* <SidebarItem
           icon={<FaBell />}
+          label="Notifications"
+          to="/notifications"
+        /> */}
+
+        <SidebarItem
+          icon={
+            <div className="relative">
+              <FaBell />
+              {notificationCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
+                  {notificationCount}
+                </span>
+              )}
+            </div>
+          }
           label="Notifications"
           to="/notifications"
         />
@@ -87,6 +111,7 @@ const Sidebar = () => {
           label="Reminders"
           to="/reminders"
         />
+
 
         {/* Insights */}
         {/* <div className="mt-6">
@@ -123,6 +148,5 @@ const SidebarItem = ({ icon, label, to, onClick }) => (
     <span className="text-white">{label}</span>
   </NavLink>
 );
-
 
 export default Sidebar;

@@ -6,6 +6,9 @@ import AllEmployees from "./pages/AllEmployees";
 import Login from "./pages/Login"; // Import the login page
 import ProtectedRoute from "./Components/ProtectedRoute";
 import Tasks from "./pages/Tasks";
+
+import Notifications from "./pages/Notifications";
+
 import Reminders from "./pages/Reminders";
 
 
@@ -66,7 +69,19 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        
+
+
+<Route 
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Notifications />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+        />
+
       </Routes>
     </Router>
   );
