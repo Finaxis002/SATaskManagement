@@ -93,10 +93,10 @@ const TaskBoard = () => {
   // };
 
   const handleAddTask = async () => {
-    if (!newTaskName || !selectedDate || !assignee) return;  // Ensure assignee is selected
-  
+    if (!newTaskName || !selectedDate || !assignee) return; // Ensure Assignee is selected as well.
+    
     const isoDueDate = new Date(selectedDate).toISOString();
-  
+
     const newTask = {
       name: newTaskName,
       due: isoDueDate,
@@ -104,45 +104,41 @@ const TaskBoard = () => {
       assignee,
       column: taskColumns[currentColumnIndex].title,
     };
-  
+
     try {
-      // Create the task
+      // Create task via task API
       const taskResponse = await fetch("http://localhost:5000/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
       });
-  
+
       const taskData = await taskResponse.json();
-  
-      if (taskResponse.status === 201) {
-        // Once the task is successfully created, create a notification
-        const notification = {
-          recipientEmail: assignee.email, // Send to the assignee's email
+      const { assigneeEmail } = newTask; // assuming assignee email is passed with task
+
+      // Send notification to the assigned employee
+      const notificationResponse = await fetch("http://localhost:5000/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientEmail: assigneeEmail,
           message: `New task assigned: ${newTask.name} (Due: ${new Date(newTask.due).toLocaleDateString()})`,
-          taskId: taskData._id,  // Use the created task ID
-        };
-  
-        // Send the notification creation request to the backend
-        await fetch("http://localhost:5000/api/notifications", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(notification),
-        });
-  
-        // Add task to Redux state
-        dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
-  
-        // Close the popup
-        closePopup();
-      } else {
-        console.error("Failed to create task", taskData);
-      }
+          taskId: taskData._id,  // Using the task id for notification
+        }),
+      });
+
+      const notificationData = await notificationResponse.json();
+      
+      // Now, dispatch the task to the column in the frontend (Redux)
+      dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+
+      // Close the popup and reset fields
+      closePopup();
     } catch (err) {
-      console.error("Error creating task or notification:", err);
+      console.error("Failed to save task", err);
     }
   };
-  
+
 
   const handleOpenPopup = (columnIndex) => {
     setCurrentColumnIndex(columnIndex);
