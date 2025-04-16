@@ -65,8 +65,37 @@ const TaskBoard = () => {
   };
   
   
+  // const handleAddTask = async () => {
+  //   if (!newTaskName || !selectedDate) return;
+  //   const isoDueDate = new Date(selectedDate).toISOString();
+
+  //   const newTask = {
+  //     name: newTaskName,
+  //     due: isoDueDate,
+  //     completed: false,
+  //     assignee,
+  //     column: taskColumns[currentColumnIndex].title,
+  //   };
+
+  //   try {
+  //     await fetch("http://localhost:5000/api/tasks", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(newTask),
+  //     });
+
+  //     dispatch(
+  //       addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
+  //     );
+  //     closePopup();
+  //   } catch (err) {
+  //     console.error("Failed to save task", err);
+  //   }
+  // };
+
   const handleAddTask = async () => {
-    if (!newTaskName || !selectedDate) return;
+    if (!newTaskName || !selectedDate || !assignee) return; // Ensure Assignee is selected as well.
+    
     const isoDueDate = new Date(selectedDate).toISOString();
 
     const newTask = {
@@ -84,9 +113,26 @@ const TaskBoard = () => {
         body: JSON.stringify(newTask),
       });
 
-      dispatch(
-        addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
-      );
+      const taskData = await taskResponse.json();
+      const { assigneeEmail } = newTask; // assuming assignee email is passed with task
+
+      // Send notification to the assigned employee
+      const notificationResponse = await fetch("http://localhost:5000/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientEmail: assigneeEmail,
+          message: `New task assigned: ${newTask.name} (Due: ${new Date(newTask.due).toLocaleDateString()})`,
+          taskId: taskData._id,  // Using the task id for notification
+        }),
+      });
+
+      const notificationData = await notificationResponse.json();
+      
+      // Now, dispatch the task to the column in the frontend (Redux)
+      dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+
+      // Close the popup and reset fields
       closePopup();
     } catch (err) {
       console.error("Failed to save task", err);

@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import socket from "../socket";
 import { useDispatch } from "react-redux";
@@ -8,7 +9,10 @@ const useSocketSetup = (setNotificationCount, setInboxCount) => {
   
 
   useEffect(() => {
-    const email = localStorage.getItem("email");
+
+    const email = localStorage.getItem("userId");
+
+
     const name = localStorage.getItem("name");
     const role = localStorage.getItem("role");
 
@@ -28,7 +32,7 @@ const useSocketSetup = (setNotificationCount, setInboxCount) => {
       dispatch(addNotification(newNotification));
 
       // Optionally show toast or alert
-      alert(`📬 New Task Assigned: ${task.name}`);
+      // alert(`📬 New Task Assigned: ${task.name}`);
 
       // Update notification count (you can dispatch the count as well if necessary)
       setNotificationCount((prev) => prev + 1);
