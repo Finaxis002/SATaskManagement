@@ -51,7 +51,7 @@ const AllEmployees = () => {
   if (error) return <div className="text-center pt-10 text-red-600">Error: {error}</div>;
 
   return (
-    <div className="relative w-full min-h-screen bg-gray-100 py-12 px-6">
+    <div className="relative w-full max-h-screen bg-gray-100 py-12 px-6">
       <img
         src={bgImage}
         alt="Background"
