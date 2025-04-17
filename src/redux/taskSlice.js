@@ -1,25 +1,46 @@
-
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
 
 // 🔁 Fetch tasks from backend
 export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
-  const res = await axios.get("https://sa-task-management-backend.vercel.app/api/tasks");
+  const res = await axios.get(
+    "https://sa-task-management-backend.vercel.app/api/tasks"
+  );
   return res.data;
 });
 
 // 🔁 Fetch assignees (employees) from backend
-export const fetchAssignees = createAsyncThunk("tasks/fetchAssignees", async () => {
-  const res = await axios.get("https://sa-task-management-backend.vercel.app/api/employees");
-  return res.data;
-});
+export const fetchAssignees = createAsyncThunk(
+  "tasks/fetchAssignees",
+  async () => {
+    const res = await axios.get(
+      "https://sa-task-management-backend.vercel.app/api/employees"
+    );
+    return res.data;
+  }
+);
+
+// 🔁 Update task in backend
+export const updateTask = createAsyncThunk(
+  "tasks/updateTask",
+  async (updatedTask) => {
+    const res = await axios.patch(
+      `https://sa-task-management-backend.vercel.app/api/tasks/${updatedTask._id}`,
+      updatedTask
+    );
+    return res.data;
+  }
+);
 
 export const updateTaskCompletion = createAsyncThunk(
   "tasks/updateTaskCompletion",
   async ({ taskId, completed }) => {
-    const res = await axios.patch(`https://sa-task-management-backend.vercel.app/api/tasks/${taskId}`, {
-      completed
-    });
+    const res = await axios.patch(
+      `https://sa-task-management-backend.vercel.app/api/tasks/${taskId}`,
+      {
+        completed,
+      }
+    );
     return res.data;
   }
 );
@@ -27,26 +48,35 @@ export const updateTaskCompletion = createAsyncThunk(
 const initialState = {
   taskColumns: [
     {
-      title: 'Recently assigned',
-      tasks: [
-        { name: 'Nexa Report', due: 'Monday', completed: false },
-        { name: 'New Task', due: 'Today', completed: false },
-        { name: 'Schedule kickoff meeting', due: 'Today – Apr 14', completed: false },
-      ],
+      title: "Recently assigned",
+      tasks: [],
     },
-    { title: 'Do today', tasks: [] },
-    { title: 'Do next week', tasks: [] },
-    { title: 'Do later', tasks: [] },
+    { title: "Do today", tasks: [] },
+    { title: "Do next week", tasks: [] },
+    { title: "Do later", tasks: [] },
   ],
-  assignees: [],        // ✅ Store employee list
-  selectedAssignee: {}, // optional: store currently selected assignee
+  assignees: [], // Store employee list
+  selectedAssignee: {}, // Optional: store currently selected assignee
   loading: false,
 };
 
 const taskSlice = createSlice({
-  name: 'tasks',
+  name: "tasks",
   initialState,
   reducers: {
+    // Update the task in the column
+    updateTask: (state, action) => {
+      const updatedTask = action.payload;
+      for (let column of state.taskColumns) {
+        const idx = column.tasks.findIndex(
+          (task) => task._id === updatedTask._id
+        );
+        if (idx !== -1) {
+          column.tasks[idx] = updatedTask;
+          break;
+        }
+      }
+    },
     // Add a task to a column
     addTaskToColumn: (state, action) => {
       const { columnIndex, task } = action.payload;
@@ -69,12 +99,11 @@ const taskSlice = createSlice({
     // Optional: Set selected assignee globally
     setSelectedAssignee: (state, action) => {
       state.selectedAssignee = action.payload;
-    }
+    },
   },
 
   extraReducers: (builder) => {
     builder
-
       // 📥 Fetching Tasks
       .addCase(fetchTasks.pending, (state) => {
         state.loading = true;
@@ -83,14 +112,16 @@ const taskSlice = createSlice({
         state.loading = false;
 
         const newColumns = [
-          { title: 'Recently assigned', tasks: [] },
-          { title: 'Do today', tasks: [] },
-          { title: 'Do next week', tasks: [] },
-          { title: 'Do later', tasks: [] },
+          { title: "Recently assigned", tasks: [] },
+          { title: "Do today", tasks: [] },
+          { title: "Do next week", tasks: [] },
+          { title: "Do later", tasks: [] },
         ];
 
-        action.payload.forEach(task => {
-          const index = newColumns.findIndex(col => col.title === task.column);
+        action.payload.forEach((task) => {
+          const index = newColumns.findIndex(
+            (col) => col.title === task.column
+          );
           if (index !== -1) {
             newColumns[index].tasks.push(task);
           }
@@ -104,25 +135,39 @@ const taskSlice = createSlice({
         state.assignees = action.payload;
       })
 
+      .addCase(updateTask.fulfilled, (state, action) => {
+        const updatedTask = action.payload;
+
+        // Find and update the task in the appropriate column
+        for (let col of state.taskColumns) {
+          const idx = col.tasks.findIndex((t) => t._id === updatedTask._id);
+          if (idx !== -1) {
+            col.tasks[idx] = updatedTask; // Update the task data
+            break;
+          }
+        }
+      })
+
       .addCase(updateTaskCompletion.fulfilled, (state, action) => {
         const updatedTask = action.payload;
 
         for (let col of state.taskColumns) {
-          const idx = col.tasks.findIndex(t => t._id === updatedTask._id);
+          const idx = col.tasks.findIndex((t) => t._id === updatedTask._id);
           if (idx !== -1) {
             col.tasks[idx].completed = updatedTask.completed;
             break;
           }
         }
       });
-  }
+  },
 });
 
 export const {
   addTaskToColumn,
   toggleTaskCompletion,
   removeTaskFromColumn,
-  setSelectedAssignee
+  setSelectedAssignee,
+
 } = taskSlice.actions;
 
 export default taskSlice.reducer;

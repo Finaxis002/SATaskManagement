@@ -1,26 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-
 import { format, isToday, isTomorrow } from "date-fns";
-
-import {
-  addTaskToColumn,
-  toggleTaskCompletion,
-  removeTaskFromColumn,
-  fetchTasks,
-  fetchAssignees,
-
-  updateTaskCompletion,
-
-} from "../redux/taskSlice";
+import { addTaskToColumn, fetchTasks, fetchAssignees, updateTaskCompletion, updateTask } from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCalendarAlt,
-  faCheckCircle,
-} from "@fortawesome/free-regular-svg-icons";
+import { faCalendarAlt, faCheckCircle, faEdit } from "@fortawesome/free-regular-svg-icons";
 import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { io } from "socket.io-client";
+const socketUrl = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:5000'  // Local development URL
+  : 'https://sa-task-management-backend.vercel.app'; // Production URL
+
+const socket = io(socketUrl); // This will dynamically connect to the correct backend
+
 
 const ItemTypes = {
   TASK: "task",
@@ -33,40 +26,57 @@ const TaskBoard = () => {
     dispatch(fetchTasks());
     dispatch(fetchAssignees());
   }, [dispatch]);
-
+ const[tasks , setTasks] = useState();
   const [showPopup, setShowPopup] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
+  const [taskToUpdate, setTaskToUpdate] = useState(null);  // For task editing
   const { role, userId } = useSelector((state) => state.auth);
 
   const [showAssigneeList, setShowAssigneeList] = useState(false);
   const [assignee, setAssignee] = useState(null);
-
   const assignees = useSelector((state) => state.tasks.assignees);
-
   const popupRef = useRef(null);
 
 
+    // Fetch tasks initially from the backend
+    useEffect(() => {
+      fetch('https://sa-task-management-backend.vercel.app/api/tasks')
+        .then(res => res.json())
+        .then(data => setTasks(data))
+        .catch(error => console.error('Error fetching tasks:', error));
+  
+      // Listen for the task-updated event to handle real-time updates
+      socket.on('task-updated', (updatedTask) => {
+        setTasks(prevTasks => {
+          // Update the task in the state
+          return prevTasks.map(task =>
+            task._id === updatedTask._id ? updatedTask : task
+          );
+        });
+      });
+  
+      // Clean up the socket listener when the component unmounts
+      return () => {
+        socket.off('task-updated');
+      };
+    }, []);
+
   const getDisplayDate = (due) => {
-    // If it's already labeled as Today/Tomorrow from backend, return it
     if (due === "Today" || due === "Tomorrow") return due;
-  
-    // Try to parse the string into a Date
     const parsedDate = new Date(due);
-  
-    // If parsing fails, return raw string as fallback
     if (isNaN(parsedDate.getTime())) return due;
-  
     if (isToday(parsedDate)) return "Today";
     if (isTomorrow(parsedDate)) return "Tomorrow";
-  
     return format(parsedDate, "MMM dd");
   };
-  
-  
+
   const handleAddTask = async () => {
-    if (!newTaskName || !selectedDate) return;
+    if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
+      return console.error("Missing required fields (Task name, Date, or Assignee email)");
+    }
+
     const isoDueDate = new Date(selectedDate).toISOString();
 
     const newTask = {
@@ -78,34 +88,77 @@ const TaskBoard = () => {
     };
 
     try {
-      await fetch("https://sa-task-management-backend.vercel.app/api/tasks", {
+      const response = await fetch("https://sa-task-management-backend.vercel.app/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
       });
 
-      dispatch(
-        addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
-      );
-      closePopup();
+      if (response.ok) {
+        dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+        closePopup();
+      } else {
+        console.error("Failed to create task");
+      }
     } catch (err) {
       console.error("Failed to save task", err);
     }
   };
 
+  // Handle updating task
+  const handleUpdateTask = async () => {
+    if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
+      return console.error("Missing required fields (Task name, Date, or Assignee email)");
+    }
+  
+    const isoDueDate = new Date(selectedDate).toISOString();
+  
+    const updatedTask = {
+      _id: taskToUpdate._id,  // Task ID to ensure we update the correct task
+      name: newTaskName,
+      due: isoDueDate,
+      completed: taskToUpdate.completed,
+      assignee,
+      column: taskToUpdate.column,
+    };
+  
+    try {
+      const response = await fetch(`https://sa-task-management-backend.vercel.app/api/tasks/${taskToUpdate._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedTask),
+      });
+  
+      if (response.ok) {
+        // Find and update the task in the state
+        dispatch(updateTask(updatedTask)); // Update the task in Redux
+  
+        // Close the popup after the update
+        closePopup();
+      } else {
+        console.error("Failed to update task");
+      }
+    } catch (err) {
+      console.error("Failed to update task", err);
+    }
+  };
+  
 
-  const handleOpenPopup = (columnIndex) => {
+  const handleOpenPopup = (columnIndex, task) => {
+    setTaskToUpdate(task); // Set task details for editing
+    setNewTaskName(task.name);
+    setSelectedDate(task.due);
+    setAssignee({ name: task.assignee.name, email: task.assignee.email });
     setCurrentColumnIndex(columnIndex);
     setShowPopup(true);
   };
-
+  
 
   const closePopup = () => {
     setNewTaskName("");
     setSelectedDate("");
     setShowPopup(false);
   };
-
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
@@ -139,28 +192,17 @@ const TaskBoard = () => {
     return (
       <div
         ref={drag}
-        className={`bg-white rounded-md p-3 shadow-sm hover:shadow-md cursor-pointer border border-gray-200 flex justify-between items-start ${
-          task.completed ? "opacity-60" : ""
-        }`}
+        className={`bg-white rounded-md p-3 shadow-sm hover:shadow-md cursor-pointer border border-gray-200 flex justify-between items-start ${task.completed ? "opacity-60" : ""}`}
       >
         <div>
-          <h4
-            className={`text-sm mb-1 ${
-              task.completed
-                ? "line-through text-gray-400"
-                : "text-gray-800 font-medium"
-            }`}
-          >
+          <h4 className={`text-sm mb-1 ${task.completed ? "line-through text-gray-400" : "text-gray-800 font-medium"}`}>
             {task.name}
           </h4>
           <div className="text-xs text-gray-500 flex items-center">
             <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-1" />
-            {/* {task.due} */}
             {getDisplayDate(task.due)}
-
           </div>
 
-          {/* ✅ Assignee display */}
           {task.assignee?.name && (
             <div className="text-xs text-gray-500 flex items-center">
               <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-1" />
@@ -168,26 +210,19 @@ const TaskBoard = () => {
             </div>
           )}
         </div>
-        {/* <FontAwesomeIcon
+        <FontAwesomeIcon
           icon={faCheckCircle}
-          // onClick={() => handleToggleCompletion(columnIndex, taskIndex)}
           onClick={() => {
             dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }));
           }}
-          className={`h-5 w-5 ml-2 cursor-pointer ${
-            task.completed ? "text-green-500" : "text-gray-300"
-          }`}
-        /> */}
+          className={`h-5 w-5 ml-2 cursor-pointer ${task.completed ? "text-green-500" : "text-gray-300"}`}
+        />
+        {/* Edit Button */}
         <FontAwesomeIcon
-  icon={faCheckCircle}
-  onClick={() =>
-    dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }))
-  }
-  className={`h-5 w-5 ml-2 cursor-pointer ${
-    task.completed ? "text-green-500" : "text-gray-300"
-  }`}
-/>
-
+          icon={faEdit}
+          onClick={() => handleOpenPopup(columnIndex, task)} // Open update popup with the current task details
+          className="h-5 w-5 ml-2 cursor-pointer text-blue-500"
+        />
       </div>
     );
   };
@@ -213,15 +248,10 @@ const TaskBoard = () => {
     });
 
     return (
-      <div
-        ref={drop}
-        key={columnIndex}
-        className="bg-transparent rounded-lg p-2"
-      >
+      <div ref={drop} key={columnIndex} className="bg-transparent rounded-lg p-2">
         <div className="flex justify-between items-center mb-2 px-2">
           <h3 className="font-semibold text-gray-700">
-            {column.title}{" "}
-            <span className="text-gray-500 text-sm">{column.tasks.length}</span>
+            {column.title} <span className="text-gray-500 text-sm">{column.tasks.length}</span>
           </h3>
           <button
             className="text-gray-400 hover:text-gray-600 text-lg"
@@ -233,18 +263,11 @@ const TaskBoard = () => {
 
         <div className="bg-gray-100 rounded-md p-2 min-h-[150px]">
           {column.tasks.length === 0 ? (
-            <div className="text-gray-400 text-sm text-center py-6">
-              + Add task
-            </div>
+            <div className="text-gray-400 text-sm text-center py-6">+ Add task</div>
           ) : (
             <div className="space-y-2">
               {column.tasks.map((task, taskIndex) => (
-                <TaskCard
-                  key={taskIndex}
-                  task={task}
-                  columnIndex={columnIndex}
-                  taskIndex={taskIndex}
-                />
+                <TaskCard key={taskIndex} task={task} columnIndex={columnIndex} taskIndex={taskIndex} />
               ))}
             </div>
           )}
@@ -253,26 +276,22 @@ const TaskBoard = () => {
     );
   };
 
-
   // Filter tasks per column based on role
-const filteredTaskColumns = taskColumns.map((column) => {
-  const filteredTasks =
-    role === "admin"
-      ? column.tasks // admin sees all tasks
-      : column.tasks.filter(
-          (task) => task.assignee?.email?.toLowerCase() === userId?.toLowerCase()
-        );
+  const filteredTaskColumns = taskColumns.map((column) => {
+    const filteredTasks =
+      role === "admin"
+        ? column.tasks // admin sees all tasks
+        : column.tasks.filter((task) => task.assignee?.email?.toLowerCase() === userId?.toLowerCase());
 
-  return {
-    ...column,
-    tasks: filteredTasks,
-  };
-});
-
+    return {
+      ...column,
+      tasks: filteredTasks,
+    };
+  });
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-6  bg-white w-full min-h-screen">
+      <div className="p-6 bg-white w-full min-h-screen">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold">My Tasks</h2>
           <button
@@ -284,12 +303,9 @@ const filteredTaskColumns = taskColumns.map((column) => {
         </div>
 
         {showPopup && (
-          <div
-            ref={popupRef}
-            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md"
-          >
+          <div ref={popupRef} className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-medium">Create Task</h3>
+              <h3 className="text-lg font-medium">{taskToUpdate ? "Update Task" : "Create Task"}</h3>
               <FontAwesomeIcon
                 icon={faTimes}
                 onClick={closePopup}
@@ -307,10 +323,7 @@ const filteredTaskColumns = taskColumns.map((column) => {
 
             <div className="flex justify-between items-center mb-3">
               <label className="flex items-center text-sm text-gray-600">
-                <FontAwesomeIcon
-                  icon={faCalendarAlt}
-                  className="h-5 w-5 mr-2"
-                />
+                <FontAwesomeIcon icon={faCalendarAlt} className="h-5 w-5 mr-2" />
                 <input
                   type="date"
                   value={selectedDate}
@@ -320,37 +333,24 @@ const filteredTaskColumns = taskColumns.map((column) => {
               </label>
 
               <button
-                onClick={handleAddTask}
+                onClick={taskToUpdate ? handleUpdateTask : handleAddTask}
                 className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
               >
-                Add
+                {taskToUpdate ? "Update" : "Add"}
               </button>
             </div>
 
-            {/* Assignee Section (bottom left) */}
             <div className="relative mt-2 flex items-center gap-2 text-sm text-gray-600">
-              <FontAwesomeIcon
-                // icon={['fas', 'user']}
-                icon={faUser}
-                onClick={() => setShowAssigneeList((prev) => !prev)}
-                className="cursor-pointer h-4 w-4 hover:text-gray-800"
-                title="Assign task"
-              />
-
-              {/* Show selected name if available */}
+              <FontAwesomeIcon icon={faUser} onClick={() => setShowAssigneeList((prev) => !prev)} className="cursor-pointer h-4 w-4 hover:text-gray-800" title="Assign task" />
               {assignee && (
                 <span className="text-xs text-gray-700">
                   Assigned to: {assignee.name}
                 </span>
               )}
-
-              {/* Dropdown */}
               {showAssigneeList && (
                 <div className="absolute left-0 top-6 z-50 w-64 max-h-40 overflow-y-auto bg-white shadow border rounded p-2">
                   {assignees.length === 0 ? (
-                    <p className="text-xs text-gray-500 text-center">
-                      No users found
-                    </p>
+                    <p className="text-xs text-gray-500 text-center">No users found</p>
                   ) : (
                     assignees.map((emp) => (
                       <div
@@ -372,13 +372,8 @@ const filteredTaskColumns = taskColumns.map((column) => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        {filteredTaskColumns.map((column, columnIndex) => (
-
-            <TaskColumn
-              key={columnIndex}
-              column={column}
-              columnIndex={columnIndex}
-            />
+          {filteredTaskColumns.map((column, columnIndex) => (
+            <TaskColumn key={columnIndex} column={column} columnIndex={columnIndex} />
           ))}
         </div>
       </div>
