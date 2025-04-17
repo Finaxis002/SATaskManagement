@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import socket from "../../socket";
 import { useDispatch } from "react-redux";
 import { addNotification, clearNotifications } from "../../redux/notificationSlice";
+import { v4 as uuidv4 } from 'uuid'; 
 
 const EmployeeNotifications = () => {
   const dispatch = useDispatch();
@@ -17,7 +18,8 @@ const EmployeeNotifications = () => {
 
     socket.on("new-task", (task) => {
       const newNotification = {
-        id: Date.now(),
+        // id: Date.now(),
+        id: uuidv4(), 
         message: `New Task Assigned: ${task.name} (Due: ${new Date(task.due).toLocaleDateString()})`,
       };
 
