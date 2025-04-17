@@ -15,7 +15,9 @@ import {
   FaClipboardList,
   FaClock,
 } from "react-icons/fa";
-import useSocketSetup from "../hook/useSocketSetup";
+import useSocketSetup from "../hook/useSocketSetup";      // ✅ For tasks
+import useMessageSocket from "../hook/useMessageSocket";  // ✅ For inbox
+
 import axios from "axios"; // ✅ Use default import
 
 
@@ -26,8 +28,9 @@ const Sidebar = () => {
   const [inboxCount, setInboxCount] = useState(0);
 
 
-  useSocketSetup(setNotificationCount, setInboxCount);
-
+  useMessageSocket(setInboxCount);        // ✅ Inbox badge
+  useSocketSetup(setNotificationCount);   // ✅ Task notification badge
+  
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
@@ -39,14 +42,13 @@ const Sidebar = () => {
 
   useEffect(() => {
     const fetchInboxCount = async () => {
-      const name = localStorage.getItem("name");
-      const role = localStorage.getItem("role");
+      const name = localStorage.getItem("name") || "default";
+      const role = localStorage.getItem("role") || "user";
   
       try {
         const res = await axios.get("http://localhost:5000/api/unread-count", {
           params: { name, role },
         });
-        console.log("📩 Inbox Count:", res.data.count); // ✅ Debug log
         setInboxCount(res.data.count);
       } catch (error) {
         console.error("❌ Failed to fetch inbox count:", error);
@@ -54,10 +56,7 @@ const Sidebar = () => {
     };
   
     fetchInboxCount();
-  }, []);
-  
-  console.log("📥 Inbox Count Increased");
-  console.log("🟢 Inbox Count Reset by:", name, role);
+  }, [localStorage.getItem("name"), localStorage.getItem("role")]);
   
 
   return (
