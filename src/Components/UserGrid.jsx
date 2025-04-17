@@ -74,7 +74,7 @@ const UserGrid = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/employees");
+      const res = await axios.get("https://sa-task-management-backend.vercel.app/api/employees");
       setUsers(res.data);
     } catch (err) {
       console.error("Failed to fetch users", err);
