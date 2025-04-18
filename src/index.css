@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+
+.max-h-screen{
+    height: 91vh !important;
+}

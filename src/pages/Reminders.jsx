@@ -40,13 +40,6 @@ const Reminders = () => {
     localStorage.setItem("reminders", JSON.stringify(reminders));
   }, [reminders]);
 
-  const getDisplayText = (reminder) => {
-    const date = parseISO(reminder.datetime);
-    if (date < new Date()) {
-      return `${reminder.text} ⏰ Missed`;
-    }
-    return reminder.text;
-  };
 
   const updatedReminders = reminders.map((reminder) => {
     const parsedDate = parseISO(reminder.datetime);
@@ -105,7 +98,7 @@ const Reminders = () => {
   }, [updatedReminders]);
 
   return (
-    <div className="min-h-screen p-4 relative bg-gradient-to-br from-blue-50 to-purple-100 overflow-hidden">
+    <div className="h-screen p-4 relative bg-gradient-to-br from-blue-50 to-purple-100 overflow-hidden">
       <img
         src={bgImage}
         alt="Background"

@@ -12,36 +12,32 @@ const generateInitials = (name) => {
 
 const UserCard = ({ user, index }) => {
   const [hover, setHover] = useState(false);
-  const colorPalette = [
-    "#CD95EA",
-    "#FC979A",
-    // "#10B981",
-    // "#3B82F6",
-    // "#EF4444",
-    // "#14B8A6",
-    // "#6366F1",
-    // "#EAB308",
-  ];
+  const colorPalette = ["#CD95EA", "#FC979A"];
   const assignedColor = colorPalette[index % colorPalette.length];
 
+  
   return (
     <div
-      className="relative flex flex-col items-center m-2 cursor-pointer "
+      className="relative flex flex-col items-center m-2 cursor-pointer group"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
+      {/* Avatar Circle */}
       <div
-        className={`rounded-full h-14 w-14 flex items-center justify-center text-black font-bold text-lg shadow-md`}
+        className="rounded-full h-14 w-14 flex items-center justify-center text-black font-bold text-lg shadow-md"
         style={{ backgroundColor: assignedColor }}
       >
-       {generateInitials(user.name).toUpperCase()}
-
+        {generateInitials(user.name).toUpperCase()}
       </div>
+
+      {/* Name Label */}
       <div className="text-xs mt-1 text-gray-700 truncate w-20 text-center">
         {user.name || user.email || "Unknown"}
       </div>
+
+      {/* Profile Hover Card */}
       {hover && (
-        <div className="absolute top-14 left-1/2 transform -translate-x-1/2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 flex p-4">
+        <div className="absolute top-20 left-1/2 transform -translate-y-1/2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 flex p-4 transition-all duration-200 ease-in-out">
           {/* Left Circle with Initials */}
           <div
             className="flex items-center justify-center w-20 h-20 rounded-full text-3xl font-semibold text-black mr-4"
@@ -69,6 +65,9 @@ const UserCard = ({ user, index }) => {
   );
 };
 
+
+
+
 const UserGrid = () => {
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false); // 👈 Modal state
@@ -85,6 +84,8 @@ const UserGrid = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+
 
   return (
     <div className="w-full mx-auto bg-white rounded-xl p-6 shadow-md">

@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import bgImage from "../assets/bg.png";
-import AdminDashboard from "./AdminDashboard";
-import UserDashboard from "./UserDashboard";
 import TaskOverview from "../Components/TaskOverview";
 import UserGrid from "../Components/UserGrid";
 import useSocketSetup from "../hook/useSocketSetup";
@@ -36,7 +34,7 @@ const Dashboard = () => {
       />
 
       <div className="relative z-10 px-6 py-8 max-w-5xl mx-auto w-full backdrop-blur-sm">
-        <div className="text-center mb-10">
+        <div className="text-center">
           <p className="text-sm text-gray-500">{currentDate}</p>
           <h1 className="text-3xl font-semibold text-gray-800 mt-1">
             {greeting}, <span className="text-black">{name || "User"}</span>

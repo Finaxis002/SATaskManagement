@@ -54,7 +54,7 @@ const AddEmployee = () => {
   };
 
   return (
-    <div className="relative w-full min-h-screen text-gray-800 bg-gray-100 py-14 px-6">
+    <div className="relative w-full max-h-screen text-gray-800 bg-gray-100 py-14 px-6">
       <img
         src={bgImage}
         alt="Background"

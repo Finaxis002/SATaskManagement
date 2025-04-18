@@ -388,7 +388,7 @@ const filteredTaskColumns = taskColumns.map((column) => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-6 bg-white w-full min-h-screen">
+      <div className="p-6  bg-white w-full min-h-screen">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold">My Tasks</h2>
           <button
