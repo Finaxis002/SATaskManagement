@@ -73,11 +73,7 @@ const TaskBoard = () => {
   };
 
 
-  const handleAddTask = async () => {
-    if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
-      return console.error("Missing required fields (Task name, Date, or Assignee email)");
-    }
-
+  
 
   
 
@@ -101,7 +97,7 @@ const TaskBoard = () => {
       // Create task via task API
       const taskResponse = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
 
-      const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
+      // const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
 
         method: "POST",
         headers: { "Content-Type": "application/json" },
