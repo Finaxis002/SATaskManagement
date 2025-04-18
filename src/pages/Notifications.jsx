@@ -1,3 +1,4 @@
+
 import React from "react";
 import EmployeeNotifications from "../Components/notification/EmployeeNotification";
 import AdminNotification from "../Components/notification/AdminNotification";
@@ -14,4 +15,3 @@ const Notifications = () => {
 };
 
 export default Notifications;
-

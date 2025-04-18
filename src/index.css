@@ -1,6 +1,14 @@
 @import "tailwindcss";
+@import 'animate.css';
 
 
 .max-h-screen{
     height: 91vh !important;
+}
+
+.border{
+    border-bottom: 1px solid #cacaca;
+    border-top: none;
+    border-left: none;
+    border-right: none;
 }
