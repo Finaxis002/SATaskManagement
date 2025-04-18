@@ -1,40 +1,41 @@
+
 import { useEffect } from "react";
 import socket from "../socket";
 import { useDispatch } from "react-redux";
 import { addNotification } from "../redux/notificationSlice";
 
-const useSocketSetup = (setNotificationCount) => {
+import { v4 as uuidv4 } from "uuid";
+
+const useSocketSetup = () => {
+
   const dispatch = useDispatch();
 
   useEffect(() => {
     const email = localStorage.getItem("userId");
     if (email) {
-      socket.emit("register", email); // Only call register once
+
+      socket.emit("register", email);
     }
 
-    // Additional info for the task
-    const name = localStorage.getItem("name");
-    const role = localStorage.getItem("role");
-
-    // Listen for 'new-task' event
-    socket.on("new-task", (task) => {
+    const handleNewTask = (task) => {
       const newNotification = {
-        id: Date.now(),
-        message: `New Task Assigned: ${task.name} (Due: ${new Date(task.due).toLocaleDateString()})`,
+        id: uuidv4(),
+        message: `New Task Assigned: ${task.name} (Due: ${new Date(
+          task.due
+        ).toLocaleDateString()})`,
+
       };
-
-      // Dispatch to Redux to add the notification
       dispatch(addNotification(newNotification));
-
-      // Update notification count
-      setNotificationCount((prev) => prev + 1);
-    });
-
-    // Cleanup on unmount
-    return () => {
-      socket.off("new-task");
     };
-  }, [setNotificationCount, dispatch]);
+
+    socket.on("new-task", handleNewTask);
+
+    return () => {
+      socket.off("new-task", handleNewTask);
+    };
+  }, [dispatch]);
+
+  return null;
 
 };
 

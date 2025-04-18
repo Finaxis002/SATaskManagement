@@ -3,34 +3,33 @@ import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   FaHome,
-  FaTasks,
   FaInbox,
-  FaChartBar,
-  FaProjectDiagram,
-  FaBullseye,
-  FaChevronDown,
   FaPlus,
   FaUsers,
   FaBell,
   FaClipboardList,
   FaClock,
 } from "react-icons/fa";
+
 import useSocketSetup from "../hook/useSocketSetup";      // ✅ For tasks
 import useMessageSocket from "../hook/useMessageSocket";  // ✅ For inbox
 
 import axios from "axios"; // ✅ Use default import
 
 
+import { useSelector, useDispatch } from "react-redux";
+
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [role, setRole] = useState("");
+
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
 
 
   useMessageSocket(setInboxCount);        // ✅ Inbox badge
   useSocketSetup(setNotificationCount);   // ✅ Task notification badge
-  
+
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
@@ -39,6 +38,13 @@ const Sidebar = () => {
   const openAddEmployeeModal = () => {
     setIsAddEmployeeModalOpen(true);
   };
+
+
+  const closeAddEmployeeModal = () => {
+    setIsAddEmployeeModalOpen(false);
+  };
+  const unreadCount = useSelector((state) => state.notifications.unreadCount);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchInboxCount = async () => {
@@ -59,7 +65,76 @@ const Sidebar = () => {
   }, [localStorage.getItem("name"), localStorage.getItem("role")]);
   
 
+
+  const handleNotificationClick = () => {
+    dispatch(markAllAsRead()); // Mark all notifications as read when clicked
+  };
   return (
+
+    <div className="bg-[#1e1f21] text-white w-64 h-screen flex flex-col justify-between border-r border-gray-700">
+      {/* Top Bar */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <div className="bg-gray-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+            Fi
+          </div>
+          <button className="bg-yellow-600 text-white text-sm px-3 py-1 rounded hover:bg-yellow-700">
+            <FaPlus className="inline mr-2" />
+            Create
+          </button>
+        </div>
+        <input
+          type="text"
+          placeholder="Search"
+          className="w-full px-3 py-2 text-sm rounded bg-[#2b2c2f] placeholder-gray-400 text-white focus:outline-none"
+        />
+      </div>
+
+      {/* Main Navigation */}
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        {/* Core nav */}
+        <SidebarItem icon={<FaHome />} label="Home" to="/" />
+        {role === "admin" && (
+          <>
+            <SidebarItem
+              icon={<FaPlus />}
+              label="Add User"
+              to="/add-employee"
+              onClick={openAddEmployeeModal}
+            />
+            <SidebarItem
+              icon={<FaUsers />}
+              label="All Users"
+              to="/all-employees"
+            />
+          </>
+        )}
+
+        <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/Tasks" />
+      
+       
+
+<SidebarItem
+      icon={
+        <div className="relative">
+          <FaBell />
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+      }
+      label="Notifications"
+      to="/notifications"
+      onClick={handleNotificationClick}
+    />
+        <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
+
+        {/* Insights */}
+        {/* <div className="mt-6">
+          <p className="text-xs text-gray-400 uppercase px-2 mb-2">Insights</p>
+
     <div className="bg-[#1F2124] text-white w-64 h-screen flex flex-col justify-between border-r border-gray-800 shadow-xl transition-all ease-in-out duration-300">
     {/* Top Bar */}
     <div className="p-6 border-b border-gray-800">
@@ -77,6 +152,7 @@ const Sidebar = () => {
       <SidebarItem icon={<FaHome />} label="Home" to="/" />
       {role === "admin" && (
         <>
+
           <SidebarItem
             icon={<FaPlus />}
             label="Add User"

@@ -80,38 +80,14 @@ const TaskBoard = () => {
 
 
   
+
+ 
+  const handleAddTask = async () => {
+    if (!newTaskName || !selectedDate || !assignee) return; // Ensure Assignee is selected as well.
   
-  // const handleAddTask = async () => {
-  //   if (!newTaskName || !selectedDate) return;
-  //   const isoDueDate = new Date(selectedDate).toISOString();
-
-  //   const newTask = {
-  //     name: newTaskName,
-  //     due: isoDueDate,
-  //     completed: false,
-  //     assignee,
-  //     column: taskColumns[currentColumnIndex].title,
-  //   };
-
-  //   try {
-  //     await fetch("http://localhost:5000/api/tasks", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify(newTask),
-  //     });
-
-  //     dispatch(
-  //       addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
-  //     );
-  //     closePopup();
-  //   } catch (err) {
-  //     console.error("Failed to save task", err);
-  //   }
-  // };
-
 
     const isoDueDate = new Date(selectedDate).toISOString();
-
+  
     const newTask = {
       name: newTaskName,
       due: isoDueDate,
@@ -119,13 +95,19 @@ const TaskBoard = () => {
       assignee,
       column: taskColumns[currentColumnIndex].title,
     };
-
+  
     try {
+
+      // Create task via task API
+      const taskResponse = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
+
       const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
       });
+
 
 
       if (response.ok) {
@@ -135,25 +117,41 @@ const TaskBoard = () => {
         console.error("Failed to create task");
       }
 
-      const taskData = await taskResponse.json();
-      const { assigneeEmail } = newTask; // assuming assignee email is passed with task
 
+      const taskData = await taskResponse.json();
+      console.log("Task Data:", taskData); // Log to verify the response
+  
+      // Accessing _id from the correct location
+      const taskId = taskData.task?._id; // Accessing _id from task property
+  
+      if (!taskId) {
+        throw new Error("Task ID is missing in the response");
+      }
+  
+      const assigneeEmail = assignee.email; // Ensure assignee email is correctly set
+      console.log("This is the assignee email:", assigneeEmail);
+  
+      if (!assigneeEmail) {
+        throw new Error("Assignee email is missing");
+      }
+  
       // Send notification to the assigned employee
       const notificationResponse = await fetch("http://localhost:5000/api/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recipientEmail: assigneeEmail,
+          recipientEmail: assigneeEmail,  // Ensure email of assignee is sent correctly
           message: `New task assigned: ${newTask.name} (Due: ${new Date(newTask.due).toLocaleDateString()})`,
-          taskId: taskData._id,  // Using the task id for notification
+          taskId: taskId,  // Using the task ID for notification
         }),
       });
-
+  
       const notificationData = await notificationResponse.json();
-      
+      console.log("Notification response:", notificationData);
+  
       // Now, dispatch the task to the column in the frontend (Redux)
       dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
-
+  
       // Close the popup and reset fields
       closePopup();
 
@@ -199,6 +197,7 @@ const TaskBoard = () => {
       console.error("Failed to update task", err);
     }
   };
+
   
 
   const handleOpenPopup = (columnIndex, task) => {
