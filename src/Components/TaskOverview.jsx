@@ -1,12 +1,9 @@
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 import { format, isBefore, isToday, isTomorrow } from "date-fns";
 
 import { useSelector } from "react-redux";
-
-
 
 const TaskOverview = () => {
   const [tasks, setTasks] = useState([]);
@@ -18,7 +15,9 @@ const TaskOverview = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get("https://sa-task-management-backend.vercel.app/api/tasks");
+        const res = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/tasks"
+        );
         setTasks(res.data);
       } catch (err) {
         console.error("Failed to fetch tasks", err);
@@ -28,7 +27,6 @@ const TaskOverview = () => {
     fetchTasks();
   }, []);
 
-
   const now = new Date();
 
   const filteredTasks = tasks.filter((task) => {
@@ -36,8 +34,6 @@ const TaskOverview = () => {
     return task.assignee?.email?.toLowerCase() === userId?.toLowerCase();
   });
 
-
-  
   const patchedTasks = filteredTasks.map((t) => {
     let fixedDue = t.due;
     if (t.due === "Today") {
@@ -51,11 +47,11 @@ const TaskOverview = () => {
   const todayTasks = patchedTasks.filter(
     (t) => !t.completed && t.due && isToday(new Date(t.due))
   );
-  
+
   const tomorrowTasks = patchedTasks.filter(
     (t) => !t.completed && t.due && isTomorrow(new Date(t.due))
   );
-  
+
   const upcoming = patchedTasks.filter(
     (t) =>
       !t.completed &&
@@ -64,7 +60,7 @@ const TaskOverview = () => {
       !isToday(new Date(t.due)) &&
       !isTomorrow(new Date(t.due))
   );
-  
+
   const overdue = patchedTasks.filter(
     (t) =>
       !t.completed &&
@@ -73,23 +69,8 @@ const TaskOverview = () => {
       !isToday(new Date(t.due)) &&
       !isTomorrow(new Date(t.due))
   );
-  
+
   const completed = patchedTasks.filter((t) => t.completed);
-  
-
-  
-
-
-
-
-  // ✅ Categorize filtered tasks
-//   const now = new Date();
-//   const completed = filteredTasks.filter((t) => t.completed);
-//   const overdue = filteredTasks.filter((t) => !t.completed && isBefore(new Date(t.due), now));
-//   const upcoming = filteredTasks.filter(
-//     (t) => !t.completed && (isToday(new Date(t.due)) || new Date(t.due) > now)
-//   );
-
 
   const getTasksByTab = () => {
     switch (activeTab) {
@@ -109,28 +90,26 @@ const TaskOverview = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden mt-10">
-      <div className="flex justify-between items-center px-6 py-4 border-b">
-        <h2 className="text-lg font-semibold text-gray-800">My Tasks</h2>
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
+      <div className="flex justify-between items-center px-6 py-4 border-b border">
+        <h2 className="text-xl font-semibold text-gray-900">My Tasks</h2>
 
-        <div className="flex gap-4 text-sm">
-          {["today", "tomorrow", "upcoming", "overdue", "completed"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-1 capitalize border-b-2 ${
-
-                activeTab === tab
-                  ? "border-gray-600 text-black font-medium"
-                  : "border-transparent text-gray-500"
-              }`}
-            >
-
-              {tab}
-
-
-            </button>
-          ))}
+        <div className="flex gap-6 text-sm">
+          {["today", "tomorrow", "upcoming", "overdue", "completed"].map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-2 capitalize border-b-2 transition-all duration-300 ${
+                  activeTab === tab
+                    ? "border-indigo-600 text-indigo-600 font-semibold"
+                    : "border-transparent text-gray-600 hover:text-indigo-600"
+                }`}
+              >
+                {tab}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -141,28 +120,26 @@ const TaskOverview = () => {
           getTasksByTab().map((task) => (
             <div
               key={task._id}
-              className="flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition"
+              className="flex justify-between items-center border px-6 py-4 hover:bg-gray-50 transition-all duration-200"
             >
               <div className="flex items-center gap-3">
-
                 <input
                   type="checkbox"
                   checked={task.completed}
                   readOnly
-                  className="accent-blue-600"
+                  className="accent-indigo-600"
                 />
                 <span
-                  className={`text-gray-800 ${
-                    task.completed ? "line-through" : ""
+                  className={`text-gray-800 text-lg ${
+                    task.completed ? "line-through text-gray-400" : ""
                   }`}
                 >
-
                   {task.name}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 {task?.assignee?.name && (
-                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                  <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
                     {task.assignee.name}
                   </span>
                 )}

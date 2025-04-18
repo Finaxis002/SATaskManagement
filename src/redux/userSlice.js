@@ -6,7 +6,7 @@ export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get("https://sa-task-management-backend.vercel.app/api/employees");
+      const response = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
       return response.data;
     } catch (error) {
       return rejectWithValue("Failed to fetch users");
@@ -19,7 +19,7 @@ export const deleteUser = createAsyncThunk(
   "users/deleteUser",
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`https://sa-task-management-backend.vercel.app/api/employees/${id}`);
+      await axios.delete(`https://sataskmanagementbackend.onrender.com/api/employees/${id}`);
       return id; // Return ID to remove it from the list
     } catch (error) {
       return rejectWithValue("Failed to delete user");
