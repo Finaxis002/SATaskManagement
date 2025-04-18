@@ -73,11 +73,7 @@ const TaskBoard = () => {
   };
 
 
-  const handleAddTask = async () => {
-    if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
-      return console.error("Missing required fields (Task name, Date, or Assignee email)");
-    }
-
+  
 
   
   
@@ -120,8 +116,10 @@ const TaskBoard = () => {
       column: taskColumns[currentColumnIndex].title,
     };
 
+
     try {
       const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
@@ -162,34 +160,6 @@ const TaskBoard = () => {
     }
   };
 
-  // Handle updating task
-  const handleUpdateTask = async () => {
-    if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
-      return console.error("Missing required fields (Task name, Date, or Assignee email)");
-    }
-  
-    const isoDueDate = new Date(selectedDate).toISOString();
-  
-    const updatedTask = {
-      _id: taskToUpdate._id,  // Task ID to ensure we update the correct task
-      name: newTaskName,
-      due: isoDueDate,
-      completed: taskToUpdate.completed,
-      assignee,
-      column: taskToUpdate.column,
-    };
-  
-    try {
-      const response = await fetch(`https://sataskmanagementbackend.onrender.com/api/tasks/${taskToUpdate._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedTask),
-      });
-  
-      if (response.ok) {
-        // Find and update the task in the state
-        dispatch(updateTask(updatedTask)); // Update the task in Redux
-  
         // Close the popup after the update
         closePopup();
       } else {
@@ -210,6 +180,7 @@ const TaskBoard = () => {
   setCurrentColumnIndex(columnIndex);
   setShowPopup(true);
 };
+
 
   
 
@@ -240,6 +211,8 @@ const TaskBoard = () => {
   }, []);
 
   const TaskCard = ({ task, columnIndex, taskIndex }) => {
+    const [isUpdating, setIsUpdating] = useState(false);
+
     const [{ isDragging }, drag] = useDrag(() => ({
       type: ItemTypes.TASK,
       item: { columnIndex, taskIndex, task },
@@ -247,6 +220,36 @@ const TaskBoard = () => {
         isDragging: !!monitor.isDragging(),
       }),
     }));
+    const dispatch = useDispatch();
+
+    const handleCompleteTask = async () => {
+      if (!task?._id) {
+        console.error('Task ID is missing');
+        return;
+      }
+  
+      setIsUpdating(true);
+      try {
+        const resultAction = await dispatch(
+          updateTaskCompletion({
+            taskId: task._id,
+            completed: !task.completed
+          })
+        );
+  
+        if (updateTaskCompletion.fulfilled.match(resultAction)) {
+          console.log('Update successful:', resultAction.payload);
+        } else {
+          throw new Error(resultAction.payload?.message || 'Update failed');
+        }
+      } catch (error) {
+        console.error('Completion error:', error);
+        alert(error.message);
+      } finally {
+        setIsUpdating(false);
+      }
+    };
+  
 
     return (
       <div
@@ -278,10 +281,15 @@ const TaskBoard = () => {
         />
         {/* Edit Button */}
         <FontAwesomeIcon
-          icon={faEdit}
-          onClick={() => handleOpenPopup(columnIndex, task)} // Open update popup with the current task details
-          className="h-5 w-5 ml-2 cursor-pointer text-blue-500"
-        />
+  icon={faCheckCircle}
+  onClick={() =>
+    dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }))
+  }
+  className={`h-5 w-5 ml-2 cursor-pointer ${
+    task.completed ? "text-green-500" : "text-gray-300"
+  }`}
+/>
+
       </div>
     );
   };
