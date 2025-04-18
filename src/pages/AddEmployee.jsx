@@ -34,22 +34,30 @@ const AddEmployee = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("https://sataskmanagementbackend.onrender.com/api/employees", formData);
+      // Set the role and department dynamically based on form data
+      const updatedFormData = {
+        ...formData,
+        department: formData.department === "Department" ? "Marketing" : formData.department,
+        role: formData.role === "Role" ? "user" : formData.role,
+      };
+  
+      await axios.post("https://sataskmanagementbackend.onrender.com/api/employees", updatedFormData);
       alert("Employee added successfully!");
       setFormData({
         name: "",
         email: "",
         position: "",
-        department: "Department",  // Reset department to "Marketing"
+        department: "Marketing", // Reset to default
         userId: "",
         password: "",
-        role: "Role", // Reset role to "user"
+        role: "user", // Reset to default
       });
     } catch (err) {
       alert("Failed to add employee!");
       console.error(err);
     }
   };
+  
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
