@@ -382,7 +382,7 @@ const Sidebar = () => {
           }
           label="Notifications"
           to="/notifications"
-          onClick={handleNotificationClick}
+          // onClick={handleNotificationClick}
         />
 
         <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
