@@ -3,12 +3,8 @@ import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   FaHome,
-  FaTasks,
   FaInbox,
-  FaChartBar,
-  FaProjectDiagram,
-  FaBullseye,
-  FaChevronDown,
+
   FaPlus,
   FaUsers,
   FaBell,
@@ -17,18 +13,36 @@ import {
 } from "react-icons/fa";
 import AddEmployee from "../pages/AddEmployee";
 import useSocketSetup from "../hook/useSocketSetup";
+import { useSelector, useDispatch } from "react-redux";
+import { addNotification , clearNotifications} from "../redux/notificationSlice";
 
 const Sidebar = () => {
   const [projectsOpen, setProjectsOpen] = useState(true);
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [role, setRole] = useState("");
-  const [notificationCount, setNotificationCount] = useState(0);
+  // const [notificationCount, setNotificationCount] = useState(0);
+  const dispatch = useDispatch();
+  // const notificationCount = useSelector((state) => state.notifications.count);
+  const unreadCount = useSelector((state) => state.notifications.unreadCount);
+  const notificationCount = useSelector((state) => {
+    console.log(state); // Log the entire state to check if notifications is defined
+    return state.notifications ? state.notifications.count : 0;
+  });
+  
+  
 
-  useEffect(() => {
-    console.log("setNotificationCount:", setNotificationCount);  // This should log the function
-  }, []);
+  // const handleNotificationClick = () => {
+  //   dispatch(clearNotifications()); // Clear notification count when notification tab is clicked
+  // };
+  const handleNotificationClick = () => {
+    dispatch(markAllAsRead()); // Mark all notifications as read when clicked
+  };
+  // useEffect(() => {
+  //   console.log("setNotificationCount:", setNotificationCount);  // This should log the function
+  // }, []);
 
-  useSocketSetup(setNotificationCount);
+  useSocketSetup(notificationCount);
+
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
@@ -43,6 +57,10 @@ const Sidebar = () => {
   const closeAddEmployeeModal = () => {
     setIsAddEmployeeModalOpen(false);
   };
+  // const handleNotificationClick = () => {
+  //   setNotificationCount(0); // Reset notification count when notification tab is clicked
+  // };
+
 
   return (
     <div className="bg-[#1e1f21] text-white w-64 h-screen flex flex-col justify-between border-r border-gray-700">
@@ -92,7 +110,7 @@ const Sidebar = () => {
           to="/notifications"
         /> */}
 
-        <SidebarItem
+        {/* <SidebarItem
           icon={
             <div className="relative">
               <FaBell />
@@ -105,7 +123,25 @@ const Sidebar = () => {
           }
           label="Notifications"
           to="/notifications"
+        /> */}
+        <SidebarItem
+          icon={
+            <div className="relative">
+              <FaBell />
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+          }
+          label="Notifications"
+          to="/notifications"
+          onClick={handleNotificationClick}  // Reset notification count when clicked
         />
+
+
+
          <SidebarItem
           icon={<FaClock />}
           label="Reminders"

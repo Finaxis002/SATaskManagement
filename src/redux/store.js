@@ -10,6 +10,8 @@ export const store = configureStore({
     auth: authReducer,
     tasks: taskReducer,
     users: userReducer,
-    notification: notificationReducer,
+    notifications: notificationReducer,
   },
+  // Redux DevTools is enabled by default in development mode
+  devTools: process.env.NODE_ENV !== 'production',
 });
