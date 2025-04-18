@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import {
   FaUserAlt,
@@ -15,9 +15,10 @@ const AddEmployee = () => {
     name: "",
     email: "",
     position: "",
-    department: "",
+    department: "Department", // Default department
     userId: "",
     password: "",
+    role: "Role",  // Default role
   });
 
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -39,9 +40,10 @@ const AddEmployee = () => {
         name: "",
         email: "",
         position: "",
-        department: "",
+        department: "Department",  // Reset department to "Marketing"
         userId: "",
         password: "",
+        role: "Role", // Reset role to "user"
       });
     } catch (err) {
       alert("Failed to add employee!");
@@ -54,7 +56,7 @@ const AddEmployee = () => {
   };
 
   return (
-    <div className="relative w-full max-h-screen text-gray-800 bg-gray-100 py-14 px-6">
+    <div className="relative w-full max-h-screen text-gray-800 bg-gray-100 py-4 px-6">
       <img
         src={bgImage}
         alt="Background"
@@ -112,17 +114,24 @@ const AddEmployee = () => {
             />
           </div>
 
-          {/* Department */}
+          {/* Department Dropdown */}
           <div className="relative">
             <FaBuilding className="absolute top-4 left-4 text-gray-400" />
-            <input
-              type="text"
+            <select
               name="department"
-              placeholder="Department"
               value={formData.department}
               onChange={handleChange}
+              required
               className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+               
+              <option value="Marketing">Marketing</option>
+              <option value="Sales">Sales</option>
+              <option value="Operations">Operations</option>
+              <option value="IT/Software">IT/Software</option>
+              <option value="HR">HR</option>
+              <option value="Administrator">Administrator</option>
+            </select>
           </div>
 
           {/* User ID */}
@@ -158,6 +167,23 @@ const AddEmployee = () => {
             >
               {passwordVisible ? <FaEyeSlash /> : <FaEye />}
             </button>
+          </div>
+
+          {/* Role Dropdown */}
+          <div className="relative">
+            <FaUserAlt className="absolute top-4 left-4 text-gray-400" />
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              required
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+    
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+            </select>
           </div>
 
           {/* Submit Button (Full Width) */}

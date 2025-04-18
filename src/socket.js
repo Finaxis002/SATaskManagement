@@ -4,9 +4,15 @@
 import { io } from "socket.io-client";
 
 
-const socket = io("https://sataskmanagementbackend.onrender.com" ,{
+const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
+  transports: ["websocket"], // Ensures WebSocket transport
 });
+
+socket.on("connect", () => {
+  console.log("Socket connected:", socket.id);
+});
+
 
 // Register the user email if available
 const userEmail = localStorage.getItem("userId"); // ✅ using your stored value

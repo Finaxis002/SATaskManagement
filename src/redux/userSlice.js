@@ -27,6 +27,30 @@ export const deleteUser = createAsyncThunk(
   }
 );
 
+export const updateUser = async (id, updatedUserData) => {
+  try {
+    const response = await axios.put(
+      `https://sataskmanagementbackend.onrender.com/api/employees/${id}`,
+      updatedUserData
+    );
+    return response.data; // Return updated user data
+  } catch (error) {
+    throw error; // Handle errors
+  }
+};
+
+export const resetPassword = async (id, newPassword) => {
+  try {
+    const response = await axios.post(
+      `https://sataskmanagementbackend.onrender.com/api/employees/reset-password/${id}`,
+      { newPassword }
+    );
+    return response.data; // Return response data
+  } catch (error) {
+    throw error; // Handle errors
+  }
+};
+
 const userSlice = createSlice({
   name: "users",
   initialState: {
