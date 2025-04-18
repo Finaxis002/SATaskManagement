@@ -1,29 +1,35 @@
 import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUsers, deleteUser } from "../redux/userSlice";
 
-
-
-const socket = io("https://sataskmanagementbackend.onrender.com" ,{
+// Assume socket.io client setup
+const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
 
 const Inbox = () => {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
-
+  const [users, setUsers] = useState([]); // To store all users
+  const [selectedUser, setSelectedUser] = useState(""); // The selected user to chat with
   const currentUser = {
     name: localStorage.getItem("name") || "User",
   };
 
   const scrollRef = useRef(null);
-
+  const dispatch = useDispatch();
   // 🔄 Auto-scroll to bottom on new message
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -34,7 +40,9 @@ const Inbox = () => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/messages");
+      const res = await axios.get(
+        "https://sataskmanagementbackend.onrender.com/api/messages"
+      );
       setMessages(res.data);
       console.log("📩 Messages fetched:", res.data.length);
     };
@@ -58,10 +66,13 @@ const Inbox = () => {
       const role = localStorage.getItem("role");
 
       try {
-        const res = await axios.put("https://sataskmanagementbackend.onrender.com/api/mark-read", {
-          name,
-          role,
-        });
+        const res = await axios.put(
+          "https://sataskmanagementbackend.onrender.com/api/mark-read",
+          {
+            name,
+            role,
+          }
+        );
         console.log("✅ Messages marked as read:", res.data);
 
         // 🔥 Emit to reset inbox count in real time
@@ -115,7 +126,9 @@ const Inbox = () => {
   useEffect(() => {
     const markMessagesAsRead = async () => {
       try {
-        await axios.put("https://sataskmanagementbackend.onrender.com/api/mark-read");
+        await axios.put(
+          "https://sataskmanagementbackend.onrender.com/api/mark-read"
+        );
         console.log("✅ All messages marked as read");
 
         // 🔥 Emit to update count in real time
@@ -128,10 +141,33 @@ const Inbox = () => {
     markMessagesAsRead();
   }, []);
 
-
-
   return (
     <div className="w-full max-h-screen p-4 flex flex-col bg-gray-100 overflow-hidden">
+      {users.map((user, idx) => (
+        <tr key={user._id} className="hover:bg-gray-50 transition">
+          <td className="px-5 py-3 border-b text-gray-700">{user.userId}</td>
+          <td className="px-5 py-3 border-b font-semibold">{user.name}</td>
+          <td className="px-5 py-3 border-b text-gray-600">{user.email}</td>
+          <td className="px-5 py-3 border-b">{user.position}</td>
+          <td className="px-5 py-3 border-b">{user.department}</td>
+          <td className="px-5 py-3 border-b text-center">
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => handleResetPassword(user._id, user.name)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-md shadow-sm transition"
+              >
+                <FaSyncAlt className="text-xs" /> Reset
+              </button>
+              <button
+                onClick={() => handleDelete(user._id)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md shadow-sm transition"
+              >
+                <FaTrash className="text-xs" /> Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      ))}
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Chat Room</h2>
 
       <div
@@ -174,9 +210,6 @@ const Inbox = () => {
       </div>
 
       <div className="relative mt-4 flex items-center bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200">
-
-       
-
         <input
           type="text"
           value={messageText}

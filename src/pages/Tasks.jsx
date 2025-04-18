@@ -42,7 +42,7 @@ const TaskBoard = () => {
 
     // Fetch tasks initially from the backend
     useEffect(() => {
-      fetch('https://sa-task-management-backend.vercel.app/api/tasks')
+      fetch('https://sataskmanagementbackend.onrender.com/api/tasks')
         .then(res => res.json())
         .then(data => setTasks(data))
         .catch(error => console.error('Error fetching tasks:', error));
@@ -121,7 +121,7 @@ const TaskBoard = () => {
     };
 
     try {
-      const response = await fetch("https://sa-task-management-backend.vercel.app/api/tasks", {
+      const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
@@ -180,7 +180,7 @@ const TaskBoard = () => {
     };
   
     try {
-      const response = await fetch(`https://sa-task-management-backend.vercel.app/api/tasks/${taskToUpdate._id}`, {
+      const response = await fetch(`https://sataskmanagementbackend.onrender.com/api/tasks/${taskToUpdate._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedTask),
