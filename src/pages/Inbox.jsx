@@ -35,52 +35,26 @@ const Inbox = () => {
 
   // Fetch messages when group is changed
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const encodedGroup = encodeURIComponent(selectedGroup); // Encoding the group name
-        const res = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/messages/${encodedGroup}`
-        );
-        setMessages(res.data);
-        console.log("📩 Messages fetched:", res.data.length);
-      } catch (err) {
-        console.error("❌ Error fetching messages:", err.message);
+    socket.on("receiveGroupMessage", (msg) => {
+      if (msg.group === selectedGroup) {  // Only append messages for the selected group
+        console.log("📨 Real-time message received:", msg);
+        setMessages((prev) => {
+          if (Array.isArray(prev)) {
+            return [...prev, msg];  // Append to the array if prev is valid
+          }
+          return [msg];  // Initialize messages with the new message if prev is invalid
+        });
       }
-    };
-
-    fetchMessages();
-
-    // ✅ Listen for real-time messages for the selected group
-    socket.on("receiveMessage", (msg) => {
-      console.log("📨 Real-time message received:", msg);
-      setMessages((prev) => [...prev, msg]);
     });
-
+  
     return () => {
-      socket.off("receiveMessage");
+      socket.off("receiveGroupMessage");
     };
-  }, [selectedGroup]);
+  }, [selectedGroup]); // Only listen for messages of the selected group
+  
+  
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      const res = await axios.get(
-        "https://sataskmanagementbackend.onrender.com/api/messages"
-      );
-      setMessages(res.data);
-      console.log("📩 Messages fetched:", res.data.length);
-    };
-    fetchMessages();
 
-    // ✅ Listen for real-time messages
-    socket.on("receiveMessage", (msg) => {
-      console.log("📨 Real-time message received:", msg);
-      setMessages((prev) => [...prev, msg]);
-    });
-
-    return () => {
-      socket.off("receiveMessage");
-    };
-  }, []);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -173,17 +147,20 @@ const Inbox = () => {
   }, [selectedGroup]);
 
   useEffect(() => {
-    socket.on("receiveGroupMessage", (msg) => {
-      if (msg.group === selectedGroup) {
-        console.log("📨 Real-time message received:", msg);
-        setMessages((prev) => [...prev, msg]);
-      }
+    socket.on("receiveMessage", (msg) => {
+      console.log("📨 Real-time message received:", msg);
+      setMessages((prev) => {
+        if (Array.isArray(prev)) {
+          return [...prev, msg]; // Append to the array if prev is valid
+        }
+        return [msg]; // Return an array with the new message if prev is not an array
+      });
     });
-
+  
     return () => {
-      socket.off("receiveGroupMessage");
+      socket.off("receiveMessage");
     };
-  }, [selectedGroup]);
+  }, []);
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
