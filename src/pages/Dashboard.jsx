@@ -5,10 +5,9 @@ import TaskOverview from "../Components/TaskOverview";
 import UserGrid from "../Components/UserGrid";
 import useSocketSetup from "../hook/useSocketSetup";
 
-
 const Dashboard = () => {
   const [greeting, setGreeting] = useState("");
-  const [currentDate, setCurrentDate] = useState(""); 
+  const [currentDate, setCurrentDate] = useState("");
   useSocketSetup();
 
   const { name, role } = useSelector((state) => state.auth);
@@ -26,32 +25,42 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="relative w-full min-h-screen text-gray-800 bg-gray-100">
-      <img
-        src={bgImage}
-        alt="Background"
-        className="absolute top-0 left-0 w-full h-full object-cover z-0"
-      />
-
-      <div className="relative z-10 px-6 py-8 max-w-5xl mx-auto w-full backdrop-blur-sm">
-        <div className="text-center">
-          <p className="text-sm text-gray-500">{currentDate}</p>
-          <h1 className="text-3xl font-semibold text-gray-800 mt-1">
-            {greeting}, <span className="text-black">{name || "User"}</span>
-          </h1>
+    <div className="relative w-full min-h-screen p-6 text-gray-800 bg-gray-50">
+      {/* Centered Header */}
+      <div className="text-center mb-6">
+        {/* Date Section */}
+        <p className="text-lg text-gray-600">{currentDate}</p>
+  
+        {/* Greeting Section */}
+        <h1 className="text-4xl font-semibold text-gray-900 mt-4">
+          {greeting}, <span className="text-gray-700">{name || "User"}</span>
+        </h1>
+      </div>
+  
+      {/* Task Container */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-800">Task Overview</h2>
+          <button
+            className="text-sm text-indigo-600 hover:underline focus:outline-none"
+            onClick={() => alert('Create New Task')}>
+            Create New Task
+          </button>
         </div>
-
-        {/* Task Container */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden"></div>
-
-        <div className="flex flex-col gap-4">
+        <div className="mt-6">
           <TaskOverview />
-
-          {/* {role === "admin" ? <AdminDashboard /> : <UserDashboard />} */}
-          {role == "admin" ? <UserGrid /> : null}
         </div>
       </div>
+  
+      {/* UserGrid for Admin */}
+      {role === "admin" ? (
+        <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+         
+          <UserGrid />
+        </div>
+      ) : null}
     </div>
+  
   );
 };
 
