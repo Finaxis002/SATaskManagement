@@ -4,7 +4,7 @@ import axios from "axios";
 // 🔁 Fetch tasks from backend
 export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
   const res = await axios.get(
-    "https://sa-task-management-backend.vercel.app/api/tasks"
+    "https://sataskmanagementbackend.onrender.com/api/tasks"
   );
   return res.data;
 });
@@ -14,7 +14,7 @@ export const fetchAssignees = createAsyncThunk(
   "tasks/fetchAssignees",
   async () => {
     const res = await axios.get(
-      "https://sa-task-management-backend.vercel.app/api/employees"
+      "https://sataskmanagementbackend.onrender.com/api/employees"
     );
     return res.data;
   }
@@ -25,7 +25,7 @@ export const updateTask = createAsyncThunk(
   "tasks/updateTask",
   async (updatedTask) => {
     const res = await axios.patch(
-      `https://sa-task-management-backend.vercel.app/api/tasks/${updatedTask._id}`,
+      `https://sataskmanagementbackend.onrender.com/api/tasks/${updatedTask._id}`,
       updatedTask
     );
     return res.data;
@@ -36,7 +36,7 @@ export const updateTaskCompletion = createAsyncThunk(
   "tasks/updateTaskCompletion",
   async ({ taskId, completed }) => {
     const res = await axios.patch(
-      `https://sa-task-management-backend.vercel.app/api/tasks/${taskId}`,
+      `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
       {
         completed,
       }

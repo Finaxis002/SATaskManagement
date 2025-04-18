@@ -4,11 +4,9 @@ import axios from "axios";
 
 
 
-const socketUrl = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:5000'  // Local development URL
-  : 'https://sa-task-management-backend.vercel.app'; // Production URL
-
-const socket = io(socketUrl); // This will dynamically connect to the correct backend
+const socket = io("https://sataskmanagementbackend.onrender.com" ,{
+  withCredentials: true,
+});
 
 const Inbox = () => {
   const [messages, setMessages] = useState([]);
@@ -36,7 +34,7 @@ const Inbox = () => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      const res = await axios.get("https://sa-task-management-backend.vercel.app/api/messages");
+      const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/messages");
       setMessages(res.data);
       console.log("📩 Messages fetched:", res.data.length);
     };
@@ -60,7 +58,7 @@ const Inbox = () => {
       const role = localStorage.getItem("role");
 
       try {
-        const res = await axios.put("https://sa-task-management-backend.vercel.app/api/mark-read", {
+        const res = await axios.put("https://sataskmanagementbackend.onrender.com/api/mark-read", {
           name,
           role,
         });
@@ -92,7 +90,7 @@ const Inbox = () => {
     try {
       // ✅ Save to MongoDB
       const res = await axios.post(
-        "https://sa-task-management-backend.vercel.app/api/messages",
+        "https://sataskmanagementbackend.onrender.com/api/messages",
         newMessage
       );
       console.log("✅ Message saved to DB:", res.data);
@@ -117,7 +115,7 @@ const Inbox = () => {
   useEffect(() => {
     const markMessagesAsRead = async () => {
       try {
-        await axios.put("https://sa-task-management-backend.vercel.app/api/mark-read");
+        await axios.put("https://sataskmanagementbackend.onrender.com/api/mark-read");
         console.log("✅ All messages marked as read");
 
         // 🔥 Emit to update count in real time

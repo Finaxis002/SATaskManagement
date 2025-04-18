@@ -12,7 +12,7 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get("https://sa-task-management-backend.vercel.app/api/tasks");
+        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/tasks");
         const userTasks = res.data.filter(task => task.assignee?._id === userId);
         setTasks(userTasks);
       } catch (err) {
