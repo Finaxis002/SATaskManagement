@@ -241,31 +241,36 @@ import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   FaHome,
+  FaTasks,
   FaInbox,
+  FaChartBar,
+  FaProjectDiagram,
+  FaBullseye,
+  FaChevronDown,
   FaPlus,
   FaUsers,
   FaBell,
   FaClipboardList,
   FaClock,
 } from "react-icons/fa";
-
 import useSocketSetup from "../hook/useSocketSetup";      // ✅ For tasks
 import useMessageSocket from "../hook/useMessageSocket";  // ✅ For inbox
 
 import axios from "axios"; // ✅ Use default import
 
+
 import { useSelector, useDispatch } from "react-redux";
+
 
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [role, setRole] = useState("");
-
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
 
   useMessageSocket(setInboxCount);        // ✅ Inbox badge
   useSocketSetup(setNotificationCount);   // ✅ Task notification badge
-
+  
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
@@ -274,6 +279,7 @@ const Sidebar = () => {
   const openAddEmployeeModal = () => {
     setIsAddEmployeeModalOpen(true);
   };
+
 
   const closeAddEmployeeModal = () => {
     setIsAddEmployeeModalOpen(false);
@@ -285,6 +291,7 @@ const Sidebar = () => {
   const handleNotificationClick = () => {
     dispatch(markAllAsRead()); // Mark all notifications as read when clicked
   };
+
 
   useEffect(() => {
     const fetchInboxCount = async () => {
@@ -303,6 +310,7 @@ const Sidebar = () => {
 
     fetchInboxCount();
   }, [localStorage.getItem("name"), localStorage.getItem("role")]);
+
 
   return (
     <div className="bg-[#1e1f21] text-white w-64 h-screen flex flex-col justify-between border-r border-gray-700">
@@ -345,6 +353,20 @@ const Sidebar = () => {
         )}
 
         <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/Tasks" />
+           <SidebarItem
+        icon={
+          <div className="relative">
+            <FaInbox />
+            {inboxCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+                {inboxCount}
+              </span>
+            )}
+          </div>
+        }
+        label="Inbox"
+        to="/inbox"
+      />
 
         {/* Notification Badge */}
         <SidebarItem
@@ -370,6 +392,7 @@ const Sidebar = () => {
       <div className="px-4 py-3 border-t border-gray-700 text-xs text-gray-400">
         © 2025 Finaxis
       </div>
+
     </div>
   );
 };
