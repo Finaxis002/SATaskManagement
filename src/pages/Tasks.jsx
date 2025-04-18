@@ -139,7 +139,7 @@ const TaskBoard = () => {
       const { assigneeEmail } = newTask; // assuming assignee email is passed with task
 
       // Send notification to the assigned employee
-      const notificationResponse = await fetch("http://localhost:5000/api/notifications", {
+      const notificationResponse = await fetch("https://sataskmanagementbackend.onrender.com/api/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
