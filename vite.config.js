@@ -2,13 +2,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist'
   },
   server: {
-    port: process.env.PORT || 5173,  // Ensure we bind to the port from Render
-    allowedHosts: ['sataskmanagement.onrender.com', 'localhost'], // Add allowed hosts here
+    port: process.env.PORT || 5173,  // Render will assign this port
+    host: '0.0.0.0',  // Expose the server on all network interfaces
   },
 });
