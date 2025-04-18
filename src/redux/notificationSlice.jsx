@@ -40,7 +40,7 @@ const notificationSlice = createSlice({
   reducers: {
     addNotification: (state, action) => {
       console.log("Adding notification:", action.payload);
-      state.allNotifications.unshift({  // Add new ones at beginning
+      state.allNotifications.unshift({ 
         ...action.payload,
         isRead: false,
       });

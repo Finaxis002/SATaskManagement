@@ -4,28 +4,19 @@ import { NavLink } from "react-router-dom";
 import {
   FaHome,
   FaInbox,
-
   FaPlus,
   FaUsers,
   FaBell,
   FaClipboardList,
   FaClock,
 } from "react-icons/fa";
-import useSocketSetup from "../hook/useSocketSetup";
-import { useSelector, useDispatch } from "react-redux";
-import { addNotification , clearNotifications} from "../redux/notificationSlice";
-import axios from "axios"; // ✅ Use default import
 
+import { useSelector, useDispatch } from "react-redux";
 
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [role, setRole] = useState("");
-  const [notificationCount, setNotificationCount] = useState(0);
-  const [inboxCount, setInboxCount] = useState(0);
-
-
-  useSocketSetup(setNotificationCount, setInboxCount);
-
+  
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
@@ -35,33 +26,15 @@ const Sidebar = () => {
     setIsAddEmployeeModalOpen(true);
   };
 
-  useEffect(() => {
-    const fetchInboxCount = async () => {
-      const name = localStorage.getItem("name");
-      const role = localStorage.getItem("role");
-  
-      try {
-        const res = await axios.get("http://localhost:5000/api/unread-count", {
-          params: { name, role },
-        });
-        console.log("📩 Inbox Count:", res.data.count); // ✅ Debug log
-        setInboxCount(res.data.count);
-      } catch (error) {
-        console.error("❌ Failed to fetch inbox count:", error);
-      }
-    };
-  
-    fetchInboxCount();
-  }, []);
-  
-  console.log("📥 Inbox Count Increased");
-  console.log("🟢 Inbox Count Reset by:", name, role);
-  
-  // const handleNotificationClick = () => {
-  //   setNotificationCount(0); // Reset notification count when notification tab is clicked
-  // };
+  const closeAddEmployeeModal = () => {
+    setIsAddEmployeeModalOpen(false);
+  };
+  const unreadCount = useSelector((state) => state.notifications.unreadCount);
+  const dispatch = useDispatch();
 
-
+  const handleNotificationClick = () => {
+    dispatch(markAllAsRead()); // Mark all notifications as read when clicked
+  };
   return (
     <div className="bg-[#1e1f21] text-white w-64 h-screen flex flex-col justify-between border-r border-gray-700">
       {/* Top Bar */}
@@ -103,7 +76,7 @@ const Sidebar = () => {
         )}
 
         <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/Tasks" />
-        <SidebarItem
+        {/* <SidebarItem
           icon={
             <div className="relative">
               <FaInbox />
@@ -116,28 +89,24 @@ const Sidebar = () => {
           }
           label="Inbox"
           to="/inbox"
-        />
+        /> */}
 
-        {/* <SidebarItem
-          icon={
-            <div className="relative">
-              <FaBell />
-              {notificationCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
-                  {notificationCount}
-                </span>
-              )}
-            </div>
-          }
-          label="Notifications"
-          to="/notifications"
-        />
-         <SidebarItem
-          icon={<FaClock />}
-          label="Reminders"
-          to="/reminders"
-        />
-
+<SidebarItem
+      icon={
+        <div className="relative">
+          <FaBell />
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+      }
+      label="Notifications"
+      to="/notifications"
+      onClick={handleNotificationClick}
+    />
+        <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
 
         {/* Insights */}
         {/* <div className="mt-6">
