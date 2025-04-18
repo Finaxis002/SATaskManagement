@@ -27,7 +27,7 @@ const AllEmployees = () => {
     }
   
     try {
-      const response = await fetch(`http://localhost:5000/api/employees/reset-password/${id}`, {
+      const response = await fetch(`https://sataskmanagementbackend.onrender.com/api/employees/reset-password/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newPassword }),

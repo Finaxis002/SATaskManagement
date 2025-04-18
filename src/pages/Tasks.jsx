@@ -8,11 +8,11 @@ import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { io } from "socket.io-client";
-const socketUrl = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:5000'  // Local development URL
-  : 'https://sa-task-management-backend.vercel.app'; // Production URL
 
-const socket = io(socketUrl); // This will dynamically connect to the correct backend
+
+const socket = io("https://sataskmanagementbackend.onrender.com" ,{
+  withCredentials: true,
+});
 
 
 const ItemTypes = {

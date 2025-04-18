@@ -46,7 +46,7 @@ const Sidebar = () => {
       const role = localStorage.getItem("role") || "user";
   
       try {
-        const res = await axios.get("http://localhost:5000/api/unread-count", {
+        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/unread-count", {
           params: { name, role },
         });
         setInboxCount(res.data.count);
