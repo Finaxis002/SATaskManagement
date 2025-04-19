@@ -1,27 +1,37 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
+
 import { format, isToday, isTomorrow } from "date-fns";
+
+
 import {
   addTaskToColumn,
+  toggleTaskCompletion,
+  removeTaskFromColumn,
   fetchTasks,
   fetchAssignees,
+
   updateTaskCompletion,
-  updateTask,
+
 } from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendarAlt,
   faCheckCircle,
   faEdit,
+
 } from "@fortawesome/free-regular-svg-icons";
 import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+
 import { io } from "socket.io-client";
 
 const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
+
 
 const ItemTypes = {
   TASK: "task",
@@ -34,18 +44,22 @@ const TaskBoard = () => {
     dispatch(fetchTasks());
     dispatch(fetchAssignees());
   }, [dispatch]);
+
   const [tasks, setTasks] = useState();
+
   const [showPopup, setShowPopup] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
   const [taskToUpdate, setTaskToUpdate] = useState(null); // For task editing
+
   const { role, userId } = useSelector((state) => state.auth);
 
   const [showAssigneeList, setShowAssigneeList] = useState(false);
   const [assignee, setAssignee] = useState(null);
+
   const assignees = useSelector((state) => state.tasks.assignees);
-  const popupRef = useRef(null);
+
 
   // Fetch tasks initially from the backend
   useEffect(() => {
@@ -70,52 +84,34 @@ const TaskBoard = () => {
     };
   }, []);
 
+  const popupRef = useRef(null);
+
+
+
   const getDisplayDate = (due) => {
+    // If it's already labeled as Today/Tomorrow from backend, return it
     if (due === "Today" || due === "Tomorrow") return due;
+  
+    // Try to parse the string into a Date
     const parsedDate = new Date(due);
+  
+    // If parsing fails, return raw string as fallback
     if (isNaN(parsedDate.getTime())) return due;
+  
     if (isToday(parsedDate)) return "Today";
     if (isTomorrow(parsedDate)) return "Tomorrow";
+  
     return format(parsedDate, "MMM dd");
   };
 
+  
+ 
   const handleAddTask = async () => {
-    if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
-      return console.error(
-        "Missing required fields (Task name, Date, or Assignee email)"
-      );
-    }
-
-    // const handleAddTask = async () => {
-    //   if (!newTaskName || !selectedDate) return;
-    //   const isoDueDate = new Date(selectedDate).toISOString();
-
-    //   const newTask = {
-    //     name: newTaskName,
-    //     due: isoDueDate,
-    //     completed: false,
-    //     assignee,
-    //     column: taskColumns[currentColumnIndex].title,
-    //   };
-
-    //   try {
-    //     await fetch("http://localhost:5000/api/tasks", {
-    //       method: "POST",
-    //       headers: { "Content-Type": "application/json" },
-    //       body: JSON.stringify(newTask),
-    //     });
-
-    //     dispatch(
-    //       addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
-    //     );
-    //     closePopup();
-    //   } catch (err) {
-    //     console.error("Failed to save task", err);
-    //   }
-    // };
+    if (!newTaskName || !selectedDate || !assignee) return; // Ensure Assignee is selected as well.
+  
 
     const isoDueDate = new Date(selectedDate).toISOString();
-
+  
     const newTask = {
       name: newTaskName,
       due: isoDueDate,
@@ -123,51 +119,52 @@ const TaskBoard = () => {
       assignee,
       column: taskColumns[currentColumnIndex].title,
     };
-
+  
     try {
-      const response = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/tasks",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newTask),
-        }
-      );
 
-      if (response.ok) {
-        dispatch(
-          addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
-        );
-        closePopup();
-      } else {
-        console.error("Failed to create task");
-      }
+      // Create task via task API
+      const taskResponse = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTask),
+      });
+  
 
       const taskData = await taskResponse.json();
-      const { assigneeEmail } = newTask; // assuming assignee email is passed with task
-
+      console.log("Task Data:", taskData); // Log to verify the response
+  
+      // Accessing _id from the correct location
+      const taskId = taskData.task?._id; // Accessing _id from task property
+  
+      if (!taskId) {
+        throw new Error("Task ID is missing in the response");
+      }
+  
+      const assigneeEmail = assignee.email; // Ensure assignee email is correctly set
+      console.log("This is the assignee email:", assigneeEmail);
+  
+      if (!assigneeEmail) {
+        throw new Error("Assignee email is missing");
+      }
+  
       // Send notification to the assigned employee
-      const notificationResponse = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/notifications",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            recipientEmail: assigneeEmail,
-            message: `New task assigned: ${newTask.name} (Due: ${new Date(
-              newTask.due
-            ).toLocaleDateString()})`,
-            taskId: taskData._id, // Using the task id for notification
-          }),
-        }
-      );
 
+      const notificationResponse = await fetch("https://sataskmanagementbackend.onrender.com/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientEmail: assigneeEmail,  // Ensure email of assignee is sent correctly
+          message: `New task assigned: ${newTask.name} (Due: ${new Date(newTask.due).toLocaleDateString()})`,
+          taskId: taskId,  // Using the task ID for notification
+        }),
+      });
+  
       const notificationData = await notificationResponse.json();
-
+      console.log("Notification response:", notificationData);
+  
       // Now, dispatch the task to the column in the frontend (Redux)
-      dispatch(
-        addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
-      );
+      dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+  
 
       // Close the popup and reset fields
       closePopup();
@@ -175,6 +172,7 @@ const TaskBoard = () => {
       console.error("Failed to save task", err);
     }
   };
+
 
   // Handle updating task
   const handleUpdateTask = async () => {
@@ -231,11 +229,29 @@ const TaskBoard = () => {
     setShowPopup(true);
   };
 
+  
+  
+  
+
+  const handleOpenPopup = (columnIndex, task = null) => {
+    setTaskToUpdate(task);
+    setNewTaskName(task ? task.name : "");
+    setSelectedDate(task ? task.due : "");
+    setAssignee(
+      task ? { name: task.assignee.name, email: task.assignee.email } : null
+    );
+    setCurrentColumnIndex(columnIndex);
+    setShowPopup(true);
+  };
+
+
+
   const closePopup = () => {
     setNewTaskName("");
     setSelectedDate("");
     setShowPopup(false);
   };
+
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
@@ -285,9 +301,12 @@ const TaskBoard = () => {
           </h4>
           <div className="text-xs text-gray-500 flex items-center">
             <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-1" />
+            {/* {task.due} */}
             {getDisplayDate(task.due)}
+
           </div>
 
+          {/* ✅ Assignee display */}
           {task.assignee?.name && (
             <div className="text-xs text-gray-500 flex items-center">
               <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-1" />
@@ -295,8 +314,9 @@ const TaskBoard = () => {
             </div>
           )}
         </div>
-        <FontAwesomeIcon
+        {/* <FontAwesomeIcon
           icon={faCheckCircle}
+          // onClick={() => handleToggleCompletion(columnIndex, taskIndex)}
           onClick={() => {
             dispatch(
               updateTaskCompletion({
@@ -308,13 +328,20 @@ const TaskBoard = () => {
           className={`h-5 w-5 ml-2 cursor-pointer ${
             task.completed ? "text-green-500" : "text-gray-300"
           }`}
+
         />
         {/* Edit Button */}
+
         <FontAwesomeIcon
-          icon={faEdit}
-          onClick={() => handleOpenPopup(columnIndex, task)} // Open update popup with the current task details
-          className="h-5 w-5 ml-2 cursor-pointer text-blue-500"
-        />
+  icon={faCheckCircle}
+  onClick={() =>
+    dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }))
+  }
+  className={`h-5 w-5 ml-2 cursor-pointer ${
+    task.completed ? "text-green-500" : "text-gray-300"
+  }`}
+/>
+
       </div>
     );
   };
@@ -382,27 +409,30 @@ const TaskBoard = () => {
     );
   };
 
-  // Filter tasks per column based on role
-  const filteredTaskColumns = taskColumns.map((column) => {
-    const filteredTasks =
-      role === "admin"
-        ? column.tasks // admin sees all tasks
-        : column.tasks.filter(
-            (task) =>
-              task.assignee?.email?.toLowerCase() === userId?.toLowerCase()
-          );
 
-    return {
-      ...column,
-      tasks: filteredTasks,
-    };
-  });
+  // Filter tasks per column based on role
+
+const filteredTaskColumns = taskColumns.map((column) => {
+  const filteredTasks =
+    role === "admin"
+      ? column.tasks // admin sees all tasks
+      : column.tasks.filter(
+          (task) => task.assignee?.email?.toLowerCase() === userId?.toLowerCase()
+        );
+
+  return {
+    ...column,
+    tasks: filteredTasks,
+  };
+});
+
+
 
   const Role = localStorage.getItem("role");
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-6 bg-white w-full min-h-screen">
+      <div className="p-6  bg-white w-full min-h-screen">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold">My Tasks</h2>
           {Role === "admin" && (
@@ -421,9 +451,11 @@ const TaskBoard = () => {
             className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md"
           >
             <div className="flex justify-between items-center mb-2">
+
               <h3 className="text-lg font-medium">
                 {taskToUpdate ? "Update Task" : "Create Task"}
               </h3>
+
               <FontAwesomeIcon
                 icon={faTimes}
                 onClick={closePopup}
@@ -454,25 +486,30 @@ const TaskBoard = () => {
               </label>
 
               <button
-                onClick={taskToUpdate ? handleUpdateTask : handleAddTask}
+                onClick={handleAddTask}
                 className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
               >
-                {taskToUpdate ? "Update" : "Add"}
+                Add
               </button>
             </div>
 
+            {/* Assignee Section (bottom left) */}
             <div className="relative mt-2 flex items-center gap-2 text-sm text-gray-600">
               <FontAwesomeIcon
+
                 icon={faUser}
                 onClick={() => setShowAssigneeList((prev) => !prev)}
                 className="cursor-pointer h-4 w-4 hover:text-gray-800"
                 title="Assign task"
               />
+
               {assignee && (
                 <span className="text-xs text-gray-700">
                   Assigned to: {assignee.name}
                 </span>
               )}
+
+              {/* Dropdown */}
               {showAssigneeList && (
                 <div className="absolute left-0 top-6 z-50 w-64 max-h-40 overflow-y-auto bg-white shadow border rounded p-2">
                   {assignees.length === 0 ? (
@@ -500,7 +537,10 @@ const TaskBoard = () => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {filteredTaskColumns.map((column, columnIndex) => (
+
+        {filteredTaskColumns.map((column, columnIndex) => (
+
+
             <TaskColumn
               key={columnIndex}
               column={column}

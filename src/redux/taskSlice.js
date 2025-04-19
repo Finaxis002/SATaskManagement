@@ -32,16 +32,39 @@ export const updateTask = createAsyncThunk(
   }
 );
 
+// export const updateTaskCompletion = createAsyncThunk(
+//   "tasks/updateTaskCompletion",
+//   async ({ taskId, completed }) => {
+//     const res = await axios.patch(`https://sa-task-management-backend.vercel.app/api/tasks/${taskId}`, {
+//       completed
+//     });
+//     return res.data;
+//   }
+// );
 export const updateTaskCompletion = createAsyncThunk(
   "tasks/updateTaskCompletion",
-  async ({ taskId, completed }) => {
-    const res = await axios.patch(
-      `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
-      {
-        completed,
-      }
-    );
-    return res.data;
+  async ({ taskId, completed }, { rejectWithValue }) => {
+    try {
+      // Get user data from localStorage using your exact keys
+      const userName = localStorage.getItem('name') || 'Unknown';
+      const userEmail = localStorage.getItem('userId') || 'unknown@example.com';
+      
+      const response = await axios.patch(
+        `https://sa-task-management-backend.vercel.app/api/tasks/${taskId}`,
+        { completed },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'X-User-Name': userName,
+            'X-User-Email': userEmail
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: error.message });
+    }
   }
 );
 
@@ -148,16 +171,35 @@ const taskSlice = createSlice({
         }
       })
 
-      .addCase(updateTaskCompletion.fulfilled, (state, action) => {
-        const updatedTask = action.payload;
+      // .addCase(updateTaskCompletion.fulfilled, (state, action) => {
+      //   const updatedTask = action.payload;
 
+      //   for (let col of state.taskColumns) {
+      //     const idx = col.tasks.findIndex(t => t._id === updatedTask._id);
+      //     if (idx !== -1) {
+      //       col.tasks[idx].completed = updatedTask.completed;
+      //       break;
+      //     }
+      //   }
+      // });
+      .addCase(updateTaskCompletion.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateTaskCompletion.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedTask = action.payload;
+        
         for (let col of state.taskColumns) {
           const idx = col.tasks.findIndex((t) => t._id === updatedTask._id);
           if (idx !== -1) {
-            col.tasks[idx].completed = updatedTask.completed;
+            col.tasks[idx] = updatedTask; // Replace entire task to get all updates
             break;
           }
         }
+      })
+      .addCase(updateTaskCompletion.rejected, (state, action) => {
+        state.loading = false;
+        console.error('Task update failed:', action.payload);
       });
   },
 });
