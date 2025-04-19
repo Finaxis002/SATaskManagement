@@ -174,65 +174,10 @@ const TaskBoard = () => {
   };
 
 
-  // Handle updating task
-  const handleUpdateTask = async () => {
-    if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
-      return console.error(
-        "Missing required fields (Task name, Date, or Assignee email)"
-      );
-    }
 
-    const isoDueDate = new Date(selectedDate).toISOString();
 
-    const updatedTask = {
-      _id: taskToUpdate._id, // Task ID to ensure we update the correct task
-      name: newTaskName,
-      due: isoDueDate,
-      completed: taskToUpdate.completed,
-      assignee,
-      column: taskToUpdate.column,
-    };
-
-    try {
-      const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskToUpdate._id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedTask),
-        }
-      );
-
-      if (response.ok) {
-        // Find and update the task in the state
-        dispatch(updateTask(updatedTask)); // Update the task in Redux
-
-        // Close the popup after the update
-        closePopup();
-      } else {
-        console.error("Failed to update task");
-      }
-    } catch (err) {
-      console.error("Failed to update task", err);
-    }
-  };
 
   // Open the popup for adding a new task or editing an existing task
-  const handleOpenPopup = (columnIndex, task = null) => {
-    setTaskToUpdate(task);
-    setNewTaskName(task ? task.name : "");
-    setSelectedDate(task ? task.due : "");
-    setAssignee(
-      task ? { name: task.assignee.name, email: task.assignee.email } : null
-    );
-    setCurrentColumnIndex(columnIndex);
-    setShowPopup(true);
-  };
-
-  
-  
-  
-
   const handleOpenPopup = (columnIndex, task = null) => {
     setTaskToUpdate(task);
     setNewTaskName(task ? task.name : "");
