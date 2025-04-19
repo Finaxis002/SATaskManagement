@@ -12,19 +12,37 @@ const socket = io("https://sataskmanagementbackend.onrender.com", {
 const Inbox = () => {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState("Marketing"); // Default selected group
-  const [groups, setGroups] = useState([
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const [groups, setGroups] = useState([]);
+  const [groupUnreadCounts, setGroupUnreadCounts] = useState({});
+  const [groupMembers, setGroupMembers] = useState({});
+
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [selectedGroupForMembers, setSelectedGroupForMembers] = useState("");
+
+  const allGroups = [
     "Marketing",
     "Sales",
     "Operations",
     "IT/Software",
     "HR",
     "Administrator",
-  ]);
+  ];
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
+    department: localStorage.getItem("department"),
+    role: localStorage.getItem("role"),
   };
+
+  useEffect(() => {
+    if (currentUser.role === "admin") {
+      setGroups(allGroups); // Admin sees all groups
+    } else if (currentUser.department) {
+      setGroups([currentUser.department]); // Regular user sees only their department
+      setSelectedGroup(currentUser.department); // Auto-set group for users
+    }
+  }, [currentUser.role, currentUser.department]);
 
   const scrollRef = useRef(null);
   const dispatch = useDispatch();
@@ -33,28 +51,41 @@ const Inbox = () => {
     dispatch(fetchUsers());
   }, [dispatch]);
 
+  useEffect(() => {
+    const fetchGroupMembers = async () => {
+      try {
+        const res = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/group-members"
+        );
+        setGroupMembers(res.data.groupMembers || {});
+        console.log("👥 Group Members:", res.data.groupMembers);
+      } catch (err) {
+        console.error("❌ Failed to fetch group members", err.message);
+      }
+    };
+
+    fetchGroupMembers();
+  }, []);
+
   // Fetch messages when group is changed
   useEffect(() => {
-    socket.on("receiveGroupMessage", (msg) => {
-      if (msg.group === selectedGroup) {  // Only append messages for the selected group
-        console.log("📨 Real-time message received:", msg);
-        setMessages((prev) => {
-          if (Array.isArray(prev)) {
-            return [...prev, msg];  // Append to the array if prev is valid
-          }
-          return [msg];  // Initialize messages with the new message if prev is invalid
-        });
+    const fetchMessages = async () => {
+      try {
+        const encodedGroup = encodeURIComponent(selectedGroup);
+        const res = await axios.get(
+          `https://sataskmanagementbackend.onrender.com/api/messages/${encodedGroup}`
+        );
+        setMessages(res.data.messages.reverse()); // ✅ Fix here
+        console.log("📩 Messages fetched:", res.data.length);
+        console.log("🧠 Selected Group:", selectedGroup);
+        console.log("🧑‍💼 Current User Department:", currentUser.department);
+      } catch (err) {
+        console.error("❌ Error fetching messages:", err.message);
       }
-    });
-  
-    return () => {
-      socket.off("receiveGroupMessage");
     };
-  }, [selectedGroup]); // Only listen for messages of the selected group
-  
-  
 
-
+    fetchMessages(); // Call fetch on initial render and every time selectedGroup changes
+  }, [selectedGroup]);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -65,60 +96,64 @@ const Inbox = () => {
 
   // ✅ Mark messages as read
   useEffect(() => {
-    const markMessagesAsRead = async () => {
+    const markGroupMessagesAsRead = async () => {
       const name = localStorage.getItem("name");
-      const role = localStorage.getItem("role");
 
       try {
         const res = await axios.put(
-          "https://sataskmanagementbackend.onrender.com/api/mark-read",
+          "https://sataskmanagementbackend.onrender.com/api/mark-read-group",
           {
             name,
-            role,
+            group: selectedGroup,
           }
         );
-        console.log("✅ Messages marked as read:", res.data);
+        console.log(
+          `✅ Marked ${res.data.updated} messages as read in ${selectedGroup}`
+        );
 
-        // 🔥 Emit to reset inbox count in real time
-        socket.emit("inboxRead", { name, role });
-        console.log("📢 inboxRead event emitted for:", name, role);
+        socket.emit("inboxRead", { name }); // Trigger real-time badge update
       } catch (err) {
-        console.error("❌ Failed to mark messages as read:", err.message);
+        console.error("❌ Failed to mark group messages as read:", err.message);
       }
     };
 
-    markMessagesAsRead();
-  }, []);
+    markGroupMessagesAsRead();
+  }, [selectedGroup]); // ✅ Triggered on group switch
 
   const sendMessage = async () => {
     if (!messageText.trim()) return;
-  
+
     const newMessage = {
       sender: currentUser.name,
       text: messageText,
       group: selectedGroup,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      read: false,  // Mark message as unread initially
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      read: false, // Mark message as unread initially
     };
-  
-    console.log("Sending message:", newMessage);  // Log the message data
-  
+
+    console.log("Sending message:", newMessage); // Log the message data
+
     try {
       const res = await axios.post(
-        `https://sataskmanagementbackend.onrender.com/api/messages/${selectedGroup}`,
+        `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
+          selectedGroup
+        )}`,
         newMessage
       );
+
       console.log("✅ Message saved to DB:", res.data);
-  
-      socket.emit("sendMessage", res.data);  // Emit message data to the group
+
+      socket.emit("sendMessage", res.data); // Emit message data to the group
       console.log("📤 Message sent via socket:", res.data);
-  
+
       setMessageText(""); // Clear input after sending
     } catch (err) {
       console.error("❌ Failed to send message:", err.message);
     }
   };
-  
 
   const handleChange = (e) => {
     const { value } = e.target;
@@ -129,58 +164,142 @@ const Inbox = () => {
     setSelectedGroup(group); // Updates the selected group
   };
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const encodedGroup = encodeURIComponent(selectedGroup); // Encoding the group name
-        const res = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/messages/${encodedGroup}`
-        );
-        setMessages(res.data);
-        console.log("📩 Messages fetched:", res.data.length);
-      } catch (err) {
-        console.error("❌ Error fetching messages:", err.message);
-      }
-    };
-
-    fetchMessages();
-  }, [selectedGroup]);
+  const handleShowMembers = (group) => {
+    setSelectedGroupForMembers(group);
+    setShowMemberModal(true);
+  };
 
   useEffect(() => {
     socket.on("receiveMessage", (msg) => {
       console.log("📨 Real-time message received:", msg);
-      setMessages((prev) => {
-        if (Array.isArray(prev)) {
-          return [...prev, msg]; // Append to the array if prev is valid
-        }
-        return [msg]; // Return an array with the new message if prev is not an array
-      });
+      // ✅ Only update messages if it belongs to the selected group
+      if (msg.group === selectedGroup) {
+        setMessages((prev) => {
+          if (Array.isArray(prev)) {
+            return [...prev, msg];
+          }
+          return [msg];
+        });
+      } else {
+        console.log("❌ Ignored message from other group:", msg.group);
+      }
     });
-  
+
     return () => {
       socket.off("receiveMessage");
+    };
+  }, [selectedGroup]);
+
+  //fetch group unread badge
+  useEffect(() => {
+    const fetchGroupUnreadCounts = async () => {
+      try {
+        const name = localStorage.getItem("name");
+
+        const res = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/group-unread-counts",
+          {
+            params: { name },
+          }
+        );
+
+        setGroupUnreadCounts(res.data.groupUnreadCounts || {});
+        console.log("📊 Group Unread Counts:", res.data.groupUnreadCounts);
+      } catch (err) {
+        console.error("❌ Failed to fetch group unread counts:", err.message);
+      }
+    };
+
+    fetchGroupUnreadCounts();
+
+    socket.on("inboxCountUpdated", fetchGroupUnreadCounts); // Update live
+    return () => {
+      socket.off("inboxCountUpdated", fetchGroupUnreadCounts);
     };
   }, []);
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
       {/* Left column for groups */}
-      <div className="w-1/4 bg-white p-4 rounded-md shadow-md">
-        <h3 className="text-xl font-semibold mb-4 text-center">Groups</h3>
-        <ul className="space-y-2">
-          {groups.map((group) => (
-            <li
-              key={group}
-              onClick={() => handleGroupClick(group)}
-              className={`cursor-pointer p-2 rounded-md hover:bg-indigo-100 ${
-                selectedGroup === group ? "bg-indigo-200" : ""
-              }`}
-            >
-              {group}
-            </li>
-          ))}
-        </ul>
+      <div className="w-1/4 bg-white p-5 rounded-xl shadow-lg border border-gray-200">
+        <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Groups
+        </h3>
+
+        {groups.length === 0 ? (
+          <p className="text-center text-gray-400 italic">
+            No chat group assigned.
+          </p>
+        ) : (
+          <ul className="space-y-1">
+            {groups.map((group) => (
+              <li
+                key={group}
+                onClick={() => handleGroupClick(group)}
+                className={`relative group cursor-pointer p-3 rounded-lg flex justify-between items-center transition-all duration-200 border ${
+                  selectedGroup === group
+                    ? "bg-indigo-100 border-indigo-300"
+                    : "hover:bg-gray-50 border-gray-200"
+                }`}
+              >
+                {/* Group Info */}
+                <div className="flex flex-col gap-0.5">
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering chat switch
+                      handleShowMembers(group);
+                    }}
+                    className="text-indigo-600 font-semibold text-sm hover:underline relative"
+                  >
+                    {group}
+
+                    {/* 👇 Inline Popup Panel */}
+                    {showMemberModal && selectedGroupForMembers === group && (
+                      <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 shadow-lg rounded-md z-50 p-3">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                          Members
+                        </h4>
+                        <ul className="max-h-40 overflow-y-auto space-y-1 text-sm text-gray-600">
+                          {(groupMembers[group] || []).map((member, idx) => (
+                            <li
+                              key={idx}
+                              className="border-b pb-1 last:border-0"
+                            >
+                              {member}
+                            </li>
+                          ))}
+                        </ul>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMemberModal(false);
+                          }}
+                          className="w-full mt-2 text-xs text-indigo-600 hover:underline"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
+                  </span>
+
+                  <span className="text-xs text-gray-500">
+                    {groupMembers[group]?.length || 0} member
+                    {groupMembers[group]?.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {/* Badge */}
+                {groupUnreadCounts[group] > 0 && group !== selectedGroup && (
+                  <span className="ml-2 bg-red-500 text-white text-[11px] px-2 py-0.5 rounded-full shadow-sm">
+                    {groupUnreadCounts[group]}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
+
       {/* Right column for chat messages */}
       <div className="w-3/4 pl-4 flex flex-col">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">
@@ -274,7 +393,6 @@ const Inbox = () => {
           </div>
         </div>
       </div>
-      ;
     </div>
   );
 };

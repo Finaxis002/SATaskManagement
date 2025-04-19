@@ -15,11 +15,14 @@ const useMessageSocket = (setInboxCount, selectedGroup) => {
         const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/unread-count", {
           params: { name, role },
         });
-        setInboxCount(res.data.count);
+        const count = res.data.unreadCount;
+        console.log("📡 Real-time unread count updated:", count); // ✅
+        setInboxCount(count);
       } catch (error) {
-        console.error("❌ Failed to fetch inbox count:", error);
+        console.error("❌ Real-time fetch failed:", error.message);
       }
     };
+    
 
     // Listen for messages sent to the selected group
     socket.on("receiveMessage", (msg) => {
