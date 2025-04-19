@@ -50,7 +50,7 @@ export const updateTaskCompletion = createAsyncThunk(
       const userEmail = localStorage.getItem('userId') || 'unknown@example.com';
       
       const response = await axios.patch(
-        `https://sa-task-management-backend.vercel.app/api/tasks/${taskId}`,
+        `http://localhost:5000/api/tasks/${taskId}`,
         { completed },
         {
           headers: {

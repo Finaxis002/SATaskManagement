@@ -696,6 +696,37 @@ const TaskBoard = () => {
       }),
     }));
 
+    const dispatch = useDispatch();
+    const [isUpdating, setIsUpdating] = useState(false);
+
+     const handleCompleteTask = async () => {
+       if (!task?._id) {
+        console.error('Task ID is missing');
+        return;
+      }
+  
+       setIsUpdating(true);
+       try {
+         const resultAction = await dispatch(
+           updateTaskCompletion({
+             taskId: task._id,
+             completed: !task.completed
+           })
+         );
+  
+        if (updateTaskCompletion.fulfilled.match(resultAction)) {
+          console.log('Update successful:', resultAction.payload);
+       } else {
+           throw new Error(resultAction.payload?.message || 'Update failed');
+        }
+      } catch (error) {
+         console.error('Completion error:', error);
+         alert(error.message);
+       } finally {
+         setIsUpdating(false);
+       }
+     };
+
     return (
       <div
         ref={drag}
@@ -740,9 +771,10 @@ const TaskBoard = () => {
         /> */}
         <FontAwesomeIcon
   icon={faCheckCircle}
-  onClick={() =>
-    dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }))
-  }
+  // onClick={() =>
+  //   dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }))
+  // }
+  onClick={handleCompleteTask}
   className={`h-5 w-5 ml-2 cursor-pointer ${
     task.completed ? "text-green-500" : "text-gray-300"
   }`}
