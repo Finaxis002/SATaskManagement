@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { FaBell, FaUserCircle, FaSearch } from "react-icons/fa";
-import { FiHelpCircle } from "react-icons/fi";
-import { LuSparkles } from "react-icons/lu";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileInitial, setProfileInitial] = useState("Fi");
+  const [searchTerm, setSearchTerm] = useState("");
+  const mockData = ["Dashboard", "Tasks", "Inbox", "Reminders"];
+  const filteredResults = mockData.filter((item) =>
+    item.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -44,6 +47,11 @@ const Header = () => {
     window.location.href = "/login";
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    console.log("Search Term:", e.target.value); // Replace with real logic
+  };
+
   return (
     <header className="bg-[#1e1f21] w-full text-white px-4 py-2 flex items-center justify-between border-b border-gray-700">
       {/* Search Bar */}
@@ -54,17 +62,32 @@ const Header = () => {
           </span>
           <input
             type="text"
-            placeholder="Search"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            placeholder="Search..."
             className="w-full pl-10 pr-4 py-2 rounded-full bg-[#3a3b3c] text-sm placeholder-gray-400 text-white focus:outline-none"
           />
+          {searchTerm && (
+            <ul className="absolute z-10 bg-white text-black mt-2 w-full rounded-md shadow-md">
+              {filteredResults.length > 0 ? (
+                filteredResults.map((item, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    {item}
+                  </li>
+                ))
+              ) : (
+                <li className="px-4 py-2 text-gray-500">No results</li>
+              )}
+            </ul>
+          )}
         </div>
       </div>
 
       {/* Right Icons */}
       <div className="flex items-center gap-4 ml-6 relative">
-        <FiHelpCircle className="text-lg text-gray-400 hover:text-white cursor-pointer" />
-        <LuSparkles className="text-lg text-pink-500 hover:text-pink-400 cursor-pointer" />
-
         {/* Profile Icon */}
         <div
           id="profile-menu"

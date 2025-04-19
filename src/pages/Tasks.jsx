@@ -1,19 +1,27 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { format, isToday, isTomorrow } from "date-fns";
-import { addTaskToColumn, fetchTasks, fetchAssignees, updateTaskCompletion, updateTask } from "../redux/taskSlice";
+import {
+  addTaskToColumn,
+  fetchTasks,
+  fetchAssignees,
+  updateTaskCompletion,
+  updateTask,
+} from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalendarAlt, faCheckCircle, faEdit } from "@fortawesome/free-regular-svg-icons";
+import {
+  faCalendarAlt,
+  faCheckCircle,
+  faEdit,
+} from "@fortawesome/free-regular-svg-icons";
 import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { io } from "socket.io-client";
 
-
-const socket = io("https://sataskmanagementbackend.onrender.com" ,{
+const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
-
 
 const ItemTypes = {
   TASK: "task",
@@ -26,12 +34,12 @@ const TaskBoard = () => {
     dispatch(fetchTasks());
     dispatch(fetchAssignees());
   }, [dispatch]);
- const[tasks , setTasks] = useState();
+  const [tasks, setTasks] = useState();
   const [showPopup, setShowPopup] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
-  const [taskToUpdate, setTaskToUpdate] = useState(null);  // For task editing
+  const [taskToUpdate, setTaskToUpdate] = useState(null); // For task editing
   const { role, userId } = useSelector((state) => state.auth);
 
   const [showAssigneeList, setShowAssigneeList] = useState(false);
@@ -39,29 +47,28 @@ const TaskBoard = () => {
   const assignees = useSelector((state) => state.tasks.assignees);
   const popupRef = useRef(null);
 
+  // Fetch tasks initially from the backend
+  useEffect(() => {
+    fetch("https://sataskmanagementbackend.onrender.com/api/tasks")
+      .then((res) => res.json())
+      .then((data) => setTasks(data))
+      .catch((error) => console.error("Error fetching tasks:", error));
 
-    // Fetch tasks initially from the backend
-    useEffect(() => {
-      fetch('https://sataskmanagementbackend.onrender.com/api/tasks')
-        .then(res => res.json())
-        .then(data => setTasks(data))
-        .catch(error => console.error('Error fetching tasks:', error));
-  
-      // Listen for the task-updated event to handle real-time updates
-      socket.on('task-updated', (updatedTask) => {
-        setTasks(prevTasks => {
-          // Update the task in the state
-          return prevTasks.map(task =>
-            task._id === updatedTask._id ? updatedTask : task
-          );
-        });
+    // Listen for the task-updated event to handle real-time updates
+    socket.on("task-updated", (updatedTask) => {
+      setTasks((prevTasks) => {
+        // Update the task in the state
+        return prevTasks.map((task) =>
+          task._id === updatedTask._id ? updatedTask : task
+        );
       });
-  
-      // Clean up the socket listener when the component unmounts
-      return () => {
-        socket.off('task-updated');
-      };
-    }, []);
+    });
+
+    // Clean up the socket listener when the component unmounts
+    return () => {
+      socket.off("task-updated");
+    };
+  }, []);
 
   const getDisplayDate = (due) => {
     if (due === "Today" || due === "Tomorrow") return due;
@@ -72,43 +79,40 @@ const TaskBoard = () => {
     return format(parsedDate, "MMM dd");
   };
 
-
   const handleAddTask = async () => {
     if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
-      return console.error("Missing required fields (Task name, Date, or Assignee email)");
+      return console.error(
+        "Missing required fields (Task name, Date, or Assignee email)"
+      );
     }
 
+    // const handleAddTask = async () => {
+    //   if (!newTaskName || !selectedDate) return;
+    //   const isoDueDate = new Date(selectedDate).toISOString();
 
-  
-  
-  // const handleAddTask = async () => {
-  //   if (!newTaskName || !selectedDate) return;
-  //   const isoDueDate = new Date(selectedDate).toISOString();
+    //   const newTask = {
+    //     name: newTaskName,
+    //     due: isoDueDate,
+    //     completed: false,
+    //     assignee,
+    //     column: taskColumns[currentColumnIndex].title,
+    //   };
 
-  //   const newTask = {
-  //     name: newTaskName,
-  //     due: isoDueDate,
-  //     completed: false,
-  //     assignee,
-  //     column: taskColumns[currentColumnIndex].title,
-  //   };
+    //   try {
+    //     await fetch("http://localhost:5000/api/tasks", {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/json" },
+    //       body: JSON.stringify(newTask),
+    //     });
 
-  //   try {
-  //     await fetch("http://localhost:5000/api/tasks", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify(newTask),
-  //     });
-
-  //     dispatch(
-  //       addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
-  //     );
-  //     closePopup();
-  //   } catch (err) {
-  //     console.error("Failed to save task", err);
-  //   }
-  // };
-
+    //     dispatch(
+    //       addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
+    //     );
+    //     closePopup();
+    //   } catch (err) {
+    //     console.error("Failed to save task", err);
+    //   }
+    // };
 
     const isoDueDate = new Date(selectedDate).toISOString();
 
@@ -121,15 +125,19 @@ const TaskBoard = () => {
     };
 
     try {
-      const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newTask),
-      });
-
+      const response = await fetch(
+        "https://sataskmanagementbackend.onrender.com/api/tasks",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newTask),
+        }
+      );
 
       if (response.ok) {
-        dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+        dispatch(
+          addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
+        );
         closePopup();
       } else {
         console.error("Failed to create task");
@@ -139,24 +147,30 @@ const TaskBoard = () => {
       const { assigneeEmail } = newTask; // assuming assignee email is passed with task
 
       // Send notification to the assigned employee
-      const notificationResponse = await fetch("https://sataskmanagementbackend.onrender.com/api/notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipientEmail: assigneeEmail,
-          message: `New task assigned: ${newTask.name} (Due: ${new Date(newTask.due).toLocaleDateString()})`,
-          taskId: taskData._id,  // Using the task id for notification
-        }),
-      });
+      const notificationResponse = await fetch(
+        "https://sataskmanagementbackend.onrender.com/api/notifications",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientEmail: assigneeEmail,
+            message: `New task assigned: ${newTask.name} (Due: ${new Date(
+              newTask.due
+            ).toLocaleDateString()})`,
+            taskId: taskData._id, // Using the task id for notification
+          }),
+        }
+      );
 
       const notificationData = await notificationResponse.json();
-      
+
       // Now, dispatch the task to the column in the frontend (Redux)
-      dispatch(addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask }));
+      dispatch(
+        addTaskToColumn({ columnIndex: currentColumnIndex, task: newTask })
+      );
 
       // Close the popup and reset fields
       closePopup();
-
     } catch (err) {
       console.error("Failed to save task", err);
     }
@@ -165,31 +179,36 @@ const TaskBoard = () => {
   // Handle updating task
   const handleUpdateTask = async () => {
     if (!newTaskName || !selectedDate || !assignee || !assignee.email) {
-      return console.error("Missing required fields (Task name, Date, or Assignee email)");
+      return console.error(
+        "Missing required fields (Task name, Date, or Assignee email)"
+      );
     }
-  
+
     const isoDueDate = new Date(selectedDate).toISOString();
-  
+
     const updatedTask = {
-      _id: taskToUpdate._id,  // Task ID to ensure we update the correct task
+      _id: taskToUpdate._id, // Task ID to ensure we update the correct task
       name: newTaskName,
       due: isoDueDate,
       completed: taskToUpdate.completed,
       assignee,
       column: taskToUpdate.column,
     };
-  
+
     try {
-      const response = await fetch(`https://sataskmanagementbackend.onrender.com/api/tasks/${taskToUpdate._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedTask),
-      });
-  
+      const response = await fetch(
+        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskToUpdate._id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedTask),
+        }
+      );
+
       if (response.ok) {
         // Find and update the task in the state
         dispatch(updateTask(updatedTask)); // Update the task in Redux
-  
+
         // Close the popup after the update
         closePopup();
       } else {
@@ -199,19 +218,18 @@ const TaskBoard = () => {
       console.error("Failed to update task", err);
     }
   };
-  
 
- // Open the popup for adding a new task or editing an existing task
- const handleOpenPopup = (columnIndex, task = null) => {
-  setTaskToUpdate(task);
-  setNewTaskName(task ? task.name : "");
-  setSelectedDate(task ? task.due : "");
-  setAssignee(task ? { name: task.assignee.name, email: task.assignee.email } : null);
-  setCurrentColumnIndex(columnIndex);
-  setShowPopup(true);
-};
-
-  
+  // Open the popup for adding a new task or editing an existing task
+  const handleOpenPopup = (columnIndex, task = null) => {
+    setTaskToUpdate(task);
+    setNewTaskName(task ? task.name : "");
+    setSelectedDate(task ? task.due : "");
+    setAssignee(
+      task ? { name: task.assignee.name, email: task.assignee.email } : null
+    );
+    setCurrentColumnIndex(columnIndex);
+    setShowPopup(true);
+  };
 
   const closePopup = () => {
     setNewTaskName("");
@@ -251,10 +269,18 @@ const TaskBoard = () => {
     return (
       <div
         ref={drag}
-        className={`bg-white rounded-md p-3 shadow-sm hover:shadow-md cursor-pointer border border-gray-200 flex justify-between items-start ${task.completed ? "opacity-60" : ""}`}
+        className={`bg-white rounded-md p-3 shadow-sm hover:shadow-md cursor-pointer border border-gray-200 flex justify-between items-start ${
+          task.completed ? "opacity-60" : ""
+        }`}
       >
         <div>
-          <h4 className={`text-sm mb-1 ${task.completed ? "line-through text-gray-400" : "text-gray-800 font-medium"}`}>
+          <h4
+            className={`text-sm mb-1 ${
+              task.completed
+                ? "line-through text-gray-400"
+                : "text-gray-800 font-medium"
+            }`}
+          >
             {task.name}
           </h4>
           <div className="text-xs text-gray-500 flex items-center">
@@ -272,9 +298,16 @@ const TaskBoard = () => {
         <FontAwesomeIcon
           icon={faCheckCircle}
           onClick={() => {
-            dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }));
+            dispatch(
+              updateTaskCompletion({
+                taskId: task._id,
+                completed: !task.completed,
+              })
+            );
           }}
-          className={`h-5 w-5 ml-2 cursor-pointer ${task.completed ? "text-green-500" : "text-gray-300"}`}
+          className={`h-5 w-5 ml-2 cursor-pointer ${
+            task.completed ? "text-green-500" : "text-gray-300"
+          }`}
         />
         {/* Edit Button */}
         <FontAwesomeIcon
@@ -307,26 +340,40 @@ const TaskBoard = () => {
     });
 
     return (
-      <div ref={drop} key={columnIndex} className="bg-transparent rounded-lg p-2">
+      <div
+        ref={drop}
+        key={columnIndex}
+        className="bg-transparent rounded-lg p-2"
+      >
         <div className="flex justify-between items-center mb-2 px-2">
           <h3 className="font-semibold text-gray-700">
-            {column.title} <span className="text-gray-500 text-sm">{column.tasks.length}</span>
+            {column.title}{" "}
+            <span className="text-gray-500 text-sm">{column.tasks.length}</span>
           </h3>
-          <button
-            className="text-gray-400 hover:text-gray-600 text-lg"
-            onClick={() => handleOpenPopup(columnIndex)}
-          >
-            +
-          </button>
+          {Role === "admin" && (
+            <button
+              className="text-gray-400 hover:text-gray-600 text-lg"
+              onClick={() => handleOpenPopup(columnIndex)}
+            >
+              +
+            </button>
+          )}
         </div>
 
         <div className="bg-gray-100 rounded-md p-2 min-h-[150px]">
           {column.tasks.length === 0 ? (
-            <div className="text-gray-400 text-sm text-center py-6">+ Add task</div>
+            <div className="text-gray-400 text-sm text-center py-6">
+              + Add task
+            </div>
           ) : (
             <div className="space-y-2">
               {column.tasks.map((task, taskIndex) => (
-                <TaskCard key={taskIndex} task={task} columnIndex={columnIndex} taskIndex={taskIndex} />
+                <TaskCard
+                  key={taskIndex}
+                  task={task}
+                  columnIndex={columnIndex}
+                  taskIndex={taskIndex}
+                />
               ))}
             </div>
           )}
@@ -340,7 +387,10 @@ const TaskBoard = () => {
     const filteredTasks =
       role === "admin"
         ? column.tasks // admin sees all tasks
-        : column.tasks.filter((task) => task.assignee?.email?.toLowerCase() === userId?.toLowerCase());
+        : column.tasks.filter(
+            (task) =>
+              task.assignee?.email?.toLowerCase() === userId?.toLowerCase()
+          );
 
     return {
       ...column,
@@ -348,23 +398,32 @@ const TaskBoard = () => {
     };
   });
 
+  const Role = localStorage.getItem("role");
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="p-6 bg-white w-full min-h-screen">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold">My Tasks</h2>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            onClick={() => handleOpenPopup(0)}
-          >
-            + Add task
-          </button>
+          {Role === "admin" && (
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              onClick={() => handleOpenPopup(0)}
+            >
+              + Add task
+            </button>
+          )}
         </div>
 
         {showPopup && (
-          <div ref={popupRef} className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md">
+          <div
+            ref={popupRef}
+            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md"
+          >
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-medium">{taskToUpdate ? "Update Task" : "Create Task"}</h3>
+              <h3 className="text-lg font-medium">
+                {taskToUpdate ? "Update Task" : "Create Task"}
+              </h3>
               <FontAwesomeIcon
                 icon={faTimes}
                 onClick={closePopup}
@@ -382,7 +441,10 @@ const TaskBoard = () => {
 
             <div className="flex justify-between items-center mb-3">
               <label className="flex items-center text-sm text-gray-600">
-                <FontAwesomeIcon icon={faCalendarAlt} className="h-5 w-5 mr-2" />
+                <FontAwesomeIcon
+                  icon={faCalendarAlt}
+                  className="h-5 w-5 mr-2"
+                />
                 <input
                   type="date"
                   value={selectedDate}
@@ -400,7 +462,12 @@ const TaskBoard = () => {
             </div>
 
             <div className="relative mt-2 flex items-center gap-2 text-sm text-gray-600">
-              <FontAwesomeIcon icon={faUser} onClick={() => setShowAssigneeList((prev) => !prev)} className="cursor-pointer h-4 w-4 hover:text-gray-800" title="Assign task" />
+              <FontAwesomeIcon
+                icon={faUser}
+                onClick={() => setShowAssigneeList((prev) => !prev)}
+                className="cursor-pointer h-4 w-4 hover:text-gray-800"
+                title="Assign task"
+              />
               {assignee && (
                 <span className="text-xs text-gray-700">
                   Assigned to: {assignee.name}
@@ -409,7 +476,9 @@ const TaskBoard = () => {
               {showAssigneeList && (
                 <div className="absolute left-0 top-6 z-50 w-64 max-h-40 overflow-y-auto bg-white shadow border rounded p-2">
                   {assignees.length === 0 ? (
-                    <p className="text-xs text-gray-500 text-center">No users found</p>
+                    <p className="text-xs text-gray-500 text-center">
+                      No users found
+                    </p>
                   ) : (
                     assignees.map((emp) => (
                       <div
@@ -432,7 +501,11 @@ const TaskBoard = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {filteredTaskColumns.map((column, columnIndex) => (
-            <TaskColumn key={columnIndex} column={column} columnIndex={columnIndex} />
+            <TaskColumn
+              key={columnIndex}
+              column={column}
+              columnIndex={columnIndex}
+            />
           ))}
         </div>
       </div>
