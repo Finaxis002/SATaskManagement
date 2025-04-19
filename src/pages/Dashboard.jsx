@@ -41,11 +41,7 @@ const Dashboard = () => {
       <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-800">Task Overview</h2>
-          <button
-            className="text-sm text-indigo-600 hover:underline focus:outline-none"
-            onClick={() => alert('Create New Task')}>
-            Create New Task
-          </button>
+        
         </div>
         <div className="mt-6">
           <TaskOverview />
