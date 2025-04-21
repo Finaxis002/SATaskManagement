@@ -42,16 +42,11 @@ const Sidebar = () => {
     setIsAddEmployeeModalOpen(true);
   };
 
-  const closeAddEmployeeModal = () => {
-    setIsAddEmployeeModalOpen(false);
-  };
 
   const unreadCount = useSelector((state) => state.notifications.unreadCount);
   const dispatch = useDispatch();
 
-  const handleNotificationClick = () => {
-    dispatch(markAllAsRead()); // Mark all notifications as read when clicked
-  };
+ 
 
   useEffect(() => {
     const fetchInboxCount = async () => {
@@ -59,7 +54,7 @@ const Sidebar = () => {
       const role = localStorage.getItem("role") || "user";
 
       try {
-        const res = await axios.get("http://localhost:5000/api/unread-count", {
+        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/unread-count", {
           params: { name, role },
         });
         const count = res.data.unreadCount;
@@ -140,7 +135,7 @@ const Sidebar = () => {
           to="/notifications"
         />
 
-        <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
+        
       </div>
 
       {/* Footer */}

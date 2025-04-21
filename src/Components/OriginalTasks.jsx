@@ -226,13 +226,13 @@ const TaskBoard = () => {
           <h4
             className={`text-sm mb-1 ${
               task.completed
-                ? "line-through text-gray-800"
+                ? "line-through text-gray-400"
                 : "text-gray-800 font-medium"
             }`}
           >
             {task.name}
           </h4>
-          <div className="text-sm text-gray-900 flex items-center">
+          <div className="text-xs text-gray-500 flex items-center">
             <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-1" />
             {/* {task.due} */}
             {getDisplayDate(task.due)}
@@ -240,7 +240,7 @@ const TaskBoard = () => {
 
           {/* ✅ Assignee display */}
           {task.assignee?.name && (
-            <div className="text-sm text-gray-900 flex items-center">
+            <div className="text-xs text-gray-500 flex items-center">
               <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-1" />
               {task.assignee.name}
             </div>
@@ -294,11 +294,11 @@ const TaskBoard = () => {
         <div className="flex justify-between items-center mb-2 px-2">
           <h3 className="font-semibold text-gray-700">
             {column.title}{" "}
-            <span className="text-gray-900 text-sm">{column.tasks.length}</span>
+            <span className="text-gray-500 text-sm">{column.tasks.length}</span>
           </h3>
           {Role === "admin" && (
             <button
-              className="text-gray-800 hover:text-gray-600 text-lg"
+              className="text-gray-400 hover:text-gray-600 text-lg"
               onClick={() => handleOpenPopup(columnIndex)}
             >
               +
@@ -308,7 +308,7 @@ const TaskBoard = () => {
 
         <div className="bg-gray-100 rounded-md p-2 min-h-[150px]">
           {column.tasks.length === 0 ? (
-            <div className="text-gray-800 text-sm text-center py-6">
+            <div className="text-gray-400 text-sm text-center py-6">
               + Add task
             </div>
           ) : (
@@ -375,7 +375,7 @@ const TaskBoard = () => {
               <FontAwesomeIcon
                 icon={faTimes}
                 onClick={closePopup}
-                className="text-gray-900 hover:text-gray-700 cursor-pointer"
+                className="text-gray-500 hover:text-gray-700 cursor-pointer"
               />
             </div>
 
@@ -419,7 +419,7 @@ const TaskBoard = () => {
               />
 
               {assignee && (
-                <span className="text-sm text-gray-700">
+                <span className="text-xs text-gray-700">
                   Assigned to: {assignee.name}
                 </span>
               )}
@@ -428,7 +428,7 @@ const TaskBoard = () => {
               {showAssigneeList && (
                 <div className="absolute left-0 top-6 z-50 w-64 max-h-40 overflow-y-auto bg-white shadow border rounded p-2">
                   {assignees.length === 0 ? (
-                    <p className="text-sm text-gray-900 text-center">
+                    <p className="text-xs text-gray-500 text-center">
                       No users found
                     </p>
                   ) : (
