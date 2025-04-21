@@ -15,19 +15,10 @@ const Inbox = () => {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [groups, setGroups] = useState([]);
   const [groupUnreadCounts, setGroupUnreadCounts] = useState({});
-  const [groupMembers, setGroupMembers] = useState({});
-
-  const [showMemberModal, setShowMemberModal] = useState(false);
-  const [selectedGroupForMembers, setSelectedGroupForMembers] = useState("");
-
-  const allGroups = [
-    "Marketing",
-    "Sales",
-    "Operations",
-    "IT/Software",
-    "HR",
-    "Administrator",
-  ];
+  const [showGroups, setShowGroups] = useState(true);
+  const [selectedUser, setSelectedUser] = useState(null); // For personal chat
+  const [users, setUsers] = useState([]); // ✅ Must be an array
+  const [userUnreadCounts, setUserUnreadCounts] = useState([]);
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
@@ -35,7 +26,18 @@ const Inbox = () => {
     role: localStorage.getItem("role"),
   };
 
+  // Fetch groups when the component is mounted or updated
   useEffect(() => {
+    // Get groups based on user role
+    const allGroups = [
+      "Marketing",
+      "Sales",
+      "Operations",
+      "IT/Software",
+      "HR",
+      "Administrator",
+    ];
+
     if (currentUser.role === "admin") {
       setGroups(allGroups); // Admin sees all groups
     } else if (currentUser.department) {
@@ -44,7 +46,16 @@ const Inbox = () => {
     }
   }, [currentUser.role, currentUser.department]);
 
-  const scrollRef = useRef(null);
+  const scrollRef = useRef(null); // Your existing scrollRef
+
+  // useEffect to auto-scroll whenever messages are updated
+  useEffect(() => {
+    // Scroll to the bottom of the chat when new messages are added
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]); // This will run whenever messages change
+
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -52,40 +63,21 @@ const Inbox = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    const fetchGroupMembers = async () => {
+    const fetchAllUsers = async () => {
       try {
         const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/group-members"
+          "https://sataskmanagementbackend.onrender.com/api/employees"
         );
-        setGroupMembers(res.data.groupMembers || {});
-        console.log("👥 Group Members:", res.data.groupMembers);
+        console.log("Fetched users:", res.data); // Inspect the response structure
+        setUsers(res.data); // Set the entire user objects
       } catch (err) {
-        console.error("❌ Failed to fetch group members", err.message);
+        console.error("❌ Failed to fetch users:", err.message);
+        setUsers([]); // Fallback to an empty array
       }
     };
 
-    fetchGroupMembers();
+    fetchAllUsers();
   }, []);
-
-  // Fetch messages when group is changed
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const encodedGroup = encodeURIComponent(selectedGroup);
-        const res = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/messages/${encodedGroup}`
-        );
-        setMessages(res.data.messages.reverse()); // ✅ Fix here
-        console.log("📩 Messages fetched:", res.data.length);
-        console.log("🧠 Selected Group:", selectedGroup);
-        console.log("🧑‍💼 Current User Department:", currentUser.department);
-      } catch (err) {
-        console.error("❌ Error fetching messages:", err.message);
-      }
-    };
-
-    fetchMessages(); // Call fetch on initial render and every time selectedGroup changes
-  }, [selectedGroup]);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -94,39 +86,47 @@ const Inbox = () => {
     }
   };
 
-  // ✅ Mark messages as read
   useEffect(() => {
-    const markGroupMessagesAsRead = async () => {
-      const name = localStorage.getItem("name");
-
+    const fetchMessages = async () => {
       try {
-        const res = await axios.put(
-          "https://sataskmanagementbackend.onrender.com/api/mark-read-group",
-          {
-            name,
-            group: selectedGroup,
-          }
-        );
-        console.log(
-          `✅ Marked ${res.data.updated} messages as read in ${selectedGroup}`
-        );
-
-        socket.emit("inboxRead", { name }); // Trigger real-time badge update
+        if (selectedUser && selectedUser.name) {
+          const res = await axios.get(
+            `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`
+          );
+  
+          const filteredMessages = res.data.messages.filter((msg) => {
+            const trimmedSender = msg.sender ? msg.sender.trim().toLowerCase() : "";
+            const trimmedRecipient = msg.recipient ? msg.recipient.trim().toLowerCase() : "";
+            const trimmedLoggedInUser = currentUser.name.trim().toLowerCase();
+  
+            const isPersonalMessage =
+              trimmedSender === trimmedLoggedInUser || trimmedRecipient === trimmedLoggedInUser;
+  
+            return isPersonalMessage && (msg.group === undefined || msg.group === "");
+          });
+  
+          setMessages(filteredMessages.reverse()); // No need to reverse, as you'll append new messages at the bottom
+        } else if (selectedGroup) {
+          const encodedGroup = encodeURIComponent(selectedGroup);
+          const res = await axios.get(
+            `https://sataskmanagementbackend.onrender.com/api/messages/${encodedGroup}`
+          );
+          setMessages(res.data.messages.reverse()); // No reverse here
+        }
       } catch (err) {
-        console.error("❌ Failed to mark group messages as read:", err.message);
+        console.error("❌ Error fetching messages:", err.message);
       }
     };
-
-    markGroupMessagesAsRead();
-  }, [selectedGroup]); // ✅ Triggered on group switch
-
+  
+    fetchMessages();
+  }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
+  
   const sendMessage = async () => {
     if (!messageText.trim()) return;
 
     const newMessage = {
       sender: currentUser.name,
       text: messageText,
-      group: selectedGroup,
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -134,22 +134,35 @@ const Inbox = () => {
       read: false, // Mark message as unread initially
     };
 
-    console.log("Sending message:", newMessage); // Log the message data
-
     try {
-      const res = await axios.post(
-        `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
-          selectedGroup
-        )}`,
-        newMessage
-      );
+      let res;
 
-      console.log("✅ Message saved to DB:", res.data);
+      if (selectedUser) {
+        // If a user is selected, send the message to that user
+        res = await axios.post(
+          `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`,
+          newMessage
+        );
+        console.log("✅ Message sent to user:", res.data);
+      } else if (selectedGroup) {
+        // If a group is selected, send the message to the group
+        res = await axios.post(
+          `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
+            selectedGroup
+          )}`,
+          newMessage
+        );
+        console.log("✅ Message sent to group:", res.data);
+      }
 
-      socket.emit("sendMessage", res.data); // Emit message data to the group
+      // Emit the message to the socket for real-time updates
+      socket.emit("sendMessage", res.data);
       console.log("📤 Message sent via socket:", res.data);
 
-      setMessageText(""); // Clear input after sending
+      // Optimistically update the messages state with the new message at the bottom
+      setMessages((prevMessages) => [...prevMessages, res.data]); // Append new message to the bottom
+
+      setMessageText(""); // Clear the input after sending
     } catch (err) {
       console.error("❌ Failed to send message:", err.message);
     }
@@ -160,35 +173,114 @@ const Inbox = () => {
     setMessageText(value);
   };
 
-  const handleGroupClick = (group) => {
-    setSelectedGroup(group); // Updates the selected group
+  const markMessagesAsRead = async (identifier) => {
+    try {
+      // Call the API to mark messages as read for this group or user
+      const res = await axios.put("https://sataskmanagementbackend.onrender.com/api/mark-read", {
+        identifier,
+      });
+      console.log(`Marked messages as read for ${identifier}:`, res.data);
+
+      // Emit a socket event to mark messages as read
+      socket.emit("markRead", { identifier });
+
+      // Update the unread count locally for real-time update
+      if (selectedGroup) {
+        setGroupUnreadCounts((prevCounts) => {
+          const updatedCounts = { ...prevCounts };
+          updatedCounts[selectedGroup] = 0; // Reset unread count for the group
+          return updatedCounts;
+        });
+      } else if (selectedUser) {
+        setUserUnreadCounts((prevCounts) => {
+          const updatedCounts = { ...prevCounts };
+          updatedCounts[selectedUser.name] = 0; // Reset unread count for the user
+          return updatedCounts;
+        });
+      }
+    } catch (err) {
+      console.error("❌ Failed to mark messages as read:", err.message);
+    }
   };
 
-  const handleShowMembers = (group) => {
-    setSelectedGroupForMembers(group);
-    setShowMemberModal(true);
+  useEffect(() => {
+    socket.on("markRead", (data) => {
+      console.log("Message marked as read:", data.identifier);
+
+      // If it's a group message
+      if (selectedGroup && data.identifier === selectedGroup) {
+        setGroupUnreadCounts((prevCounts) => {
+          const updatedCounts = { ...prevCounts };
+          updatedCounts[selectedGroup] = 0; // Reset unread count for the group
+          return updatedCounts;
+        });
+      }
+
+      // If it's a user message
+      if (selectedUser && data.identifier === selectedUser.name) {
+        setUserUnreadCounts((prevCounts) => {
+          const updatedCounts = { ...prevCounts };
+          updatedCounts[selectedUser.name] = 0; // Reset unread count for the user
+          return updatedCounts;
+        });
+      }
+    });
+
+    return () => {
+      socket.off("markRead");
+    };
+  }, [selectedGroup, selectedUser]);
+
+  // When selecting a group
+  const handleGroupClick = (group) => {
+    setSelectedGroup(group);
+    setSelectedUser(null); // Clear selected user when switching to a group
+
+    // Mark messages as read for this group
+    markMessagesAsRead(group);
+  };
+
+  const handleUserClick = (user) => {
+    setSelectedUser(user);
+    setSelectedGroup(null); // Clear selected group when switching to a user
+
+    // Mark messages as read for this user
+    markMessagesAsRead(user.name);
   };
 
   useEffect(() => {
     socket.on("receiveMessage", (msg) => {
       console.log("📨 Real-time message received:", msg);
-      // ✅ Only update messages if it belongs to the selected group
-      if (msg.group === selectedGroup) {
-        setMessages((prev) => {
-          if (Array.isArray(prev)) {
-            return [...prev, msg];
-          }
-          return [msg];
+
+      // For Groups:
+      if (msg.group) {
+        if (!selectedGroup || msg.group !== selectedGroup) {
+          // Increment unread count if the message is not for the selected group
+          setGroupUnreadCounts((prevCounts) => {
+            const updatedCounts = { ...prevCounts };
+            updatedCounts[msg.group] = (updatedCounts[msg.group] || 0) + 1;
+            return updatedCounts;
+          });
+        }
+      }
+
+      // For Personal Messages:
+      if (
+        msg.recipient === currentUser.name &&
+        msg.sender !== currentUser.name
+      ) {
+        setUserUnreadCounts((prevCounts) => {
+          const updatedCounts = { ...prevCounts };
+          updatedCounts[msg.sender] = (updatedCounts[msg.sender] || 0) + 1;
+          return updatedCounts;
         });
-      } else {
-        console.log("❌ Ignored message from other group:", msg.group);
       }
     });
 
     return () => {
       socket.off("receiveMessage");
     };
-  }, [selectedGroup]);
+  }, [selectedGroup, currentUser.name]);
 
   //fetch group unread badge
   useEffect(() => {
@@ -218,92 +310,224 @@ const Inbox = () => {
     };
   }, []);
 
+  useEffect(() => {
+    console.log("Selected Group:", selectedGroup);
+    console.log("Selected User:", selectedUser);
+  }, [selectedGroup, selectedUser]);
+
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
       {/* Left column for groups */}
-      <div className="w-1/4 bg-white p-5 rounded-xl shadow-lg border border-gray-200">
-        <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
-          Groups
-        </h3>
-
-        {groups.length === 0 ? (
-          <p className="text-center text-gray-400 italic">
-            No chat group assigned.
-          </p>
-        ) : (
-          <ul className="space-y-1">
-            {groups.map((group) => (
-              <li
-                key={group}
-                onClick={() => handleGroupClick(group)}
-                className={`relative group cursor-pointer p-3 rounded-lg flex justify-between items-center transition-all duration-200 border ${
-                  selectedGroup === group
-                    ? "bg-indigo-100 border-indigo-300"
-                    : "hover:bg-gray-50 border-gray-200"
-                }`}
-              >
-                {/* Group Info */}
-                <div className="flex flex-col gap-0.5">
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering chat switch
-                      handleShowMembers(group);
-                    }}
-                    className="text-indigo-600 font-semibold text-sm hover:underline relative"
-                  >
-                    {group}
-
-                    {/* 👇 Inline Popup Panel */}
-                    {showMemberModal && selectedGroupForMembers === group && (
-                      <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 shadow-lg rounded-md z-50 p-3">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                          Members
-                        </h4>
-                        <ul className="max-h-40 overflow-y-auto space-y-1 text-sm text-gray-600">
-                          {(groupMembers[group] || []).map((member, idx) => (
-                            <li
-                              key={idx}
-                              className="border-b pb-1 last:border-0"
-                            >
-                              {member}
-                            </li>
-                          ))}
-                        </ul>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowMemberModal(false);
-                          }}
-                          className="w-full mt-2 text-xs text-indigo-600 hover:underline"
-                        >
-                          Close
-                        </button>
-                      </div>
-                    )}
-                  </span>
-
-                  <span className="text-xs text-gray-500">
-                    {groupMembers[group]?.length || 0} member
-                    {groupMembers[group]?.length > 1 ? "s" : ""}
-                  </span>
-                </div>
-
-                {/* Badge */}
-                {groupUnreadCounts[group] > 0 && group !== selectedGroup && (
-                  <span className="ml-2 bg-red-500 text-white text-[11px] px-2 py-0.5 rounded-full shadow-sm">
-                    {groupUnreadCounts[group]}
-                  </span>
+      <div className="w-1/4 bg-white p-5 rounded-xl shadow-lg border border-gray-200 flex flex-col h-full">
+        {/* Toggle Buttons for Groups and Users/Personal Chat */}
+        <div className="flex gap-4 mb-4">
+          <button
+            onClick={() => setShowGroups(true)} // Show Groups when clicked
+            className={`px-4 py-2 text-sm rounded-lg ${
+              showGroups ? "bg-indigo-100" : "bg-gray-200"
+            }`}
+          >
+            Groups
+            {/* Show badge if there's any unread message for any group */}
+            {Object.values(groupUnreadCounts).some((count) => count > 0) && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 py-0 rounded-full shadow-lg">
+                {/* Show total unread count for all groups */}
+                {Object.values(groupUnreadCounts).reduce(
+                  (acc, count) => acc + count,
+                  0
                 )}
-              </li>
-            ))}
-          </ul>
+              </span>
+            )}
+          </button>
+
+          {/* Conditionally render the second button based on role */}
+          {currentUser.role === "user" && (
+            <button
+              onClick={() => setShowGroups(false)} // Show Personal Chat when clicked
+              className={`px-4 py-2 text-sm rounded-lg ${
+                !showGroups ? "bg-indigo-100" : "bg-gray-200"
+              }`}
+            >
+              Personal Chat
+            </button>
+          )}
+
+          {currentUser.role === "admin" && (
+            <button
+              onClick={() => setShowGroups(false)} // Show Users when clicked
+              className={`px-4 py-2 text-sm rounded-lg ${
+                !showGroups ? "bg-indigo-100" : "bg-gray-200"
+              }`}
+            >
+              Users
+              {/* Show badge if there's any unread message for any user */}
+              {Object.values(userUnreadCounts).some((count) => count > 0) && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 py-0 rounded-full shadow-lg">
+                  {/* Show total unread count for all users */}
+                  {Object.values(userUnreadCounts).reduce(
+                    (acc, count) => acc + count,
+                    0
+                  )}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Section 1: Groups */}
+        {showGroups ? (
+          <div className="flex-1 overflow-auto mb-6">
+            <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">
+              {currentUser.role === "user" ? "Your Groups" : "Groups"}
+            </h3>
+
+            {groups.length === 0 ? (
+              <p className="text-center text-gray-400 italic">
+                No chat group assigned.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {groups.map((group) => (
+                  <li
+                    key={group}
+                    onClick={() => handleGroupClick(group)}
+                    className={`relative cursor-pointer p-3 rounded-lg flex justify-between items-center transition-all duration-200 border ${
+                      selectedGroup === group
+                        ? "bg-indigo-100 border-indigo-300"
+                        : "hover:bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex flex-row items-center gap-2">
+                      <span className="text-indigo-600 font-medium text-sm hover:underline relative">
+                        {group}
+                      </span>
+                      {/* Show unread badge if there are unread messages */}
+                      {groupUnreadCounts[group] > 0 && (
+                        <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
+                          {groupUnreadCounts[group]}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <div className="border-t border-gray-200 pt-4">
+            {/* Section 2: Users (For admin only) */}
+            {currentUser.role === "admin" && (
+              <>
+                <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
+                  Users
+                </h3>
+                <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                  {Array.isArray(users) && users.length > 0 ? (
+                    users.map((user, index) => (
+                      <div
+                        key={user.name}
+                        onClick={() => handleUserClick(user)} // Store the entire user object
+                        className={`cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200 ${
+                          selectedUser && selectedUser.name === user.name
+                            ? "bg-indigo-100"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span>{user.name}</span>
+                          {/* Show unread badge if there are unread messages */}
+                          {userUnreadCounts[user.name] > 0 && (
+                            <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
+                              {userUnreadCounts[user.name]}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 text-center">
+                      No users found.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Section for Personal Chat (for user only) */}
+            {currentUser.role === "user" && (
+              <>
+                <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
+                  Personal Chat
+                </h3>
+                <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                  {/* Map over the users to display personal chat options */}
+
+                  {Array.isArray(users) && users.length > 0 ? (
+                    currentUser.role === "admin" ? (
+                      // For admins, display all users for personal chat
+                      users.map((user, index) => (
+                        <div
+                          key={index}
+                          onClick={() => {
+                            setSelectedUser(user); // Store the entire user object
+                            console.log("Admin selected user:", user.name); // Log the selected user when admin selects
+                          }}
+                          className={`cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200 ${
+                            selectedUser && selectedUser.name === user.name
+                              ? "bg-indigo-100"
+                              : ""
+                          }`}
+                        >
+                          {user.name ? user.name : "No name available"}
+                          {/* Displaying the user name */}
+                        </div>
+                      ))
+                    ) : (
+                      // For users, only display the admin's name in the sidebar
+                      <div
+                        key="admin"
+                        onClick={() => {
+                          const admin = { name: "Admin" }; // Set the admin object
+                          setSelectedUser(admin); // Set the entire admin object for selectedUser
+                          console.log("User selected admin:", admin.name); // Log when user selects the admin
+                        }}
+                        className="cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200"
+                      >
+                        {/* Display the admin's name when the logged-in user is a 'user' */}
+                        {currentUser.role === "user"
+                          ? "Admin"
+                          : currentUser.name}
+                      </div>
+                    )
+                  ) : (
+                    <p className="text-sm text-gray-400 text-center">
+                      No users found.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
 
       {/* Right column for chat messages */}
       <div className="w-3/4 pl-4 flex flex-col">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          {selectedGroup} Chat
+          {/* {selectedGroup
+            ? `Chat with ${selectedGroup}` // If a group is selected, show group name
+            : `${selectedUser.name}`
+            ? `Chat with ${selectedUser.name}` // If a user is selected, show user name
+            : "Select a Group or User to Chat"}{" "} */}
+          {/* Default message if none is selected */}
+
+          {
+            selectedUser
+              ? `Chat with ${selectedUser.name}` // If group is selected, show group name
+              : selectedGroup
+              ? `Chat with ${selectedGroup}` // If user is selected, show user name
+              : "Select a Group or User to Chat" // If neither is selected, show default message
+          }
         </h2>
 
         <div
