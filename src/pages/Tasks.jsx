@@ -1,24 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-
-import { format, isToday, isTomorrow } from "date-fns";
+import TaskColumn from "../Components/TaskColumn";
 
 import {
   addTaskToColumn,
-  toggleTaskCompletion,
-  removeTaskFromColumn,
   fetchTasks,
   fetchAssignees,
-  updateTaskCompletion,
 } from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCalendarAlt,
-  faCheckCircle,
-  faEdit,
-} from "@fortawesome/free-regular-svg-icons";
+import { faCalendarAlt } from "@fortawesome/free-regular-svg-icons";
 import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { DndProvider, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
 import { io } from "socket.io-client";
@@ -26,10 +18,6 @@ import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
-
-const ItemTypes = {
-  TASK: "task",
-};
 
 const TaskBoard = () => {
   const taskColumns = useSelector((state) => state.tasks.taskColumns);
@@ -78,22 +66,6 @@ const TaskBoard = () => {
   }, []);
 
   const popupRef = useRef(null);
-
-  const getDisplayDate = (due) => {
-    // If it's already labeled as Today/Tomorrow from backend, return it
-    if (due === "Today" || due === "Tomorrow") return due;
-
-    // Try to parse the string into a Date
-    const parsedDate = new Date(due);
-
-    // If parsing fails, return raw string as fallback
-    if (isNaN(parsedDate.getTime())) return due;
-
-    if (isToday(parsedDate)) return "Today";
-    if (isTomorrow(parsedDate)) return "Tomorrow";
-
-    return format(parsedDate, "MMM dd");
-  };
 
   const handleAddTask = async () => {
     if (!newTaskName || !selectedDate || !assignee) return; // Ensure Assignee is selected as well.
@@ -205,128 +177,6 @@ const TaskBoard = () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-
-  const TaskCard = ({ task, columnIndex, taskIndex }) => {
-    const [{ isDragging }, drag] = useDrag(() => ({
-      type: ItemTypes.TASK,
-      item: { columnIndex, taskIndex, task },
-      collect: (monitor) => ({
-        isDragging: !!monitor.isDragging(),
-      }),
-    }));
-
-    return (
-      <div
-        ref={drag}
-        className={`bg-white rounded-md p-3 shadow-sm hover:shadow-md cursor-pointer border border-gray-200 flex justify-between items-start ${
-          task.completed ? "opacity-60" : ""
-        }`}
-      >
-        <div>
-          <h4
-            className={`text-sm mb-1 ${
-              task.completed
-                ? "line-through text-gray-800"
-                : "text-gray-800 font-medium"
-            }`}
-          >
-            {task.name}
-          </h4>
-          <div className="text-sm text-gray-900 flex items-center">
-            <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-1" />
-            {/* {task.due} */}
-            {getDisplayDate(task.due)}
-          </div>
-
-          {/* ✅ Assignee display */}
-          {task.assignee?.name && (
-            <div className="text-sm text-gray-900 flex items-center">
-              <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-1" />
-              {task.assignee.name}
-            </div>
-          )}
-        </div>
-
-        <FontAwesomeIcon
-          icon={faCheckCircle}
-          onClick={() =>
-            dispatch(
-              updateTaskCompletion({
-                taskId: task._id,
-                completed: !task.completed,
-              })
-            )
-          }
-          className={`h-5 w-5 ml-2 cursor-pointer ${
-            task.completed ? "text-green-500" : "text-gray-300"
-          }`}
-        />
-      </div>
-    );
-  };
-
-  const TaskColumn = ({ column, columnIndex }) => {
-    const [, drop] = useDrop({
-      accept: ItemTypes.TASK,
-      drop: (item) => {
-        if (item.columnIndex !== columnIndex) {
-          dispatch({
-            type: "tasks/addTaskToColumn",
-            payload: { columnIndex, task: item.task },
-          });
-          dispatch({
-            type: "tasks/removeTaskFromColumn",
-            payload: {
-              columnIndex: item.columnIndex,
-              taskIndex: item.taskIndex,
-            },
-          });
-        }
-      },
-    });
-
-    return (
-      <div
-        ref={drop}
-        key={columnIndex}
-        className="bg-transparent rounded-lg p-2"
-      >
-        <div className="flex justify-between items-center mb-2 px-2">
-          <h3 className="font-semibold text-gray-700">
-            {column.title}{" "}
-            <span className="text-gray-900 text-sm">{column.tasks.length}</span>
-          </h3>
-          {Role === "admin" && (
-            <button
-              className="text-gray-800 hover:text-gray-600 text-lg"
-              onClick={() => handleOpenPopup(columnIndex)}
-            >
-              +
-            </button>
-          )}
-        </div>
-
-        <div className="bg-gray-100 rounded-md p-2 min-h-[150px]">
-          {column.tasks.length === 0 ? (
-            <div className="text-gray-800 text-sm text-center py-6">
-              + Add task
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {column.tasks.map((task, taskIndex) => (
-                <TaskCard
-                  key={taskIndex}
-                  task={task}
-                  columnIndex={columnIndex}
-                  taskIndex={taskIndex}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   // Filter tasks per column based on role
 
@@ -451,8 +301,17 @@ const TaskBoard = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {filteredTaskColumns.map((column, columnIndex) => (
+        <div className="bg-gray-100 rounded-md overflow-hidden">
+          {/* Optional: List Header Row */}
+          <div className="flex justify-between p-3 font-semibold text-gray-600 border-b">
+            <span className="w-1/4">Task</span>
+            <span className="w-1/4">Due Date</span>
+            <span className="w-1/4">Assignee</span>
+            <span className="w-1/4 text-right">Status</span>
+          </div>
+
+          {/* All tasks in flat list */}
+          {filteredTaskColumns.flatMap((column, columnIndex) => (
             <TaskColumn
               key={columnIndex}
               column={column}
