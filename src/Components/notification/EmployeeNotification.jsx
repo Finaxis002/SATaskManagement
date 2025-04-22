@@ -16,6 +16,7 @@ const EmployeeNotifications = ({setNotificationCount}) => {
   const { allNotifications, unreadCount } = useSelector(
     (state) => state.notifications
   );
+ 
   useEffect(() => {
     if (unreadCount > 0) {
       dispatch(markAllAsRead());
@@ -62,33 +63,65 @@ const EmployeeNotifications = ({setNotificationCount}) => {
   }, [dispatch]);
 
   // Fetch notifications from the backend on component mount
+  // useEffect(() => {
+  //   const email = localStorage.getItem("userId");
+
+  //   if (email) {
+  //     fetch(`https://sataskmanagementbackend.onrender.com/api/notifications/${email}`) // Backend route for fetching notifications
+  //       .then((response) => response.json())
+  //       .then((data) => {
+  //         // setNotifications((prev) => [...prev, ...data]); // Merge with real-time notifications
+  //         setNotifications((prev) => {
+  //           const newNotifications = [...prev];
+
+  //           // Avoid duplicate notifications from backend and real-time
+  //           data.forEach((notification) => {
+  //             if (!newNotifications.some((note) => note.message === notification.message)) {
+  //               newNotifications.push(notification);
+  //             }
+  //           });
+  //           newNotifications.forEach((notification) => dispatch(addNotification(notification)));
+
+  //           return newNotifications;
+  //         });
+          
+  //       })
+  //       .catch((err) => console.error("Error fetching notifications:", err));
+  //   }
+  // }, [dispatch]);
   useEffect(() => {
     const email = localStorage.getItem("userId");
-
+  
     if (email) {
       fetch(`https://sataskmanagementbackend.onrender.com/api/notifications/${email}`) // Backend route for fetching notifications
         .then((response) => response.json())
         .then((data) => {
-          // setNotifications((prev) => [...prev, ...data]); // Merge with real-time notifications
+          // Add 'type: 'employee'' to each notification in the fetched data
+          const updatedNotifications = data.map((notification) => ({
+            ...notification,
+            type: 'employee', // Add type field as 'employee' for each notification
+          }));
+  
           setNotifications((prev) => {
             const newNotifications = [...prev];
-
+  
             // Avoid duplicate notifications from backend and real-time
-            data.forEach((notification) => {
+            updatedNotifications.forEach((notification) => {
               if (!newNotifications.some((note) => note.message === notification.message)) {
                 newNotifications.push(notification);
               }
             });
+  
+            // Dispatch the updated notifications to the Redux store
             newNotifications.forEach((notification) => dispatch(addNotification(notification)));
-
+  
             return newNotifications;
           });
-          
         })
         .catch((err) => console.error("Error fetching notifications:", err));
     }
   }, [dispatch]);
-
+  
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-3">📢 Notifications</h2>

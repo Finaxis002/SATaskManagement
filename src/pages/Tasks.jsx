@@ -508,20 +508,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
@@ -545,6 +531,7 @@ import {
 import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import axios from "axios";
 
 const ItemTypes = {
   TASK: "task",
@@ -699,34 +686,96 @@ const TaskBoard = () => {
     const dispatch = useDispatch();
     const [isUpdating, setIsUpdating] = useState(false);
 
-     const handleCompleteTask = async () => {
-       if (!task?._id) {
+    //  const handleCompleteTask = async () => {
+    //    if (!task?._id) {
+    //     console.error('Task ID is missing');
+    //     return;
+    //   }
+  
+    //    setIsUpdating(true);
+    //    try {
+    //      const resultAction = await dispatch(
+    //        updateTaskCompletion({
+    //          taskId: task._id,
+    //          completed: !task.completed
+    //        })
+    //      );
+  
+    //     if (updateTaskCompletion.fulfilled.match(resultAction)) {
+    //       console.log('Update successful:', resultAction.payload);
+    //    } else {
+    //        throw new Error(resultAction.payload?.message || 'Update failed');
+    //     }
+    //   } catch (error) {
+    //      console.error('Completion error:', error);
+    //      alert(error.message);
+    //    } finally {
+    //      setIsUpdating(false);
+    //    }
+    //  };
+    const handleCompleteTask = async () => {
+      console.log("into the handle complete task")
+      console.log("Task Object:", task);
+
+      if (!task?._id) {
         console.error('Task ID is missing');
         return;
       }
-  
-       setIsUpdating(true);
-       try {
-         const resultAction = await dispatch(
-           updateTaskCompletion({
-             taskId: task._id,
-             completed: !task.completed
-           })
-         );
-  
+    
+      setIsUpdating(true);
+    
+      try {
+        const role = localStorage.getItem("role"); // Get role from localStorage
+    
+        // Call to Redux action to update task completion
+        const resultAction = await dispatch(
+          updateTaskCompletion({
+            taskId: task._id,
+            completed: !task.completed,
+            headers: {
+              'X-User-Email': localStorage.getItem('userId'),  // Add user email to header
+              'X-User-Name': localStorage.getItem('name'),    // Add user name to header
+              'X-User-Role': role  // Add the role to the request header
+            }
+          })
+        );
+    
         if (updateTaskCompletion.fulfilled.match(resultAction)) {
           console.log('Update successful:', resultAction.payload);
-       } else {
-           throw new Error(resultAction.payload?.message || 'Update failed');
+    
+          // After the task is updated, notify the admin (only when completed)
+          if (!task.completed) {
+            // Send a notification to the admin
+            const notificationData = {
+              taskName: task.name,
+              userName: localStorage.getItem('name'), // Assuming localStorage has the user name
+              date: new Date().toISOString(), // ISO string for consistency
+              taskId: task._id,
+              recipientEmail: localStorage.getItem('userId'), // You need to define the recipient email here (e.g., admin email)
+              message: `${localStorage.getItem('name')} completed the task: ${task.name}` // Message content
+            };
+    
+            // API call to trigger the admin notification
+            await axios.post('http://localhost:5000/api/notifications/admin', notificationData)
+              .then(response => {
+                console.log('Admin notification sent:', response.data);
+              })
+              .catch(error => {
+                console.error('Error sending admin notification:', error);
+              });
+          }
+        } else {
+          throw new Error(resultAction.payload?.message || 'Update failed');
         }
       } catch (error) {
-         console.error('Completion error:', error);
-         alert(error.message);
-       } finally {
-         setIsUpdating(false);
-       }
-     };
-
+        console.error('Completion error:', error);
+        alert(error.message);
+      } finally {
+        setIsUpdating(false);
+      }
+    };
+    
+    
     return (
       <div
         ref={drag}
@@ -774,7 +823,11 @@ const TaskBoard = () => {
   // onClick={() =>
   //   dispatch(updateTaskCompletion({ taskId: task._id, completed: !task.completed }))
   // }
-  onClick={handleCompleteTask}
+  onClick={()=>{
+    console.log("Button clicked");
+    handleCompleteTask();
+  }
+    }
   className={`h-5 w-5 ml-2 cursor-pointer ${
     task.completed ? "text-green-500" : "text-gray-300"
   }`}

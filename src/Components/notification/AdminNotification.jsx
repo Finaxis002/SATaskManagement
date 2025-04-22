@@ -1,132 +1,123 @@
-// // src/components/AdminNotification.js
-// import React, { useEffect } from 'react';
-// import { useDispatch, useSelector } from 'react-redux';
-// import { addNotification } from '../../redux/notificationSlice';
-// import socket from '../../socket';
+
+// import React, { useEffect } from "react";
+// import { useDispatch, useSelector } from "react-redux";
+// import { fetchNotifications } from "../../redux/notificationSlice"; // Ensure the fetchNotifications action is imported
 
 // const AdminNotification = () => {
-//     const dispatch = useDispatch();
-//     const role = localStorage.getItem('role');
-//     const userEmail = localStorage.getItem('userId');
+//   const dispatch = useDispatch();
+//   const notifications = useSelector((state) => state.notifications.allNotifications); // Getting notifications from Redux store
+
+//   useEffect(() => {
+//     // Fetch admin notifications when the component mounts
+//     dispatch(fetchNotifications());
+//   }, [dispatch]);
+
+//   useEffect(() => {
+//     console.log("Notifications in AdminNotification component:", notifications); // Log notifications here to debug
+//   }, [notifications]);
   
-//     useEffect(() => {
-//       if (role === 'admin') {
-//         console.log('Initializing admin notifications for:', userEmail);
-  
-//         // Verify socket connection
-//         console.log('Socket connected:', socket.connected);
-        
-//         // Register with heartbeat
-//         const registerAdmin = () => {
-//           socket.emit('register', userEmail, (response) => {
-//             console.log('Registration response:', response);
-//           });
-//         };
-  
-//         registerAdmin();
-  
-//         // Add reconnect logic
-//         const onConnect = () => {
-//           console.log('Socket reconnected, reregistering');
-//           registerAdmin();
-//         };
-  
-//         socket.on('connect', onConnect);
-  
-//         // Notification handler with debug logs
-//         const handleTaskCompleted = (data) => {
-//           console.log('Received task-completed event:', data);
-//           dispatch(addNotification({
-//             id: Date.now(),
-//             message: `${data.userName} completed "${data.taskName}"`,
-//             date: data.date,
-//             isRead: false
-//           }));
-//         };
-  
-//         socket.on('task-completed', handleTaskCompleted);
-  
-//         return () => {
-//           socket.off('connect', onConnect);
-//           socket.off('task-completed', handleTaskCompleted);
-//           console.log('Cleaned up admin notification listeners');
-//         };
-//       }
-//     }, [dispatch, role, userEmail]);
-  
-//     return null;
-//   };
-  
-  
+//   return (
+//     <div className="notifications-container">
+//       <h3>Admin Notifications</h3>
+//       {notifications.length === 0 ? (
+//         <p>No new notifications</p>
+//       ) : (
+//         <ul>
+//           {notifications.map((notification) => (
+//             <li key={notification._id}>
+//               <p>{notification.message}</p>
+//               <span>{new Date(notification.date).toLocaleString()}</span>
+//             </li>
+//           ))}
+//         </ul>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default AdminNotification;
+
+ 
+
+
+// import React, { useEffect } from "react";
+// import { useDispatch, useSelector } from "react-redux";
+// import { fetchNotifications } from "../../redux/notificationSlice";
+
+// const AdminNotification = () => {
+//   const dispatch = useDispatch();
+//   const notifications = useSelector((state) => state.notifications.allNotifications);
+
+//   useEffect(() => {
+//     // Fetch notifications when the component mounts
+//     dispatch(fetchNotifications());
+//   }, [dispatch]);
+
+//   // Filter notifications to show only those for admins
+//   const adminNotifications = notifications.filter(
+//     (notification) => notification.type === "admin" // Show only admin type notifications
+//   );
+
+//   return (
+//     <div className="notifications-container">
+//       <h3>Admin Notifications</h3>
+//       {adminNotifications.length === 0 ? (
+//         <p>No new notifications</p>
+//       ) : (
+//         <ul>
+//           {adminNotifications.map((notification) => (
+//             <li key={notification._id}>
+//               <p>{notification.message}</p>
+//               <span>{new Date(notification.createdAt).toLocaleString()}</span>
+//             </li>
+//           ))}
+//         </ul>
+//       )}
+//     </div>
+//   );
+// };
 
 // export default AdminNotification;
 
 
 
-
-
-
-
-
-
-
-
-
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addNotification } from "../../redux/notificationSlice";
-import socket from "../../socket";
+import { fetchNotifications } from "../../redux/notificationSlice";
 
 const AdminNotification = () => {
+  
   const dispatch = useDispatch();
-  const role = localStorage.getItem('role');
-  const userEmail = localStorage.getItem('userId');
+  
+  const notifications = useSelector((state) => state.notifications.allNotifications);
+  console.log("Notifications in Redux store:", notifications);
 
   useEffect(() => {
-    if (role !== 'admin') return;
+    dispatch(fetchNotifications()); // Fetch notifications when the component mounts
+  }, [dispatch]);
 
-    console.log('Initializing admin notifications for:', userEmail);
-
-    // Verify socket connection
-    console.log('Socket connected:', socket.connected);
-    
-    // Register admin with socket
-    const registerAdmin = () => {
-      socket.emit('register', userEmail, (response) => {
-        console.log('Admin registration response:', response);
-      });
-    };
-
-    registerAdmin();
-
-    // Handle task completed notifications
-    const handleTaskCompleted = (data) => {
-      console.log('Admin received task-completed event:', data);
-      dispatch(addNotification({
-        id: Date.now(),
-        message: `${data.userName} completed "${data.taskName}"`,
-        date: new Date().toISOString(),
-        isRead: false
-      }));
-    };
-
-    // Add reconnect logic
-    const onConnect = () => {
-      console.log('Socket reconnected, reregistering admin');
-      registerAdmin();
-    };
-
-    socket.on('connect', onConnect);
-    socket.on('task-completed', handleTaskCompleted);
-
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('task-completed', handleTaskCompleted);
-      console.log('Cleaned up admin notification listeners');
-    };
-  }, [dispatch, role, userEmail]);
-
-  return null; // This component only handles logic, UI is separate
+  // Filter notifications to show only those for admins
+  const adminNotifications = notifications.filter(
+    (notification) => notification.type === "admin" // Show only admin type notifications
+  );
+  console.log("Admin Notifications:", adminNotifications); 
+  return (
+    <div className="notifications-container">
+      <h3>Admin Notifications</h3>
+      {adminNotifications.length === 0 ? (
+        <p>No new notifications</p>
+      ) : (
+        <ul>
+          {adminNotifications.map((notification) => (
+            <li key={notification._id}>
+              <p>{notification.message}</p>
+              <span>{new Date(notification.createdAt).toLocaleString()}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 };
 
 export default AdminNotification;
