@@ -1,32 +1,46 @@
 import React, { useState, useEffect } from "react";
-import { io } from "socket.io-client";
-// Assume socket.io client setup
-const socket = io("https://sataskmanagementbackend.onrender.com", {
-  withCredentials: true,
-});
-
-
+import { useDispatch } from "react-redux";
+import { updateTaskStatus , fetchTasks } from "../../redux/taskSlice";
 
 const TaskList = ({ onEdit ,refreshTrigger }) => {
   const [tasks, setTasks] = useState([]);
   const [editingStatus, setEditingStatus] = useState(null); // Track the task being edited
   const [newStatus, setNewStatus] = useState(""); // Store new status value
 
+  // Get user role and email from localStorage
+  const role = localStorage.getItem("role");
+  const userEmail = localStorage.getItem("userId");
 
+  const dispatch = useDispatch();
 
+  useEffect(() => {
+    dispatch(updateTaskStatus());
+  }, [dispatch]);
+
+  // Fetch tasks based on the user's role
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks");
+        const response = await fetch("http://localhost:5000/api/tasks");
         const data = await response.json();
-        setTasks(data);
+  
+        if (role !== "admin") {
+          const filteredTasks = data.filter((task) =>
+            task.assignees.some((assignee) => assignee.email === userEmail)
+          );
+          setTasks(filteredTasks);
+        } else {
+          setTasks(data);
+        }
       } catch (error) {
         console.error("Error fetching tasks:", error);
       }
+      
     };
+  
     fetchTasks();
-  }, [refreshTrigger]); // Refetch tasks when refreshTrigger changes
-
+  }, [role, userEmail, refreshTrigger]); // ✅ add refreshTrigger here
+  
 
   const formatAssignedDate = (assignedDate) => {
     const date = new Date(assignedDate);
@@ -48,7 +62,7 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
   
     try {
       const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        `http://localhost:5000/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: {
