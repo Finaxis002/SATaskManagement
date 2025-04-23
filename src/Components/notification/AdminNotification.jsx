@@ -1,123 +1,52 @@
+// AdminNotifications.jsx
+import React, { useState, useEffect } from "react";
+import { io } from "socket.io-client";
 
-// import React, { useEffect } from "react";
-// import { useDispatch, useSelector } from "react-redux";
-// import { fetchNotifications } from "../../redux/notificationSlice"; // Ensure the fetchNotifications action is imported
-
-// const AdminNotification = () => {
-//   const dispatch = useDispatch();
-//   const notifications = useSelector((state) => state.notifications.allNotifications); // Getting notifications from Redux store
-
-//   useEffect(() => {
-//     // Fetch admin notifications when the component mounts
-//     dispatch(fetchNotifications());
-//   }, [dispatch]);
-
-//   useEffect(() => {
-//     console.log("Notifications in AdminNotification component:", notifications); // Log notifications here to debug
-//   }, [notifications]);
-  
-//   return (
-//     <div className="notifications-container">
-//       <h3>Admin Notifications</h3>
-//       {notifications.length === 0 ? (
-//         <p>No new notifications</p>
-//       ) : (
-//         <ul>
-//           {notifications.map((notification) => (
-//             <li key={notification._id}>
-//               <p>{notification.message}</p>
-//               <span>{new Date(notification.date).toLocaleString()}</span>
-//             </li>
-//           ))}
-//         </ul>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AdminNotification;
-
- 
-
-
-// import React, { useEffect } from "react";
-// import { useDispatch, useSelector } from "react-redux";
-// import { fetchNotifications } from "../../redux/notificationSlice";
-
-// const AdminNotification = () => {
-//   const dispatch = useDispatch();
-//   const notifications = useSelector((state) => state.notifications.allNotifications);
-
-//   useEffect(() => {
-//     // Fetch notifications when the component mounts
-//     dispatch(fetchNotifications());
-//   }, [dispatch]);
-
-//   // Filter notifications to show only those for admins
-//   const adminNotifications = notifications.filter(
-//     (notification) => notification.type === "admin" // Show only admin type notifications
-//   );
-
-//   return (
-//     <div className="notifications-container">
-//       <h3>Admin Notifications</h3>
-//       {adminNotifications.length === 0 ? (
-//         <p>No new notifications</p>
-//       ) : (
-//         <ul>
-//           {adminNotifications.map((notification) => (
-//             <li key={notification._id}>
-//               <p>{notification.message}</p>
-//               <span>{new Date(notification.createdAt).toLocaleString()}</span>
-//             </li>
-//           ))}
-//         </ul>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AdminNotification;
-
-
-
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchNotifications } from "../../redux/notificationSlice";
-
-const AdminNotification = () => {
-  
-  const dispatch = useDispatch();
-  
-  const notifications = useSelector((state) => state.notifications.allNotifications);
-  console.log("Notifications in Redux store:", notifications);
+const AdminNotifications = () => {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    dispatch(fetchNotifications()); // Fetch notifications when the component mounts
-  }, [dispatch]);
+    // Connect to the socket server
+    const socket = io("http://localhost:5000");  // Adjust the URL if necessary
 
-  // Filter notifications to show only those for admins
-  const adminNotifications = notifications.filter(
-    (notification) => notification.type === "admin" // Show only admin type notifications
-  );
-  console.log("Admin Notifications:", adminNotifications); 
+    // Listen for admin notifications
+    socket.on("task-completed", (notification) => {
+      console.log("New task update notification received:", notification);
+      // Add the notification to the state
+      setNotifications((prevNotifications) => [
+        ...prevNotifications,
+        notification,
+      ]);
+    });
+
+    return () => {
+      // Cleanup the socket connection on unmount
+      socket.disconnect();
+    };
+  }, []);
+
   return (
-    <div className="notifications-container">
-      <h3>Admin Notifications</h3>
-      {adminNotifications.length === 0 ? (
-        <p>No new notifications</p>
+    <div>
+      <h2>Admin Notifications</h2>
+      {loading ? (
+        <p>Loading...</p>
       ) : (
         <ul>
-          {adminNotifications.map((notification) => (
-            <li key={notification._id}>
-              <p>{notification.message}</p>
-              <span>{new Date(notification.createdAt).toLocaleString()}</span>
-            </li>
-          ))}
+          {notifications.length === 0 ? (
+            <li>No notifications</li>
+          ) : (
+            notifications.map((notification, index) => (
+              <li key={index}>
+                <div>{notification.taskName} completed by {notification.userName}</div>
+                <div>{new Date(notification.date).toLocaleString()}</div>
+              </li>
+            ))
+          )}
         </ul>
       )}
     </div>
   );
 };
 
-export default AdminNotification;
+export default AdminNotifications;

@@ -50,7 +50,6 @@ const Inbox = () => {
 
   // useEffect to auto-scroll whenever messages are updated
   useEffect(() => {
-    // Scroll to the bottom of the chat when new messages are added
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -421,7 +420,7 @@ const Inbox = () => {
                 <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
                   Users
                 </h3>
-                <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                <div className="overflow-y-auto space-y-2 pr-1">
                   {Array.isArray(users) && users.length > 0 ? (
                     users.map((user, index) => (
                       <div

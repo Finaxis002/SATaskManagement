@@ -32,15 +32,7 @@ export const updateTask = createAsyncThunk(
   }
 );
 
-// export const updateTaskCompletion = createAsyncThunk(
-//   "tasks/updateTaskCompletion",
-//   async ({ taskId, completed }) => {
-//     const res = await axios.patch(`https://sa-task-management-backend.vercel.app/api/tasks/${taskId}`, {
-//       completed
-//     });
-//     return res.data;
-//   }
-// );
+
 export const updateTaskCompletion = createAsyncThunk(
   "tasks/updateTaskCompletion",
   async ({ taskId, completed }, { rejectWithValue }) => {
@@ -67,6 +59,28 @@ export const updateTaskCompletion = createAsyncThunk(
     }
   }
 );
+
+export const updateTaskStatus = createAsyncThunk(
+  "tasks/updateTaskStatus",
+  async (taskData, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/tasks/${taskData._id}`,
+        taskData
+      );
+
+      if (response.status === 200) {
+        dispatch(updateTask(response.data)); // Update task in Redux
+        return response.data;
+      } else {
+        throw new Error("Failed to update task status");
+      }
+    } catch (error) {
+      return rejectWithValue(error.message); // If error, return the error
+    }
+  }
+);
+
 
 const initialState = {
   taskColumns: [

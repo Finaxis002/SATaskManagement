@@ -9,6 +9,7 @@ import Tasks from "./pages/Tasks";
 import Notifications from "./pages/Notifications";
 import Reminders from "./pages/Reminders";
 import Inbox from "./pages/Inbox";
+import AllTasks from "./pages/AllTasks";
 
 const App = () => {
   return (
@@ -83,6 +84,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <Inbox />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/all-tasks"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <AllTasks />
               </MainLayout>
             </ProtectedRoute>
           }
