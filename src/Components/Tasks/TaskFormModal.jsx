@@ -3,7 +3,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchAssignees, fetchTasks, updateTask } from "../../redux/taskSlice"; // Adjust the import path
 import Select from "react-select";
 
-
+import { io } from "socket.io-client";
+// Assume socket.io client setup
+const socket = io("https://sataskmanagementbackend.onrender.com", {
+  withCredentials: true,
+});
 
 const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const dispatch = useDispatch();
