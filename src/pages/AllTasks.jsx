@@ -8,7 +8,6 @@ const AllTasks = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(false);
 
-
   const handleCreateClick = () => {
     setEditingTask(null);
     setShowForm(true);
@@ -18,7 +17,6 @@ const AllTasks = () => {
     setShowForm(false);
     setRefreshTrigger((prev) => !prev); // ✅ This will tell TaskList to refetch
   };
-  
 
   const handleEdit = (task) => {
     setEditingTask(task);
@@ -26,6 +24,7 @@ const AllTasks = () => {
   };
 
   return (
+    <>
     <div className="p-6 w-full min-h-screen bg-gray-100">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Task Manager</h2>
@@ -39,7 +38,6 @@ const AllTasks = () => {
 
       <TaskList refreshTrigger={refreshTrigger} onEdit={handleEdit} />
 
-
       {showForm && (
         <TaskFormModal
           onClose={() => setShowForm(false)}
@@ -48,9 +46,10 @@ const AllTasks = () => {
         />
       )}
     </div>
+  
+    </>
   );
 };
 
 // Tasks.jsx
 export default AllTasks;
-
