@@ -12,28 +12,19 @@ import useSocketSetup from "../hook/useSocketSetup"; // ✅ For tasks
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
 
+import { io } from "socket.io-client";
+const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
+
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [role, setRole] = useState("");
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
-
-  
+  const userEmail = localStorage.getItem("userId");
   // Real-time updates for inbox messages via socket
   useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
 
-  // Setup socket for tasks (could be for task notifications)
-  useNotificationSocket(setNotificationCount); // ✅ Task notification badge real-time
-
-  useEffect(() => {
-    const storedName = localStorage.getItem("name") || "default";
-    const storedRole = localStorage.getItem("role") || "user";
-    setRole(storedRole);
-  }, []);
-
-  const openAddEmployeeModal = () => {
-    setIsAddEmployeeModalOpen(true);
-  };
+  useNotificationSocket(setNotificationCount);
 
   return (
     <div className="bg-[#1F2124] text-white w-45 h-screen flex flex-col justify-between border-r border-gray-800 shadow-xl transition-all ease-in-out duration-300">
