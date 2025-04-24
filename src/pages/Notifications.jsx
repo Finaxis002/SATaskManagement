@@ -120,7 +120,7 @@ const Notifications = () => {
                 <div
                   key={notification._id}
                   className={`group transition-shadow duration-300 hover:shadow-md border rounded-xl p-5 flex justify-between items-start gap-4 ${
-                    notification.read
+                    notification.readBy?.includes(localStorage.getItem("userId"))
                       ? "bg-white border-gray-200"
                       : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300"
                   }`}

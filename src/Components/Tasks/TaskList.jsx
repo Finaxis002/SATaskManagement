@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { updateTaskStatus , fetchTasks } from "../../redux/taskSlice";
+import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 
 import { io } from "socket.io-client";
-const socket = io("http://localhost:5000"); // Or your backend URL
+const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
 
-const TaskList = ({ onEdit ,refreshTrigger }) => {
+const TaskList = ({ onEdit, refreshTrigger }) => {
   const [tasks, setTasks] = useState([]);
   const [editingStatus, setEditingStatus] = useState(null); // Track the task being edited
   const [newStatus, setNewStatus] = useState(""); // Store new status value
@@ -20,12 +20,11 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
     dispatch(updateTaskStatus());
   }, [dispatch]);
 
-
   const fetchTasksFromAPI = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/tasks");
+      const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks");
       const data = await response.json();
-  
+
       if (role !== "admin") {
         const filtered = data.filter((task) =>
           task.assignees.some((a) => a.email === userEmail)
@@ -44,43 +43,37 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
       console.log("🟡 task-updated received on frontend!", data); // <-- Add this
       fetchTasksFromAPI();
     });
-  
+
     return () => socket.off("task-updated");
   }, []);
-  
-
 
   useEffect(() => {
     socket.on("new-task-created", (data) => {
       console.log("🟢 Received new task event!", data);
       fetchTasksFromAPI();
     });
-  
+
     socket.on("task-updated", () => {
       console.log("🟡 Task updated event!");
       fetchTasksFromAPI();
     });
-  
+
     socket.on("task-deleted", () => {
       console.log("🔴 Task deleted event!");
       fetchTasksFromAPI();
     });
-  
+
     return () => {
       socket.off("new-task-created");
       socket.off("task-updated");
       socket.off("task-deleted");
     };
   }, []);
-  
-
 
   // Fetch tasks based on the user's role
   useEffect(() => {
     fetchTasksFromAPI();
   }, [role, userEmail, refreshTrigger]);
-  
-  
 
   const formatAssignedDate = (assignedDate) => {
     const date = new Date(assignedDate);
@@ -94,15 +87,15 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
         task._id === taskId ? { ...task, status: newStatus } : task
       )
     );
-  
+
     const updatedBy = {
       name: localStorage.getItem("name"),
       email: localStorage.getItem("userId"),
     };
-  
+
     try {
       const response = await fetch(
-        `http://localhost:5000/api/tasks/${taskId}`,
+        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: {
@@ -111,7 +104,7 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
           body: JSON.stringify({ status: newStatus, updatedBy }), // ✅ Send updatedBy
         }
       );
-  
+
       if (response.ok) {
         const updatedTask = await response.json();
         setTasks((prevTasks) =>
@@ -125,7 +118,7 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
     } catch (error) {
       console.error("Error updating task status:", error);
       alert("Error updating task status. Please try again.");
-  
+
       // Revert UI if update fails
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
@@ -135,9 +128,30 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
     }
   };
 
-
+  const ReadMoreLess = ({ text, limit = 40}) => {
+    const [expanded, setExpanded] = useState(false);
   
+    if (!text) return null;
   
+    const toggle = () => setExpanded((prev) => !prev);
+  
+    const isLong = text.length > limit;
+    const displayedText = expanded || !isLong ? text : text.slice(0, limit) + "...";
+  
+    return (
+      <div>
+        <span>{displayedText}</span>
+        {isLong && (
+          <button
+            onClick={toggle}
+            className="text-blue-600 text-xs ml-1 underline focus:outline-none"
+          >
+            {expanded ? "Read less" : "Read more"}
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="h-full bg-white rounded-lg shadow-md divide-y">
@@ -164,12 +178,15 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
               className="hover:bg-gray-100 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200"
             >
               <td className="py-4 px-6">{task.taskName}</td>
-              <td className="py-4 px-6">{task.workDesc}</td>
+              <td className="py-4 px-6">
+                <ReadMoreLess text={task.workDesc} limit={40} />
+              </td>
+
               <td className="py-4 px-6 flex flex-wrap gap-2 w-45">
                 {task.assignees?.map((assignee) => (
                   <div
                     key={assignee.email}
-                    className="text-sm bg-gray-200 text-gray-800 py-1 px-3 rounded-full shadow-md hover:shadow-lg transition duration-200 ease-in-out"
+                    className="text-sm bg-gray-200 text-purple-800 py-1 px-3 rounded-full shadow-md hover:shadow-lg transition duration-200 ease-in-out"
                   >
                     {assignee.name}
                   </div>
