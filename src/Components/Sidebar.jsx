@@ -21,7 +21,6 @@ import useNotificationSocket from "../hook/useNotificationSocket";
 import axios from "axios"; // ✅ Use default import
 
 
-import { useSelector, useDispatch } from "react-redux";
 
 
 const Sidebar = () => {
@@ -42,17 +41,6 @@ const Sidebar = () => {
     setIsAddEmployeeModalOpen(true);
   };
 
-
-  const closeAddEmployeeModal = () => {
-    setIsAddEmployeeModalOpen(false);
-  };
-
-  const unreadCount = useSelector((state) => state.notifications.unreadCount);
-  const dispatch = useDispatch();
-
-  const handleNotificationClick = () => {
-    dispatch(markAllAsRead()); // Mark all notifications as read when clicked
-  };
 
 
 
