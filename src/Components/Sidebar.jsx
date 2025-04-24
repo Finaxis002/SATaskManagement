@@ -2,26 +2,15 @@ import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   FaHome,
-  FaTasks,
   FaInbox,
-  FaChartBar,
-  FaProjectDiagram,
-  FaBullseye,
-  FaChevronDown,
   FaPlus,
   FaUsers,
   FaBell,
   FaClipboardList,
   FaClock,
 } from "react-icons/fa";
-import useSocketSetup from "../hook/useSocketSetup";      // ✅ For tasks
-import useMessageSocket from "../hook/useMessageSocket";  // ✅ For inbox
+import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
-
-import axios from "axios"; // ✅ Use default import
-
-
-
 
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
@@ -29,9 +18,6 @@ const Sidebar = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
 
-  useMessageSocket(setInboxCount);        // ✅ Inbox badge
-  useNotificationSocket(setNotificationCount);
-  
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
@@ -41,31 +27,12 @@ const Sidebar = () => {
     setIsAddEmployeeModalOpen(true);
   };
 
+  useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
 
-
-
-  useEffect(() => {
-    const fetchInboxCount = async () => {
-      const name = localStorage.getItem("name") || "default";
-      const role = localStorage.getItem("role") || "user";
-
-      try {
-        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/unread-count", {
-          params: { name, role },
-        });
-        setInboxCount(res.data.count);
-      } catch (error) {
-        console.error("❌ Failed to fetch inbox count:", error);
-      }
-    };
-
-    fetchInboxCount();
-  }, [localStorage.getItem("name"), localStorage.getItem("role")]);
-
+  useNotificationSocket(setNotificationCount);
 
   return (
     <div className="bg-[#1e1f21] text-white w-64 pt-[10vh] h-screen flex flex-col justify-between border-r border-gray-700">
-   
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {/* Core nav */}
@@ -87,20 +54,20 @@ const Sidebar = () => {
         )}
 
         <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/all-tasks" />
-           <SidebarItem
-        icon={
-          <div className="relative">
-            <FaInbox />
-            {inboxCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
-                {inboxCount}
-              </span>
-            )}
-          </div>
-        }
-        label="Inbox"
-        to="/inbox"
-      />
+        <SidebarItem
+          icon={
+            <div className="relative">
+              <FaInbox />
+              {inboxCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 py-0 rounded-full shadow-lg">
+                  {inboxCount}
+                </span>
+              )}
+            </div>
+          }
+          label="Inbox"
+          to="/inbox"
+        />
 
         {/* Notification Badge */}
         <SidebarItem
@@ -117,7 +84,6 @@ const Sidebar = () => {
           label="Notifications"
           to="/notifications"
         />
-      
 
         <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
       </div>
@@ -126,7 +92,6 @@ const Sidebar = () => {
       <div className="px-4 py-3 border-t border-gray-700 text-xs text-gray-400">
         © 2025 Finaxis
       </div>
-
     </div>
   );
 };
