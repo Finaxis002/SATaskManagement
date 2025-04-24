@@ -56,7 +56,7 @@ const Notifications = () => {
           }
         );
 
-        // console.log("Filtered notifications:", filteredNotifications);
+        console.log("Filtered notifications:", filteredNotifications);
         setNotifications(filteredNotifications);
       } catch (error) {
         console.error("Error fetching notifications", error);
@@ -74,7 +74,7 @@ const Notifications = () => {
         read: true,
       });
   
-      console.log("🧹 Marked notification as read:", userid); // ✅ Move here
+      console.log("🧹 Marked notification as read:", id); // ✅ Move here
       console.log("🔻 Decreasing badge count");
   
       // Decrease badge count if it was unread before
