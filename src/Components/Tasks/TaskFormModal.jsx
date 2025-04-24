@@ -5,7 +5,7 @@ import Select from "react-select";
 
 import { io } from "socket.io-client";
 // Assume socket.io client setup
-const socket = io("http://localhost:5000", {
+const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
 
@@ -75,7 +75,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       if (initialData) {
         // If there's a task to update, make a PUT request
         response = await fetch(
-          `http://localhost:5000/api/tasks/${initialData._id}`,
+          `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -93,7 +93,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         onSave(updatedTask);  // Pass the updated task to the parent to update the tasks state
       } else {
         // If no task to update, make a POST request
-        response = await fetch("http://localhost:5000/api/tasks", {
+        response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(taskPayload),
