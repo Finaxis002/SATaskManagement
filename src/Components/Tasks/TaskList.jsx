@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus , fetchTasks } from "../../redux/taskSlice";
 
+import { io } from "socket.io-client";
+const socket = io("http://localhost:5000"); // Or your backend URL
+
 const TaskList = ({ onEdit ,refreshTrigger }) => {
   const [tasks, setTasks] = useState([]);
   const [editingStatus, setEditingStatus] = useState(null); // Track the task being edited
@@ -17,29 +20,66 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
     dispatch(updateTaskStatus());
   }, [dispatch]);
 
+
+  const fetchTasksFromAPI = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/tasks");
+      const data = await response.json();
+  
+      if (role !== "admin") {
+        const filtered = data.filter((task) =>
+          task.assignees.some((a) => a.email === userEmail)
+        );
+        setTasks(filtered);
+      } else {
+        setTasks(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch tasks:", err);
+    }
+  };
+
+  useEffect(() => {
+    socket.on("task-updated", (data) => {
+      console.log("🟡 task-updated received on frontend!", data); // <-- Add this
+      fetchTasksFromAPI();
+    });
+  
+    return () => socket.off("task-updated");
+  }, []);
+  
+
+
+  useEffect(() => {
+    socket.on("new-task-created", (data) => {
+      console.log("🟢 Received new task event!", data);
+      fetchTasksFromAPI();
+    });
+  
+    socket.on("task-updated", () => {
+      console.log("🟡 Task updated event!");
+      fetchTasksFromAPI();
+    });
+  
+    socket.on("task-deleted", () => {
+      console.log("🔴 Task deleted event!");
+      fetchTasksFromAPI();
+    });
+  
+    return () => {
+      socket.off("new-task-created");
+      socket.off("task-updated");
+      socket.off("task-deleted");
+    };
+  }, []);
+  
+
+
   // Fetch tasks based on the user's role
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/tasks");
-        const data = await response.json();
+    fetchTasksFromAPI();
+  }, [role, userEmail, refreshTrigger]);
   
-        if (role !== "admin") {
-          const filteredTasks = data.filter((task) =>
-            task.assignees.some((assignee) => assignee.email === userEmail)
-          );
-          setTasks(filteredTasks);
-        } else {
-          setTasks(data);
-        }
-      } catch (error) {
-        console.error("Error fetching tasks:", error);
-      }
-      
-    };
-  
-    fetchTasks();
-  }, [role, userEmail, refreshTrigger]); // ✅ add refreshTrigger here
   
 
   const formatAssignedDate = (assignedDate) => {
@@ -94,6 +134,9 @@ const TaskList = ({ onEdit ,refreshTrigger }) => {
       );
     }
   };
+
+
+  
   
 
   return (

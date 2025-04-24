@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+
+import { io } from "socket.io-client";
+// Assume socket.io client setup
+const socket = io("https://sataskmanagementbackend.onrender.com", {
+  withCredentials: true,
+});
+
+
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const userRole = localStorage.getItem("role"); // Get user role (admin or user)
   const [notificationCount, setNotificationCount] = useState(0);
+  
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -15,9 +24,7 @@ const Notifications = () => {
 
         if (userRole === "admin") {
           // Admin: Get all notifications
-          response = await axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/notifications"
-          );
+          response = await axios.get("https://sataskmanagementbackend.onrender.com/api/notifications");
         } else {
           // User: Get by user email
           const emailToFetch = localStorage.getItem("userId");
@@ -63,15 +70,14 @@ const Notifications = () => {
 
   const handleMarkAsRead = async (id) => {
     try {
-      // Mark notification as read in the backend
-      await axios.patch(
-        `https://sataskmanagementbackend.onrender.com/api/notifications/${id}`,
-        {
-          read: true,
-        }
-      );
-
-      // Update the local state to reflect the changes
+      await axios.patch(`https://sataskmanagementbackend.onrender.com/api/notifications/${id}`, {
+        read: true,
+      });
+  
+      console.log("🧹 Marked notification as read:", id); // ✅ Move here
+      console.log("🔻 Decreasing badge count");
+  
+      // Decrease badge count if it was unread before
       setNotifications((prevNotifs) =>
         prevNotifs.map((notif) =>
           notif._id.toString() === id.toString()
@@ -79,23 +85,18 @@ const Notifications = () => {
             : notif
         )
       );
+  
+      const justMarked = notifications.find((n) => n._id === id);
+      if (justMarked && !justMarked.read) {
+        setNotificationCount((prev) => Math.max(prev - 1, 0));
+      }
     } catch (error) {
       console.error("Error marking notification as read", error);
     }
   };
 
-  useEffect(() => {
-    const markAllAsRead = async () => {
-      const email = localStorage.getItem("userId");
-      await axios.patch(
-        `https://sataskmanagementbackend.onrender.com/api/notifications/mark-all-read/${email}`
-      );
-      setNotificationCount(0); // ✅ reset badge count
-    };
 
-    markAllAsRead();
-  }, []);
-
+  
   return (
     <div className="p-4 mx-auto">
       <h2 className="text-2xl font-semibold mb-4 text-gray-800">
@@ -164,7 +165,18 @@ const Notifications = () => {
                     </p>
                   </div>
 
-                  <div>
+                  <div
+                    key={notification._id}
+                    onClick={() => {
+                      if (!notification.read)
+                        handleMarkAsRead(notification._id);
+                    }}
+                    className={`group transition-shadow duration-300 hover:shadow-md border rounded-xl flex justify-between items-start gap-4 cursor-pointer ${
+                      notification.read
+                        ? "bg-white border-gray-200"
+                        : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300"
+                    }`}
+                  >
                     <button
                       onClick={() => handleMarkAsRead(notification._id)}
                       disabled={notification.read}
