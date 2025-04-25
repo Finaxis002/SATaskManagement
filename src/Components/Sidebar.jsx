@@ -33,7 +33,7 @@ const Sidebar = () => {
 
 
   return (
-    <div className="bg-[#1e1f21] text-white w-64 pt-[10vh] h-screen flex flex-col justify-between border-r border-gray-700">
+    <div className="bg-[#1e1f21] text-white w-45 pt-[10vh] h-screen flex flex-col justify-between border-r border-gray-700">
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {/* Core nav */}
