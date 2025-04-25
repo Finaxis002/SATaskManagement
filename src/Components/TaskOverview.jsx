@@ -14,7 +14,7 @@ const TaskOverview = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/tasks");
+        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/tasks");
         setTasks(res.data); // Store fetched tasks in state
       } catch (err) {
         console.error("Failed to fetch tasks", err);

@@ -128,16 +128,17 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     }
   };
 
-  const ReadMoreLess = ({ text, limit = 40}) => {
+  const ReadMoreLess = ({ text, limit = 40 }) => {
     const [expanded, setExpanded] = useState(false);
-  
+
     if (!text) return null;
-  
+
     const toggle = () => setExpanded((prev) => !prev);
-  
+
     const isLong = text.length > limit;
-    const displayedText = expanded || !isLong ? text : text.slice(0, limit) + "...";
-  
+    const displayedText =
+      expanded || !isLong ? text : text.slice(0, limit) + "...";
+
     return (
       <div>
         <span>{displayedText}</span>
@@ -154,22 +155,24 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   };
 
   return (
-    <div className="h-full bg-white rounded-lg shadow-md divide-y">
-      <table className="w-full h-full table-auto shadow-lg rounded-lg  border-collapse relative">
-        <thead className="bg-gradient-to-r from-blue-200 to-indigo-300 text-black text-sm">
-          <tr className="text-left">
-            <th className="py-4 px-6 text-sm font-semibold">Task Name</th>
-            <th className="py-4 px-6 text-sm font-semibold">
-              Task Description
-            </th>
-            <th className="py-4 px-6 text-sm font-semibold">Assignee</th>
-            <th className="py-4 px-6 text-sm font-semibold">Assigned Date</th>
-            <th className="py-4 px-6 text-sm font-semibold">Due Date</th>
-            <th className="py-4 px-6 text-sm font-semibold">Priority</th>
-            <th className="py-4 px-6 text-sm font-semibold">Status</th>
-            <th className="py-4 px-6 text-sm font-semibold">Action</th>
-          </tr>
-        </thead>
+    <div className="overflow-x-auto h-[77vh] w-[180vh]">
+      <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
+
+       <thead className="bg-gradient-to-r from-blue-200 to-indigo-300 text-black text-sm">
+      <tr className="text-left">
+        <th className="py-4 px-6 min-w-[180px] font-semibold">Task Name</th>
+        <th className="py-4 px-6 min-w-[250px] font-semibold">Task Description</th>
+        <th className="py-4 px-6 min-w-[160px] font-semibold">Category</th>
+        <th className="py-4 px-6 min-w-[140px] font-semibold">Code</th>
+        <th className="py-4 px-6 min-w-[220px] font-semibold">Assignee</th>
+        <th className="py-4 px-6 min-w-[180px] font-semibold">Assigned By</th>
+        <th className="py-4 px-6 min-w-[180px] font-semibold">Assigned Date</th>
+        <th className="py-4 px-6 min-w-[160px] font-semibold">Due Date</th>
+        <th className="py-4 px-6 min-w-[120px] font-semibold text-center">Priority</th>
+        <th className="py-4 px-6 min-w-[150px] font-semibold text-center">Status</th>
+        <th className="py-4 px-6 min-w-[100px] font-semibold text-center">Action</th>
+      </tr>
+    </thead>
 
         <tbody className="text-sm text-gray-700">
           {tasks.map((task) => (
@@ -182,6 +185,12 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                 <ReadMoreLess text={task.workDesc} limit={40} />
               </td>
 
+              {/* ✅ Task Category */}
+              <td className="py-4 px-6">{task.taskCategory || "—"}</td>
+
+              {/* ✅ Task Code */}
+              <td className="py-4 px-6">{task.code || "—"}</td>
+
               <td className="py-4 px-6 flex flex-wrap gap-2 w-45">
                 {task.assignees?.map((assignee) => (
                   <div
@@ -192,6 +201,9 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                   </div>
                 ))}
               </td>
+
+              {/* ✅ Assigned By */}
+              <td className="py-4 px-6">{task.assignedBy?.name || "—"}</td>
 
               <td className="py-4 px-6">
                 {formatAssignedDate(task.assignedDate)}
@@ -219,10 +231,10 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                 </span>
               </td>
 
-              <td className="py-4 px-6 w-35">
+              <td className="py-4 px-6 w-40 relative " >
                 {editingStatus === task._id ? (
                   // If status is being edited, show all options as inline clickable spans
-                  <div className="flex z-1 flex-col w-[15vh] justify-between absolute bg-white">
+                  <div className="flex z-1 flex-col w-[20vh] justify-between bg-white absolute">
                     {["To Do", "In Progress", "Completed", "Overdue"].map(
                       (statusOption) => (
                         <span
