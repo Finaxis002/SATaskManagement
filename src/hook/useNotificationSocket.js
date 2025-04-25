@@ -1,69 +1,85 @@
 import { useEffect, useRef } from "react";
 import axios from "axios";
-
 import { io } from "socket.io-client";
-// Assume socket.io client setup
+
 const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
 
-
 const useNotificationSocket = (setNotificationCount) => {
+  const lockRef = useRef(false);
 
-  const lockRef = useRef(false); // ⛔ Prevent flood
   useEffect(() => {
     const email = localStorage.getItem("userId");
     const role = localStorage.getItem("role");
 
-    if (!email) {
-      // console.log("❌ No user email found, skipping notification setup.");
+    if (!email && role !== "admin") {
+      console.log("❌ No userId and not admin, skipping notifications socket.");
       return;
     }
 
-    // Log email and role for debugging
-    // console.log("🟢 Setting up notification socket for user:", email, "Role:", role);
-
-    // Function to fetch unread notification count from backend
-    const fetchUpdatedCount = async () => {
-      if (lockRef.current) return; // ✅ prevent spamming
+    const fetchCount = async () => {
+      if (lockRef.current) return;
       lockRef.current = true;
+
       try {
-        // console.log("🔄 Fetching unread notification count from backend...");
-        const res = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/notifications/unread-count/${email}`, 
-          {
-            params: { role },  // Pass the role as query param
-          }
-        );
-        const count = res.data.unreadCount;
-        // console.log("🔄 Unread notification count updated:", count);
-        setNotificationCount(count); // Update the count on the frontend
+        const userToQuery = role === "admin" ? "admin" : email;
+
+        console.log("🔄 Fetching unread notification count from backend...");
+        const res = await axios.get(`https://sataskmanagementbackend.onrender.com/api/notifications/unread-count/${userToQuery}`, {
+          params: { role },
+        });
+
+        console.log("✅ Notification count fetched:", res.data.unreadCount);
+        setNotificationCount(res.data.unreadCount);
       } catch (err) {
-        // console.error("❌ Error fetching unread count:", err.message);
-      }
-      finally {
+        console.error("❌ Error fetching notification count:", err.message);
+      } finally {
         lockRef.current = false;
       }
     };
 
+    // ✅ Listen to real-time socket event
+    socket.on("notificationCountUpdated", (payload) => {
+      const currentRole = localStorage.getItem("role");
+      const currentUser = localStorage.getItem("userId");
     
-    socket.on("notificationCountUpdated", () => {
-      // console.log("📡 Notification count has been updated!");
-     fetchUpdatedCount();
+      console.log("📨 SOCKET RECEIVED:", payload);
+      console.log("📌 ROLE:", currentRole, "| USER ID:", currentUser);
+    
+      if (!payload || typeof payload !== "object") {
+        console.warn("⚠️ Skipping socket event: invalid or missing payload");
+        return;
+      }
+    
+      const { email, count } = payload;
+    
+      // Admin real-time
+      if (currentRole === "admin" && email === "admin") {
+        console.log("✅ Admin match, refetching...");
+        fetchCount();
+        return;
+      }
+    
+      // User real-time
+      if (email === currentUser) {
+        console.log("✅ User match, count updated:", count);
+        setNotificationCount(count);
+      }
     });
     
-    // Optionally, you can also fetch the initial count if needed
-    // console.log("🔄 Fetching initial unread notification count...");
-    fetchUpdatedCount();
+    
 
-    // Cleanup socket listener on component unmount
+    // ✅ Fetch once on component mount
+    fetchCount();
+
     return () => {
-      // console.log("🧹 Cleaning up socket listener for 'new-notification' event.");
-      socket.off("notificationCountUpdated")
+      console.log("🧹 Cleaning up socket listener");
+      socket.off("notificationCountUpdated");
     };
   }, [setNotificationCount]);
 
-  return {}; // Optional: Return any useful data (e.g., notifications, etc.)
+  return {};
 };
 
 export default useNotificationSocket;

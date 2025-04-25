@@ -22,7 +22,6 @@ const Sidebar = () => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
   }, []);
-
   const openAddEmployeeModal = () => {
     setIsAddEmployeeModalOpen(true);
   };
@@ -30,6 +29,8 @@ const Sidebar = () => {
   useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
 
   useNotificationSocket(setNotificationCount);
+  console.log("🔢 Notification count state:", notificationCount);
+
 
   return (
     <div className="bg-[#1e1f21] text-white w-64 pt-[10vh] h-screen flex flex-col justify-between border-r border-gray-700">

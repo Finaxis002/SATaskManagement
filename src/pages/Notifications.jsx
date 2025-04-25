@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-
 import { io } from "socket.io-client";
 // Assume socket.io client setup
 const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
 
-
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const userRole = localStorage.getItem("role"); // Get user role (admin or user)
   const [notificationCount, setNotificationCount] = useState(0);
-  
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -42,19 +39,31 @@ const Notifications = () => {
         const allNotifications = response.data;
         console.log("Fetched notifications:", allNotifications);
 
-        const filteredNotifications = allNotifications.filter(
-          (notification) => {
-            if (userRole === "admin") {
-              return notification.action === "task-updated";
-            } else if (userRole === "user") {
-              return (
-                notification.action === "task-created" ||
-                notification.action === "task-updated"
-              );
-            }
-            return false;
+        const filteredNotifications = allNotifications.filter((notification) => {
+          const currentEmail = localStorage.getItem("userId");
+        
+          if (userRole === "admin") {
+            return notification.type === "admin"; // ✅ Admin gets all admin type
           }
-        );
+        
+          if (userRole === "user") {
+            // ✅ Exclude notifications triggered by the current user themselves
+            const updatedBy = notification.updatedBy
+              ? JSON.parse(notification.updatedBy)
+              : null;
+        
+            return (
+              notification.type === "user" &&
+              notification.recipientEmail === currentEmail &&
+              (notification.action === "task-created" ||
+                notification.action === "task-updated") &&
+              updatedBy?.email !== currentEmail // ✅ THIS IS THE FIX
+            );
+          }
+        
+          return false;
+        });
+        
 
         console.log("Filtered notifications:", filteredNotifications);
         setNotifications(filteredNotifications);
@@ -68,16 +77,24 @@ const Notifications = () => {
     fetchNotifications();
   }, [userRole]);
 
+
+
   const handleMarkAsRead = async (id) => {
     try {
       await axios.patch(`https://sataskmanagementbackend.onrender.com/api/notifications/${id}`, {
         read: true,
       });
   
-      console.log("🧹 Marked notification as read:", id); // ✅ Move here
-      console.log("🔻 Decreasing badge count");
+      console.log("🧹 Marked notification as read:", id);
   
-      // Decrease badge count if it was unread before
+      const justMarked = notifications.find((n) => n._id === id);
+  
+      // Emit updated count via socket to trigger real-time sidebar update
+      socket.emit("notificationCountUpdated", {
+        email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+      });
+  
+      // Update local state
       setNotifications((prevNotifs) =>
         prevNotifs.map((notif) =>
           notif._id.toString() === id.toString()
@@ -86,7 +103,7 @@ const Notifications = () => {
         )
       );
   
-      const justMarked = notifications.find((n) => n._id === id);
+      // Optional local badge decrease
       if (justMarked && !justMarked.read) {
         setNotificationCount((prev) => Math.max(prev - 1, 0));
       }
@@ -94,9 +111,9 @@ const Notifications = () => {
       console.error("Error marking notification as read", error);
     }
   };
-
-
   
+
+
   return (
     <div className="p-4 mx-auto">
       <h2 className="text-2xl font-semibold mb-4 text-gray-800">
@@ -120,7 +137,7 @@ const Notifications = () => {
                 <div
                   key={notification._id}
                   className={`group transition-shadow duration-300 hover:shadow-md border rounded-xl p-5 flex justify-between items-start gap-4 ${
-                    notification.readBy?.includes(localStorage.getItem("userId"))
+                    notification.read
                       ? "bg-white border-gray-200"
                       : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300"
                   }`}
