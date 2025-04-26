@@ -5,16 +5,17 @@ import {
   faCalendarAlt,
   faCheckCircle,
   faUser,
+  faEdit,
 } from "@fortawesome/free-regular-svg-icons";
 import { format, isToday, isTomorrow } from "date-fns";
 import { useDispatch } from "react-redux";
-import { updateTaskCompletion } from "../redux/taskSlice"; // ✅ adjust path
+import { updateTaskCompletion } from "../redux/taskSlice";
 
 const ItemTypes = {
   TASK: "task",
 };
 
-const TaskCard = ({ task, columnIndex, taskIndex }) => {
+const TaskCard = ({ task, columnIndex, taskIndex, onEdit }) => {
   const dispatch = useDispatch();
 
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -67,8 +68,15 @@ const TaskCard = ({ task, columnIndex, taskIndex }) => {
         {task.assignee?.name || "Unassigned"}
       </div>
 
-      {/* Completion Status */}
-      <div className="w-1/4 flex justify-end">
+      {/* Action Buttons */}
+      <div className="w-1/4 flex justify-end gap-3">
+        <FontAwesomeIcon
+          icon={faEdit}
+          onClick={() => onEdit(columnIndex, task)} // ✅ Pass both
+          className="h-5 w-5 cursor-pointer text-blue-500 hover:text-blue-600"
+          title="Edit Task"
+        />
+
         <FontAwesomeIcon
           icon={faCheckCircle}
           onClick={() =>
@@ -80,8 +88,11 @@ const TaskCard = ({ task, columnIndex, taskIndex }) => {
             )
           }
           className={`h-5 w-5 cursor-pointer transition duration-150 ${
-            task.completed ? "text-green-500" : "text-gray-400 hover:text-green-500"
+            task.completed
+              ? "text-green-500"
+              : "text-gray-400 hover:text-green-500"
           }`}
+          title="Mark Complete"
         />
       </div>
     </div>
