@@ -125,16 +125,24 @@ const AddEmployee = () => {
           </div>
 
           {/* Department */}
-          <div className="relative">
+           {/* Department Dropdown */}
+           <div className="relative">
             <FaBuilding className="absolute top-4 left-4 text-gray-400" />
-            <input
-              type="text"
+            <select
               name="department"
-              placeholder="Department"
               value={formData.department}
               onChange={handleChange}
+              required
               className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+               
+              <option value="Marketing">Marketing</option>
+              <option value="Sales">Sales</option>
+              <option value="Operations">Operations</option>
+              <option value="IT/Software">IT/Software</option>
+              <option value="HR">HR</option>
+              <option value="Administrator">Administrator</option>
+            </select>
           </div>
 
           {/* User ID */}

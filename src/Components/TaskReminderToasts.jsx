@@ -413,7 +413,7 @@ const TaskReminderToasts = () => {
     console.log('Initializing socket and audio...');
 
     // Correct socket connection inside component
-    socketRef.current = io('http://localhost:5000', { transports: ['websocket'] });
+    socketRef.current = io('https://sataskmanagementbackend.onrender.com', { transports: ['websocket'] });
 
     const audio = new Audio(notificationSound);
     audio.volume = 0.3;
