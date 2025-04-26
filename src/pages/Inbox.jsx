@@ -92,19 +92,26 @@ const Inbox = () => {
           const res = await axios.get(
             `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`
           );
-  
+
           const filteredMessages = res.data.messages.filter((msg) => {
-            const trimmedSender = msg.sender ? msg.sender.trim().toLowerCase() : "";
-            const trimmedRecipient = msg.recipient ? msg.recipient.trim().toLowerCase() : "";
+            const trimmedSender = msg.sender
+              ? msg.sender.trim().toLowerCase()
+              : "";
+            const trimmedRecipient = msg.recipient
+              ? msg.recipient.trim().toLowerCase()
+              : "";
             const trimmedLoggedInUser = currentUser.name.trim().toLowerCase();
-  
+
             const isPersonalMessage =
-              trimmedSender === trimmedLoggedInUser || trimmedRecipient === trimmedLoggedInUser;
-  
-            return isPersonalMessage && (msg.group === undefined || msg.group === "");
+              trimmedSender === trimmedLoggedInUser ||
+              trimmedRecipient === trimmedLoggedInUser;
+
+            return (
+              isPersonalMessage && (msg.group === undefined || msg.group === "")
+            );
           });
-  
-          setMessages(filteredMessages); // No need to reverse, as you'll append new messages at the bottom
+
+          setMessages(filteredMessages.reverse()); // No need to reverse, as you'll append new messages at the bottom
         } else if (selectedGroup) {
           const encodedGroup = encodeURIComponent(selectedGroup);
           const res = await axios.get(
@@ -116,10 +123,10 @@ const Inbox = () => {
         console.error("❌ Error fetching messages:", err.message);
       }
     };
-  
+
     fetchMessages();
   }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
-  
+
   const sendMessage = async () => {
     if (!messageText.trim()) return;
 
@@ -175,9 +182,12 @@ const Inbox = () => {
   const markMessagesAsRead = async (identifier) => {
     try {
       // Call the API to mark messages as read for this group or user
-      const res = await axios.put("https://sataskmanagementbackend.onrender.com/api/mark-read", {
-        identifier,
-      });
+      const res = await axios.put(
+        "https://sataskmanagementbackend.onrender.com/api/mark-read",
+        {
+          identifier,
+        }
+      );
       console.log(`Marked messages as read for ${identifier}:`, res.data);
 
       // Emit a socket event to mark messages as read
@@ -252,9 +262,12 @@ const Inbox = () => {
       console.log("📨 Real-time message received:", msg);
 
       // For Groups:
-      if (msg.group) {
+      if (
+        msg.group &&
+        typeof msg.group === "string" &&
+        msg.group.trim() !== ""
+      ) {
         if (!selectedGroup || msg.group !== selectedGroup) {
-          // Increment unread count if the message is not for the selected group
           setGroupUnreadCounts((prevCounts) => {
             const updatedCounts = { ...prevCounts };
             updatedCounts[msg.group] = (updatedCounts[msg.group] || 0) + 1;
@@ -314,23 +327,37 @@ const Inbox = () => {
     console.log("Selected User:", selectedUser);
   }, [selectedGroup, selectedUser]);
 
+  socket.on("receiveMessage", (msg) => {
+    console.log("📨 received:", msg);
+  
+    if (msg.group && msg.group.trim() !== "") {
+      console.log("📌 Group message for:", msg.group);
+    } else {
+      console.log("📬 Personal message from:", msg.sender);
+    }
+  });
+  
+
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
       {/* Left column for groups */}
       <div className="w-1/4 bg-white p-5 rounded-xl shadow-lg border border-gray-200 flex flex-col h-full">
         {/* Toggle Buttons for Groups and Users/Personal Chat */}
-        <div className="flex gap-4 mb-4">
+        <div className="flex gap-4 mb-4 relative">
+          {/* Groups Button */}
           <button
-            onClick={() => setShowGroups(true)} // Show Groups when clicked
-            className={`px-4 py-2 text-sm rounded-lg ${
+            onClick={() => setShowGroups(true)}
+            className={`relative px-4 py-2 text-sm rounded-lg ${
               showGroups ? "bg-indigo-100" : "bg-gray-200"
             }`}
           >
             Groups
-            {/* Show badge if there's any unread message for any group */}
-            {Object.values(groupUnreadCounts).some((count) => count > 0) && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 py-0 rounded-full shadow-lg">
-                {/* Show total unread count for all groups */}
+            {/* Show unread badge on Groups button */}
+            {Object.values(groupUnreadCounts).reduce(
+              (acc, count) => acc + count,
+              0
+            ) > 0 && (
+              <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
                 {Object.values(groupUnreadCounts).reduce(
                   (acc, count) => acc + count,
                   0
@@ -339,30 +366,39 @@ const Inbox = () => {
             )}
           </button>
 
-          {/* Conditionally render the second button based on role */}
+          {/* Personal Chat for User */}
           {currentUser.role === "user" && (
             <button
-              onClick={() => setShowGroups(false)} // Show Personal Chat when clicked
-              className={`px-4 py-2 text-sm rounded-lg ${
+              onClick={() => setShowGroups(false)}
+              className={`relative px-4 py-2 text-sm rounded-lg ${
                 !showGroups ? "bg-indigo-100" : "bg-gray-200"
               }`}
             >
               Personal Chat
+              {/* Show unread badge on Personal Chat button */}
+              {Object.values(userUnreadCounts).some((count) => count > 0) && (
+                <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
+                  {Object.values(userUnreadCounts).reduce(
+                    (acc, count) => acc + count,
+                    0
+                  )}
+                </span>
+              )}
             </button>
           )}
 
+          {/* Users for Admin */}
           {currentUser.role === "admin" && (
             <button
-              onClick={() => setShowGroups(false)} // Show Users when clicked
-              className={`px-4 py-2 text-sm rounded-lg ${
+              onClick={() => setShowGroups(false)}
+              className={`relative px-4 py-2 text-sm rounded-lg ${
                 !showGroups ? "bg-indigo-100" : "bg-gray-200"
               }`}
             >
               Users
-              {/* Show badge if there's any unread message for any user */}
+              {/* Show unread badge on Users button */}
               {Object.values(userUnreadCounts).some((count) => count > 0) && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 py-0 rounded-full shadow-lg">
-                  {/* Show total unread count for all users */}
+                <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
                   {Object.values(userUnreadCounts).reduce(
                     (acc, count) => acc + count,
                     0

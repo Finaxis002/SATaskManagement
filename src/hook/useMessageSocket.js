@@ -1,51 +1,57 @@
-import { useEffect , useState} from "react";
-import socket from "../socket";
+import { useEffect, useState } from "react";
 import axios from "axios";
 
-const useMessageSocket = (setInboxCount, selectedGroup) => {
-  const [messages, setMessages] = useState([]);
-  
+import { io } from "socket.io-client";
+
+const socket = io("https://sataskmanagementbackend.onrender.com", {
+  withCredentials: true,
+});
+
+const useMessageSocket = (setInboxCount) => {
   useEffect(() => {
     const name = localStorage.getItem("name");
     const role = localStorage.getItem("role");
 
-    // Fetch the updated inbox count
     const fetchUpdatedCount = async () => {
       try {
         const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/unread-count", {
           params: { name, role },
         });
-        const count = res.data.unreadCount;
-        console.log("📡 Real-time unread count updated:", count); // ✅
-        setInboxCount(count);
-      } catch (error) {
-        console.error("❌ Real-time fetch failed:", error.message);
+        console.log("📩 Updated inbox count:", res.data.unreadCount);
+        setInboxCount(res.data.unreadCount);
+      } catch (err) {
+        console.error("❌ Failed fetching inbox count:", err.message);
       }
     };
-    
 
-    // Listen for messages sent to the selected group
+    fetchUpdatedCount(); // ✅ Immediately fetch on mount
+
+    // Listen for real-time incoming messages
     socket.on("receiveMessage", (msg) => {
-      console.log("📨 Real-time message received:", msg);
-      setMessages((prev) => {
-        if (Array.isArray(prev)) {
-          return [...prev, msg]; // Append to the array if prev is valid
-        }
-        return [msg]; // Return an array with the new message if prev is not an array
-      });
+      console.log("📥 Received new message in Sidebar socket");
+      fetchUpdatedCount(); // Fetch unread count immediately when new message arrives
     });
-    
 
+    // Listen for inbox count updates separately
     socket.on("inboxCountUpdated", () => {
+      console.log("📡 inboxCountUpdated event received");
       fetchUpdatedCount();
     });
+
+      // 🆕 Whenever any message is marked as read
+      socket.on("markRead", () => {
+        console.log("📬 Message marked as read");
+        fetchUpdatedCount();
+      });
+  
 
     return () => {
       socket.off("receiveMessage");
       socket.off("inboxCountUpdated");
+      socket.off("markRead"); // Cleanup
     };
-  }, [setInboxCount, selectedGroup]); // Re-run on selectedGroup change
-
+  }, [setInboxCount]);
 };
 
 export default useMessageSocket;
+
