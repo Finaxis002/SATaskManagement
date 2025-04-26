@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import {
   FaUserAlt,
@@ -15,7 +15,7 @@ const AddEmployee = () => {
     name: "",
     email: "",
     position: "",
-    department: "Department", // Default department
+    department: "",
     userId: "",
     password: "",
     role: "user",
@@ -45,15 +45,19 @@ const AddEmployee = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("https://sataskmanagementbackend.onrender.com/api/employees", formData);
+      await axios.post(
+        "http://localhost:5000/api/employees",
+        formData
+      );
       alert("Employee added successfully!");
       setFormData({
         name: "",
         email: "",
         position: "",
-        department: "Marketing", // Reset to default
+        department: "",
         userId: "",
         password: "",
+        role: "user",
       });
     } catch (err) {
       alert("Failed to add employee!");
@@ -61,12 +65,8 @@ const AddEmployee = () => {
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setPasswordVisible(!passwordVisible);
-  };
-
   return (
-    <div className="relative w-full max-h-screen text-gray-800 bg-gray-100 py-4 px-6">
+    <div className="relative w-full max-h-screen text-gray-800 bg-gray-100 py-14 px-6">
       <img
         src={bgImage}
         alt="Background"
@@ -124,24 +124,17 @@ const AddEmployee = () => {
             />
           </div>
 
-          {/* Department Dropdown */}
+          {/* Department */}
           <div className="relative">
             <FaBuilding className="absolute top-4 left-4 text-gray-400" />
-            <select
+            <input
+              type="text"
               name="department"
+              placeholder="Department"
               value={formData.department}
               onChange={handleChange}
-              required
               className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-               
-              <option value="Marketing">Marketing</option>
-              <option value="Sales">Sales</option>
-              <option value="Operations">Operations</option>
-              <option value="IT/Software">IT/Software</option>
-              <option value="HR">HR</option>
-              <option value="Administrator">Administrator</option>
-            </select>
+            />
           </div>
 
           {/* User ID */}
@@ -177,6 +170,20 @@ const AddEmployee = () => {
             >
               {passwordVisible ? <FaEyeSlash /> : <FaEye />}
             </button>
+          </div>
+
+          {/* Admin Checkbox */}
+          <div className="md:col-span-2">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                name="role"
+                checked={formData.role === "admin"}
+                onChange={handleCheckboxChange}
+                className="form-checkbox h-5 w-5 text-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-900">Is this Admin?</span>
+            </label>
           </div>
 
           {/* Submit Button (Full Width) */}
