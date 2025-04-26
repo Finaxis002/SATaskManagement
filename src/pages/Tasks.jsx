@@ -111,7 +111,7 @@ const TaskBoard = () => {
     try {
       // Create task via task API
       const taskResponse = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/tasks",
+        "http://localhost:5000/api/tasks",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
