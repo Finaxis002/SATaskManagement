@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import 'animate.css';
 
+main{
+    background-color: #fff !important;
+}
 
 .max-h-screen{
     height: 91vh !important;

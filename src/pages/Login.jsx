@@ -26,13 +26,15 @@ const Login = () => {
         "https://sataskmanagementbackend.onrender.com/api/employees/login",
         formData
       );
-      const { token, name, role, email } = response.data;
+
+      const { token, name, role, email, department } = response.data;
 
       // ✅ Store to localStorage
       localStorage.setItem("authToken", token);
       localStorage.setItem("name", name);
       localStorage.setItem("role", role);
-      localStorage.setItem("userId", email); // ✅ this is critical for TaskOverview
+      localStorage.setItem("userId", email);
+      localStorage.setItem("department", department); // ✅ Save department
 
       // ✅ Dispatch to Redux
       dispatch(setAuth({ name, role, userId: email }));
