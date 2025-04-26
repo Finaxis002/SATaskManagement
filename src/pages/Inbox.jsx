@@ -104,7 +104,7 @@ const Inbox = () => {
             return isPersonalMessage && (msg.group === undefined || msg.group === "");
           });
   
-          setMessages(filteredMessages.reverse()); // No need to reverse, as you'll append new messages at the bottom
+          setMessages(filteredMessages); // No need to reverse, as you'll append new messages at the bottom
         } else if (selectedGroup) {
           const encodedGroup = encodeURIComponent(selectedGroup);
           const res = await axios.get(

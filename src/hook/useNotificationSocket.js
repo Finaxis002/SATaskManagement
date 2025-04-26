@@ -25,12 +25,12 @@ const useNotificationSocket = (setNotificationCount) => {
       try {
         const userToQuery = role === "admin" ? "admin" : email;
 
-        console.log("🔄 Fetching unread notification count from backend...");
+        // console.log("🔄 Fetching unread notification count from backend...");
         const res = await axios.get(`https://sataskmanagementbackend.onrender.com/api/notifications/unread-count/${userToQuery}`, {
           params: { role },
         });
 
-        console.log("✅ Notification count fetched:", res.data.unreadCount);
+        // console.log("✅ Notification count fetched:", res.data.unreadCount);
         setNotificationCount(res.data.unreadCount);
       } catch (err) {
         console.error("❌ Error fetching notification count:", err.message);
@@ -44,8 +44,8 @@ const useNotificationSocket = (setNotificationCount) => {
       const currentRole = localStorage.getItem("role");
       const currentUser = localStorage.getItem("userId");
     
-      console.log("📨 SOCKET RECEIVED:", payload);
-      console.log("📌 ROLE:", currentRole, "| USER ID:", currentUser);
+      // console.log("📨 SOCKET RECEIVED:", payload);
+      // console.log("📌 ROLE:", currentRole, "| USER ID:", currentUser);
     
       if (!payload || typeof payload !== "object") {
         console.warn("⚠️ Skipping socket event: invalid or missing payload");
@@ -74,7 +74,7 @@ const useNotificationSocket = (setNotificationCount) => {
     fetchCount();
 
     return () => {
-      console.log("🧹 Cleaning up socket listener");
+      // console.log("🧹 Cleaning up socket listener");
       socket.off("notificationCountUpdated");
     };
   }, [setNotificationCount]);

@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUsers, deleteUser , resetPassword , updateUser } from "../redux/userSlice";
+import {
+  fetchUsers,
+  deleteUser,
+  resetPassword,
+  updateUser,
+} from "../redux/userSlice";
 import { FaTrash, FaSyncAlt, FaEdit } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
 import axios from "axios";
@@ -31,12 +36,12 @@ const AllEmployees = () => {
 
   const handleResetPassword = async (id, name) => {
     const newPassword = window.prompt(`Enter new password for ${name}:`);
-  
+
     if (!newPassword || newPassword.trim().length < 4) {
       alert("Password must be at least 4 characters.");
       return;
     }
-  
+
     try {
       const result = await resetPassword(id, newPassword); // Directly call the function
       alert("Password reset successfully.");
@@ -44,14 +49,17 @@ const AllEmployees = () => {
       alert(`Failed to reset password: ${error.message || "Unknown error"}`);
     }
   };
-  
+
   // Handle update employee
   const handleUpdate = async () => {
     console.log("Updated User Data:", updatedUserData); // Debugging log to check data before sending
-    
+
     try {
-      const updatedEmployee = await updateUser(selectedUser._id, updatedUserData); // Directly call the update function
-      
+      const updatedEmployee = await updateUser(
+        selectedUser._id,
+        updatedUserData
+      ); // Directly call the update function
+
       alert("Employee updated successfully!");
       dispatch(fetchUsers()); // Refetch the list of users after update
       handleCloseModal(); // Close the modal after update
@@ -59,9 +67,6 @@ const AllEmployees = () => {
       alert("Error updating employee. Please try again.");
     }
   };
-  
-  
-  
 
   const handleEdit = (user) => {
     setSelectedUser(user);
@@ -75,7 +80,6 @@ const AllEmployees = () => {
     });
     setShowEditModal(true);
   };
-  
 
   const handleCloseModal = () => {
     setShowEditModal(false);
@@ -89,7 +93,6 @@ const AllEmployees = () => {
       [name]: value,
     }));
   };
-  
 
   if (loading)
     return <div className="text-center pt-10 text-lg">Loading users...</div>;
@@ -97,7 +100,7 @@ const AllEmployees = () => {
     return <div className="text-center pt-10 text-red-600">Error: {error}</div>;
 
   return (
-    <div className="relative w-full max-h-screen bg-gray-100 py-12 px-6">
+    <div className="relative w-full h-[90vh] overflow-y-auto  py-12 px-6">
       <img
         src={bgImage}
         alt="Background"
@@ -105,7 +108,7 @@ const AllEmployees = () => {
       />
       <div className="relative z-10 bg-white max-w-7xl mx-auto rounded-xl shadow-xl p-8">
         <h2 className="text-3xl font-semibold text-center text-gray-800 mb-8">
-          Employee Directory
+          Users Directory
         </h2>
 
         <div className="overflow-x-auto">
@@ -180,111 +183,124 @@ const AllEmployees = () => {
       {/* Modal for editing employee */}
       {showEditModal && (
         <div className="fixed inset-0 flex justify-center items-center bg-gray-800 bg-opacity-50 z-20 backdrop-blur-md">
-        <div className="bg-white bg-opacity-70 p-8 rounded-lg shadow-lg w-1/3 backdrop-blur-lg">
-          <h3 className="text-xl font-semibold mb-4 text-center">Edit Employee</h3>
-          <form onSubmit={(e) => e.preventDefault()}>
-            <div className="mb-4">
-              <label htmlFor="name" className="block text-gray-700">Name</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={updatedUserData.name}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              />
-            </div>
-      
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-gray-700">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={updatedUserData.email}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              />
-            </div>
-      
-            <div className="mb-4">
-              <label htmlFor="position" className="block text-gray-700">Position</label>
-              <input
-                type="text"
-                id="position"
-                name="position"
-                value={updatedUserData.position}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              />
-            </div>
-      
-            <div className="mb-4">
-              <label htmlFor="department" className="block text-gray-700">Department</label>
-              <select
-                name="department"
-                id="department"
-                value={updatedUserData.department}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                <option value="IT/Software">IT/Software</option>
-                <option value="HR">HR</option>
-                <option value="Sales">Sales</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Operations">Operations</option>
-                <option value="Administrator">Administrator</option>
-              </select>
-            </div>
-      
-            <div className="mb-4">
-              <label htmlFor="role" className="block text-gray-700">Role</label>
-              <select
-                name="role"
-                id="role"
-                value={updatedUserData.role}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
-              </select>
-            </div>
-      
-            {/* Add the userId input field */}
-            <div className="mb-4">
-              <label htmlFor="userId" className="block text-gray-700">User ID</label>
-              <input
-                type="text"
-                id="userId"
-                name="userId"
-                value={updatedUserData.userId}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              />
-            </div>
-      
-            <div className="flex justify-between">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="px-6 py-2 bg-gray-500 text-white rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                onClick={handleUpdate}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md"
-              >
-                Update
-              </button>
-            </div>
-          </form>
+          <div className="bg-white bg-opacity-70 p-8 rounded-lg shadow-lg w-1/3 backdrop-blur-lg">
+            <h3 className="text-xl font-semibold mb-4 text-center">
+              Edit Employee
+            </h3>
+            <form onSubmit={(e) => e.preventDefault()}>
+              <div className="mb-4">
+                <label htmlFor="name" className="block text-gray-700">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={updatedUserData.name}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={updatedUserData.email}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="position" className="block text-gray-700">
+                  Position
+                </label>
+                <input
+                  type="text"
+                  id="position"
+                  name="position"
+                  value={updatedUserData.position}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="department" className="block text-gray-700">
+                  Department
+                </label>
+                <select
+                  name="department"
+                  id="department"
+                  value={updatedUserData.department}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="IT/Software">IT/Software</option>
+                  <option value="HR">HR</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Administrator">Administrator</option>
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="role" className="block text-gray-700">
+                  Role
+                </label>
+                <select
+                  name="role"
+                  id="role"
+                  value={updatedUserData.role}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+
+              {/* Add the userId input field */}
+              <div className="mb-4">
+                <label htmlFor="userId" className="block text-gray-700">
+                  User ID
+                </label>
+                <input
+                  type="text"
+                  id="userId"
+                  name="userId"
+                  value={updatedUserData.userId}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleUpdate}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md"
+                >
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
-      
       )}
     </div>
   );

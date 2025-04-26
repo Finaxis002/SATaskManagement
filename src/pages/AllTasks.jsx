@@ -25,7 +25,7 @@ const AllTasks = () => {
 
   return (
     <>
-   <div className="p-6 w-full min-h-screen bg-gray-100 overflow-auto">
+   <div className="p-6 w-full min-h-screen  overflow-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Task Manager</h2>
         <button

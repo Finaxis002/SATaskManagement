@@ -14,7 +14,9 @@ const TaskOverview = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/tasks");
+        const res = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/tasks"
+        );
         setTasks(res.data); // Store fetched tasks in state
       } catch (err) {
         console.error("Failed to fetch tasks", err);
@@ -29,7 +31,9 @@ const TaskOverview = () => {
   // Filter tasks based on user role (only show tasks assigned to the logged-in user if not an admin)
   const filteredTasks = tasks.filter((task) => {
     if (role === "admin") return true; // Admin sees all tasks
-    return task.assignees?.some((assignee) => assignee.email.toLowerCase() === userId?.toLowerCase());
+    return task.assignees?.some(
+      (assignee) => assignee.email.toLowerCase() === userId?.toLowerCase()
+    );
   });
 
   // Categorize tasks based on due date (Today, Tomorrow, Overdue, etc.)
@@ -42,13 +46,15 @@ const TaskOverview = () => {
   };
 
   filteredTasks.forEach((task) => {
-    if (!task.dueDate) {
-      console.warn("⚠️ Skipping task with missing dueDate:", task);
-      return; // Skip this task
+    if (!task.dueDate) return;
+
+    const parsedDate = parseISO(task.dueDate);
+
+    if (task.status === "Completed") {
+      categorizedTasks.completed.push(task);
+      return;
     }
-  
-    const parsedDate = parseISO(task.dueDate); // ✅ Safe to parse now
-  
+
     if (isToday(parsedDate)) {
       categorizedTasks.today.push(task);
     } else if (isTomorrow(parsedDate)) {
@@ -57,10 +63,6 @@ const TaskOverview = () => {
       categorizedTasks.overdue.push(task);
     } else {
       categorizedTasks.upcoming.push(task);
-    }
-  
-    if (task.completed) {
-      categorizedTasks.completed.push(task);
     }
   });
 
@@ -82,6 +84,54 @@ const TaskOverview = () => {
     }
   };
 
+  const handleToggleCompleted = async (taskId, isCompletedNow) => {
+    const updatedBy = {
+      name: localStorage.getItem("name"),
+      email: localStorage.getItem("userId"),
+    };
+  
+    const newStatus = isCompletedNow ? "Completed" : "To Do";
+  
+    console.log("🔁 Optimistically updating to:", newStatus);
+  
+    // 🧠 1. Optimistic UI update immediately
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task._id === taskId ? { ...task, status: newStatus } : task
+      )
+    );
+  
+    // 🧠 2. Instant Tab switch
+    if (newStatus === "Completed") {
+      setActiveTab("completed");
+    }
+  
+    // 🧠 3. Fire API in background
+    try {
+      const response = await fetch(
+        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus, updatedBy }),
+        }
+      );
+  
+      if (!response.ok) {
+        throw new Error("Failed to update task status");
+      }
+  
+      console.log("✅ Status updated on server");
+      // You may re-fetch or rely on local update
+    } catch (error) {
+      console.error("❌ Error updating task status:", error);
+      alert("Something went wrong while updating. Please refresh.");
+    }
+  };
+  
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
       <div className="flex justify-between items-center px-6 py-4 border-b ">
@@ -99,7 +149,10 @@ const TaskOverview = () => {
                     : "border-transparent text-gray-600 hover:text-indigo-600"
                 }`}
               >
-                {tab}
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {categorizedTasks[tab] && categorizedTasks[tab].length > 0
+                  ? ` (${categorizedTasks[tab].length})`
+                  : ""}
               </button>
             )
           )}
@@ -118,13 +171,19 @@ const TaskOverview = () => {
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  checked={task.completed}
-                  readOnly
-                  className="accent-indigo-600"
+                  checked={task.status === "Completed"}
+                  onChange={() =>
+                    task.status !== "Completed" &&
+                    handleToggleCompleted(task._id, true)
+                  }
+                  disabled={task.status === "Completed"} // ✅ Prevent re-click
+                  className="accent-indigo-600 cursor-pointer"
                 />
                 <span
                   className={`text-gray-800 text-lg ${
-                    task.completed ? "line-through text-gray-400" : ""
+                    task.status === "Completed"
+                      ? "line-through text-gray-400"
+                      : ""
                   }`}
                 >
                   {task.taskName}

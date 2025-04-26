@@ -25,7 +25,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="relative w-full min-h-screen p-6 text-gray-800 bg-gray-50">
+    <div className="relative w-full h-[90vh] overflow-y-auto p-6 text-gray-800 bg-gray-50">
       {/* Centered Header */}
       <div className="text-center mb-6">
         {/* Date Section */}
