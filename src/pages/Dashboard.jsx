@@ -4,7 +4,7 @@ import bgImage from "../assets/bg.png";
 import TaskOverview from "../Components/TaskOverview";
 import UserGrid from "../Components/UserGrid";
 import useSocketSetup from "../hook/useSocketSetup";
-import TaskReminders from "../Components/TaskReminder";
+// import TaskReminders from "../Components/TaskReminder";
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState("");
@@ -47,9 +47,9 @@ const Dashboard = () => {
         <div className="mt-6">
           <TaskOverview />
         </div>
-        <div className="mt-6">
+        {/* <div className="mt-6">
           <TaskReminders key={localStorage.getItem('userId')}/>
-        </div>
+        </div> */}
 
       </div>
   
