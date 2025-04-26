@@ -29,7 +29,7 @@ const Sidebar = () => {
   useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
 
   useNotificationSocket(setNotificationCount);
-  console.log("🔢 Notification count state:", notificationCount);
+  // console.log("🔢 Notification count state:", notificationCount);
 
 
   return (

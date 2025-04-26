@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
+import { format } from "date-fns";
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
@@ -22,7 +23,9 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
 
   const fetchTasksFromAPI = async () => {
     try {
-      const response = await fetch("https://sataskmanagementbackend.onrender.com/api/tasks");
+      const response = await fetch(
+        "https://sataskmanagementbackend.onrender.com/api/tasks"
+      );
       const data = await response.json();
 
       if (role !== "admin") {
@@ -76,8 +79,16 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   }, [role, userEmail, refreshTrigger]);
 
   const formatAssignedDate = (assignedDate) => {
+    if (!assignedDate) return "";
     const date = new Date(assignedDate);
-    return date.toLocaleString(); // Format the date as "MM/DD/YYYY, HH:MM:SS"
+    return date.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true, // ✅ 12-hour format with AM/PM
+    });
   };
 
   const handleStatusChange = async (taskId, newStatus) => {
@@ -157,22 +168,35 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   return (
     <div className="overflow-x-auto h-[77vh] w-[180vh]">
       <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
-
-       <thead className="bg-gradient-to-r from-blue-200 to-indigo-300 text-black text-sm">
-      <tr className="text-left">
-        <th className="py-4 px-6 min-w-[180px] font-semibold">Task Name</th>
-        <th className="py-4 px-6 min-w-[250px] font-semibold">Task Description</th>
-        <th className="py-4 px-6 min-w-[160px] font-semibold">Category</th>
-        <th className="py-4 px-6 min-w-[140px] font-semibold">Code</th>
-        <th className="py-4 px-6 min-w-[220px] font-semibold">Assignee</th>
-        <th className="py-4 px-6 min-w-[180px] font-semibold">Assigned By</th>
-        <th className="py-4 px-6 min-w-[180px] font-semibold">Assigned Date</th>
-        <th className="py-4 px-6 min-w-[160px] font-semibold">Due Date</th>
-        <th className="py-4 px-6 min-w-[120px] font-semibold text-center">Priority</th>
-        <th className="py-4 px-6 min-w-[150px] font-semibold text-center">Status</th>
-        <th className="py-4 px-6 min-w-[100px] font-semibold text-center">Action</th>
-      </tr>
-    </thead>
+        <thead className="bg-gradient-to-r from-blue-200 to-indigo-300 text-black text-sm">
+          <tr className="text-left">
+            <th className="py-4 px-6 min-w-[180px] font-semibold">Task Name</th>
+            <th className="py-4 px-6 min-w-[250px] font-semibold">
+              Task Description
+            </th>
+            <th className="py-4 px-6 min-w-[160px] font-semibold">
+              Department
+            </th>
+            <th className="py-4 px-6 min-w-[140px] font-semibold">Code</th>
+            <th className="py-4 px-6 min-w-[250px] font-semibold">Assignee</th>
+            <th className="py-4 px-6 min-w-[180px] font-semibold">
+              Assigned By
+            </th>
+            <th className="py-4 px-6 min-w-[180px] font-semibold">
+              Assigned Date
+            </th>
+            <th className="py-4 px-6 min-w-[160px] font-semibold">Due Date</th>
+            <th className="py-4 px-6 min-w-[120px] font-semibold text-center">
+              Priority
+            </th>
+            <th className="py-4 px-6 min-w-[150px] font-semibold text-center">
+              Status
+            </th>
+            <th className="py-4 px-6 min-w-[100px] font-semibold text-center">
+              Action
+            </th>
+          </tr>
+        </thead>
 
         <tbody className="text-sm text-gray-700">
           {tasks.map((task) => (
@@ -191,7 +215,7 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
               {/* ✅ Task Code */}
               <td className="py-4 px-6">{task.code || "—"}</td>
 
-              <td className="py-4 px-6 flex flex-wrap gap-2 w-45">
+              <td className="py-4 px-6 flex flex-wrap gap-2 ">
                 {task.assignees?.map((assignee) => (
                   <div
                     key={assignee.email}
@@ -209,12 +233,13 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                 {formatAssignedDate(task.assignedDate)}
               </td>
               <td className="py-4 px-6">
-                {new Date(task.dueDate).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "2-digit",
+                {new Date(task.dueDate).toLocaleDateString("en-GB", {
                   day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
                 })}
               </td>
+
               <td className="py-4 px-6 ">
                 <span
                   className={`py-1 px-3 rounded-full text-xs font-semibold ${
@@ -231,7 +256,7 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                 </span>
               </td>
 
-              <td className="py-4 px-6 w-40 relative " >
+              <td className="py-4 px-6 w-40 relative ">
                 {editingStatus === task._id ? (
                   // If status is being edited, show all options as inline clickable spans
                   <div className="flex z-1 flex-col w-[20vh] justify-between bg-white absolute">

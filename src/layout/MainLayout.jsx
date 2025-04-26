@@ -5,7 +5,7 @@ import ReminderAlertManager from "../Components/ReminderAlertManager";
 
 const MainLayout = ({ children }) => {
   return (
-    <div className="flex h-screen w-full bg-gray-900 text-white overflow-hidden">
+    <div className="flex h-screen w-full bg-gray-900 text-white">
       <Sidebar />
       <div className="flex flex-col flex-1">
         <Header />
