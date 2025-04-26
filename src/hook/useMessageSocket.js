@@ -3,7 +3,7 @@ import axios from "axios";
 
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000", {
+const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
 
@@ -14,7 +14,7 @@ const useMessageSocket = (setInboxCount) => {
 
     const fetchUpdatedCount = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/unread-count", {
+        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/unread-count", {
           params: { name, role },
         });
         console.log("📩 Updated inbox count:", res.data.unreadCount);

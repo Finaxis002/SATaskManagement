@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "../redux/userSlice";
 
 // Assume socket.io client setup
-const socket = io("http://localhost:5000", {
+const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
 
@@ -65,7 +65,7 @@ const Inbox = () => {
     const fetchAllUsers = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/employees"
+          "https://sataskmanagementbackend.onrender.com/api/employees"
         );
         console.log("Fetched users:", res.data); // Inspect the response structure
         setUsers(res.data); // Set the entire user objects
@@ -90,7 +90,7 @@ const Inbox = () => {
       try {
         if (selectedUser && selectedUser.name) {
           const res = await axios.get(
-            `http://localhost:5000/api/messages/user/${selectedUser.name}`
+            `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`
           );
 
           const filteredMessages = res.data.messages.filter((msg) => {
@@ -115,7 +115,7 @@ const Inbox = () => {
         } else if (selectedGroup) {
           const encodedGroup = encodeURIComponent(selectedGroup);
           const res = await axios.get(
-            `http://localhost:5000/api/messages/${encodedGroup}`
+            `https://sataskmanagementbackend.onrender.com/api/messages/${encodedGroup}`
           );
           setMessages(res.data.messages.reverse()); // No reverse here
         }
@@ -146,14 +146,14 @@ const Inbox = () => {
       if (selectedUser) {
         // If a user is selected, send the message to that user
         res = await axios.post(
-          `http://localhost:5000/api/messages/user/${selectedUser.name}`,
+          `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`,
           newMessage
         );
         console.log("✅ Message sent to user:", res.data);
       } else if (selectedGroup) {
         // If a group is selected, send the message to the group
         res = await axios.post(
-          `http://localhost:5000/api/messages/${encodeURIComponent(
+          `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
             selectedGroup
           )}`,
           newMessage
@@ -183,7 +183,7 @@ const Inbox = () => {
     try {
       // Call the API to mark messages as read for this group or user
       const res = await axios.put(
-        "http://localhost:5000/api/mark-read",
+        "https://sataskmanagementbackend.onrender.com/api/mark-read",
         {
           identifier,
         }
@@ -301,7 +301,7 @@ const Inbox = () => {
         const name = localStorage.getItem("name");
 
         const res = await axios.get(
-          "http://localhost:5000/api/group-unread-counts",
+          "https://sataskmanagementbackend.onrender.com/api/group-unread-counts",
           {
             params: { name },
           }
