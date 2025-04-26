@@ -18,6 +18,7 @@ const AddEmployee = () => {
     department: "",
     userId: "",
     password: "",
+    role: "user",
   });
 
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -30,10 +31,24 @@ const AddEmployee = () => {
     }));
   };
 
+  const togglePasswordVisibility = () => {
+    setPasswordVisible(!passwordVisible);
+  };
+
+  const handleCheckboxChange = (e) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      role: e.target.checked ? "admin" : "user", // Assign role based on checkbox
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("https://sataskmanagementbackend.onrender.com/api/employees", formData);
+      await axios.post(
+        "http://localhost:5000/api/employees",
+        formData
+      );
       alert("Employee added successfully!");
       setFormData({
         name: "",
@@ -42,15 +57,12 @@ const AddEmployee = () => {
         department: "",
         userId: "",
         password: "",
+        role: "user",
       });
     } catch (err) {
       alert("Failed to add employee!");
       console.error(err);
     }
-  };
-
-  const togglePasswordVisibility = () => {
-    setPasswordVisible(!passwordVisible);
   };
 
   return (
@@ -158,6 +170,20 @@ const AddEmployee = () => {
             >
               {passwordVisible ? <FaEyeSlash /> : <FaEye />}
             </button>
+          </div>
+
+          {/* Admin Checkbox */}
+          <div className="md:col-span-2">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                name="role"
+                checked={formData.role === "admin"}
+                onChange={handleCheckboxChange}
+                className="form-checkbox h-5 w-5 text-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-900">Is this Admin?</span>
+            </label>
           </div>
 
           {/* Submit Button (Full Width) */}

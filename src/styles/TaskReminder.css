@@ -1,0 +1,49 @@
+.reminders-container {
+    padding: 1rem;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    margin: 1rem auto;
+  }
+  
+  .reminders-list {
+    margin-top: 1rem;
+  }
+  
+  .reminder-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #4a6bdf;
+  }
+  
+  .reminder-icon {
+    margin-right: 0.75rem;
+    font-size: 1.25rem;
+  }
+  
+  .reminder-content {
+    flex: 1;
+  }
+  
+  .reminder-message {
+    font-weight: 500;
+    color: #2d3748;
+  }
+  
+  .reminder-time {
+    font-size: 0.75rem;
+    color: #718096;
+    margin-top: 0.25rem;
+  }
+  
+  .no-reminders {
+    text-align: center;
+    padding: 1rem;
+    color: #718096;
+    font-style: italic;
+  }

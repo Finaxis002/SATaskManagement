@@ -81,26 +81,89 @@
 
 
 
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchNotifications } from "../../redux/notificationSlice";
+// import React, { useEffect } from "react";
+// import { useDispatch, useSelector } from "react-redux";
+// import { fetchNotifications } from "../../redux/notificationSlice";
+
+// const AdminNotification = () => {
+  
+//   const dispatch = useDispatch();
+  
+//   const notifications = useSelector((state) => state.notifications.allNotifications);
+//   console.log("Notifications in Redux store:", notifications);
+
+//   useEffect(() => {
+//     dispatch(fetchNotifications()); // Fetch notifications when the component mounts
+//   }, [dispatch]);
+
+//   // Filter notifications to show only those for admins
+//   const adminNotifications = notifications.filter(
+//     (notification) => notification.type === "admin" // Show only admin type notifications
+//   );
+//   console.log("Admin Notifications:", adminNotifications); 
+
+  
+//   return (
+//     <div className="notifications-container">
+//       <h3>Admin Notifications</h3>
+//       {adminNotifications.length === 0 ? (
+//         <p>No new notifications</p>
+//       ) : (
+//         <ul>
+//           {adminNotifications.map((notification) => (
+//             <li key={notification._id}>
+//               <p>{notification.message}</p>
+//               <span>{new Date(notification.createdAt).toLocaleString()}</span>
+//             </li>
+//           ))}
+//         </ul>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default AdminNotification;
+
+
+import React, { useEffect, useState } from "react";
 
 const AdminNotification = () => {
-  
-  const dispatch = useDispatch();
-  
-  const notifications = useSelector((state) => state.notifications.allNotifications);
-  console.log("Notifications in Redux store:", notifications);
+  const [adminNotifications, setAdminNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchNotifications()); // Fetch notifications when the component mounts
-  }, [dispatch]);
+    // Fetch admin notifications directly from the API
+    const fetchAdminNotifications = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/notifications/admin");
+        const data = await response.json();
+        
+        if (response.ok) {
+          console.log("Fetched Admin Notifications:", data);
+          setAdminNotifications(data); // Store the fetched notifications in state
+        } else {
+          setError("Error fetching notifications");
+        }
+      } catch (err) {
+        console.error("Error fetching admin notifications:", err);
+        setError("Error fetching notifications");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Filter notifications to show only those for admins
-  const adminNotifications = notifications.filter(
-    (notification) => notification.type === "admin" // Show only admin type notifications
-  );
-  console.log("Admin Notifications:", adminNotifications); 
+    fetchAdminNotifications(); // Call the function to fetch data
+  }, []);
+
+  if (loading) {
+    return <p>Loading notifications...</p>;
+  }
+
+  if (error) {
+    return <p>{error}</p>;
+  }
+
   return (
     <div className="notifications-container">
       <h3>Admin Notifications</h3>
