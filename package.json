@@ -25,6 +25,7 @@
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "mdb-react-ui-kit": "^9.0.0",
+    "moment-timezone": "^0.5.48",
     "react": "19.1.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",

@@ -374,7 +374,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import '../styles/TaskReminderToastsStyle.css';
 import notificationSound from '../assets/reminderSound.mp3';
-
+import moment from 'moment-timezone';
 const TaskReminderToasts = () => {
   const [notifications, setNotifications] = useState([]);
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
@@ -384,7 +384,8 @@ const TaskReminderToasts = () => {
   // 🛠 Create handleReminder OUTSIDE
   const handleReminder = (message) => {
     console.log('RAW REMINDER MESSAGE:', message);
-
+    const reminderTime = moment(message.timestamp).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss");
+    console.log(currentISTTime);
     const newToast = {
       id: Date.now(),
       message,
@@ -455,6 +456,7 @@ const TaskReminderToasts = () => {
 
   return (
     <div className="toast-container">
+     
       {notifications.map(notification => (
         <div key={notification.id} className={`toast ${notification.type}`}>
           <div className="toast-message">

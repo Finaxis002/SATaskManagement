@@ -20,7 +20,6 @@ import {
 import { faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-
 import { io } from "socket.io-client";
 
 const socket = io("https://sataskmanagementbackend.onrender.com", {
