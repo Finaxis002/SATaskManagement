@@ -4,7 +4,6 @@ import bgImage from "../assets/bg.png";
 import TaskOverview from "../Components/TaskOverview";
 import UserGrid from "../Components/UserGrid";
 import useSocketSetup from "../hook/useSocketSetup";
-// import TaskReminders from "../Components/TaskReminder";
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState("");
@@ -26,7 +25,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-[90vh] overflow-y-auto p-6 text-gray-800 bg-gray-50">
+    <div className="relative w-full  h-[90vh] overflow-y-auto p-6 text-gray-800 bg-gray-50">
       {/* Centered Header */}
       <div className="text-center mb-6">
         {/* Date Section */}
@@ -47,10 +46,6 @@ const Dashboard = () => {
         <div className="mt-6">
           <TaskOverview />
         </div>
-        {/* <div className="mt-6">
-          <TaskReminders key={localStorage.getItem('userId')}/>
-        </div> */}
-
       </div>
   
       {/* UserGrid for Admin */}

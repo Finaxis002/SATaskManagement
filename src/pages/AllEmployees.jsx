@@ -100,7 +100,7 @@ const AllEmployees = () => {
     return <div className="text-center pt-10 text-red-600">Error: {error}</div>;
 
   return (
-    <div className="relative w-full h-[90vh] overflow-y-auto  py-12 px-6">
+    <div className="relative w-full h-[90vh] overflow-y-auto">
       <img
         src={bgImage}
         alt="Background"

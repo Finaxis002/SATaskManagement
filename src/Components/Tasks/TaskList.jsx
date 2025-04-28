@@ -260,7 +260,7 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     });
 
   return (
-    <div className="overflow-x-auto h-[79vh] w-[180vh]">
+    <div className="overflow-x-auto h-[78vh] w-[180vh]">
       <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
         <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-sm ">
           <tr className="text-left">
