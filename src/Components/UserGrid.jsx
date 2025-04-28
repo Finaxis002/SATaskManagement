@@ -15,7 +15,6 @@ const UserCard = ({ user, index }) => {
   const colorPalette = ["#CD95EA", "#FC979A"];
   const assignedColor = colorPalette[index % colorPalette.length];
 
-  
   return (
     <div
       className="relative flex flex-col items-center m-2 cursor-pointer group"
@@ -65,16 +64,15 @@ const UserCard = ({ user, index }) => {
   );
 };
 
-
-
-
 const UserGrid = () => {
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false); // 👈 Modal state
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
+      const res = await axios.get(
+        "https://sataskmanagementbackend.onrender.com/api/employees"
+      );
       setUsers(res.data);
     } catch (err) {
       console.error("Failed to fetch users", err);
@@ -84,8 +82,6 @@ const UserGrid = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
-
-
 
   return (
     <div className="w-full mx-auto bg-white rounded-xl p-6 shadow-md">
@@ -107,8 +103,11 @@ const UserGrid = () => {
           <UserCard key={user._id} user={user} index={index} />
         ))}
       </div>
-        {/* 👇 Modal to Add Employee */}
-        <AddEmployeeModal isOpen={showModal} onClose={() => setShowModal(false)} />
+      {/* 👇 Modal to Add Employee */}
+      <AddEmployeeModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+      />
     </div>
   );
 };
