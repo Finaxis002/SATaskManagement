@@ -46,7 +46,7 @@ const AddEmployee = () => {
     e.preventDefault();
     try {
       await axios.post(
-        "http://localhost:5000/api/employees",
+        "https://sataskmanagementbackend.onrender.com/api/employees",
         formData
       );
       alert("Employee added successfully!");

@@ -20,9 +20,14 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     department: "",
   });
   const [dueDateSortOrder, setDueDateSortOrder] = useState(null); // 'asc' or 'desc'
-  const [openFilter, setOpenFilter] = useState(null); // 🆕 which filter is open
   const [remarks, setRemarks] = useState({}); // Track remarks for each task
   const [editingRemark, setEditingRemark] = useState(null); // Track which task is being edited for remarks
+  const [editingWorkDesc, setEditingWorkDesc] = useState(null);
+  const [workDescs, setWorkDescs] = useState({});
+  const [openRemarkPopup, setOpenRemarkPopup] = useState(null);
+  const [openWorkDescPopup, setOpenWorkDescPopup] = useState(null);
+  const [workDescMode, setWorkDescMode] = useState("view"); // "edit" or "view"
+  const [remarkMode, setRemarkMode] = useState("view"); // "edit" or "view"
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -40,7 +45,7 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
         "https://sataskmanagementbackend.onrender.com/api/tasks"
       );
       const data = await response.json();
-  
+
       if (role !== "admin") {
         const filtered = data.filter((task) =>
           task.assignees.some((a) => a.email === userEmail)
@@ -49,7 +54,7 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
       } else {
         setTasks(data);
       }
-  
+
       // Map over the tasks to extract remarks and store them
       const taskRemarks = {};
       data.forEach((task) => {
@@ -60,7 +65,6 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
       console.error("Failed to fetch tasks:", err);
     }
   };
-  
 
   useEffect(() => {
     socket.on("task-updated", (data) => {
@@ -98,7 +102,6 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   useEffect(() => {
     fetchTasksFromAPI();
   }, [role, userEmail, refreshTrigger]);
-  
 
   const formatAssignedDate = (assignedDate) => {
     if (!assignedDate) return "";
@@ -161,53 +164,15 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     }
   };
 
-  const ReadMoreLess = ({ text, limit = 40 }) => {
-    const [expanded, setExpanded] = useState(false);
-
-    if (!text) return null;
-
-    const toggle = () => setExpanded((prev) => !prev);
-
-    const isLong = text.length > limit;
-    const displayedText =
-      expanded || !isLong ? text : text.slice(0, limit) + "...";
-
-    return (
-      <div>
-        <span>{displayedText}</span>
-        {isLong && (
-          <button
-            onClick={toggle}
-            className="text-blue-600 text-xs ml-1 underline focus:outline-none"
-          >
-            {expanded ? "Read less" : "Read more"}
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  // Tooltip logic for full remark
-  const handleShowFullRemark = (taskId) => {
-    alert(remarks[taskId]); // This can be replaced with a tooltip implementation
-  };
-
   const handleRemarkSave = async (taskId) => {
     let remarkText = remarks[taskId] || "";
-  
+
     // Update remark in the backend
     const updatedBy = {
       name: localStorage.getItem("name"),
       email: localStorage.getItem("userId"),
     };
-  
+
     try {
       const response = await fetch(
         `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
@@ -219,7 +184,7 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
           body: JSON.stringify({ remark: remarkText, updatedBy }),
         }
       );
-  
+
       if (response.ok) {
         const updatedTask = await response.json();
         setTasks((prevTasks) =>
@@ -236,8 +201,50 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
       alert("Error updating remark. Please try again.");
     }
   };
-  
-  
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleWorkDescSave = async (taskId) => {
+    const workDescText = workDescs[taskId] || "";
+
+    const updatedBy = {
+      name: localStorage.getItem("name"),
+      email: localStorage.getItem("userId"),
+    };
+
+    try {
+      const response = await fetch(
+        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ workDesc: workDescText, updatedBy }),
+        }
+      );
+
+      if (response.ok) {
+        const updatedTask = await response.json();
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            task._id === updatedTask._id ? updatedTask : task
+          )
+        );
+        setEditingWorkDesc(null); // Exit editing mode
+      } else {
+        throw new Error("Failed to update work description");
+      }
+    } catch (error) {
+      console.error("Error updating work description:", error);
+      alert("Error updating work description. Please try again.");
+    }
+  };
 
   const filteredTasks = tasks
     .filter((task) => {
@@ -259,308 +266,326 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
       return dateA - dateB; // 🚀 ascending order: nearest due date first
     });
 
+  const highPriorityTasks = filteredTasks.filter(
+    (task) => task.priority === "High"
+  );
+  const mediumPriorityTasks = filteredTasks.filter(
+    (task) => task.priority === "Medium"
+  );
+  const lowPriorityTasks = filteredTasks.filter(
+    (task) => task.priority === "Low"
+  );
+
+  const renderTaskRow = (task, index) => (
+    <tr
+      key={task._id}
+      className="hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200"
+    >
+      {/* 1. S. No */}
+      <td className="py-4 px-4 font-medium">{index + 1}</td>
+
+      {/* 2. Task Name (with pencil icon for edit) */}
+      <td className="py-4 px-6 relative flex items-center gap-2">
+        <span className="text-sm">{task.taskName}</span>
+        <FontAwesomeIcon
+          icon={faPen}
+          className="cursor-pointer text-blue-500 hover:text-blue-700"
+          onClick={() => onEdit(task)}
+        />
+      </td>
+
+      {/* 3. Work Description + Code */}
+      <td className="py-4 px-6 relative">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">
+            {(task.workDesc || "No description").length > 60
+              ? `${task.workDesc.slice(0, 60)}...`
+              : task.workDesc || "No description"}
+          </span>
+          {(task.workDesc || "").length > 60 && (
+            <button
+              className="text-blue-500 hover:text-blue-700 text-xs"
+              onClick={() => {
+                setOpenWorkDescPopup(task._id);
+                setWorkDescMode("view");
+              }}
+            >
+              Read more
+            </button>
+          )}
+          <FontAwesomeIcon
+            icon={faPen}
+            className="cursor-pointer text-blue-500 hover:text-blue-700"
+            onClick={() => {
+              setOpenWorkDescPopup(task._id);
+              setWorkDescMode("edit");
+            }}
+          />
+        </div>
+
+        {/* Popup box for read/edit work description */}
+        {openWorkDescPopup === task._id && (
+          <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
+            <div className="flex justify-between items-center mb-3">
+              <span className="font-semibold text-sm">
+                {workDescMode === "edit"
+                  ? "Edit Work Description"
+                  : "Work Description"}
+              </span>
+              <button
+                className="text-red-500 font-bold"
+                onClick={() => setOpenWorkDescPopup(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            {workDescMode === "edit" ? (
+              <>
+                <textarea
+                  value={workDescs[task._id] || task.workDesc || ""}
+                  onChange={(e) =>
+                    setWorkDescs((prev) => ({
+                      ...prev,
+                      [task._id]: e.target.value,
+                    }))
+                  }
+                  rows="4"
+                  placeholder="Edit Work Description"
+                  className="w-full px-2 py-1 text-sm border rounded-md text-justify"
+                />
+
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => {
+                      handleWorkDescSave(task._id);
+                      setOpenWorkDescPopup(null);
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white py-1 px-4 rounded-md"
+                  >
+                    Save
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-700 text-sm whitespace-pre-wrap">
+                {task.workDesc || "No description available"}
+              </div>
+            )}
+
+            <div className="text-xs text-gray-500 mt-2">
+              Code: {task.code || "—"}
+            </div>
+          </div>
+        )}
+      </td>
+
+      {/* 4. Date of Work */}
+      <td className="py-4 px-6">{formatAssignedDate(task.assignedDate)}</td>
+
+      {/* 5. Due Date */}
+      <td className="py-4 px-6">
+        {new Date(task.dueDate).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })}
+      </td>
+
+      {/* 6. Status (with click to change dropdown) */}
+      <td className="py-4 px-6 text-center relative">
+        {editingStatus === task._id ? (
+          <div className="flex flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg z-50">
+            {["To Do", "In Progress", "Completed", "Overdue"].map(
+              (statusOption) => (
+                <span
+                  key={statusOption}
+                  className={`py-2 px-4 text-center rounded-md text-xs font-semibold cursor-pointer mb-1 ${
+                    statusOption === "Completed"
+                      ? "bg-green-200 text-green-600"
+                      : statusOption === "In Progress"
+                      ? "bg-yellow-200 text-yellow-600"
+                      : statusOption === "To Do"
+                      ? "bg-blue-200 text-blue-600"
+                      : "bg-red-200 text-red-600"
+                  }`}
+                  onClick={() => {
+                    setNewStatus(statusOption);
+                    handleStatusChange(task._id, statusOption);
+                    setEditingStatus(null);
+                  }}
+                >
+                  {statusOption}
+                </span>
+              )
+            )}
+          </div>
+        ) : (
+          <span
+            className={`py-1 px-3 rounded-full text-xs font-semibold ${
+              task.status === "Completed"
+                ? "bg-green-200 text-green-600"
+                : task.status === "In Progress"
+                ? "bg-yellow-200 text-yellow-600"
+                : task.status === "To Do"
+                ? "bg-blue-200 text-blue-600"
+                : "bg-red-200 text-red-600"
+            }`}
+            onClick={() => setEditingStatus(task._id)}
+          >
+            {task.status}
+          </span>
+        )}
+      </td>
+
+      {/* 7. Remark */}
+      <td className="py-2 px-6 relative">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">
+            {(remarks[task._id] || "No remark").length > 20
+              ? `${(remarks[task._id] || "No remark").slice(0, 20)}...`
+              : remarks[task._id] || "No remark"}
+          </span>
+
+          {(remarks[task._id] || "").length > 20 && (
+            <button
+              className="text-blue-500 hover:text-blue-700 text-xs"
+              onClick={() => {
+                setOpenRemarkPopup(task._id);
+                setRemarkMode("view");
+              }}
+            >
+              Read more
+            </button>
+          )}
+
+          <FontAwesomeIcon
+            icon={faPen}
+            className="cursor-pointer text-blue-500 hover:text-blue-700"
+            onClick={() => {
+              setOpenRemarkPopup(task._id);
+              setRemarkMode("edit");
+            }}
+          />
+        </div>
+
+        {/* Popup box for Remark */}
+        {openRemarkPopup === task._id && (
+          <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
+            <div className="flex justify-between items-center mb-3">
+              <span className="font-semibold text-sm">
+                {remarkMode === "edit" ? "Edit Remark" : "Full Remark"}
+              </span>
+              <button
+                className="text-red-500 font-bold"
+                onClick={() => setOpenRemarkPopup(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            {remarkMode === "edit" ? (
+              <>
+                <textarea
+                  value={remarks[task._id] || ""}
+                  onChange={(e) =>
+                    setRemarks((prev) => ({
+                      ...prev,
+                      [task._id]: e.target.value,
+                    }))
+                  }
+                  rows="4"
+                  placeholder="Edit Remark"
+                  className="w-full px-2 py-1 text-sm border rounded-md text-justify"
+                />
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => {
+                      handleRemarkSave(task._id);
+                      setOpenRemarkPopup(null);
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white py-1 px-4 rounded-md"
+                  >
+                    Save
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-700 text-sm whitespace-pre-wrap">
+                {remarks[task._id] || "No remark"}
+              </div>
+            )}
+          </div>
+        )}
+      </td>
+
+      {/* 8. Team (Assignees) */}
+      <td className="py-4 px-6 flex flex-wrap gap-2">
+        {task.assignees?.map((assignee) => (
+          <div
+            key={assignee.email}
+            className="text-sm bg-indigo-100 text-indigo-800 py-1 px-3 rounded-full shadow-md hover:shadow-lg transition duration-200 ease-in-out"
+          >
+            {assignee.name}
+          </div>
+        ))}
+      </td>
+
+      {/* 9. Assigned By */}
+      <td className="py-4 px-6 font-medium">{task.assignedBy?.name || "—"}</td>
+    </tr>
+  );
+
   return (
     <div className="overflow-x-auto h-[78vh] w-[180vh]">
+      <div className="flex items-center justify-start mb-6">
+        <label
+          htmlFor="departmentFilter"
+          className="mr-3 text-sm font-medium text-gray-700"
+        >
+          Filter by Department:
+        </label>
+        <div className="relative">
+          <select
+            id="departmentFilter"
+            value={filters.department}
+            onChange={(e) => handleFilterChange("department", e.target.value)}
+            className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">All Departments</option>
+            {Array.from(new Set(tasks.map((t) => t.taskCategory)))
+              .filter(Boolean)
+              .map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M10 12a1 1 0 01-.707-.293l-3-3a1 1 0 111.414-1.414L10 9.586l2.293-2.293a1 1 0 011.414 1.414l-3 3A1 1 0 0110 12z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+
       <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
-        <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-sm ">
+        <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-sm">
           <tr className="text-left">
+            <th className="py-4 px-4 min-w-[70px] font-semibold">S. No</th>
             <th className="py-4 px-6 min-w-[180px] font-semibold">Task Name</th>
-
-            <th className="py-4 px-6 min-w-[250px] font-semibold">
-              Task Description
+            <th className="py-4 px-6  min-w-[250px] font-semibold">
+              Work Description + Code
             </th>
-            <th className="py-4 px-6 min-w-[250px] font-semibold">Remarks</th>
-
-            <th className="py-4 px-6 min-w-[160px] font-semibold relative">
-              <div className="flex items-center justify-center gap-2">
-                <span>
-                  Department
-                  {filters.department && ` (${filters.department})`}{" "}
-                  {/* Show selected */}
-                </span>
-                <FontAwesomeIcon
-                  icon={faFilter}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setOpenFilter(
-                      openFilter === "department" ? null : "department"
-                    );
-                  }}
-                />
-              </div>
-
-              {/* Custom dropdown for Department */}
-              {openFilter === "department" && (
-                <div className="absolute top-full mt-2 w-56 bg-white border border-gray-300 rounded-lg shadow-2xl z-30 overflow-hidden animate-fadeIn max-h-72 overflow-y-auto">
-                  {/* All Option at Top */}
-                  <div
-                    className={`px-4 py-2 text-sm font-semibold ${
-                      filters.department === ""
-                        ? "bg-indigo-100 text-indigo-800"
-                        : "text-gray-700"
-                    } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                    onClick={() => {
-                      handleFilterChange("department", "");
-                      setOpenFilter(null);
-                    }}
-                  >
-                    All
-                  </div>
-
-                  {/* Divider */}
-                  <div className="border-t border-gray-200"></div>
-
-                  {/* Dynamic Department Names */}
-                  {Array.from(new Set(tasks.map((t) => t.taskCategory))).filter(
-                    Boolean
-                  ).length > 0 ? (
-                    Array.from(new Set(tasks.map((t) => t.taskCategory)))
-                      .filter(Boolean)
-                      .map((dept) => (
-                        <div
-                          key={dept}
-                          className={`px-4 py-2 text-sm ${
-                            filters.department === dept
-                              ? "bg-indigo-100 text-indigo-800 font-medium"
-                              : "text-gray-700"
-                          } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                          onClick={() => {
-                            handleFilterChange("department", dept);
-                            setOpenFilter(null);
-                          }}
-                        >
-                          {dept}
-                        </div>
-                      ))
-                  ) : (
-                    <div className="px-4 py-4 text-sm text-gray-400">
-                      No Departments Available
-                    </div>
-                  )}
-                </div>
-              )}
-            </th>
-
-            <th className="py-4 px-6 min-w-[140px] font-semibold relative">
-              <div className="flex items-center justify-center gap-2">
-                <span>
-                  Code
-                  {filters.code && ` (${filters.code})`}{" "}
-                  {/* Show selected code */}
-                </span>
-                <FontAwesomeIcon
-                  icon={faFilter}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setOpenFilter(openFilter === "code" ? null : "code");
-                  }}
-                />
-              </div>
-
-              {/* Custom dropdown for Code */}
-              {openFilter === "code" && (
-                <div className="absolute top-full mt-2 w-56 bg-white border border-gray-300 rounded-lg shadow-2xl z-30 overflow-hidden animate-fadeIn max-h-72 overflow-y-auto">
-                  {/* All Option at Top */}
-                  <div
-                    className={`px-4 py-2 text-sm font-semibold ${
-                      filters.code === ""
-                        ? "bg-indigo-100 text-indigo-800"
-                        : "text-gray-700"
-                    } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                    onClick={() => {
-                      handleFilterChange("code", "");
-                      setOpenFilter(null);
-                    }}
-                  >
-                    All
-                  </div>
-
-                  {/* Divider */}
-                  <div className="border-t border-gray-200"></div>
-
-                  {/* Dynamic Code Names */}
-                  {Array.from(new Set(tasks.map((t) => t.code))).length > 0 ? (
-                    Array.from(new Set(tasks.map((t) => t.code))).map(
-                      (code) => (
-                        <div
-                          key={code}
-                          className={`px-4 py-2 text-sm ${
-                            filters.code === code
-                              ? "bg-indigo-100 text-indigo-800 font-medium"
-                              : "text-gray-700"
-                          } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                          onClick={() => {
-                            handleFilterChange("code", code);
-                            setOpenFilter(null);
-                          }}
-                        >
-                          {code}
-                        </div>
-                      )
-                    )
-                  ) : (
-                    <div className="px-4 py-4 text-sm text-gray-400">
-                      No Codes Available
-                    </div>
-                  )}
-                </div>
-              )}
-            </th>
-
-            <th className="py-4 px-6 min-w-[250px] font-semibold relative">
-              <div className="flex items-center justify-center gap-2">
-                <span>
-                  Assignee
-                  {filters.assignee && ` (${filters.assignee})`}{" "}
-                  {/* Show selected Assignee */}
-                </span>
-                <FontAwesomeIcon
-                  icon={faFilter}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setOpenFilter(
-                      openFilter === "assignee" ? null : "assignee"
-                    );
-                  }}
-                />
-              </div>
-
-              {/* Custom dropdown for Assignee */}
-              {openFilter === "assignee" && (
-                <div className="absolute top-full mt-2 w-56 bg-white border border-gray-300 rounded-lg shadow-2xl z-30 overflow-hidden animate-fadeIn max-h-72 overflow-y-auto">
-                  {/* All Option at Top */}
-                  <div
-                    className={`px-4 py-2 text-sm font-semibold ${
-                      filters.assignee === ""
-                        ? "bg-indigo-100 text-indigo-800"
-                        : "text-gray-700"
-                    } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                    onClick={() => {
-                      handleFilterChange("assignee", "");
-                      setOpenFilter(null);
-                    }}
-                  >
-                    All
-                  </div>
-
-                  {/* Divider */}
-                  <div className="border-t border-gray-200"></div>
-
-                  {/* Dynamic Assignee Names */}
-                  {Array.from(
-                    new Set(
-                      tasks.flatMap(
-                        (t) => t.assignees?.map((a) => a.name) || []
-                      )
-                    )
-                  ).length > 0 ? (
-                    Array.from(
-                      new Set(
-                        tasks.flatMap(
-                          (t) => t.assignees?.map((a) => a.name) || []
-                        )
-                      )
-                    ).map((name) => (
-                      <div
-                        key={name}
-                        className={`px-4 py-2 text-sm ${
-                          filters.assignee === name
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : "text-gray-700"
-                        } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                        onClick={() => {
-                          handleFilterChange("assignee", name);
-                          setOpenFilter(null);
-                        }}
-                      >
-                        {name}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-4 py-4 text-sm text-gray-400">
-                      No Assignees Available
-                    </div>
-                  )}
-                </div>
-              )}
-            </th>
-
-            <th className="py-4 px-6 min-w-[180px] font-semibold relative">
-              <div className="flex items-center justify-center gap-2">
-                <span>
-                  Assigned By
-                  {filters.assignedBy && ` (${filters.assignedBy})`}{" "}
-                  {/* Show selected */}
-                </span>
-                <FontAwesomeIcon
-                  icon={faFilter}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setOpenFilter(
-                      openFilter === "assignedBy" ? null : "assignedBy"
-                    );
-                  }}
-                />
-              </div>
-
-              {/* Custom dropdown for Assigned By */}
-              {openFilter === "assignedBy" && (
-                <div className="absolute top-full mt-2 w-40 bg-white border border-gray-300 rounded-lg shadow-2xl z-30 overflow-hidden animate-fadeIn max-h-72 overflow-y-auto">
-                  {/* All Option at Top */}
-                  <div
-                    className={`px-4 py-2 text-sm font-semibold ${
-                      filters.assignedBy === ""
-                        ? "bg-indigo-100 text-indigo-800"
-                        : "text-gray-700"
-                    } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                    onClick={() => {
-                      handleFilterChange("assignedBy", "");
-                      setOpenFilter(null);
-                    }}
-                  >
-                    All
-                  </div>
-
-                  {/* Divider */}
-                  <div className="border-t border-gray-200"></div>
-
-                  {/* Dynamic Assigned By Names */}
-                  {Array.from(
-                    new Set(tasks.map((t) => t.assignedBy?.name))
-                  ).filter(Boolean).length > 0 ? (
-                    Array.from(new Set(tasks.map((t) => t.assignedBy?.name)))
-                      .filter(Boolean)
-                      .map((name) => (
-                        <div
-                          key={name}
-                          className={`px-4 py-2 text-sm ${
-                            filters.assignedBy === name
-                              ? "bg-indigo-100 text-indigo-800 font-medium"
-                              : "text-gray-700"
-                          } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                          onClick={() => {
-                            handleFilterChange("assignedBy", name);
-                            setOpenFilter(null);
-                          }}
-                        >
-                          {name}
-                        </div>
-                      ))
-                  ) : (
-                    <div className="px-4 py-4 text-sm text-gray-400">
-                      No Assigned By Available
-                    </div>
-                  )}
-                </div>
-              )}
-            </th>
-
             <th className="py-4 px-6 min-w-[180px] font-semibold">
-              Assigned Date
+              Date of Work
             </th>
-
             <th
-              className="py-4 px-6 min-w-[160px] font-semibold cursor-pointer"
+              className="py-4 px-6 min-w-[180px] font-semibold cursor-pointer"
               onClick={() => {
                 setDueDateSortOrder((prev) =>
                   prev === "asc" ? "desc" : "asc"
@@ -574,267 +599,53 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                 ? " 🔽"
                 : ""}
             </th>
-
-            <th className="py-4 px-6 min-w-[120px] font-semibold relative">
-              <div className="flex items-center justify-center gap-2">
-                <span>
-                  Priority
-                  {filters.priority && ` (${filters.priority})`}
-                </span>
-                <FontAwesomeIcon
-                  icon={faFilter}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setOpenFilter(
-                      openFilter === "priority" ? null : "priority"
-                    );
-                  }}
-                />
-              </div>
-
-              {/* Custom dropdown for Priority */}
-              {openFilter === "priority" && (
-                <div className="absolute w-40 top-full mt-2 bg-white border border-gray-300 rounded-lg shadow-2xl z-30 overflow-hidden animate-fadeIn max-h-60 overflow-y-auto">
-                  {["All", "Low", "Medium", "High"].map((option) => (
-                    <div
-                      key={option}
-                      className={`px-4 py-2 text-sm ${
-                        filters.priority === (option === "All" ? "" : option)
-                          ? "bg-indigo-100 text-indigo-800 font-medium"
-                          : "text-gray-700"
-                      } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                      onClick={() => {
-                        handleFilterChange(
-                          "priority",
-                          option === "All" ? "" : option
-                        );
-                        setOpenFilter(null);
-                      }}
-                    >
-                      {option}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <th className="py-4 px-6 min-w-[160px] font-semibold text-center">
+              Status
             </th>
-
-            <th className="py-4 px-6 min-w-[200px] font-semibold relative">
-              <div className="flex items-center justify-center gap-2">
-                <span>
-                  Status
-                  {filters.status && ` (${filters.status})`}
-                </span>
-                <FontAwesomeIcon
-                  icon={faFilter}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setOpenFilter(openFilter === "status" ? null : "status");
-                  }}
-                />
-              </div>
-
-              {/* Custom dropdown for Status */}
-              {openFilter === "status" && (
-                <div className="absolute w-40 top-full mt-2 bg-white border border-gray-300 rounded-lg shadow-2xl z-30 overflow-hidden animate-fadeIn max-h-60 overflow-y-auto">
-                  {["All", "To Do", "In Progress", "Completed", "Overdue"].map(
-                    (option) => (
-                      <div
-                        key={option}
-                        className={`px-4 py-2 text-sm ${
-                          filters.status === (option === "All" ? "" : option)
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : "text-gray-700"
-                        } hover:bg-indigo-100 hover:text-indigo-800 cursor-pointer transition-all duration-200`}
-                        onClick={() => {
-                          handleFilterChange(
-                            "status",
-                            option === "All" ? "" : option
-                          );
-                          setOpenFilter(null);
-                        }}
-                      >
-                        {option}
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
-            </th>
-
-            <th className="py-4 px-6 min-w-[100px] font-semibold">
-              Action
+            <th className="py-4 px-6 min-w-[160px] font-semibold">Remarks</th>
+            <th className="py-4 px-6 min-w-[250px] font-semibold">Team</th>
+            <th className="py-4 px-6 min-w-[130px] font-semibold">
+              Assigned By
             </th>
           </tr>
         </thead>
 
         <tbody className="text-sm text-gray-700">
-          {filteredTasks.map((task) => (
-            <tr
-              key={task._id}
-              className="hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200"
-            >
-              <td className="py-4 px-6 font-medium">{task.taskName}</td>
-              <td className="py-4 px-6">
-                <ReadMoreLess text={task.workDesc} limit={40} />
-              </td>
+          {/* High Priority Section */}
+          {highPriorityTasks.length > 0 && (
+            <>
+              <tr className="bg-red-100 text-red-800 font-bold text-sm">
+                <td colSpan="13" className="py-2 px-6">
+                  High Priority Tasks
+                </td>
+              </tr>
+              {highPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
+            </>
+          )}
 
-              <td
-                className={`py-2 px-6 text-justify bg-gree  ${
-                  editingRemark === task._id ? "bg-yellow-50" : ""
-                }`} // Highlight when editing
-              >
-                {editingRemark === task._id ? (
-                  // Editable textarea for the remark
-                  <div className="flex items-center gap-2 ">
-                    <textarea
-                      value={remarks[task._id] || ""}
-                      onChange={(e) =>
-                        setRemarks((prev) => ({
-                          ...prev,
-                          [task._id]: e.target.value,
-                        }))
-                      }
-                      rows="2"
-                      placeholder="Add a remark"
-                      className="px-2 py-1 w-40 text-sm border rounded-md text-justify"
-                    />
-                    <button
-                      onClick={() => handleRemarkSave(task._id)}
-                      className="bg-green-500 text-white py-1 px-2 rounded-md"
-                    >
-                      Save
-                    </button>
-                  </div>
-                ) : (
-                  // Display the remark and pencil icon for editing
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">
-                      {remarks[task._id] || "No remark"}
-                    </span>
-                    <FontAwesomeIcon
-                      icon={faPen} // Pencil icon
-                      className="cursor-pointer text-blue-500 hover:text-blue-700"
-                      onClick={() => setEditingRemark(task._id)} // Set task ID as editing state
-                    />
-                  </div>
-                )}
-              </td>
+          {/* Medium Priority Section */}
+          {mediumPriorityTasks.length > 0 && (
+            <>
+              <tr className="bg-yellow-100 text-yellow-800 font-bold text-sm">
+                <td colSpan="13" className="py-2 px-6">
+                  Medium Priority Tasks
+                </td>
+              </tr>
+              {mediumPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
+            </>
+          )}
 
-              {/* Task Category */}
-              <td className="py-4 px-6 font-semibold  text-indigo-600">
-                {task.taskCategory || "—"}
-              </td>
-
-              {/* Task Code */}
-              <td className="py-4 px-6 text-gray-600">
-                {task.code || "—"}
-              </td>
-
-              {/* Assignees */}
-              <td className="py-4 px-6 flex flex-wrap gap-2">
-                {task.assignees?.map((assignee) => (
-                  <div
-                    key={assignee.email}
-                    className="text-sm bg-indigo-100 text-indigo-800 py-1 px-3 rounded-full shadow-md hover:shadow-lg transition duration-200 ease-in-out"
-                  >
-                    {assignee.name}
-                  </div>
-                ))}
-              </td>
-
-              {/* Assigned By */}
-              <td className="py-4 px-6 font-medium">
-                {task.assignedBy?.name || "—"}
-              </td>
-
-              {/* Assigned Date */}
-              <td className="py-4 px-6">
-                {formatAssignedDate(task.assignedDate)}
-              </td>
-
-              {/* Due Date */}
-              <td className="py-4 px-6">
-                {new Date(task.dueDate).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                })}
-              </td>
-
-              {/* Priority */}
-              <td className="py-4 px-6">
-                <span
-                  className={`py-1 px-3 rounded-full text-xs font-semibold ${
-                    task.priority === "Low"
-                      ? "bg-green-200 text-green-600"
-                      : task.priority === "Medium"
-                      ? "bg-yellow-200 text-yellow-600"
-                      : task.priority === "High"
-                      ? "bg-red-200 text-red-600"
-                      : "bg-gray-200 text-gray-600"
-                  }`}
-                >
-                  {task.priority}
-                </span>
-              </td>
-
-              {/* Status */}
-              <td className="py-4 px-6 relative">
-                {editingStatus === task._id ? (
-                  <div className="flex z-1 flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg">
-                    {["To Do", "In Progress", "Completed", "Overdue"].map(
-                      (statusOption) => (
-                        <span
-                          key={statusOption}
-                          className={`py-2 px-4 rounded-md text-xs font-semibold cursor-pointer mb-1 ${
-                            statusOption === "Completed"
-                              ? "bg-green-200 text-green-600"
-                              : statusOption === "In Progress"
-                              ? "bg-yellow-200 text-yellow-600"
-                              : statusOption === "To Do"
-                              ? "bg-blue-200 text-blue-600"
-                              : "bg-red-200 text-red-600"
-                          }`}
-                          onClick={() => {
-                            setNewStatus(statusOption);
-                            handleStatusChange(task._id, statusOption); // Update status when clicked
-                            setEditingStatus(null); // Close dropdown after selection
-                          }}
-                        >
-                          {statusOption}
-                        </span>
-                      )
-                    )}
-                  </div>
-                ) : (
-                  <span
-                    className={`py-1 px-3 rounded-full text-xs font-semibold ${
-                      task.status === "Completed"
-                        ? "bg-green-200 text-green-600"
-                        : task.status === "In Progress"
-                        ? "bg-yellow-200 text-yellow-600"
-                        : task.status === "To Do"
-                        ? "bg-blue-200 text-blue-600"
-                        : "bg-red-200 text-red-600"
-                    }`}
-                    onClick={() => setEditingStatus(task._id)} // Start editing when clicked
-                  >
-                    {task.status}
-                  </span>
-                )}
-              </td>
-
-              {/* Edit Button */}
-              <td className="py-4 px-6">
-                <button
-                  onClick={() => onEdit(task)}
-                  className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg shadow-md focus:outline-none transition duration-300"
-                >
-                  Edit
-                </button>
-              </td>
-            </tr>
-          ))}
+          {/* Low Priority Section */}
+          {lowPriorityTasks.length > 0 && (
+            <>
+              <tr className="bg-green-100 text-green-800 font-bold text-sm">
+                <td colSpan="13" className="py-2 px-6">
+                  Low Priority Tasks
+                </td>
+              </tr>
+              {lowPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
+            </>
+          )}
         </tbody>
       </table>
     </div>

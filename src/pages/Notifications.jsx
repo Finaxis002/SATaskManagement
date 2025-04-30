@@ -14,72 +14,6 @@ const Notifications = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      setLoading(true);
-      try {
-        let response;
-
-        if (userRole === "admin") {
-          // Admin: Get all notifications
-          response = await axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/notifications"
-          );
-        } else {
-          // User: Get by user email
-          const emailToFetch = localStorage.getItem("userId");
-          if (!emailToFetch) {
-            console.error("No userId found in localStorage.");
-            return setLoading(false);
-          }
-
-          console.log("User email to fetch:", emailToFetch);
-          response = await axios.get(
-            `https://sataskmanagementbackend.onrender.com/api/notifications/${emailToFetch}`
-          );
-        }
-
-        const allNotifications = response.data;
-        console.log("Fetched notifications:", allNotifications);
-
-        const filteredNotifications = allNotifications.filter(
-          (notification) => {
-            const currentEmail = localStorage.getItem("userId");
-
-            if (userRole === "admin") {
-              return notification.type === "admin"; // ✅ Admin gets all admin type
-            }
-
-            if (userRole === "user") {
-              // ✅ Exclude notifications triggered by the current user themselves
-              const updatedBy = notification.updatedBy
-                ? JSON.parse(notification.updatedBy)
-                : null;
-
-              return (
-                notification.type === "user" &&
-                notification.recipientEmail === currentEmail &&
-                (notification.action === "task-created" ||
-                  notification.action === "task-updated") &&
-                updatedBy?.email !== currentEmail // ✅ THIS IS THE FIX
-              );
-            }
-
-            return false;
-          }
-        );
-
-        console.log("Filtered notifications:", filteredNotifications);
-        setNotifications(filteredNotifications);
-      } catch (error) {
-        console.error("Error fetching notifications", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNotifications();
-  }, [userRole]);
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -89,34 +23,95 @@ const Notifications = () => {
           read: true,
         }
       );
-
+  
       console.log("🧹 Marked notification as read:", id);
-
-      const justMarked = notifications.find((n) => n._id === id);
-
-      // Emit updated count via socket to trigger real-time sidebar update
+  
+      // Instead of manually decreasing counter, re-fetch updated notifications
+      fetchNotifications(); // 💥 Call the fetchNotifications function again
+  
+      // Emit updated count via socket
       socket.emit("notificationCountUpdated", {
         email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
       });
-
-      // Update local state
-      setNotifications((prevNotifs) =>
-        prevNotifs.map((notif) =>
-          notif._id.toString() === id.toString()
-            ? { ...notif, read: true }
-            : notif
-        )
-      );
-
-      // Optional local badge decrease
-      if (justMarked && !justMarked.read) {
-        setNotificationCount((prev) => Math.max(prev - 1, 0));
-      }
     } catch (error) {
       console.error("Error marking notification as read", error);
     }
   };
+  
 
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      let response;
+  
+      if (userRole === "admin") {
+        response = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/notifications"
+        );
+      } else {
+        const emailToFetch = localStorage.getItem("userId");
+        if (!emailToFetch) {
+          console.error("No userId found in localStorage.");
+          return setLoading(false);
+        }
+  
+        console.log("User email to fetch:", emailToFetch);
+        response = await axios.get(
+          `https://sataskmanagementbackend.onrender.com/api/notifications/${emailToFetch}`
+        );
+      }
+  
+      const allNotifications = response.data;
+      console.log("Fetched notifications:", allNotifications);
+  
+      const filteredNotifications = allNotifications.filter((notification) => {
+        const currentEmail = localStorage.getItem("userId");
+  
+        if (userRole === "admin") {
+          return notification.type === "admin";
+        }
+  
+        if (userRole === "user") {
+          const updatedBy = notification.updatedBy
+            ? JSON.parse(notification.updatedBy)
+            : null;
+  
+          return (
+            notification.type === "user" &&
+            notification.recipientEmail === currentEmail &&
+            (notification.action === "task-created" ||
+              notification.action === "task-updated") &&
+            updatedBy?.email !== currentEmail
+          );
+        }
+  
+        return false;
+      });
+  
+      console.log("Filtered notifications:", filteredNotifications);
+      setNotifications(filteredNotifications);
+      setNotificationCount(filteredNotifications.filter((n) => !n.read).length); // 🆕 Update notification counter correctly
+    } catch (error) {
+      console.error("Error fetching notifications", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [userRole]);
+
+  const normalizeDateString = (dateString) => {
+    // Example: "25/04/2025" ➔ "25/4/2025"
+    return dateString
+      .split("/")
+      .map((part, idx) => (idx < 2 ? String(parseInt(part, 10)) : part)) // Day and Month remove leading zeros
+      .join("/");
+  };
+  
+  
+  
   return (
     <div className="p-4 mx-auto h-[90vh] overflow-y-auto">
       <div className="flex gap-8">
@@ -182,11 +177,21 @@ const Notifications = () => {
                         .join(" ") // Combine all details into a single string
                         .toLowerCase()
                     : "";
+                    const normalizedCreatedAt = normalizeDateString(
+                      new Date(notification.createdAt).toLocaleDateString(
+                        "en-GB",
+                        { day: "2-digit", month: "2-digit", year: "numeric" }
+                      )
+                    ).toLowerCase();
+                    
+                    const normalizedQuery = normalizeDateString(searchQuery.toLowerCase());
+                    
 
                   return (
                     message.includes(query) ||
                     updaterName.includes(query) ||
-                    detailsText.includes(query)
+                    detailsText.includes(query) ||
+                    normalizedCreatedAt.includes(normalizedQuery)
                   );
                 })
 
