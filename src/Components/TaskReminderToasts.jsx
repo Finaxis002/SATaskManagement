@@ -421,8 +421,20 @@ const TaskReminderToasts = () => {
     audioRef.current = audio;
 
     const unlockAudio = () => {
-      setIsAudioUnlocked(true);
-      console.log('Audio unlocked ✅');
+      // setIsAudioUnlocked(true);
+      // console.log('Audio unlocked ✅');
+      if (audioRef.current) {
+        audioRef.current.volume = 0;
+        audioRef.current.play().then(() => {
+          console.log("Audio unlocked silently 🎧");
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          audioRef.current.volume = 0.3;
+          setIsAudioUnlocked(true);
+        }).catch(err => {
+          console.warn("Silent audio unlock failed 🚫", err);
+        });
+      }
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
     };
@@ -451,6 +463,7 @@ const TaskReminderToasts = () => {
       }
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
+      
     };
   }, []);
 
