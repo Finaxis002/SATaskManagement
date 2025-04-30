@@ -50,7 +50,7 @@ const Dashboard = () => {
   
       {/* UserGrid for Admin */}
       {role === "admin" ? (
-        <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+        <div className="mt-6 bg-white rounded-lg shadow-md p-6 grid ">
          
           <UserGrid />
         </div>

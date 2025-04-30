@@ -44,29 +44,25 @@ const useNotificationSocket = (setNotificationCount) => {
       const currentRole = localStorage.getItem("role");
       const currentUser = localStorage.getItem("userId");
     
-      // console.log("📨 SOCKET RECEIVED:", payload);
-      // console.log("📌 ROLE:", currentRole, "| USER ID:", currentUser);
-    
       if (!payload || typeof payload !== "object") {
         console.warn("⚠️ Skipping socket event: invalid or missing payload");
         return;
       }
     
-      const { email, count } = payload;
+      const { email } = payload; // ❗ Ignore payload.count completely here
     
-      // Admin real-time
       if (currentRole === "admin" && email === "admin") {
-        console.log("✅ Admin match, refetching...");
-        fetchCount();
+        console.log("✅ Admin match, refetching count...");
+        fetchCount(); // ✅ REFETCH count from backend
         return;
       }
     
-      // User real-time
       if (email === currentUser) {
-        console.log("✅ User match, count updated:", count);
-        setNotificationCount(count);
+        console.log("✅ User match, refetching count...");
+        fetchCount(); // ✅ REFETCH count from backend
       }
     });
+    
     
     
 
