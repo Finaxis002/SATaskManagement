@@ -46,7 +46,7 @@ const AddEmployee = () => {
     e.preventDefault();
     try {
       await axios.post(
-        "http://localhost:5000/api/employees",
+        "https://sataskmanagementbackend.onrender.com/api/employees",
         formData
       );
       alert("Employee added successfully!");
@@ -135,7 +135,7 @@ const AddEmployee = () => {
               required
               className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-               
+              <option value="" disabled>Select Department</option> 
               <option value="Marketing">Marketing</option>
               <option value="Sales">Sales</option>
               <option value="Operations">Operations</option>
