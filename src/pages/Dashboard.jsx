@@ -44,6 +44,48 @@ const Dashboard = () => {
           <h2 className="text-xl font-semibold text-gray-800">Task Overview</h2>
         
         </div>
+        {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+  <div className="bg-white border rounded-lg shadow p-4 flex items-center justify-between">
+    <div>
+      <p className="text-gray-500 text-sm">Total Tasks</p>
+      <h3 className="text-2xl font-semibold text-gray-800">1</h3>
+    </div>
+    <div className="text-blue-500 text-3xl">
+    <FontAwesomeIcon icon="fa-solid fa-square-poll-vertical" />
+    </div>
+  </div>
+
+  <div className="bg-white border rounded-lg shadow p-4 flex items-center justify-between">
+    <div>
+      <p className="text-gray-500 text-sm">In Progress</p>
+      <h3 className="text-2xl font-semibold text-gray-800">0</h3>
+    </div>
+    <div className="text-purple-500 text-3xl">
+      ⏳
+    </div>
+  </div>
+
+  <div className="bg-white border rounded-lg shadow p-4 flex items-center justify-between">
+    <div>
+      <p className="text-gray-500 text-sm">Completed</p>
+      <h3 className="text-2xl font-semibold text-gray-800">0</h3>
+    </div>
+    <div className="text-green-500 text-3xl">
+      ✅
+    </div>
+  </div>
+
+  <div className="bg-white border rounded-lg shadow p-4 flex items-center justify-between">
+    <div>
+      <p className="text-gray-500 text-sm">Overdue</p>
+      <h3 className="text-2xl font-semibold text-gray-800">0</h3>
+    </div>
+    <div className="text-red-500 text-3xl">
+      ⚠️
+    </div>
+  </div>
+</div> */}
+
         <div className="mt-6">
           <TaskOverview />
         </div>
