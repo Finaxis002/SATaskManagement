@@ -46,6 +46,18 @@ const TaskReminderToasts = () => {
       console.log('Audio not unlocked yet 🚫');
     }
 
+    if (Notification.permission === "granted") {
+      const notification = new Notification("Task Reminder", {
+        body: message,
+        icon: "/icon.png", // optional: path to your favicon or bell icon
+      });
+    
+      // Optional: Focus the tab on click
+      notification.onclick = () => {
+        window.focus();
+      };
+    }
+    
     setTimeout(() => {
       setNotifications(prev => prev.filter(t => t.id !== newToast.id));
     }, 5000);
@@ -107,6 +119,11 @@ const TaskReminderToasts = () => {
       window.removeEventListener('keydown', unlockAudio);
       
     };
+  }, []);
+  useEffect(() => {
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
   }, []);
   
 
