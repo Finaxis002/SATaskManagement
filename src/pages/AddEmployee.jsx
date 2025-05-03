@@ -9,6 +9,7 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
+import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
 
 const AddEmployee = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +21,7 @@ const AddEmployee = () => {
     password: "",
     role: "user",
   });
-
+const [department, setDepartment] = useState([]);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const handleChange = (e) => {
@@ -126,7 +127,7 @@ const AddEmployee = () => {
 
           {/* Department */}
            {/* Department Dropdown */}
-           <div className="relative">
+           {/* <div className="relative">
             <FaBuilding className="absolute top-4 left-4 text-gray-400" />
             <select
               name="department"
@@ -143,8 +144,11 @@ const AddEmployee = () => {
               <option value="HR">HR</option>
               <option value="Administrator">Administrator</option>
             </select>
-          </div>
-
+          </div> */}
+           <DepartmentSelector
+              selectedDepartments={department}
+              setSelectedDepartments={setDepartment}
+            />
           {/* User ID */}
           <div className="relative">
             <FaUserAlt className="absolute top-4 left-4 text-gray-400" />
