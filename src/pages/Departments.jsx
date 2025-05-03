@@ -2,26 +2,31 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { FaTrashAlt, FaUsers } from "react-icons/fa";
 
-
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
   const [loading, setLoading] = useState(true);
- 
 
- // Fetch departments overview with users and tasks
- const fetchDepartmentsData = async () => {
+  // Fetch departments overview with users and tasks
+  const fetchDepartmentsData = async () => {
     try {
       setLoading(true);
+
       // Fetch departments
-      const deptRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/departments");
+      const deptRes = await axios.get(
+        "https://sataskmanagementbackend.onrender.com/api/departments"
+      );
       const departments = deptRes.data;
 
       // Fetch employees
-      const employeeRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
+      const employeeRes = await axios.get(
+        "https://sataskmanagementbackend.onrender.com/api/employees"
+      );
       const employees = employeeRes.data;
 
       // Fetch tasks
-      const taskRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/tasks");
+      const taskRes = await axios.get(
+        "https://sataskmanagementbackend.onrender.com/api/tasks"
+      );
       const tasks = taskRes.data;
 
       const deptMap = {};
@@ -33,8 +38,13 @@ const Departments = () => {
 
       // Add employees to the deptMap
       employees.forEach((emp) => {
-        const depts = Array.isArray(emp.departments) ? emp.departments : [emp.department || "Unassigned"];
-        depts.forEach((dept) => {
+        // Ensure that 'department' is always an array
+        const departmentsArray = Array.isArray(emp.department)
+          ? emp.department
+          : [emp.department];
+
+        departmentsArray.forEach((dept) => {
+          // Add employee to the corresponding department
           if (deptMap[dept]) {
             deptMap[dept].users.push(emp);
           }
@@ -61,29 +71,30 @@ const Departments = () => {
     fetchDepartmentsData();
   }, []);
 
-
   const handleDeleteDepartment = async (dept) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete the "${dept}" department? This will remove the department from all users.`
     );
     if (!confirmed) return;
-  
+
     try {
       // Sending request to remove department from users
-      const res = await axios.put("https://sataskmanagementbackend.onrender.com/api/departments/remove-department", {
-        department: dept,
-      });
-  
+      const res = await axios.put(
+        "https://sataskmanagementbackend.onrender.com/api/departments/remove-department",
+        {
+          department: dept,
+        }
+      );
+
       if (res.status === 200) {
         alert("Department deleted successfully!");
-        fetchDepartmentsData();  // Update the department data after deletion
+        fetchDepartmentsData(); // Update the department data after deletion
       }
     } catch (err) {
       console.error("Failed to delete department", err);
       alert("Failed to delete department. Try again.");
     }
   };
-  
 
   return (
     <div className="p-10 bg-gray-100">
@@ -97,7 +108,7 @@ const Departments = () => {
         </p>
       ) : (
         <div className="space-y-6 mx-auto h-[70vh] overflow-y-auto">
-           {Object.entries(departmentMap).map(([dept, { users, tasks }]) => (
+          {Object.entries(departmentMap).map(([dept, { users, tasks }]) => (
             <div
               key={dept}
               className="bg-white rounded-lg shadow-md border border-gray-200 p-6 relative"
