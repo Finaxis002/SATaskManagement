@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFilter, faPen } from "@fortawesome/free-solid-svg-icons";
+import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
@@ -276,6 +276,33 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     (task) => task.priority === "Low"
   );
 
+  const handleDeleteTask = async (taskId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this task?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(
+        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        setTasks((prevTasks) =>
+          prevTasks.filter((task) => task._id !== taskId)
+        );
+      } else {
+        throw new Error("Failed to delete task");
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      alert("Failed to delete task. Please try again.");
+    }
+  };
+
   const renderTaskRow = (task, index) => (
     <tr
       key={task._id}
@@ -301,7 +328,13 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
             {(task.workDesc || "No description").length > 60
               ? `${task.workDesc.slice(0, 60)}...`
               : task.workDesc || "No description"}
+            {task.code ? (
+              <span className="ml-2 text-blue-700 font-medium">
+                ({task.code})
+              </span>
+            ) : null}
           </span>
+
           {(task.workDesc || "").length > 60 && (
             <button
               className="text-blue-500 hover:text-blue-700 text-xs"
@@ -533,6 +566,16 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
 
       {/* 9. Assigned By */}
       <td className="py-4 px-6 font-medium">{task.assignedBy?.name || "—"}</td>
+
+      {role === "admin" && (
+        <td className="py-4 px-6 text-center">
+          <FontAwesomeIcon
+            icon={faTrash}
+            className="text-red-500 hover:text-red-700 cursor-pointer"
+            onClick={() => handleDeleteTask(task._id)}
+          />
+        </td>
+      )}
     </tr>
   );
 
@@ -624,6 +667,11 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
             <th className="py-4 px-6 min-w-[130px] font-semibold">
               Assigned By
             </th>
+            {role === "admin" && (
+              <th className="py-4 px-6 min-w-[80px] font-semibold text-center">
+                Delete
+              </th>
+            )}
           </tr>
         </thead>
 
