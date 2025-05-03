@@ -6,10 +6,24 @@ export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
-      return response.data;
+      // Fetch departments
+      const deptRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/departments");
+      const departments = deptRes.data.map(dept => dept.name); // Extract department names to an array
+
+      // Fetch employees
+      const userRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
+      const users = userRes.data;
+
+      // Filter users' departments based on valid departments
+      const filteredUsers = users.map(user => {
+        // Only include departments that exist in the fetched departments list
+        const validDepartments = user.department.filter(dept => departments.includes(dept));
+        return { ...user, department: validDepartments }; // Return the user with valid departments
+      });
+
+      return filteredUsers;
     } catch (error) {
-      return rejectWithValue("Failed to fetch users");
+      return rejectWithValue("Failed to fetch users or departments");
     }
   }
 );

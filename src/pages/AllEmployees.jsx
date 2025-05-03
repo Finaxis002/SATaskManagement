@@ -9,6 +9,7 @@ import {
 import { FaTrash, FaSyncAlt, FaEdit } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
 import axios from "axios";
+import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
 
 const AllEmployees = () => {
   const dispatch = useDispatch();
@@ -16,13 +17,15 @@ const AllEmployees = () => {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [department, setDepartment] = useState([]);
   const [updatedUserData, setUpdatedUserData] = useState({
     name: "",
     email: "",
     position: "",
     department: "",
     role: "",
-  });
+    userId: "",
+  }); // Stores the form data to be updated
 
   useEffect(() => {
     dispatch(fetchUsers());
@@ -69,7 +72,7 @@ const AllEmployees = () => {
   };
 
   const handleEdit = (user) => {
-    setSelectedUser(user);
+    setSelectedUser(user); // Set the selected user to be edited
     setUpdatedUserData({
       name: user.name,
       email: user.email,
@@ -77,8 +80,8 @@ const AllEmployees = () => {
       department: user.department,
       role: user.role,
       userId: user.userId,
-    });
-    setShowEditModal(true);
+    }); // Set the form data with user info
+    setShowEditModal(true); // Show the modal
   };
 
   const handleCloseModal = () => {
@@ -139,7 +142,23 @@ const AllEmployees = () => {
                     {user.email}
                   </td>
                   <td className="px-5 py-3 border-b">{user.position}</td>
-                  <td className="px-5 py-3 border-b">{user.department}</td>
+                  <td className="px-5 py-3 border-b">
+                    {Array.isArray(user.department) ? (
+                      user.department.map((dept, index) => (
+                        <span
+                          key={index}
+                          className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full"
+                        >
+                          {dept}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full">
+                        {user.department}
+                      </span>
+                    )}
+                  </td>
+
                   <td className="px-5 py-3 border-b">{user.role}</td>
                   <td className="px-5 py-3 border-b text-center">
                     <div className="flex justify-center gap-3">
@@ -183,122 +202,141 @@ const AllEmployees = () => {
       {/* Modal for editing employee */}
       {showEditModal && (
         <div className="fixed inset-0 flex justify-center items-center bg-gray-800 bg-opacity-50 z-20 backdrop-blur-md">
-          <div className="bg-white bg-opacity-70 p-8 rounded-lg shadow-lg w-1/3 backdrop-blur-lg">
-            <h3 className="text-xl font-semibold mb-4 text-center">
-              Edit Employee
-            </h3>
-            <form onSubmit={(e) => e.preventDefault()}>
-              <div className="mb-4">
-                <label htmlFor="name" className="block text-gray-700">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={updatedUserData.name}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
+          <div className="bg-[url('your-grass-image-url')] bg-cover bg-center p-8 rounded-lg shadow-lg w-full sm:w-3/4 md:w-2/3 lg:w-1/2 backdrop-blur-lg">
+            <div className="bg-white bg-opacity-80 p-10 rounded-lg shadow-xl backdrop-blur-md">
+              <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">
+                Edit Employee
+              </h3>
 
-              <div className="mb-4">
-                <label htmlFor="email" className="block text-gray-700">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={updatedUserData.email}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
+              <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                  {/* Name */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={updatedUserData.name}
+                      onChange={handleChange}
+                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
 
-              <div className="mb-4">
-                <label htmlFor="position" className="block text-gray-700">
-                  Position
-                </label>
-                <input
-                  type="text"
-                  id="position"
-                  name="position"
-                  value={updatedUserData.position}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
+                  {/* Email */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="email"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={updatedUserData.email}
+                      onChange={handleChange}
+                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
 
-              <div className="mb-4">
-                <label htmlFor="department" className="block text-gray-700">
-                  Department
-                </label>
-                <select
-                  name="department"
-                  id="department"
-                  value={updatedUserData.department}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                  <option value="IT/Software">IT/Software</option>
-                  <option value="HR">HR</option>
-                  <option value="Sales">Sales</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Administrator">Administrator</option>
-                </select>
-              </div>
+                  {/* Position */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="position"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Position
+                    </label>
+                    <input
+                      type="text"
+                      id="position"
+                      name="position"
+                      value={updatedUserData.position}
+                      onChange={handleChange}
+                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
 
-              <div className="mb-4">
-                <label htmlFor="role" className="block text-gray-700">
-                  Role
-                </label>
-                <select
-                  name="role"
-                  id="role"
-                  value={updatedUserData.role}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                  <option value="manager">Manager</option>
-                </select>
-              </div>
+                  {/* Department */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="department"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Department
+                    </label>
+                    <DepartmentSelector
+                      selectedDepartments={department}
+                      setSelectedDepartments={setDepartment}
+                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
 
-              {/* Add the userId input field */}
-              <div className="mb-4">
-                <label htmlFor="userId" className="block text-gray-700">
-                  User ID
-                </label>
-                <input
-                  type="text"
-                  id="userId"
-                  name="userId"
-                  value={updatedUserData.userId}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
+                  {/* Role */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="role"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Role
+                    </label>
+                    <select
+                      name="role"
+                      id="role"
+                      value={updatedUserData.role}
+                      onChange={handleChange}
+                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                      <option value="manager">Manager</option>
+                    </select>
+                  </div>
 
-              <div className="flex justify-between">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-md"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  onClick={handleUpdate}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md"
-                >
-                  Update
-                </button>
-              </div>
-            </form>
+                  {/* User ID */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="userId"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      User ID
+                    </label>
+                    <input
+                      type="text"
+                      id="userId"
+                      name="userId"
+                      value={updatedUserData.userId}
+                      onChange={handleChange}
+                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-between mt-6">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    onClick={handleUpdate}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-300"
+                  >
+                    Update
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

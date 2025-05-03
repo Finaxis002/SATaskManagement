@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import {
   FaUserAlt,
@@ -12,8 +12,7 @@ import bgImage from "../assets/bg.png";
 
 import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
 
-
-const AddEmployee = () => {
+const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCloseModal }) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,7 +22,7 @@ const AddEmployee = () => {
     password: "",
     role: "user",
   });
-const [department, setDepartment] = useState([]);
+  const [department, setDepartment] = useState([]);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const departmentOptions = [
@@ -54,41 +53,60 @@ const [department, setDepartment] = useState([]);
     }));
   };
 
+
+  useEffect(() => {
+    if (employeeToEdit) {
+      setFormData({
+        name: employeeToEdit.name,
+        email: employeeToEdit.email,
+        position: employeeToEdit.position,
+        department: employeeToEdit.department || [],
+        userId: employeeToEdit.userId,
+        role: employeeToEdit.role,
+      });
+      setDepartment(employeeToEdit.department || []);
+    }
+  }, [employeeToEdit]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (department.length === 0) {
       alert("Please select at least one department.");
       return;
     }
-  
+
     try {
       const dataToSend = {
         ...formData,
         department: department, // changed from departments to department
       };
-  
-      await axios.post("https://sataskmanagementbackend.onrender.com/api/employees", dataToSend);
-      alert("Employee added successfully!");
-      setFormData({
-        name: "",
-        email: "",
-        position: "",
-        department: [], // changed from departments to department
-        userId: "",
-        password: "",
-        role: "user",
-      });
-      setDepartment([]);
+
+      if (employeeToEdit) {
+        // Update existing employee
+        await axios.put(
+          `https://sataskmanagementbackend.onrender.com/api/employees/${employeeToEdit._id}`,
+          dataToSend
+        );
+        alert("Employee updated successfully!");
+      } else {
+        // Add new employee
+        await axios.post(
+          "https://sataskmanagementbackend.onrender.com/api/employees",
+          dataToSend
+        );
+        alert("Employee added successfully!");
+      }
+
+      handleCloseModal(); // Close the modal after submit
     } catch (err) {
-      alert("Failed to add employee!");
+      alert("Failed to save employee!");
       console.error(err);
     }
   };
-  
-  
 
   return (
+    
     <div className="relative w-full max-h-screen text-gray-800 bg-gray-100 py-14 px-6">
       <img
         src={bgImage}
@@ -97,9 +115,9 @@ const [department, setDepartment] = useState([]);
       />
 
       <div className="relative z-10 max-w-4xl mx-auto bg-white p-10 rounded-xl shadow-lg">
-        <h2 className="text-3xl font-semibold text-center text-[#102E50] mb-10">
-          Add New User
-        </h2>
+        <h3 className="text-xl font-semibold mb-4 text-center">
+          {employeeToEdit ? "Edit Employee" : "Add New Employee"}
+        </h3>
 
         <form
           onSubmit={handleSubmit}
@@ -149,8 +167,8 @@ const [department, setDepartment] = useState([]);
 
           {/* Department */}
 
-           {/* Department Dropdown */}
-           {/* <div className="relative">
+          {/* Department Dropdown */}
+          {/* <div className="relative">
             <FaBuilding className="absolute top-4 left-4 text-gray-400" />
             <select
               name="department"
@@ -168,10 +186,10 @@ const [department, setDepartment] = useState([]);
               <option value="Administrator">Administrator</option>
             </select>
           </div> */}
-           <DepartmentSelector
-              selectedDepartments={department}
-              setSelectedDepartments={setDepartment}
-            />
+          <DepartmentSelector
+            selectedDepartments={department}
+            setSelectedDepartments={setDepartment}
+          />
 
           {/* User ID */}
           <div className="relative">
@@ -228,7 +246,7 @@ const [department, setDepartment] = useState([]);
               type="submit"
               className="inline-flex items-center justify-center gap-2 w-full md:w-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-full shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 ease-in-out transform hover:scale-105"
             >
-              Add Employee
+              {employeeToEdit ? "Update User" : "Save User"}
             </button>
           </div>
         </form>
