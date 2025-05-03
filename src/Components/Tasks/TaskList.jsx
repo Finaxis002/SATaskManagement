@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFilter, faPen } from "@fortawesome/free-solid-svg-icons";
+import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FaTrashAlt, FaPen } from "react-icons/fa";
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
@@ -276,6 +277,33 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     (task) => task.priority === "Low"
   );
 
+  const handleDeleteTask = async (taskId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this task?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(
+        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        setTasks((prevTasks) =>
+          prevTasks.filter((task) => task._id !== taskId)
+        );
+      } else {
+        throw new Error("Failed to delete task");
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      alert("Failed to delete task. Please try again.");
+    }
+  };
+
   const renderTaskRow = (task, index) => (
     <tr
       key={task._id}
@@ -301,7 +329,13 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
             {(task.workDesc || "No description").length > 60
               ? `${task.workDesc.slice(0, 60)}...`
               : task.workDesc || "No description"}
+            {task.code ? (
+              <span className="ml-2 text-blue-700 font-medium">
+                ({task.code})
+              </span>
+            ) : null}
           </span>
+
           {(task.workDesc || "").length > 60 && (
             <button
               className="text-blue-500 hover:text-blue-700 text-xs"
@@ -533,19 +567,30 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
 
       {/* 9. Assigned By */}
       <td className="py-4 px-6 font-medium">{task.assignedBy?.name || "—"}</td>
+
+      {role === "admin" && (
+        <td className="py-4 px-6 text-center">
+          <FaTrashAlt
+            size={15}
+            className="text-red-500 hover:text-red-700 cursor-pointer"
+            onClick={() => handleDeleteTask(task._id)}
+          />
+        </td>
+      )}
     </tr>
   );
 
   return (
     <div className="overflow-x-auto h-[78vh] w-[180vh]">
-      <div className="flex items-center justify-start mb-6">
-        <label
-          htmlFor="departmentFilter"
-          className="mr-3 text-sm font-medium text-gray-700"
-        >
-          Filter by Department:
-        </label>
-        <div className="relative">
+      <div className="flex items-center justify-start mb-6 space-x-6">
+        {/* Department Filter (already exists) */}
+        <div className="flex items-center space-x-2">
+          <label
+            htmlFor="departmentFilter"
+            className="text-sm font-medium text-gray-700"
+          >
+            Filter by Department:
+          </label>
           <select
             id="departmentFilter"
             value={filters.department}
@@ -561,15 +606,31 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                 </option>
               ))}
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M10 12a1 1 0 01-.707-.293l-3-3a1 1 0 111.414-1.414L10 9.586l2.293-2.293a1 1 0 011.414 1.414l-3 3A1 1 0 0110 12z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
+        </div>
+
+        {/* ✅ Status Filter */}
+        <div className="flex items-center space-x-2">
+          <label
+            htmlFor="statusFilter"
+            className="text-sm font-medium text-gray-700"
+          >
+            Filter by Status:
+          </label>
+          <select
+            id="statusFilter"
+            value={filters.status}
+            onChange={(e) => handleFilterChange("status", e.target.value)}
+            className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">All Statuses</option>
+            {Array.from(new Set(tasks.map((t) => t.status)))
+              .filter(Boolean)
+              .map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+          </select>
         </div>
       </div>
 
@@ -607,6 +668,11 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
             <th className="py-4 px-6 min-w-[130px] font-semibold">
               Assigned By
             </th>
+            {role === "admin" && (
+              <th className="py-4 px-6 min-w-[80px] font-semibold text-center">
+                Delete
+              </th>
+            )}
           </tr>
         </thead>
 
