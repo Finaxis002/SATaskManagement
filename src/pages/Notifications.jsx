@@ -26,10 +26,17 @@ const Notifications = () => {
   
       console.log("🧹 Marked notification as read:", id);
   
-      // Instead of manually decreasing counter, re-fetch updated notifications
-      fetchNotifications(); // 💥 Call the fetchNotifications function again
+      // ✅ Update that specific notification in local state
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif._id === id ? { ...notif, read: true } : notif
+        )
+      );
   
-      // Emit updated count via socket
+      // ✅ Update unread count
+      setNotificationCount((prevCount) => Math.max(prevCount - 1, 0));
+  
+      // ✅ Emit updated count via socket
       socket.emit("notificationCountUpdated", {
         email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
       });
@@ -37,6 +44,7 @@ const Notifications = () => {
       console.error("Error marking notification as read", error);
     }
   };
+  
   
 
   const fetchNotifications = async () => {
@@ -256,12 +264,7 @@ const Notifications = () => {
                     </div>
 
                     <div
-                      key={notification._id}
-                      onClick={() => {
-                        if (!notification.read)
-                          handleMarkAsRead(notification._id);
-                      }}
-                      className={`group transition-shadow duration-300 hover:shadow-md border rounded-xl flex justify-between items-start gap-4 cursor-pointer ${
+                     className={`group transition-shadow duration-300 hover:shadow-md border rounded-xl flex justify-between items-start gap-4 cursor-pointer ${
                         notification.read
                           ? "bg-white border-gray-200"
                           : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300"

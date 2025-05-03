@@ -9,6 +9,8 @@ const TaskOverview = () => {
 
   // ✅ Get logged-in user info from Redux state
   const { role, userId } = useSelector((state) => state.auth);
+  const [completedTaskIds, setCompletedTaskIds] = useState(new Set());
+  const [justCompleted, setJustCompleted] = useState(new Set());
 
   // Fetch tasks from the API and categorize them
   useEffect(() => {
@@ -47,22 +49,42 @@ const TaskOverview = () => {
 
   filteredTasks.forEach((task) => {
     if (!task.dueDate) return;
-
     const parsedDate = parseISO(task.dueDate);
 
-    if (task.status === "Completed") {
+    const isActuallyCompleted = task.status === "Completed";
+    const isJustNowCompleted = justCompleted.has(task._id);
+
+    // ✅ This prevents re-showing the task in the current tab after a tab switch
+    if (isActuallyCompleted && !isJustNowCompleted) {
       categorizedTasks.completed.push(task);
       return;
     }
 
+    // ✅ Temporarily keep it in current tab if just completed
     if (isToday(parsedDate)) {
-      categorizedTasks.today.push(task);
+      if (activeTab === "today" && isJustNowCompleted) {
+        categorizedTasks.today.push(task);
+      } else if (!isJustNowCompleted) {
+        categorizedTasks.today.push(task);
+      }
     } else if (isTomorrow(parsedDate)) {
-      categorizedTasks.tomorrow.push(task);
-    } else if (isBefore(parsedDate, new Date())) {
-      categorizedTasks.overdue.push(task);
+      if (activeTab === "tomorrow" && isJustNowCompleted) {
+        categorizedTasks.tomorrow.push(task);
+      } else if (!isJustNowCompleted) {
+        categorizedTasks.tomorrow.push(task);
+      }
+    } else if (isBefore(parsedDate, now)) {
+      if (activeTab === "overdue" && isJustNowCompleted) {
+        categorizedTasks.overdue.push(task);
+      } else if (!isJustNowCompleted) {
+        categorizedTasks.overdue.push(task);
+      }
     } else {
-      categorizedTasks.upcoming.push(task);
+      if (activeTab === "upcoming" && isJustNowCompleted) {
+        categorizedTasks.upcoming.push(task);
+      } else if (!isJustNowCompleted) {
+        categorizedTasks.upcoming.push(task);
+      }
     }
   });
 
@@ -84,29 +106,15 @@ const TaskOverview = () => {
     }
   };
 
-  const handleToggleCompleted = async (taskId, isCompletedNow) => {
+  const handleToggleCompleted = async (taskId) => {
     const updatedBy = {
       name: localStorage.getItem("name"),
       email: localStorage.getItem("userId"),
     };
   
-    const newStatus = isCompletedNow ? "Completed" : "To Do";
+    // Show crossed UI immediately
+    setJustCompleted((prev) => new Set(prev).add(taskId));
   
-    console.log("🔁 Optimistically updating to:", newStatus);
-  
-    // 🧠 1. Optimistic UI update immediately
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task._id === taskId ? { ...task, status: newStatus } : task
-      )
-    );
-  
-    // 🧠 2. Instant Tab switch
-    if (newStatus === "Completed") {
-      setActiveTab("completed");
-    }
-  
-    // 🧠 3. Fire API in background
     try {
       const response = await fetch(
         `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
@@ -115,23 +123,37 @@ const TaskOverview = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ status: newStatus, updatedBy }),
+          body: JSON.stringify({ status: "Completed", updatedBy }),
         }
       );
   
-      if (!response.ok) {
-        throw new Error("Failed to update task status");
-      }
+      if (!response.ok) throw new Error("Failed to update task status");
   
-      console.log("✅ Status updated on server");
-      // You may re-fetch or rely on local update
+      // ✅ Update local task list so next render shows correct status
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, status: "Completed" } : task
+        )
+      );
+  
+      console.log("✅ Task marked as completed");
     } catch (error) {
-      console.error("❌ Error updating task status:", error);
-      alert("Something went wrong while updating. Please refresh.");
+      console.error("❌ Failed to update status", error);
+  
+      // Revert justCompleted if error happens
+      setJustCompleted((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(taskId);
+        return newSet;
+      });
     }
   };
   
 
+  useEffect(() => {
+    setJustCompleted(new Set());
+  }, [activeTab]);
+  
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
       <div className="flex justify-between items-center px-6 py-4 border-b ">
@@ -171,17 +193,17 @@ const TaskOverview = () => {
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  checked={task.status === "Completed"}
-                  onChange={() =>
-                    task.status !== "Completed" &&
-                    handleToggleCompleted(task._id, true)
+                  checked={
+                    task.status === "Completed" || justCompleted.has(task._id)
                   }
-                  disabled={task.status === "Completed"} // ✅ Prevent re-click
+                  onChange={() => handleToggleCompleted(task._id)}
+                  disabled={task.status === "Completed"}
                   className="accent-indigo-600 cursor-pointer"
                 />
+
                 <span
                   className={`text-gray-800 text-lg ${
-                    task.status === "Completed"
+                    task.status === "Completed" || justCompleted.has(task._id)
                       ? "line-through text-gray-400"
                       : ""
                   }`}
