@@ -9,7 +9,9 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
-import CreatableSelect from "react-select/creatable";
+
+import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
+
 
 const AddEmployee = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +23,7 @@ const AddEmployee = () => {
     password: "",
     role: "user",
   });
-
+const [department, setDepartment] = useState([]);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const departmentOptions = [
@@ -135,34 +137,30 @@ const AddEmployee = () => {
           </div>
 
           {/* Department */}
-          {/* Department Dropdown */}
-          <div className="relative z-10">
-            <label className="block mb-1 text-sm font-medium text-gray-700 pl-1">
-              Select Departments
-            </label>
-            <CreatableSelect
-              isMulti
-              name="departments"
-              options={departmentOptions}
-              value={formData.departments}
-              onChange={(selectedOptions) => {
-                setFormData((prevData) => ({
-                  ...prevData,
-                  departments: selectedOptions || [],
-                }));
-              }}
-              onCreateOption={(inputValue) => {
-                const newOption = { value: inputValue, label: inputValue };
-                setDepartmentOptions((prev) => [...prev, newOption]);
-                setFormData((prevData) => ({
-                  ...prevData,
-                  departments: [...(prevData.departments || []), newOption],
-                }));
-              }}
-              placeholder="Choose or add departments"
-              className="text-sm"
+
+           {/* Department Dropdown */}
+           {/* <div className="relative">
+            <FaBuilding className="absolute top-4 left-4 text-gray-400" />
+            <select
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+              required
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="" disabled>Select Department</option> 
+              <option value="Marketing">Marketing</option>
+              <option value="Sales">Sales</option>
+              <option value="Operations">Operations</option>
+              <option value="IT/Software">IT/Software</option>
+              <option value="HR">HR</option>
+              <option value="Administrator">Administrator</option>
+            </select>
+          </div> */}
+           <DepartmentSelector
+              selectedDepartments={department}
+              setSelectedDepartments={setDepartment}
             />
-          </div>
 
           {/* User ID */}
           <div className="relative">

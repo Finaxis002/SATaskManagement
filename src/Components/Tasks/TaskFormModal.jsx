@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchAssignees, fetchTasks, updateTask } from "../../redux/taskSlice"; // Adjust the import path
 import Select from "react-select";
 import CreatableSelect from "react-select/creatable";
+import TaskCodeSelector from "./TaskCodeSelector";
+import DepartmentSelector from "./DepartmentSelector";
 
 import { io } from "socket.io-client";
 // Assume socket.io client setup
@@ -27,15 +29,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [code, setCode] = useState("");
   const [newCode, setNewCode] = useState("");
   const [department, setDepartment] = useState([]);
-  // const [allDepartments, setAllDepartments] = useState([
-  //   "Marketing",
-  //   "Operations",
-  //   "Sales",
-  //   "IT / Software",
-  //   "HR",
-  // ]);
-  const [allDepartments, setAllDepartments] = useState([]);
-  
+  const [taskCode, setTaskCode] = useState("");
+ 
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -63,21 +58,21 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     }
   }, [initialData]);
 
-  useEffect(() => {
-    const loadDepartments = async () => {
-      try {
-        const res = await fetch("https://sataskmanagementbackend.onrender.com/api/departments");
-        const data = await res.json();
-        setAllDepartments(data.map((dept) => dept.name));
-      } catch (err) {
-        console.error("Failed to load departments", err);
-      }
-    };
-  
-    loadDepartments();
-  }, []);
-  
-  
+  // useEffect(() => {
+  //   const loadDepartments = async () => {
+  //     try {
+  //       const res = await fetch(
+  //         "https://sataskmanagementbackend.onrender.com/api/departments"
+  //       );
+  //       const data = await res.json();
+  //       setAllDepartments(data.map((dept) => dept.name));
+  //     } catch (err) {
+  //       console.error("Failed to load departments", err);
+  //     }
+  //   };
+
+  //   loadDepartments();
+  // }, []);
 
   // Handling form submit
   const handleSubmit = async () => {
@@ -249,39 +244,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               />
             )}
           </div> */}
-        
-{/* <div>
-  <label className="text-sm font-semibold text-gray-700 mb-1 block">
-    Departments:
-  </label>
-  <CreatableSelect
-    isMulti
-    name="departments"
-    options={allDepartments.map((dep) => ({
-      label: dep,
-      value: dep,
-    }))}
-    value={department.map((dep) => ({ label: dep, value: dep }))}
-    onChange={(selectedOptions) => {
-      const selectedValues = selectedOptions.map((option) => option.value);
 
-      // Add new departments to global list
-      const newOnes = selectedValues.filter(
-        (val) => !allDepartments.includes(val)
-      );
-      if (newOnes.length > 0) {
-        setAllDepartments((prev) => [...prev, ...newOnes]);
-      }
-
-      setDepartment(selectedValues);
-      setAssignees([]); // Optional reset
-    }}
-    className="w-full"
-    classNamePrefix="react-select"
-    placeholder="Select or add departments"
-  />
-</div> */}
-<CreatableSelect
+          {/* <CreatableSelect
   isMulti
   name="departments"
   options={allDepartments.map((dep) => ({
@@ -316,8 +280,17 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   className="w-full"
   classNamePrefix="react-select"
   placeholder="Select or add departments"
-/>
-
+/> */}
+          {/* Department Selection */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Task Department:
+            </label>
+            <DepartmentSelector
+              selectedDepartments={department}
+              setSelectedDepartments={setDepartment}
+            />
+          </div>
 
           {/* Client Name */}
           <input
@@ -329,7 +302,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           />
 
           {/* Task Code */}
-          <div>
+          {/* <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
               Task Code:
             </label>
@@ -351,6 +324,12 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                 onChange={(e) => setNewCode(e.target.value)}
               />
             )}
+          </div> */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Task Code:
+            </label>
+            <TaskCodeSelector selectedCode={taskCode} setSelectedCode={setTaskCode}/>
           </div>
 
           {/* Due Date */}
