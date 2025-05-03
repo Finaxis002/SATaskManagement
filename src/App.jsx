@@ -10,6 +10,7 @@ import Notifications from "./pages/Notifications";
 import Reminders from "./pages/Reminders";
 import Inbox from "./pages/Inbox";
 import AllTasks from "./pages/AllTasks";
+import Departments from "./pages/Departments";
 
 const App = () => {
   return (
@@ -94,6 +95,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <AllTasks />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/departments"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Departments />
               </MainLayout>
             </ProtectedRoute>
           }

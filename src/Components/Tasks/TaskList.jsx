@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FaTrashAlt, FaPen } from "react-icons/fa";
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
@@ -18,7 +19,6 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     status: "",
     code: "",
     department: "",
-    
   });
   const [dueDateSortOrder, setDueDateSortOrder] = useState(null); // 'asc' or 'desc'
   const [remarks, setRemarks] = useState({}); // Track remarks for each task
@@ -570,8 +570,8 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
 
       {role === "admin" && (
         <td className="py-4 px-6 text-center">
-          <FontAwesomeIcon
-            icon={faTrash}
+          <FaTrashAlt
+            size={15}
             className="text-red-500 hover:text-red-700 cursor-pointer"
             onClick={() => handleDeleteTask(task._id)}
           />

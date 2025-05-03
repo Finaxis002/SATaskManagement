@@ -9,19 +9,29 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
+import CreatableSelect from "react-select/creatable";
 
 const AddEmployee = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     position: "",
-    department: "",
+    departments: [], // for multi-select
     userId: "",
     password: "",
     role: "user",
   });
 
   const [passwordVisible, setPasswordVisible] = useState(false);
+
+  const departmentOptions = [
+    { value: "Marketing", label: "Marketing" },
+    { value: "Sales", label: "Sales" },
+    { value: "Operations", label: "Operations" },
+    { value: "IT/Software", label: "IT/Software" },
+    { value: "HR", label: "HR" },
+    { value: "Administrator", label: "Administrator" },
+  ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -125,24 +135,33 @@ const AddEmployee = () => {
           </div>
 
           {/* Department */}
-           {/* Department Dropdown */}
-           <div className="relative">
-            <FaBuilding className="absolute top-4 left-4 text-gray-400" />
-            <select
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              required
-              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled>Select Department</option> 
-              <option value="Marketing">Marketing</option>
-              <option value="Sales">Sales</option>
-              <option value="Operations">Operations</option>
-              <option value="IT/Software">IT/Software</option>
-              <option value="HR">HR</option>
-              <option value="Administrator">Administrator</option>
-            </select>
+          {/* Department Dropdown */}
+          <div className="relative z-10">
+            <label className="block mb-1 text-sm font-medium text-gray-700 pl-1">
+              Select Departments
+            </label>
+            <CreatableSelect
+              isMulti
+              name="departments"
+              options={departmentOptions}
+              value={formData.departments}
+              onChange={(selectedOptions) => {
+                setFormData((prevData) => ({
+                  ...prevData,
+                  departments: selectedOptions || [],
+                }));
+              }}
+              onCreateOption={(inputValue) => {
+                const newOption = { value: inputValue, label: inputValue };
+                setDepartmentOptions((prev) => [...prev, newOption]);
+                setFormData((prevData) => ({
+                  ...prevData,
+                  departments: [...(prevData.departments || []), newOption],
+                }));
+              }}
+              placeholder="Choose or add departments"
+              className="text-sm"
+            />
           </div>
 
           {/* User ID */}
