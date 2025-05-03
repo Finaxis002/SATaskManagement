@@ -55,8 +55,10 @@ const AllEmployees = () => {
 
   // Handle update employee
   const handleUpdate = async () => {
-    console.log("Updated User Data:", updatedUserData); // Debugging log to check data before sending
-
+    console.log("Data being sent:", {
+      ...updatedUserData,
+      department: department // Explicitly show the department data
+    });
     try {
       const updatedEmployee = await updateUser(
         selectedUser._id,
@@ -71,17 +73,25 @@ const AllEmployees = () => {
     }
   };
 
+  useEffect(() => {
+    setUpdatedUserData(prev => ({
+      ...prev,
+      department: department
+    }));
+  }, [department]);
+
   const handleEdit = (user) => {
-    setSelectedUser(user); // Set the selected user to be edited
+    setSelectedUser(user);
     setUpdatedUserData({
       name: user.name,
       email: user.email,
       position: user.position,
-      department: user.department,
+      department: user.department, // This should be an array
       role: user.role,
       userId: user.userId,
-    }); // Set the form data with user info
-    setShowEditModal(true); // Show the modal
+    });
+    setDepartment(Array.isArray(user.department) ? user.department : [user.department]); // Initialize department state
+    setShowEditModal(true);
   };
 
   const handleCloseModal = () => {
