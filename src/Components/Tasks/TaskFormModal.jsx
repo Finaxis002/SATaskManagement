@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAssignees, fetchTasks, updateTask } from "../../redux/taskSlice"; // Adjust the import path
 import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 
 import { io } from "socket.io-client";
 // Assume socket.io client setup
@@ -25,6 +26,16 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [clientName, setClientName] = useState("");
   const [code, setCode] = useState("");
   const [newCode, setNewCode] = useState("");
+  const [department, setDepartment] = useState([]);
+  // const [allDepartments, setAllDepartments] = useState([
+  //   "Marketing",
+  //   "Operations",
+  //   "Sales",
+  //   "IT / Software",
+  //   "HR",
+  // ]);
+  const [allDepartments, setAllDepartments] = useState([]);
+  
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -48,8 +59,25 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       setClientName(initialData.clientName || "");
       setTaskCategory(initialData.taskCategory || "");
       setCode(initialData.code || "");
+      setDepartment(initialData.department || []);
     }
   }, [initialData]);
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const res = await fetch("https://sataskmanagementbackend.onrender.com/api/departments");
+        const data = await res.json();
+        setAllDepartments(data.map((dept) => dept.name));
+      } catch (err) {
+        console.error("Failed to load departments", err);
+      }
+    };
+  
+    loadDepartments();
+  }, []);
+  
+  
 
   // Handling form submit
   const handleSubmit = async () => {
@@ -76,6 +104,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       updatedBy,
       taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
       clientName,
+      department,
       code: code === "__new" ? newCode : code,
       assignedBy: {
         name: localStorage.getItem("name"),
@@ -191,7 +220,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           />
 
           {/* Task Category */}
-          <div>
+          {/* <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
               Task Department:
             </label>
@@ -219,7 +248,76 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                 onChange={(e) => setNewTaskCategory(e.target.value)}
               />
             )}
-          </div>
+          </div> */}
+        
+{/* <div>
+  <label className="text-sm font-semibold text-gray-700 mb-1 block">
+    Departments:
+  </label>
+  <CreatableSelect
+    isMulti
+    name="departments"
+    options={allDepartments.map((dep) => ({
+      label: dep,
+      value: dep,
+    }))}
+    value={department.map((dep) => ({ label: dep, value: dep }))}
+    onChange={(selectedOptions) => {
+      const selectedValues = selectedOptions.map((option) => option.value);
+
+      // Add new departments to global list
+      const newOnes = selectedValues.filter(
+        (val) => !allDepartments.includes(val)
+      );
+      if (newOnes.length > 0) {
+        setAllDepartments((prev) => [...prev, ...newOnes]);
+      }
+
+      setDepartment(selectedValues);
+      setAssignees([]); // Optional reset
+    }}
+    className="w-full"
+    classNamePrefix="react-select"
+    placeholder="Select or add departments"
+  />
+</div> */}
+<CreatableSelect
+  isMulti
+  name="departments"
+  options={allDepartments.map((dep) => ({
+    label: dep,
+    value: dep,
+  }))}
+  value={department.map((dep) => ({ label: dep, value: dep }))}
+  onChange={async (selectedOptions) => {
+    const selectedValues = selectedOptions.map((option) => option.value);
+
+    const newOnes = selectedValues.filter(
+      (val) => !allDepartments.includes(val)
+    );
+
+    // Add newly typed departments to DB
+    for (let dept of newOnes) {
+      try {
+        await fetch("https://sataskmanagementbackend.onrender.com/api/departments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: dept }),
+        });
+      } catch (err) {
+        console.error("Failed to add department:", dept);
+      }
+    }
+
+    // Update state
+    setAllDepartments((prev) => [...new Set([...prev, ...newOnes])]);
+    setDepartment(selectedValues);
+  }}
+  className="w-full"
+  classNamePrefix="react-select"
+  placeholder="Select or add departments"
+/>
+
 
           {/* Client Name */}
           <input
