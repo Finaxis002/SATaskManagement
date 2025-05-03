@@ -8,6 +8,7 @@ import {
   FaBell,
   FaClipboardList,
   FaClock,
+  FaSitemap,
 } from "react-icons/fa";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
@@ -30,7 +31,6 @@ const Sidebar = () => {
 
   useNotificationSocket(setNotificationCount);
   // console.log("🔢 Notification count state:", notificationCount);
-
 
   return (
     <div className="bg-[#1e1f21] text-white w-45 pt-[10vh] h-screen flex flex-col justify-between border-r border-gray-700">
@@ -87,6 +87,9 @@ const Sidebar = () => {
         />
 
         <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
+        {role === "admin" && (
+        <SidebarItem icon={<FaSitemap />} label="Departments" to="/departments" />
+        )}
       </div>
 
       {/* Footer */}

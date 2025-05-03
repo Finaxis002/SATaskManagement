@@ -9,20 +9,31 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
+
 import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
+
 
 const AddEmployee = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     position: "",
-    department: "",
+    departments: [], // for multi-select
     userId: "",
     password: "",
     role: "user",
   });
 const [department, setDepartment] = useState([]);
   const [passwordVisible, setPasswordVisible] = useState(false);
+
+  const departmentOptions = [
+    { value: "Marketing", label: "Marketing" },
+    { value: "Sales", label: "Sales" },
+    { value: "Operations", label: "Operations" },
+    { value: "IT/Software", label: "IT/Software" },
+    { value: "HR", label: "HR" },
+    { value: "Administrator", label: "Administrator" },
+  ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -126,6 +137,7 @@ const [department, setDepartment] = useState([]);
           </div>
 
           {/* Department */}
+
            {/* Department Dropdown */}
            {/* <div className="relative">
             <FaBuilding className="absolute top-4 left-4 text-gray-400" />
@@ -149,6 +161,7 @@ const [department, setDepartment] = useState([]);
               selectedDepartments={department}
               setSelectedDepartments={setDepartment}
             />
+
           {/* User ID */}
           <div className="relative">
             <FaUserAlt className="absolute top-4 left-4 text-gray-400" />

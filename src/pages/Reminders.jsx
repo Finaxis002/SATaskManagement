@@ -13,6 +13,7 @@ const Reminders = () => {
     text: "",
     date: "",
     time: "",
+    snoozeBefore: "1", // default value in minutes
   });
 
   const addReminder = () => {
@@ -23,12 +24,20 @@ const Reminders = () => {
       `${newReminder.date}T${newReminder.time}`
     ).toISOString();
 
-    setReminders((prev) => [
-      ...prev,
-      { ...newReminder, datetime: combinedDateTime },
-    ]);
+  
     setNewReminder({ text: "", date: "", time: "" });
     setShowPopup(false);
+    setReminders((prev) => [
+      ...prev,
+      {
+        ...newReminder,
+        datetime: combinedDateTime,
+        snoozeBefore: parseInt(newReminder.snoozeBefore, 10),
+        snoozed: false, // 🆕 prevent duplicate alerts
+      },
+    ]);
+    
+    
   };
 
   const handleDeleteReminder = (datetime) => {
@@ -39,8 +48,13 @@ const Reminders = () => {
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(reminders));
   }, [reminders]);
-
-
+  
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+  }, []);
+  
   const updatedReminders = reminders.map((reminder) => {
     const parsedDate = parseISO(reminder.datetime);
     const isOutdated = parsedDate < new Date() && !isToday(parsedDate);
@@ -74,24 +88,36 @@ const Reminders = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setReminders((prevReminders) =>
-        prevReminders.map((reminder) => {
-          const parsedDate = parseISO(reminder.datetime);
-          const isOutdated = parsedDate < new Date() && !isToday(parsedDate);
-
-          if (isOutdated && !reminder.text.includes("⏰ Missed")) {
-            return {
-              ...reminder,
-              text: `${reminder.text} ⏰ Missed`,
-            };
-          }
-          return reminder;
-        })
-      );
-    }, 60000); // check every 60 seconds
-
-    return () => clearInterval(interval); // cleanup on unmount
-  }, []);
+      const now = new Date();
+  
+      reminders.forEach((reminder) => {
+        const reminderTime = parseISO(reminder.datetime);
+        const snoozeMinutes = parseInt(reminder.snoozeBefore || "0", 10);
+        const snoozeTime = new Date(reminderTime.getTime() - snoozeMinutes * 60000);
+  
+        const isDueForSnooze =
+          now >= snoozeTime &&
+          now < new Date(snoozeTime.getTime() + 60000) && // Trigger only once within 1-minute window
+          !reminder.snoozed;
+  
+        if (isDueForSnooze) {
+          alert(`⏰ Reminder Alert: "${reminder.text}" is due in ${snoozeMinutes} min`);
+  
+          // Mark as snoozed (local state update only)
+          setReminders((prev) =>
+            prev.map((r) =>
+              r.datetime === reminder.datetime
+                ? { ...r, snoozed: true }
+                : r
+            )
+          );
+        }
+      });
+    }, 30000); // Check every 30 seconds
+  
+    return () => clearInterval(interval);
+  }, [reminders]);
+  
 
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(updatedReminders));
@@ -133,8 +159,10 @@ const Reminders = () => {
             color="bg-red-300"
             data={outdatedReminders}
             onDelete={handleDeleteReminder}
+            
           />
         </div>
+        
 
         {/* Reminder Modal */}
         {showPopup && (
@@ -179,6 +207,29 @@ const Reminders = () => {
                   }
                   className="border border-gray-300 rounded p-2"
                 />
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                <label htmlFor="snooze" className="text-gray-700">
+                  ⏳ Snooze Before:
+                </label>
+                <select
+                  id="snooze"
+                  value={newReminder.snoozeBefore}
+                  onChange={(e) =>
+                    setNewReminder({
+                      ...newReminder,
+                      snoozeBefore: e.target.value,
+                    })
+                  }
+                  className="border border-gray-300 rounded p-2"
+                >
+                  {Array.from({ length: 60 }, (_, i) => i + 1).map((minute) => (
+                    <option key={minute} value={minute}>
+                      {minute} minute{minute > 1 ? "s" : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <button
