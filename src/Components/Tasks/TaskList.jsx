@@ -18,6 +18,7 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     status: "",
     code: "",
     department: "",
+    
   });
   const [dueDateSortOrder, setDueDateSortOrder] = useState(null); // 'asc' or 'desc'
   const [remarks, setRemarks] = useState({}); // Track remarks for each task
