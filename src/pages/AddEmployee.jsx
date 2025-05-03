@@ -18,7 +18,7 @@ const AddEmployee = () => {
     name: "",
     email: "",
     position: "",
-    departments: [], // for multi-select
+    department: [], // changed from departments to department
     userId: "",
     password: "",
     role: "user",
@@ -56,26 +56,37 @@ const [department, setDepartment] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+  
+    if (department.length === 0) {
+      alert("Please select at least one department.");
+      return;
+    }
+  
     try {
-      await axios.post(
-        "https://sataskmanagementbackend.onrender.com/api/employees",
-        formData
-      );
+      const dataToSend = {
+        ...formData,
+        department: department, // changed from departments to department
+      };
+  
+      await axios.post("https://sataskmanagementbackend.onrender.com/api/employees", dataToSend);
       alert("Employee added successfully!");
       setFormData({
         name: "",
         email: "",
         position: "",
-        department: "",
+        department: [], // changed from departments to department
         userId: "",
         password: "",
         role: "user",
       });
+      setDepartment([]);
     } catch (err) {
       alert("Failed to add employee!");
       console.error(err);
     }
   };
+  
+  
 
   return (
     <div className="relative w-full max-h-screen text-gray-800 bg-gray-100 py-14 px-6">

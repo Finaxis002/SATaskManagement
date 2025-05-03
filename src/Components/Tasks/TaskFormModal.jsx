@@ -66,14 +66,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   //       );
   //       const data = await res.json();
   //       setAllDepartments(data.map((dept) => dept.name));
-  //     } catch (err) {
-  //       console.error("Failed to load departments", err);
-  //     }
-  //   };
-
-  //   loadDepartments();
-  // }, []);
-
   // Handling form submit
   const handleSubmit = async () => {
     // Validate form fields
@@ -173,7 +165,15 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       console.error("Error saving task:", error);
       alert("Error saving task");
     }
-  };
+  };  //     } catch (err) {
+  //       console.error("Failed to load departments", err);
+  //     }
+  //   };
+
+  //   loadDepartments();
+  // }, []);
+
+
 
   // Filter employees according to selected taskCategory
   const filteredEmployees = taskCategory
