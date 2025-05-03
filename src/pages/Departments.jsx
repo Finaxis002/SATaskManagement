@@ -13,15 +13,15 @@ const Departments = () => {
     try {
       setLoading(true);
       // Fetch departments
-      const deptRes = await axios.get("http://localhost:5000/api/departments");
+      const deptRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/departments");
       const departments = deptRes.data;
 
       // Fetch employees
-      const employeeRes = await axios.get("http://localhost:5000/api/employees");
+      const employeeRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
       const employees = employeeRes.data;
 
       // Fetch tasks
-      const taskRes = await axios.get("http://localhost:5000/api/tasks");
+      const taskRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/tasks");
       const tasks = taskRes.data;
 
       const deptMap = {};
@@ -70,7 +70,7 @@ const Departments = () => {
   
     try {
       // Sending request to remove department from users
-      const res = await axios.put("http://localhost:5000/api/departments/remove-department", {
+      const res = await axios.put("https://sataskmanagementbackend.onrender.com/api/departments/remove-department", {
         department: dept,
       });
   
