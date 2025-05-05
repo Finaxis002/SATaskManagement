@@ -29,6 +29,8 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   const [openWorkDescPopup, setOpenWorkDescPopup] = useState(null);
   const [workDescMode, setWorkDescMode] = useState("view"); // "edit" or "view"
   const [remarkMode, setRemarkMode] = useState("view"); // "edit" or "view"
+  const [departments, setDepartments] = useState([]); // To store departments
+
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -39,6 +41,23 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   useEffect(() => {
     dispatch(updateTaskStatus());
   }, [dispatch]);
+
+    // Fetch departments from API
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch(
+          "https://sataskmanagementbackend.onrender.com/api/departments"
+        );
+        const data = await response.json();
+        setDepartments(data); // Store fetched departments
+      } catch (err) {
+        console.error("Failed to fetch departments:", err);
+      }
+    };
+  
+    useEffect(() => {
+      fetchDepartments(); // Fetch departments when component mounts
+    }, []);
 
   const fetchTasksFromAPI = async () => {
     try {
@@ -248,24 +267,24 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   };
 
   const filteredTasks = tasks
-    .filter((task) => {
-      return (
-        (filters.department === "" ||
-          task.taskCategory === filters.department) &&
-        (filters.code === "" || task.code === filters.code) &&
-        (filters.assignee === "" ||
-          task.assignees?.some((a) => a.name === filters.assignee)) &&
-        (filters.assignedBy === "" ||
-          task.assignedBy?.name === filters.assignedBy) &&
-        (filters.priority === "" || task.priority === filters.priority) &&
-        (filters.status === "" || task.status === filters.status)
-      );
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.dueDate);
-      const dateB = new Date(b.dueDate);
-      return dateA - dateB; // 🚀 ascending order: nearest due date first
-    });
+  .filter((task) => {
+    return (
+      (filters.department === "" || 
+       task.department.includes(filters.department)) && // Check if array contains the filter
+      (filters.code === "" || task.code === filters.code) &&
+      (filters.assignee === "" ||
+        task.assignees?.some((a) => a.name === filters.assignee)) &&
+      (filters.assignedBy === "" || task.assignedBy?.name === filters.assignedBy) &&
+      (filters.priority === "" || task.priority === filters.priority) &&
+      (filters.status === "" || task.status === filters.status)
+    );
+  })
+  .sort((a, b) => {
+    const dateA = new Date(a.dueDate);
+    const dateB = new Date(b.dueDate);
+    return dateA - dateB;
+  });
+
 
   const highPriorityTasks = filteredTasks.filter(
     (task) => task.priority === "High"
@@ -580,33 +599,38 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     </tr>
   );
 
+
+  useEffect(() => {
+    console.log("Current department filter:", filters.department);
+    console.log("Task departments:", tasks.map(t => t.department || t.taskCategory));
+  }, [filters.department, tasks]);
+
   return (
     <div className="overflow-x-auto h-[78vh] w-[180vh]">
       <div className="flex items-center justify-start mb-6 space-x-6">
         {/* Department Filter (already exists) */}
         <div className="flex items-center space-x-2">
-          <label
-            htmlFor="departmentFilter"
-            className="text-sm font-medium text-gray-700"
-          >
-            Filter by Department:
-          </label>
-          <select
-            id="departmentFilter"
-            value={filters.department}
-            onChange={(e) => handleFilterChange("department", e.target.value)}
-            className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">All Departments</option>
-            {Array.from(new Set(tasks.map((t) => t.taskCategory)))
-              .filter(Boolean)
-              .map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-          </select>
-        </div>
+  <label
+    htmlFor="departmentFilter"
+    className="text-sm font-medium text-gray-700"
+  >
+    Filter by Department:
+  </label>
+  <select
+  id="departmentFilter"
+  value={filters.department}
+  onChange={(e) => handleFilterChange("department", e.target.value)}
+  className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+>
+  <option value="">All Departments</option>
+  {departments.map((dept) => (
+    <option key={dept._id} value={dept.name}>
+      {dept.name}
+    </option>
+  ))}
+</select>
+</div>
+
 
         {/* ✅ Status Filter */}
         <div className="flex items-center space-x-2">
