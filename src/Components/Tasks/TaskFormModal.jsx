@@ -31,6 +31,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [department, setDepartment] = useState([]);
   const [taskCode, setTaskCode] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [overdueNote, setOverdueNote] = useState("");
+
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -65,6 +67,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
   // Handling form submit
   const handleSubmit = async () => {
+    
     // Validate form fields
     if (!taskName || !dueDate || assignees.length === 0) {
       return alert("Please fill all fields.");
@@ -143,13 +146,25 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       }
 
       // Check if the response is not OK
-      if (!response.ok) {
-        console.error(
-          "Failed to save task, server responded with:",
-          response.statusText
-        );
-        throw new Error("Failed to save task");
-      }
+  //     if (!response.ok) {
+  //       // console.error(
+  //       //   "Failed to save task, server responded with:",
+  //       //   response.statusText
+  //       // );
+  //       const text = await response.text();
+  // console.error("❌ Failed to save task - status:", response.status);
+  // console.error("❌ Response body:", text);
+  // throw new Error("Failed to save task");
+        
+  //     }
+  if (!response.ok) {
+    console.error("❌ Task save failed", {
+      status: response.status,
+      response: responseData,
+    });
+    throw new Error(responseData.message || "Failed to save task");
+  }
+  
 
       alert(
         initialData
@@ -161,7 +176,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       onClose(); // Close the modal after successful submission
     } catch (error) {
       console.error("Error saving task:", error);
-      alert("Error saving task");
+      // alert("Error saving task");
     }
   };  //     } catch (err) {
   //       console.error("Failed to load departments", err);
@@ -173,93 +188,11 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
 
 
-  // const handleSubmit = async () => {
-  //   // Validate all required fields
-  //   const requiredFields = [
-  //     { field: taskName, name: "Task Name" },
-  //     { field: dueDate, name: "Due Date" },
-  //     { field: assignees.length, name: "Assignees" },
-  //     { field: department.length, name: "Department" }
-  //   ];
+ 
   
-  //   const missingFields = requiredFields.filter(f => !f.field);
-  //   if (missingFields.length > 0) {
-  //     alert(`Missing required fields: ${missingFields.map(f => f.name).join(", ")}`);
-  //     return;
-  //   }
   
-  //   setIsSubmitting(true);
+
   
-  //   try {
-  //     // Prepare payload with proper data types
-  //     const taskPayload = {
-  //       taskName: String(taskName).trim(),
-  //       workDesc: String(workDesc).trim(),
-  //       assignees: assignees.map(a => ({
-  //         name: String(a.name).trim(),
-  //         email: String(a.email).trim()
-  //       })),
-  //       assignedDate: new Date().toISOString(),
-  //       dueDate: new Date(dueDate).toISOString(),
-  //       priority: String(priority),
-  //       status: String(status),
-  //       clientName: String(clientName).trim(),
-  //       department: department.map(d => String(typeof d === 'object' ? d.value : d).trim()),
-  //       code: taskCode ? String(taskCode.value).trim() : undefined,
-  //       assignedBy: {
-  //         name: String(localStorage.getItem("name")).trim(),
-  //         email: String(localStorage.getItem("userId")).trim()
-  //       }
-  //     };
-  
-  //     // Remove undefined fields
-  //     Object.keys(taskPayload).forEach(key => 
-  //       taskPayload[key] === undefined && delete taskPayload[key]
-  //     );
-  
-  //     const response = await fetch(
-  //       initialData 
-  //         ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
-  //         : "https://sataskmanagementbackend.onrender.com/api/tasks",
-  //       {
-  //         method: initialData ? "PUT" : "POST",
-  //         headers: { 
-  //           "Content-Type": "application/json",
-  //           "Authorization": `Bearer ${localStorage.getItem("authToken")}`
-  //         },
-  //         body: JSON.stringify(taskPayload),
-  //       }
-  //     );
-  
-  //     const responseData = await response.json();
-  
-  //     if (!response.ok) {
-  //       throw new Error(
-  //         responseData.error?.message || 
-  //         responseData.message || 
-  //         `Server error: ${response.status}`
-  //       );
-  //     }
-  
-  //     // Success handling
-  //     dispatch(updateTask(responseData));
-  //     onSave(responseData);
-  //     socket.emit(initialData ? "task-updated" : "new-task-created", { 
-  //       taskId: responseData._id 
-  //     });
-  //     onClose();
-  
-  //   } catch (error) {
-  //     console.error("Task submission failed:", {
-  //       error: error.message,
-  //       stack: error.stack,
-  //       time: new Date().toISOString()
-  //     });
-  //     alert(`Error: ${error.message}\n\nCheck console for details.`);
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
   // Filter employees according to selected taskCategory
   const filteredEmployees = taskCategory
     ? employees.filter(
