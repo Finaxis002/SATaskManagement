@@ -4,6 +4,7 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "../redux/userSlice";
 import { FaTrashAlt, FaUsers } from "react-icons/fa";
+import EmojiPicker from "emoji-picker-react";
 
 // Assume socket.io client setup
 const socket = io("https://sataskmanagementbackend.onrender.com", {
@@ -20,11 +21,71 @@ const Inbox = () => {
   const [selectedUser, setSelectedUser] = useState(null); // For personal chat
   const [users, setUsers] = useState([]); // ✅ Must be an array
   const [userUnreadCounts, setUserUnreadCounts] = useState({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const messageInputRef = useRef(null); // Add a ref for the input field
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
     department: localStorage.getItem("department"),
     role: localStorage.getItem("role"),
+  };
+
+const professionalEmojis = [
+  '✅', '✔️', '☑️', '✖️', '❌', '❎', '➕', '➖', '➗', '✖️',
+  '‼️', '⁉️', '❓', '❔', '❕', '❗', '©️', '®️', '™️',
+  '⚡', '⏳', '⌛', '⏰', '🕒', '🕓', '🕔', '📅', '📆',
+  '📊', '📈', '📉', '📌', '📍', '📎', '🖇️', '📏', '📐',
+  '✂️', '📋', '📁', '📂', '📄', '📑', '📝', '📌', '📍',
+  '🔍', '🔎', '🔏', '🔐', '🔒', '🔓', '📧', '📨', '📩',
+  '📤', '📥', '📦', '📫', '📪', '📬', '📭', '📮', '🗂️',
+  '🗃️', '🗄️', '🗑️', '🔖', '🔗', '📎', '🖇️', '📐', '✂️',
+  '💡', '🔦', '📲', '📱', '📶', '📳', '📴', '🔋', '🔌',
+  '💻', '🖥️', '🖨️', '⌨️', '🖱️', '🖲️', '💽', '💾', '💿',
+  '📀', '🎥', '📺', '📷', '📹', '📼', '🔍', '🔎', '🔬',
+  '🔭', '📡', '🛰️', '💉', '💊', '🩺', '🚪', '🛏️', '🛋️',
+  '🚿', '🛁', '🚽', '🧻', '🧸', '🧷', '🧹', '🧺', '🧻',
+  '🧼', '🧽', '🧯', '🛒', '🚬', '⚰️', '⚱️', '🗿', '🏧',
+  '🚮', '🚰', '♿', '🚹', '🚺', '🚻', '🚼', '🚾', '🛂',
+  '🛃', '🛄', '🛅', '⚠️', '🚸', '⛔', '🚫', '🚳', '🚭',
+  '🚯', '🚱', '🚷', '📵', '🔞', '☢️', '☣️', '⬆️', '↗️',
+  '➡️', '↘️', '⬇️', '↙️', '⬅️', '↖️', '↕️', '↔️', '↩️',
+  '↪️', '⤴️', '⤵️', '🔃', '🔄', '🔙', '🔚', '🔛', '🔜',
+  '🔝', '🛐', '⚛️', '🕉️', '✡️', '☸️', '☯️', '✝️', '☦️',
+  '☪️', '☮️', '🕎', '🔯', '♈', '♉', '♊', '♋', '♌', '♍',
+  '♎', '♏', '♐', '♑', '♒', '♓', '⛎', '🔀', '🔁', '🔂',
+  '▶️', '⏩', '⏭️', '⏯️', '◀️', '⏪', '⏮️', '🔼', '⏫', '🔽',
+  '⏬', '⏸️', '⏹️', '⏺️', '⏏️', '🎦', '🔅', '🔆', '📶',
+  '📳', '📴', '♻️', '🔱', '📛', '🔰', '⭕', '✅', '☑️',
+  '✔️', '❌', '❎', '➰', '➿', '〽️', '✳️', '✴️', '❇️',
+  '©️', '®️', '™️', '#️⃣', '*️⃣', '0️⃣', '1️⃣', '2️⃣', '3️⃣',
+  '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔠', '🔡',
+  '🔢', '🔣', '🔤', '🅰️', '🆎', '🅱️', '🆑', '🆒', '🆓',
+  'ℹ️', '🆔', 'Ⓜ️', '🆕', '🆖', '🅾️', '🆗', '🅿️', '🆘',
+  '🆙', '🆚', '🈁', '🈂️', '🈷️', '🈶', '🈯', '🉐', '🈹',
+  '🈚', '🈲', '🉑', '🈸', '🈴', '🈳', '㊗️', '㊙️', '🈺',
+  '🈵', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚫',
+  '⚪', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟫', '⬛',
+  '⬜', '◼️', '◻️', '◾', '◽', '▪️', '▫️', '🔶', '🔷',
+  '🔸', '🔹', '🔺', '🔻', '💠', '🔘', '🔳', '🔲', '🏁',
+  '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏴‍☠️'
+];
+
+
+  // Add this function to handle emoji selection
+  const onEmojiClick = (emojiObject) => {
+    const cursorPosition = messageInputRef.current.selectionStart;
+    const textBeforeCursor = messageText.substring(0, cursorPosition);
+    const textAfterCursor = messageText.substring(cursorPosition);
+
+    setMessageText(textBeforeCursor + emojiObject.emoji + textAfterCursor);
+    setShowEmojiPicker(false);
+
+    // Focus back on input and set cursor position after emoji
+    setTimeout(() => {
+      messageInputRef.current.focus();
+      messageInputRef.current.selectionEnd =
+        cursorPosition + emojiObject.emoji.length;
+    }, 0);
   };
 
   // Fetch groups when the component is mounted or updated
@@ -41,7 +102,9 @@ const Inbox = () => {
           const res = await axios.get(
             "https://sataskmanagementbackend.onrender.com/api/employees"
           );
-          const currentEmployee = res.data.find(emp => emp.name === currentUser.name);
+          const currentEmployee = res.data.find(
+            (emp) => emp.name === currentUser.name
+          );
           if (currentEmployee && currentEmployee.department) {
             setGroups(currentEmployee.department);
             setSelectedGroup(currentEmployee.department[0]);
@@ -56,7 +119,7 @@ const Inbox = () => {
         }
       }
     };
-  
+
     fetchUserDepartments();
   }, [currentUser.role, currentUser.name]);
 
@@ -202,27 +265,32 @@ const Inbox = () => {
     try {
       // Optimistically update the UI first
       if (selectedGroup) {
-        setGroupUnreadCounts(prev => ({ ...prev, [selectedGroup]: 0 }));
+        setGroupUnreadCounts((prev) => ({ ...prev, [selectedGroup]: 0 }));
       } else if (selectedUser) {
-        setUserUnreadCounts(prev => ({ ...prev, [selectedUser.name]: 0 }));
+        setUserUnreadCounts((prev) => ({ ...prev, [selectedUser.name]: 0 }));
       }
-  
+
       // Then make the API call
       const res = await axios.put(
         "https://sataskmanagementbackend.onrender.com/api/mark-read",
         { identifier }
       );
-      
+
       // Emit socket event after successful API call
       socket.emit("markRead", { identifier });
-      
     } catch (err) {
       console.error("❌ Failed to mark messages as read:", err.message);
       // Revert the optimistic update if failed
       if (selectedGroup) {
-        setGroupUnreadCounts(prev => ({ ...prev, [selectedGroup]: prev[selectedGroup] }));
+        setGroupUnreadCounts((prev) => ({
+          ...prev,
+          [selectedGroup]: prev[selectedGroup],
+        }));
       } else if (selectedUser) {
-        setUserUnreadCounts(prev => ({ ...prev, [selectedUser.name]: prev[selectedUser.name] }));
+        setUserUnreadCounts((prev) => ({
+          ...prev,
+          [selectedUser.name]: prev[selectedUser.name],
+        }));
       }
     }
   };
@@ -267,14 +335,14 @@ const Inbox = () => {
   const handleUserClick = async (user) => {
     setSelectedUser(user);
     setSelectedGroup(null);
-    
+
     // Mark messages as read immediately when clicking the chat
     await markMessagesAsRead(user.name);
-    
+
     // Force update the unread counts
-    setUserUnreadCounts(prev => ({
+    setUserUnreadCounts((prev) => ({
       ...prev,
-      [user.name]: 0 // Immediately set to 0
+      [user.name]: 0, // Immediately set to 0
     }));
   };
   // useEffect(() => {
@@ -418,8 +486,6 @@ const Inbox = () => {
       console.log("📬 Personal message from:", msg.sender);
     }
   });
-
-  
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
@@ -687,14 +753,57 @@ const Inbox = () => {
         {/* Input field and Send button (Fixed at the bottom) */}
         <div className="relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto">
           <div className="flex items-center">
+            {/* Emoji Picker Button */}
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="mr-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6 text-gray-500"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z"
+                />
+              </svg>
+            </button>
+
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="absolute bottom-16 left-0 z-10">
+                <EmojiPicker
+                  onEmojiClick={onEmojiClick}
+                  width={300}
+                  height={350}
+                  previewConfig={{ showPreview: false }} // Hide preview
+                  searchDisabled={false} // Keep search enabled
+                  skinTonesDisabled={true} // Disable skin tone variations
+                  categories={[
+                    { category: "symbols", name: "Symbols" },
+                    { category: "objects", name: "Objects" },
+                    { category: "flags", name: "Flags" },
+                  ]}
+                />
+              </div>
+            )}
+
             <input
               type="text"
+              ref={messageInputRef}
               value={messageText}
               onChange={handleChange}
               onKeyDown={handleKeyPress}
               placeholder="Type your message..."
               className="flex-1 px-4 py-2 text-sm bg-transparent focus:outline-none placeholder-gray-400 text-gray-700"
             />
+
             <button
               onClick={sendMessage}
               className="ml-2 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150"
