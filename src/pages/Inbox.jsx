@@ -29,26 +29,36 @@ const Inbox = () => {
 
   // Fetch groups when the component is mounted or updated
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchUserDepartments = async () => {
       try {
-        const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/departments"
-        );
-        const departmentNames = res.data.map((dept) => dept.name);
-
         if (currentUser.role === "admin") {
-          setGroups(departmentNames); // Admin sees all fetched departments
-        } else if (currentUser.department) {
-          setGroups([currentUser.department]); // User sees only their department
-          setSelectedGroup(currentUser.department); // Auto-select it
+          const res = await axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/departments"
+          );
+          setGroups(res.data.map((dept) => dept.name));
+        } else {
+          // Fetch all employees and find the current user
+          const res = await axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/employees"
+          );
+          const currentEmployee = res.data.find(emp => emp.name === currentUser.name);
+          if (currentEmployee && currentEmployee.department) {
+            setGroups(currentEmployee.department);
+            setSelectedGroup(currentEmployee.department[0]);
+          }
         }
       } catch (err) {
         console.error("❌ Error fetching departments:", err.message);
+        // Fallback
+        if (currentUser.department) {
+          setGroups([currentUser.department]);
+          setSelectedGroup(currentUser.department);
+        }
       }
     };
-
-    fetchDepartments();
-  }, [currentUser.role, currentUser.department]);
+  
+    fetchUserDepartments();
+  }, [currentUser.role, currentUser.name]);
 
   const scrollRef = useRef(null); // Your existing scrollRef
 
@@ -190,34 +200,30 @@ const Inbox = () => {
 
   const markMessagesAsRead = async (identifier) => {
     try {
-      // Call the API to mark messages as read for this group or user
+      // Optimistically update the UI first
+      if (selectedGroup) {
+        setGroupUnreadCounts(prev => ({ ...prev, [selectedGroup]: 0 }));
+      } else if (selectedUser) {
+        setUserUnreadCounts(prev => ({ ...prev, [selectedUser.name]: 0 }));
+      }
+  
+      // Then make the API call
       const res = await axios.put(
         "https://sataskmanagementbackend.onrender.com/api/mark-read",
-        {
-          identifier,
-        }
+        { identifier }
       );
-      console.log(`Marked messages as read for ${identifier}:`, res.data);
-
-      // Emit a socket event to mark messages as read
+      
+      // Emit socket event after successful API call
       socket.emit("markRead", { identifier });
-
-      // Update the unread count locally for real-time update
-      if (selectedGroup) {
-        setGroupUnreadCounts((prevCounts) => {
-          const updatedCounts = { ...prevCounts };
-          updatedCounts[selectedGroup] = 0; // Reset unread count for the group
-          return updatedCounts;
-        });
-      } else if (selectedUser) {
-        setUserUnreadCounts((prevCounts) => {
-          const updatedCounts = { ...prevCounts };
-          updatedCounts[selectedUser.name] = 0; // Reset unread count for the user
-          return updatedCounts;
-        });
-      }
+      
     } catch (err) {
       console.error("❌ Failed to mark messages as read:", err.message);
+      // Revert the optimistic update if failed
+      if (selectedGroup) {
+        setGroupUnreadCounts(prev => ({ ...prev, [selectedGroup]: prev[selectedGroup] }));
+      } else if (selectedUser) {
+        setUserUnreadCounts(prev => ({ ...prev, [selectedUser.name]: prev[selectedUser.name] }));
+      }
     }
   };
 
@@ -258,16 +264,60 @@ const Inbox = () => {
     markMessagesAsRead(group);
   };
 
-  const handleUserClick = (user) => {
+  const handleUserClick = async (user) => {
     setSelectedUser(user);
-    setSelectedGroup(null); // Clear selected group when switching to a user
-
-    // Mark messages as read for this user
-    markMessagesAsRead(user.name);
+    setSelectedGroup(null);
+    
+    // Mark messages as read immediately when clicking the chat
+    await markMessagesAsRead(user.name);
+    
+    // Force update the unread counts
+    setUserUnreadCounts(prev => ({
+      ...prev,
+      [user.name]: 0 // Immediately set to 0
+    }));
   };
+  // useEffect(() => {
+  //   socket.on("receiveMessage", (msg) => {
+  //     console.log("📨 Real-time message received:", msg);
+
+  //     // For Groups:
+  //     if (
+  //       msg.group &&
+  //       typeof msg.group === "string" &&
+  //       msg.group.trim() !== ""
+  //     ) {
+  //       if (!selectedGroup || msg.group !== selectedGroup) {
+  //         setGroupUnreadCounts((prevCounts) => {
+  //           const updatedCounts = { ...prevCounts };
+  //           updatedCounts[msg.group] = (updatedCounts[msg.group] || 0) + 1;
+  //           return updatedCounts;
+  //         });
+  //       }
+  //     }
+
+  //     // For Personal Messages:
+  //     if (
+  //       msg.recipient === currentUser.name &&
+  //       msg.sender !== currentUser.name
+  //     ) {
+  //       setUserUnreadCounts((prevCounts) => {
+  //         const updatedCounts = { ...prevCounts };
+  //         updatedCounts[msg.sender] = (updatedCounts[msg.sender] || 0) + 1;
+  //         return updatedCounts;
+  //       });
+  //     }
+  //   });
+
+  //   return () => {
+  //     socket.off("receiveMessage");
+  //   };
+  // }, [selectedGroup, currentUser.name]);
+
+  //fetch group unread badge
 
   useEffect(() => {
-    socket.on("receiveMessage", (msg) => {
+    const handleReceiveMessage = (msg) => {
       console.log("📨 Real-time message received:", msg);
 
       // For Groups:
@@ -284,26 +334,27 @@ const Inbox = () => {
           });
         }
       }
-
       // For Personal Messages:
-      if (
+      else if (
         msg.recipient === currentUser.name &&
         msg.sender !== currentUser.name
       ) {
         setUserUnreadCounts((prevCounts) => {
           const updatedCounts = { ...prevCounts };
+          // Always use sender's name as the key
           updatedCounts[msg.sender] = (updatedCounts[msg.sender] || 0) + 1;
           return updatedCounts;
         });
       }
-    });
+    };
+
+    socket.on("receiveMessage", handleReceiveMessage);
 
     return () => {
-      socket.off("receiveMessage");
+      socket.off("receiveMessage", handleReceiveMessage);
     };
   }, [selectedGroup, currentUser.name]);
 
-  //fetch group unread badge
   useEffect(() => {
     const fetchGroupUnreadCounts = async () => {
       try {
@@ -332,6 +383,28 @@ const Inbox = () => {
   }, []);
 
   useEffect(() => {
+    const fetchUserUnreadCounts = async () => {
+      try {
+        const name = localStorage.getItem("name");
+        const res = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/user-unread-counts",
+          { params: { name } }
+        );
+        setUserUnreadCounts(res.data.userUnreadCounts || {});
+      } catch (err) {
+        console.error("❌ Failed to fetch user unread counts:", err.message);
+      }
+    };
+
+    fetchUserUnreadCounts();
+    socket.on("inboxCountUpdated", fetchUserUnreadCounts);
+
+    return () => {
+      socket.off("inboxCountUpdated", fetchUserUnreadCounts);
+    };
+  }, []);
+
+  useEffect(() => {
     console.log("Selected Group:", selectedGroup);
     console.log("Selected User:", selectedUser);
   }, [selectedGroup, selectedUser]);
@@ -345,6 +418,8 @@ const Inbox = () => {
       console.log("📬 Personal message from:", msg.sender);
     }
   });
+
+  
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
@@ -419,7 +494,7 @@ const Inbox = () => {
                   >
                     <div className="flex flex-row items-center gap-2">
                       <span className="text-indigo-600 flex gap-4 items-center font-medium text-sm hover:underline relative">
-                         <FaUsers className="text-indigo-600 text-lg" />
+                        <FaUsers className="text-indigo-600 text-lg" />
                         {group}
                       </span>
                       {groupUnreadCounts[group] > 0 && (
@@ -440,43 +515,31 @@ const Inbox = () => {
             </h3>
             <div className="overflow-y-auto space-y-2 pr-1">
               {currentUser.role === "user" ? (
-                // User view - show only admin
                 <div
                   onClick={() => {
                     const admin = { name: "Admin", id: "admin" };
                     setSelectedUser(admin);
                   }}
-                  className={`cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200 ${
-                    selectedUser?.id === "admin" ? "bg-indigo-100" : ""
+                  className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+                    selectedUser?.name === "Admin"
+                      ? "bg-indigo-100 border-indigo-300"
+                      : "bg-white hover:bg-gray-100 border-gray-200"
                   }`}
                 >
-                  <div
-                    onClick={() => {
-                      const admin = { name: "Admin", id: "admin" };
-                      setSelectedUser(admin);
-                    }}
-                    className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
-                      selectedUser?.name === "Admin"
-                        ? "bg-indigo-100 border-indigo-300"
-                        : "bg-white hover:bg-gray-100 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {/* Admin avatar initials */}
-                      <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                        A
-                      </div>
-                      <span className="text-sm font-medium text-gray-800">
-                        Admin
-                      </span>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                      A
                     </div>
-
-                    {userUnreadCounts["admin"] > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                        {userUnreadCounts["admin"]}
-                      </span>
-                    )}
+                    <span className="text-sm font-medium text-gray-800">
+                      Admin
+                    </span>
                   </div>
+                  {/* Always check for 'Admin' name key */}
+                  {userUnreadCounts["Admin"] > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                      {userUnreadCounts["Admin"]}
+                    </span>
+                  )}
                 </div>
               ) : users.length > 0 ? (
                 users.map((user) => (
@@ -490,21 +553,17 @@ const Inbox = () => {
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      {/* Avatar initials */}
                       <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
-
                       <span className="text-sm font-medium text-gray-800">
                         {user.name}
                       </span>
                     </div>
-
-                    {(userUnreadCounts[user.id] ||
-                      userUnreadCounts[user.name]) > 0 && (
+                    {/* Always use user.name as the key */}
+                    {userUnreadCounts[user.name] > 0 && (
                       <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                        {userUnreadCounts[user.id] ||
-                          userUnreadCounts[user.name]}
+                        {userUnreadCounts[user.name]}
                       </span>
                     )}
                   </div>
