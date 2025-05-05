@@ -274,7 +274,7 @@ const AllEmployees = () => {
                   </div>
 
                   {/* Department */}
-                  <div className="mb-4">
+                  <div className="mb-4 w-[18rem]">
                     <label
                       htmlFor="department"
                       className="block text-sm font-medium text-gray-700"
