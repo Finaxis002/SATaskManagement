@@ -480,25 +480,40 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         <div className="mt-6">
           <label className="block text-sm text-gray-600 mb-2">Assign to:</label>
           <Select
-            isMulti
-            name="assignees"
-            options={assigneeOptions}
-            value={assignees.map((assignee) => ({
-              label: `${assignee.name} (${assignee.email})`,
-              value: assignee.email,
-            }))}
-            onChange={(selectedOptions) => {
-              const selectedAssignees = selectedOptions.map((option) => {
-                const employee = employees.find(
-                  (emp) => emp.email === option.value
-                );
-                return { name: employee.name, email: employee.email };
-              });
-              setAssignees(selectedAssignees);
-            }}
-            className="w-full"
-            classNamePrefix="react-select"
-          />
+  isMulti
+  name="assignees"
+  options={assigneeOptions}
+  value={assignees.map((assignee) => ({
+    label: `${assignee.name} (${assignee.email})`,
+    value: assignee.email,
+  }))}
+  onChange={(selectedOptions) => {
+    const selectedAssignees = selectedOptions.map((option) => {
+      const employee = employees.find((emp) => emp.email === option.value);
+      return { name: employee.name, email: employee.email };
+    });
+    setAssignees(selectedAssignees);
+  }}
+  className="w-full"
+  classNamePrefix="react-select"
+  styles={{
+    control: (provided) => ({
+      ...provided,
+      height: '20px', // Adjust the height of the control (input box)
+    }),
+    menu: (provided) => ({
+      ...provided,
+      maxHeight: '200px', // Maximum height for the dropdown menu
+      overflowY: 'auto', // Enable vertical scrolling
+    }),
+    menuList: (provided) => ({
+      ...provided,
+      maxHeight: '100px', // Apply max height to the list of options
+      overflowY: 'auto', // Enable scrolling within the dropdown
+    }),
+  }}
+/>
+
         </div>
 
         {/* Action Buttons */}
