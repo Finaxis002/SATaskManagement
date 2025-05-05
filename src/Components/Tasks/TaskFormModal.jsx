@@ -64,6 +64,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     }
   }, [initialData]);
 
+
   // Handling form submit
   const handleSubmit = async () => {
     
@@ -177,7 +178,15 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       console.error("Error saving task:", error);
       // alert("Error saving task");
     }
-  };
+  };  //     } catch (err) {
+  //       console.error("Failed to load departments", err);
+  //     }
+  //   };
+
+  //   loadDepartments();
+  // }, []);
+
+
 
  
   
