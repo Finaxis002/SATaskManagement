@@ -345,9 +345,6 @@ const Inbox = () => {
     }
   });
 
-
-  
-
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
       {/* Left column for groups */}
@@ -399,93 +396,105 @@ const Inbox = () => {
 
         {/* Groups Section */}
         {showGroups ? (
-  <div className="flex-1 overflow-auto mb-6">
-    <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">
-      {currentUser.role === "user" ? "Your Groups" : "Groups"}
-    </h3>
-    {groups.length === 0 ? (
-      <p className="text-center text-gray-400 italic">No chat group assigned.</p>
-    ) : (
-      <ul className="space-y-2">
-        {groups.map((group) => (
-          <li
-            key={group}
-            onClick={() => handleGroupClick(group)}
-            className={`relative cursor-pointer p-3 rounded-lg flex justify-between items-center transition-all duration-200 border ${
-              selectedGroup === group
-                ? "bg-indigo-100 border-indigo-300"
-                : "hover:bg-gray-50 border-gray-200"
-            }`}
-          >
-            <div className="flex flex-row items-center gap-2">
-              <span className="text-indigo-600 font-medium text-sm hover:underline relative">
-                {group}
-              </span>
-              {groupUnreadCounts[group] > 0 && (
-                <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
-                  {groupUnreadCounts[group]}
-                </span>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
-) : (
-  <div className="border-t border-gray-200 pt-4">
-    <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
-      {currentUser.role === "user" ? "Personal Chat" : "Users"}
-    </h3>
-    <div className="overflow-y-auto space-y-2 pr-1">
-      {currentUser.role === "user" ? (
-        // User view - show only admin
-        <div
-          onClick={() => {
-            const admin = { name: "Admin", id: "admin" };
-            setSelectedUser(admin);
-          }}
-          className={`cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200 ${
-            selectedUser?.id === "admin" ? "bg-indigo-100" : ""
-          }`}
-        >
-          <div className="flex justify-between items-center">
-            <span>Admin</span>
-            {/* Use the same identifier (admin.id) as used in state */}
-            {userUnreadCounts["admin"] > 0 && (
-              <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
-                {userUnreadCounts["admin"]}
-              </span>
+          <div className="flex-1 overflow-auto mb-6">
+            <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">
+              {currentUser.role === "user" ? "Your Groups" : "Groups"}
+            </h3>
+            {groups.length === 0 ? (
+              <p className="text-center text-gray-400 italic">
+                No chat group assigned.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {groups.map((group) => (
+                  <li
+                    key={group}
+                    onClick={() => handleGroupClick(group)}
+                    className={`relative cursor-pointer p-3 rounded-lg flex justify-between items-center transition-all duration-200 border ${
+                      selectedGroup === group
+                        ? "bg-indigo-100 border-indigo-300"
+                        : "hover:bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex flex-row items-center gap-2">
+                      <span className="text-indigo-600 font-medium text-sm hover:underline relative">
+                        {group}
+                      </span>
+                      {groupUnreadCounts[group] > 0 && (
+                        <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
+                          {groupUnreadCounts[group]}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-        </div>
-      ) : users.length > 0 ? (
-        users.map((user) => (
-          <div
-            key={user.id}
-            onClick={() => handleUserClick(user)}
-            className={`cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200 ${
-              selectedUser?.id === user.id ? "bg-indigo-100" : ""
-            }`}
-          >
-            <div className="flex justify-between items-center">
-              <span>{user.name}</span>
-              {/* Ensure we're using the same key as stored in userUnreadCounts */}
-              {(userUnreadCounts[user.id] || userUnreadCounts[user.name]) > 0 && (
-                <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
-                  {/* Check both possible identifiers */}
-                  {userUnreadCounts[user.id] || userUnreadCounts[user.name]}
-                </span>
+        ) : (
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
+              {currentUser.role === "user" ? "Personal Chat" : "Users"}
+            </h3>
+            <div className="overflow-y-auto space-y-2 pr-1">
+              {currentUser.role === "user" ? (
+                // User view - show only admin
+                <div
+                  onClick={() => {
+                    const admin = { name: "Admin", id: "admin" };
+                    setSelectedUser(admin);
+                  }}
+                  className={`cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200 ${
+                    selectedUser?.id === "admin" ? "bg-indigo-100" : ""
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span>Admin</span>
+                    {/* Use the same identifier (admin.id) as used in state */}
+                    {userUnreadCounts["admin"] > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
+                        {userUnreadCounts["admin"]}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : users.length > 0 ? (
+                users.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => handleUserClick(user)}
+                    className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+                      selectedUser?.name === user.name
+
+                        ? "bg-indigo-100 border-indigo-300"
+                        : "bg-white hover:bg-gray-100 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      {/* Avatar initials */}
+                      <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                        {user.name?.charAt(0).toUpperCase()}
+                      </div>
+                
+                      <span className="text-sm font-medium text-gray-800">{user.name}</span>
+                    </div>
+                
+                    {(userUnreadCounts[user.id] || userUnreadCounts[user.name]) > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {userUnreadCounts[user.id] || userUnreadCounts[user.name]}
+                      </span>
+                    )}
+                  </div>
+                ))
+                
+              ) : (
+                <p className="text-sm text-gray-400 text-center">
+                  No users found.
+                </p>
               )}
             </div>
           </div>
-        ))
-      ) : (
-        <p className="text-sm text-gray-400 text-center">No users found.</p>
-      )}
-    </div>
-  </div>
-)}
+        )}
       </div>
 
       {/* Right column for chat messages */}

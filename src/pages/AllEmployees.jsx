@@ -188,7 +188,7 @@ const AllEmployees = () => {
                         onClick={() => handleDelete(user._id)}
                         className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md shadow-sm transition"
                       >
-                        <FaTrash className="text-xs" /> Delete
+                        <FaTrash className="text-xs" /> 
                       </button>
                     </div>
                   </td>
@@ -211,8 +211,7 @@ const AllEmployees = () => {
 
       {/* Modal for editing employee */}
       {showEditModal && (
-        <div className="fixed inset-0 flex justify-center items-center bg-gray-800 bg-opacity-50 z-20 backdrop-blur-md">
-          <div className="bg-[url('your-grass-image-url')] bg-cover bg-center p-8 rounded-lg shadow-lg w-full sm:w-3/4 md:w-2/3 lg:w-1/2 backdrop-blur-lg">
+        <div className="fixed inset-0 flex justify-center items-center bg-[oklch(0.28 0.03 256.85 / 0.5)] bg-opacity-70 z-20 ">
             <div className="bg-white bg-opacity-80 p-10 rounded-lg shadow-xl backdrop-blur-md">
               <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">
                 Edit Employee
@@ -348,7 +347,7 @@ const AllEmployees = () => {
               </form>
             </div>
           </div>
-        </div>
+      
       )}
     </div>
   );
