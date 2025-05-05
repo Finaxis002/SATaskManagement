@@ -88,7 +88,11 @@ const Sidebar = () => {
 
         <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
         {role === "admin" && (
-        <SidebarItem icon={<FaSitemap />} label="Departments" to="/departments" />
+          <SidebarItem
+            icon={<FaSitemap />}
+            label="Departments"
+            to="/departments"
+          />
         )}
       </div>
 
