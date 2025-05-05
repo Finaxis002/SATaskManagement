@@ -678,38 +678,56 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
 
         <tbody className="text-sm text-gray-700">
           {/* High Priority Section */}
-          {highPriorityTasks.length > 0 && (
+          {highPriorityTasks.length === 0 &&
+          mediumPriorityTasks.length === 0 &&
+          lowPriorityTasks.length === 0 ? (
+            <tr>
+              <td colSpan="13" className="text-center py-6 text-gray-500">
+                🚫 No tasks Assigned Yet.
+              </td>
+            </tr>
+          ) : (
             <>
-              <tr className="bg-red-100 text-red-800 font-bold text-sm">
-                <td colSpan="13" className="py-2 px-6">
-                  High Priority Tasks
-                </td>
-              </tr>
-              {highPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
-            </>
-          )}
+              {highPriorityTasks.length > 0 && (
+                <>
+                  <tr className="bg-red-100 text-red-800 font-bold text-sm">
+                    <td colSpan="13" className="py-2 px-6">
+                      High Priority Tasks
+                    </td>
+                  </tr>
+                  {highPriorityTasks.map((task, idx) =>
+                    renderTaskRow(task, idx)
+                  )}
+                </>
+              )}
 
-          {/* Medium Priority Section */}
-          {mediumPriorityTasks.length > 0 && (
-            <>
-              <tr className="bg-yellow-100 text-yellow-800 font-bold text-sm">
-                <td colSpan="13" className="py-2 px-6">
-                  Medium Priority Tasks
-                </td>
-              </tr>
-              {mediumPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
-            </>
-          )}
+              {/* Medium Priority Section */}
+              {mediumPriorityTasks.length > 0 && (
+                <>
+                  <tr className="bg-yellow-100 text-yellow-800 font-bold text-sm">
+                    <td colSpan="13" className="py-2 px-6">
+                      Medium Priority Tasks
+                    </td>
+                  </tr>
+                  {mediumPriorityTasks.map((task, idx) =>
+                    renderTaskRow(task, idx)
+                  )}
+                </>
+              )}
 
-          {/* Low Priority Section */}
-          {lowPriorityTasks.length > 0 && (
-            <>
-              <tr className="bg-green-100 text-green-800 font-bold text-sm">
-                <td colSpan="13" className="py-2 px-6">
-                  Low Priority Tasks
-                </td>
-              </tr>
-              {lowPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
+              {/* Low Priority Section */}
+              {lowPriorityTasks.length > 0 && (
+                <>
+                  <tr className="bg-green-100 text-green-800 font-bold text-sm">
+                    <td colSpan="13" className="py-2 px-6">
+                      Low Priority Tasks
+                    </td>
+                  </tr>
+                  {lowPriorityTasks.map((task, idx) =>
+                    renderTaskRow(task, idx)
+                  )}
+                </>
+              )}
             </>
           )}
         </tbody>

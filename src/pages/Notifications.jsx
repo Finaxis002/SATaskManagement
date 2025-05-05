@@ -14,7 +14,6 @@ const Notifications = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-
   const handleMarkAsRead = async (id) => {
     try {
       await axios.patch(
@@ -23,19 +22,19 @@ const Notifications = () => {
           read: true,
         }
       );
-  
+
       console.log("🧹 Marked notification as read:", id);
-  
+
       // ✅ Update that specific notification in local state
       setNotifications((prev) =>
         prev.map((notif) =>
           notif._id === id ? { ...notif, read: true } : notif
         )
       );
-  
+
       // ✅ Update unread count
       setNotificationCount((prevCount) => Math.max(prevCount - 1, 0));
-  
+
       // ✅ Emit updated count via socket
       socket.emit("notificationCountUpdated", {
         email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
@@ -44,14 +43,12 @@ const Notifications = () => {
       console.error("Error marking notification as read", error);
     }
   };
-  
-  
 
   const fetchNotifications = async () => {
     setLoading(true);
     try {
       let response;
-  
+
       if (userRole === "admin") {
         response = await axios.get(
           "https://sataskmanagementbackend.onrender.com/api/notifications"
@@ -62,28 +59,33 @@ const Notifications = () => {
           console.error("No userId found in localStorage.");
           return setLoading(false);
         }
-  
+
         console.log("User email to fetch:", emailToFetch);
         response = await axios.get(
           `https://sataskmanagementbackend.onrender.com/api/notifications/${emailToFetch}`
         );
       }
-  
+
       const allNotifications = response.data;
       console.log("Fetched notifications:", allNotifications);
-  
+
       const filteredNotifications = allNotifications.filter((notification) => {
         const currentEmail = localStorage.getItem("userId");
-  
+
         if (userRole === "admin") {
-          return notification.type === "admin";
+          return (
+            notification.type === "admin" &&
+            (notification.action === "task-created" ||
+             notification.action === "task-updated")
+          );
         }
-  
+        
+
         if (userRole === "user") {
           const updatedBy = notification.updatedBy
             ? JSON.parse(notification.updatedBy)
             : null;
-  
+
           return (
             notification.type === "user" &&
             notification.recipientEmail === currentEmail &&
@@ -92,10 +94,10 @@ const Notifications = () => {
             updatedBy?.email !== currentEmail
           );
         }
-  
+
         return false;
       });
-  
+
       console.log("Filtered notifications:", filteredNotifications);
       setNotifications(filteredNotifications);
       setNotificationCount(filteredNotifications.filter((n) => !n.read).length); // 🆕 Update notification counter correctly
@@ -117,9 +119,7 @@ const Notifications = () => {
       .map((part, idx) => (idx < 2 ? String(parseInt(part, 10)) : part)) // Day and Month remove leading zeros
       .join("/");
   };
-  
-  
-  
+
   return (
     <div className="p-4 mx-auto h-[90vh] overflow-y-auto">
       <div className="flex gap-8">
@@ -185,15 +185,16 @@ const Notifications = () => {
                         .join(" ") // Combine all details into a single string
                         .toLowerCase()
                     : "";
-                    const normalizedCreatedAt = normalizeDateString(
-                      new Date(notification.createdAt).toLocaleDateString(
-                        "en-GB",
-                        { day: "2-digit", month: "2-digit", year: "numeric" }
-                      )
-                    ).toLowerCase();
-                    
-                    const normalizedQuery = normalizeDateString(searchQuery.toLowerCase());
-                    
+                  const normalizedCreatedAt = normalizeDateString(
+                    new Date(notification.createdAt).toLocaleDateString(
+                      "en-GB",
+                      { day: "2-digit", month: "2-digit", year: "numeric" }
+                    )
+                  ).toLowerCase();
+
+                  const normalizedQuery = normalizeDateString(
+                    searchQuery.toLowerCase()
+                  );
 
                   return (
                     message.includes(query) ||
@@ -264,7 +265,7 @@ const Notifications = () => {
                     </div>
 
                     <div
-                     className={`group transition-shadow duration-300 hover:shadow-md border rounded-xl flex justify-between items-start gap-4 cursor-pointer ${
+                      className={`group transition-shadow duration-300 hover:shadow-md border rounded-xl flex justify-between items-start gap-4 cursor-pointer ${
                         notification.read
                           ? "bg-white border-gray-200"
                           : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300"
