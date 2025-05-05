@@ -24,11 +24,14 @@ const Inbox = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messageInputRef = useRef(null); // Add a ref for the input field
 
+  
+
   const currentUser = {
     name: localStorage.getItem("name") || "User",
     department: localStorage.getItem("department"),
     role: localStorage.getItem("role"),
   };
+
 
 const professionalEmojis = [
   '✅', '✔️', '☑️', '✖️', '❌', '❎', '➕', '➖', '➗', '✖️',
