@@ -73,13 +73,8 @@ const Notifications = () => {
         const currentEmail = localStorage.getItem("userId");
 
         if (userRole === "admin") {
-          return (
-            notification.type === "admin" &&
-            (notification.action === "task-created" ||
-             notification.action === "task-updated")
-          );
+          return notification.type === "admin";
         }
-        
 
         if (userRole === "user") {
           const updatedBy = notification.updatedBy

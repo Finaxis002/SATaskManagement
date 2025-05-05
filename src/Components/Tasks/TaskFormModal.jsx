@@ -29,8 +29,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [code, setCode] = useState("");
   const [newCode, setNewCode] = useState("");
   const [department, setDepartment] = useState([]);
-  const [taskCode, setTaskCode] = useState("");
- 
+  const [taskCode, setTaskCode] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -53,19 +53,16 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       setAssignees(initialData.assignees || []);
       setClientName(initialData.clientName || "");
       setTaskCategory(initialData.taskCategory || "");
-      setCode(initialData.code || "");
+      setTaskCode(
+        initialData.code
+          ? { label: initialData.code, value: initialData.code }
+          : null
+      );
       setDepartment(initialData.department || []);
     }
   }, [initialData]);
 
-  // useEffect(() => {
-  //   const loadDepartments = async () => {
-  //     try {
-  //       const res = await fetch(
-  //         "https://sataskmanagementbackend.onrender.com/api/departments"
-  //       );
-  //       const data = await res.json();
-  //       setAllDepartments(data.map((dept) => dept.name));
+
   // Handling form submit
   const handleSubmit = async () => {
     // Validate form fields
@@ -92,7 +89,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
       clientName,
       department,
-      code: code === "__new" ? newCode : code,
+      // code: code === "__new" ? newCode : code,
+      code: taskCode ? taskCode.value : "",
       assignedBy: {
         name: localStorage.getItem("name"),
         email: localStorage.getItem("userId"),
@@ -175,6 +173,93 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
 
 
+  // const handleSubmit = async () => {
+  //   // Validate all required fields
+  //   const requiredFields = [
+  //     { field: taskName, name: "Task Name" },
+  //     { field: dueDate, name: "Due Date" },
+  //     { field: assignees.length, name: "Assignees" },
+  //     { field: department.length, name: "Department" }
+  //   ];
+  
+  //   const missingFields = requiredFields.filter(f => !f.field);
+  //   if (missingFields.length > 0) {
+  //     alert(`Missing required fields: ${missingFields.map(f => f.name).join(", ")}`);
+  //     return;
+  //   }
+  
+  //   setIsSubmitting(true);
+  
+  //   try {
+  //     // Prepare payload with proper data types
+  //     const taskPayload = {
+  //       taskName: String(taskName).trim(),
+  //       workDesc: String(workDesc).trim(),
+  //       assignees: assignees.map(a => ({
+  //         name: String(a.name).trim(),
+  //         email: String(a.email).trim()
+  //       })),
+  //       assignedDate: new Date().toISOString(),
+  //       dueDate: new Date(dueDate).toISOString(),
+  //       priority: String(priority),
+  //       status: String(status),
+  //       clientName: String(clientName).trim(),
+  //       department: department.map(d => String(typeof d === 'object' ? d.value : d).trim()),
+  //       code: taskCode ? String(taskCode.value).trim() : undefined,
+  //       assignedBy: {
+  //         name: String(localStorage.getItem("name")).trim(),
+  //         email: String(localStorage.getItem("userId")).trim()
+  //       }
+  //     };
+  
+  //     // Remove undefined fields
+  //     Object.keys(taskPayload).forEach(key => 
+  //       taskPayload[key] === undefined && delete taskPayload[key]
+  //     );
+  
+  //     const response = await fetch(
+  //       initialData 
+  //         ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
+  //         : "https://sataskmanagementbackend.onrender.com/api/tasks",
+  //       {
+  //         method: initialData ? "PUT" : "POST",
+  //         headers: { 
+  //           "Content-Type": "application/json",
+  //           "Authorization": `Bearer ${localStorage.getItem("authToken")}`
+  //         },
+  //         body: JSON.stringify(taskPayload),
+  //       }
+  //     );
+  
+  //     const responseData = await response.json();
+  
+  //     if (!response.ok) {
+  //       throw new Error(
+  //         responseData.error?.message || 
+  //         responseData.message || 
+  //         `Server error: ${response.status}`
+  //       );
+  //     }
+  
+  //     // Success handling
+  //     dispatch(updateTask(responseData));
+  //     onSave(responseData);
+  //     socket.emit(initialData ? "task-updated" : "new-task-created", { 
+  //       taskId: responseData._id 
+  //     });
+  //     onClose();
+  
+  //   } catch (error) {
+  //     console.error("Task submission failed:", {
+  //       error: error.message,
+  //       stack: error.stack,
+  //       time: new Date().toISOString()
+  //     });
+  //     alert(`Error: ${error.message}\n\nCheck console for details.`);
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
   // Filter employees according to selected taskCategory
   const filteredEmployees = taskCategory
     ? employees.filter(
@@ -329,7 +414,10 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
               Task Code:
             </label>
-            <TaskCodeSelector selectedCode={taskCode} setSelectedCode={setTaskCode}/>
+            <TaskCodeSelector
+              selectedCode={taskCode}
+              setSelectedCode={setTaskCode}
+            />
           </div>
 
           {/* Due Date */}
@@ -421,11 +509,20 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           >
             Cancel
           </button>
-          <button
+          {/* <button
             onClick={handleSubmit}
             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
           >
             {initialData ? "Update" : "Add"}
+          </button> */}
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={`px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 ${
+              isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {isSubmitting ? "Processing..." : initialData ? "Update" : "Add"}
           </button>
         </div>
       </div>
