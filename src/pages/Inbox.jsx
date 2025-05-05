@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "../redux/userSlice";
+import { FaTrashAlt, FaUsers } from "react-icons/fa";
 
 // Assume socket.io client setup
 const socket = io("https://sataskmanagementbackend.onrender.com", {
@@ -417,7 +418,8 @@ const Inbox = () => {
                     }`}
                   >
                     <div className="flex flex-row items-center gap-2">
-                      <span className="text-indigo-600 font-medium text-sm hover:underline relative">
+                      <span className="text-indigo-600 flex gap-4 items-center font-medium text-sm hover:underline relative">
+                         <FaUsers className="text-indigo-600 text-lg" />
                         {group}
                       </span>
                       {groupUnreadCounts[group] > 0 && (
@@ -448,11 +450,29 @@ const Inbox = () => {
                     selectedUser?.id === "admin" ? "bg-indigo-100" : ""
                   }`}
                 >
-                  <div className="flex justify-between items-center">
-                    <span>Admin</span>
-                    {/* Use the same identifier (admin.id) as used in state */}
+                  <div
+                    onClick={() => {
+                      const admin = { name: "Admin", id: "admin" };
+                      setSelectedUser(admin);
+                    }}
+                    className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+                      selectedUser?.name === "Admin"
+                        ? "bg-indigo-100 border-indigo-300"
+                        : "bg-white hover:bg-gray-100 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      {/* Admin avatar initials */}
+                      <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                        A
+                      </div>
+                      <span className="text-sm font-medium text-gray-800">
+                        Admin
+                      </span>
+                    </div>
+
                     {userUnreadCounts["admin"] > 0 && (
-                      <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
+                      <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                         {userUnreadCounts["admin"]}
                       </span>
                     )}
@@ -465,7 +485,6 @@ const Inbox = () => {
                     onClick={() => handleUserClick(user)}
                     className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
                       selectedUser?.name === user.name
-
                         ? "bg-indigo-100 border-indigo-300"
                         : "bg-white hover:bg-gray-100 border-gray-200"
                     }`}
@@ -475,18 +494,21 @@ const Inbox = () => {
                       <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
-                
-                      <span className="text-sm font-medium text-gray-800">{user.name}</span>
+
+                      <span className="text-sm font-medium text-gray-800">
+                        {user.name}
+                      </span>
                     </div>
-                
-                    {(userUnreadCounts[user.id] || userUnreadCounts[user.name]) > 0 && (
+
+                    {(userUnreadCounts[user.id] ||
+                      userUnreadCounts[user.name]) > 0 && (
                       <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                        {userUnreadCounts[user.id] || userUnreadCounts[user.name]}
+                        {userUnreadCounts[user.id] ||
+                          userUnreadCounts[user.name]}
                       </span>
                     )}
                   </div>
                 ))
-                
               ) : (
                 <p className="text-sm text-gray-400 text-center">
                   No users found.
