@@ -4,12 +4,19 @@ import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen } from "react-icons/fa";
+import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
+import { useSelector } from "react-redux";
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
 
-const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride , hideCompleted }) => {
-
+const TaskList = ({
+  onEdit,
+  refreshTrigger,
+  setTaskListExternally,
+  tasksOverride,
+  hideCompleted,
+}) => {
   const [tasks, setTasks] = useState([]);
   const [editingStatus, setEditingStatus] = useState(null); // Track the task being edited
   const [newStatus, setNewStatus] = useState(""); // Store new status value
@@ -33,16 +40,27 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
   const [departments, setDepartments] = useState([]); // To store departments
   const [uniqueUsers, setUniqueUsers] = useState([]);
 
-
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
   const userEmail = localStorage.getItem("userId");
+  const users = useSelector((state) => state.users.list); // Assuming `list` stores users in Redux
 
   const dispatch = useDispatch();
 
   useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
+  useEffect(() => {
     dispatch(updateTaskStatus());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (users?.length) {
+      const names = users.map((u) => u.name);
+      setUniqueUsers([...new Set(names)]);
+    }
+  }, [users]);
 
   // Fetch departments from API
   const fetchDepartments = async () => {
@@ -67,23 +85,29 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         "https://sataskmanagementbackend.onrender.com/api/tasks"
       );
       const data = await response.json();
-  
+
       // Read hidden task IDs from localStorage
-      const hiddenTaskIds = JSON.parse(localStorage.getItem("hiddenCompletedTasks") || "[]");
-  
-      const visibleTasks = data.filter((task) => !hiddenTaskIds.includes(task._id));
-  
+      const hiddenTaskIds = JSON.parse(
+        localStorage.getItem("hiddenCompletedTasks") || "[]"
+      );
+
+      const visibleTasks = data.filter(
+        (task) => !hiddenTaskIds.includes(task._id)
+      );
+
       if (role !== "admin") {
         const filtered = visibleTasks.filter((task) =>
-          task.assignees.some((a) => a.email === userEmail)
+          task.assignees.some((a) => a.email === userEmail) ||
+          task.assignedBy?.email === userEmail
         );
+        
         setTasks(filtered);
         if (setTaskListExternally) setTaskListExternally(filtered);
       } else {
         setTasks(visibleTasks);
         if (setTaskListExternally) setTaskListExternally(visibleTasks);
       }
-  
+
       const taskRemarks = {};
       visibleTasks.forEach((task) => {
         taskRemarks[task._id] = task.remark || "";
@@ -93,7 +117,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
       console.error("Failed to fetch tasks:", err);
     }
   };
-  
+
+  useEffect(() => {
+    fetchTasksFromAPI();
+  }, [refreshTrigger]); // ✅ Run this when refreshTrigger changes
 
   useEffect(() => {
     socket.on("task-updated", (data) => {
@@ -275,24 +302,22 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     }
   };
 
-  const sourceTasks = tasksOverride || tasks; // <-- use externally passed tasks if available
-
-
   const filteredTasks = (tasksOverride || tasks)
-  .filter((task) => {
-    const matchesFilter = (
-      (filters.department === "" || task.department.includes(filters.department)) &&
-      (filters.code === "" || task.code === filters.code) &&
-      (filters.assignee === "" || task.assignees?.some((a) => a.name === filters.assignee)) &&
-      (filters.assignedBy === "" || task.assignedBy?.name === filters.assignedBy) &&
-      (filters.priority === "" || task.priority === filters.priority) &&
-      (filters.status === "" || task.status === filters.status)
-    );
-    const shouldHide = hideCompleted && task.status === "Completed";
-    return matchesFilter && !shouldHide;
-  })
-  .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
+    .filter((task) => {
+      const matchesFilter =
+        (filters.department === "" ||
+          task.department.includes(filters.department)) &&
+        (filters.code === "" || task.code === filters.code) &&
+        (filters.assignee === "" ||
+          task.assignees?.some((a) => a.name === filters.assignee)) &&
+        (filters.assignedBy === "" ||
+          task.assignedBy?.name === filters.assignedBy) &&
+        (filters.priority === "" || task.priority === filters.priority) &&
+        (filters.status === "" || task.status === filters.status);
+      const shouldHide = hideCompleted && task.status === "Completed";
+      return matchesFilter && !shouldHide;
+    })
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
   const highPriorityTasks = filteredTasks.filter(
     (task) => task.priority === "High"
@@ -311,6 +336,9 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     if (!confirmDelete) return;
 
     try {
+      // Optimistically remove the task from UI immediately
+      setTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
+
       const response = await fetch(
         `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
         {
@@ -318,16 +346,18 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         }
       );
 
-      if (response.ok) {
-        setTasks((prevTasks) =>
-          prevTasks.filter((task) => task._id !== taskId)
-        );
-      } else {
+      if (!response.ok) {
         throw new Error("Failed to delete task");
+        // Note: Since we already optimistically updated, we might want to
+        // revert if the deletion fails, but that might be confusing to users
       }
+
+      // The socket.io event will trigger a refresh anyway
     } catch (error) {
       console.error("Error deleting task:", error);
       alert("Failed to delete task. Please try again.");
+      // Optionally: Re-fetch tasks to restore the original state
+      fetchTasksFromAPI();
     }
   };
 
@@ -689,27 +719,29 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         </div>
 
         {/* Filter by User (Assignee) */}
-        <div className="flex items-center space-x-2">
-          <label
-            htmlFor="userFilter"
-            className="text-sm font-medium text-gray-700"
-          >
-            Filter by User:
-          </label>
-          <select
-            id="userFilter"
-            value={filters.assignee}
-            onChange={(e) => handleFilterChange("assignee", e.target.value)}
-            className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">All Users</option>
-            {uniqueUsers.map((user) => (
-              <option key={user} value={user}>
-                {user}
-              </option>
-            ))}
-          </select>
-        </div>
+        {role === "admin" && (
+          <div className="flex items-center space-x-2">
+            <label
+              htmlFor="userFilter"
+              className="text-sm font-medium text-gray-700"
+            >
+              Filter by User:
+            </label>
+            <select
+              id="userFilter"
+              value={filters.assignee}
+              onChange={(e) => handleFilterChange("assignee", e.target.value)}
+              className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">All Users</option>
+              {uniqueUsers.map((user) => (
+                <option key={user} value={user}>
+                  {user}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">

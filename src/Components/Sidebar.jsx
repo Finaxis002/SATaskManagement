@@ -10,6 +10,7 @@ import {
   FaClock,
   FaSitemap,
   FaCheckCircle,
+  FaCog
 
 } from "react-icons/fa";
 import { MdDoneAll } from "react-icons/md";
@@ -92,8 +93,8 @@ const Sidebar = () => {
         <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
         {role === "admin" && (
           <SidebarItem
-            icon={<FaSitemap />}
-            label="Departments"
+            icon={<FaCog />}
+            label="Settings"
             to="/departments"
           />
         )}
