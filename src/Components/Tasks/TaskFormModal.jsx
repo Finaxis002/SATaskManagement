@@ -31,12 +31,12 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [department, setDepartment] = useState([]);
   const [taskCode, setTaskCode] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-<<<<<<< HEAD
+
   const [clientOptions, setClientOptions] = useState([]);
-=======
+
   const [overdueNote, setOverdueNote] = useState("");
 
->>>>>>> df7013e71139a49c529c64cc20e79787bbda5db6
+
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -213,18 +213,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       console.error("Error saving task:", error);
       // alert("Error saving task");
     }
-<<<<<<< HEAD
   };
-=======
-  };  //     } catch (err) {
-  //       console.error("Failed to load departments", err);
-  //     }
-  //   };
-
-  //   loadDepartments();
-  // }, []);
-
-
 
  
   
@@ -232,7 +221,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
   
   // Filter employees according to selected taskCategory
->>>>>>> df7013e71139a49c529c64cc20e79787bbda5db6
   const filteredEmployees = taskCategory
     ? employees.filter(
         (emp) => emp.department?.toLowerCase() === taskCategory.toLowerCase()
@@ -446,6 +434,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       </div>
     </div>
   );
-};
+}
 
 export default TaskFormModal;
