@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen } from "react-icons/fa";
+import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
+import { useSelector } from "react-redux";
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
 
-const TaskList = ({ onEdit, refreshTrigger }) => {
+const TaskList = ({
+  onEdit,
+  refreshTrigger,
+  setTaskListExternally,
+  tasksOverride,
+  hideCompleted,
+}) => {
   const [tasks, setTasks] = useState([]);
   const [editingStatus, setEditingStatus] = useState(null); // Track the task being edited
   const [newStatus, setNewStatus] = useState(""); // Store new status value
@@ -29,16 +37,47 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   const [openWorkDescPopup, setOpenWorkDescPopup] = useState(null);
   const [workDescMode, setWorkDescMode] = useState("view"); // "edit" or "view"
   const [remarkMode, setRemarkMode] = useState("view"); // "edit" or "view"
+  const [departments, setDepartments] = useState([]); // To store departments
+  const [uniqueUsers, setUniqueUsers] = useState([]);
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
   const userEmail = localStorage.getItem("userId");
+  const users = useSelector((state) => state.users.list); // Assuming `list` stores users in Redux
 
   const dispatch = useDispatch();
 
   useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
+  useEffect(() => {
     dispatch(updateTaskStatus());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (users?.length) {
+      const names = users.map((u) => u.name);
+      setUniqueUsers([...new Set(names)]);
+    }
+  }, [users]);
+
+  // Fetch departments from API
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch(
+        "https://sataskmanagementbackend.onrender.com/api/departments"
+      );
+      const data = await response.json();
+      setDepartments(data); // Store fetched departments
+    } catch (err) {
+      console.error("Failed to fetch departments:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDepartments(); // Fetch departments when component mounts
+  }, []);
 
   const fetchTasksFromAPI = async () => {
     try {
@@ -47,25 +86,41 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
       );
       const data = await response.json();
 
+      // Read hidden task IDs from localStorage
+      const hiddenTaskIds = JSON.parse(
+        localStorage.getItem("hiddenCompletedTasks") || "[]"
+      );
+
+      const visibleTasks = data.filter(
+        (task) => !hiddenTaskIds.includes(task._id)
+      );
+
       if (role !== "admin") {
-        const filtered = data.filter((task) =>
-          task.assignees.some((a) => a.email === userEmail)
+        const filtered = visibleTasks.filter((task) =>
+          task.assignees.some((a) => a.email === userEmail) ||
+          task.assignedBy?.email === userEmail
         );
+        
         setTasks(filtered);
+        if (setTaskListExternally) setTaskListExternally(filtered);
       } else {
-        setTasks(data);
+        setTasks(visibleTasks);
+        if (setTaskListExternally) setTaskListExternally(visibleTasks);
       }
 
-      // Map over the tasks to extract remarks and store them
       const taskRemarks = {};
-      data.forEach((task) => {
-        taskRemarks[task._id] = task.remark || ""; // Ensure it's not undefined
+      visibleTasks.forEach((task) => {
+        taskRemarks[task._id] = task.remark || "";
       });
-      setRemarks(taskRemarks); // Store the remarks in the state
+      setRemarks(taskRemarks);
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
   };
+
+  useEffect(() => {
+    fetchTasksFromAPI();
+  }, [refreshTrigger]); // ✅ Run this when refreshTrigger changes
 
   useEffect(() => {
     socket.on("task-updated", (data) => {
@@ -247,25 +302,22 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     }
   };
 
-  const filteredTasks = tasks
+  const filteredTasks = (tasksOverride || tasks)
     .filter((task) => {
-      return (
+      const matchesFilter =
         (filters.department === "" ||
-          task.taskCategory === filters.department) &&
+          task.department.includes(filters.department)) &&
         (filters.code === "" || task.code === filters.code) &&
         (filters.assignee === "" ||
           task.assignees?.some((a) => a.name === filters.assignee)) &&
         (filters.assignedBy === "" ||
           task.assignedBy?.name === filters.assignedBy) &&
         (filters.priority === "" || task.priority === filters.priority) &&
-        (filters.status === "" || task.status === filters.status)
-      );
+        (filters.status === "" || task.status === filters.status);
+      const shouldHide = hideCompleted && task.status === "Completed";
+      return matchesFilter && !shouldHide;
     })
-    .sort((a, b) => {
-      const dateA = new Date(a.dueDate);
-      const dateB = new Date(b.dueDate);
-      return dateA - dateB; // 🚀 ascending order: nearest due date first
-    });
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
   const highPriorityTasks = filteredTasks.filter(
     (task) => task.priority === "High"
@@ -284,6 +336,9 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     if (!confirmDelete) return;
 
     try {
+      // Optimistically remove the task from UI immediately
+      setTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
+
       const response = await fetch(
         `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
         {
@@ -291,18 +346,35 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
         }
       );
 
-      if (response.ok) {
-        setTasks((prevTasks) =>
-          prevTasks.filter((task) => task._id !== taskId)
-        );
-      } else {
+      if (!response.ok) {
         throw new Error("Failed to delete task");
+        // Note: Since we already optimistically updated, we might want to
+        // revert if the deletion fails, but that might be confusing to users
       }
+
+      // The socket.io event will trigger a refresh anyway
     } catch (error) {
       console.error("Error deleting task:", error);
       alert("Failed to delete task. Please try again.");
+      // Optionally: Re-fetch tasks to restore the original state
+      fetchTasksFromAPI();
     }
   };
+
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setEditingStatus(null); // 👈 Close dropdown on outside click
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
 
   const renderTaskRow = (task, index) => (
     <tr
@@ -429,8 +501,11 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
       {/* 6. Status (with click to change dropdown) */}
       <td className="py-4 px-6 text-center relative">
         {editingStatus === task._id ? (
-          <div className="flex flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg z-50">
-            {["To Do", "In Progress", "Completed", "Overdue"].map(
+          <div
+            ref={dropdownRef}
+            className="flex flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg z-50"
+          >
+            {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
               (statusOption) => (
                 <span
                   key={statusOption}
@@ -441,6 +516,8 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                       ? "bg-yellow-200 text-yellow-600"
                       : statusOption === "To Do"
                       ? "bg-blue-200 text-blue-600"
+                      : statusOption === "Abbstulate"
+                      ? "bg-purple-200 text-purple-600"
                       : "bg-red-200 text-red-600"
                   }`}
                   onClick={() => {
@@ -463,6 +540,8 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                 ? "bg-yellow-200 text-yellow-600"
                 : task.status === "To Do"
                 ? "bg-blue-200 text-blue-600"
+                : task.status === "Abbstulate"
+                ? "bg-purple-200 text-purple-600"
                 : "bg-red-200 text-red-600"
             }`}
             onClick={() => setEditingStatus(task._id)}
@@ -580,6 +659,14 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     </tr>
   );
 
+  useEffect(() => {
+    console.log("Current department filter:", filters.department);
+    console.log(
+      "Task departments:",
+      tasks.map((t) => t.department || t.taskCategory)
+    );
+  }, [filters.department, tasks]);
+
   return (
     <div className="overflow-x-auto h-[78vh] w-[180vh]">
       <div className="flex items-center justify-start mb-6 space-x-6">
@@ -598,13 +685,11 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
             className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">All Departments</option>
-            {Array.from(new Set(tasks.map((t) => t.taskCategory)))
-              .filter(Boolean)
-              .map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
+            {departments.map((dept) => (
+              <option key={dept._id} value={dept.name}>
+                {dept.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -632,6 +717,31 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
               ))}
           </select>
         </div>
+
+        {/* Filter by User (Assignee) */}
+        {role === "admin" && (
+          <div className="flex items-center space-x-2">
+            <label
+              htmlFor="userFilter"
+              className="text-sm font-medium text-gray-700"
+            >
+              Filter by User:
+            </label>
+            <select
+              id="userFilter"
+              value={filters.assignee}
+              onChange={(e) => handleFilterChange("assignee", e.target.value)}
+              className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">All Users</option>
+              {uniqueUsers.map((user) => (
+                <option key={user} value={user}>
+                  {user}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
@@ -678,38 +788,56 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
 
         <tbody className="text-sm text-gray-700">
           {/* High Priority Section */}
-          {highPriorityTasks.length > 0 && (
+          {highPriorityTasks.length === 0 &&
+          mediumPriorityTasks.length === 0 &&
+          lowPriorityTasks.length === 0 ? (
+            <tr>
+              <td colSpan="13" className="text-center py-6 text-gray-500">
+                🚫 No tasks Assigned Yet.
+              </td>
+            </tr>
+          ) : (
             <>
-              <tr className="bg-red-100 text-red-800 font-bold text-sm">
-                <td colSpan="13" className="py-2 px-6">
-                  High Priority Tasks
-                </td>
-              </tr>
-              {highPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
-            </>
-          )}
+              {highPriorityTasks.length > 0 && (
+                <>
+                  <tr className="bg-red-100 text-red-800 font-bold text-sm">
+                    <td colSpan="13" className="py-2 px-6">
+                      High Priority Tasks
+                    </td>
+                  </tr>
+                  {highPriorityTasks.map((task, idx) =>
+                    renderTaskRow(task, idx)
+                  )}
+                </>
+              )}
 
-          {/* Medium Priority Section */}
-          {mediumPriorityTasks.length > 0 && (
-            <>
-              <tr className="bg-yellow-100 text-yellow-800 font-bold text-sm">
-                <td colSpan="13" className="py-2 px-6">
-                  Medium Priority Tasks
-                </td>
-              </tr>
-              {mediumPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
-            </>
-          )}
+              {/* Medium Priority Section */}
+              {mediumPriorityTasks.length > 0 && (
+                <>
+                  <tr className="bg-yellow-100 text-yellow-800 font-bold text-sm">
+                    <td colSpan="13" className="py-2 px-6">
+                      Medium Priority Tasks
+                    </td>
+                  </tr>
+                  {mediumPriorityTasks.map((task, idx) =>
+                    renderTaskRow(task, idx)
+                  )}
+                </>
+              )}
 
-          {/* Low Priority Section */}
-          {lowPriorityTasks.length > 0 && (
-            <>
-              <tr className="bg-green-100 text-green-800 font-bold text-sm">
-                <td colSpan="13" className="py-2 px-6">
-                  Low Priority Tasks
-                </td>
-              </tr>
-              {lowPriorityTasks.map((task, idx) => renderTaskRow(task, idx))}
+              {/* Low Priority Section */}
+              {lowPriorityTasks.length > 0 && (
+                <>
+                  <tr className="bg-green-100 text-green-800 font-bold text-sm">
+                    <td colSpan="13" className="py-2 px-6">
+                      Low Priority Tasks
+                    </td>
+                  </tr>
+                  {lowPriorityTasks.map((task, idx) =>
+                    renderTaskRow(task, idx)
+                  )}
+                </>
+              )}
             </>
           )}
         </tbody>

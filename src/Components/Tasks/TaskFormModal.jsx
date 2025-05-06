@@ -31,8 +31,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [department, setDepartment] = useState([]);
   const [taskCode, setTaskCode] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clientOptions, setClientOptions] = useState([]);
   const [overdueNote, setOverdueNote] = useState("");
-
+  const [repeatType, setRepeatType] = useState("Does not repeat");
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -64,10 +65,41 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     }
   }, [initialData]);
 
+  // Replace your current fetchClients useEffect with this:
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const res = await fetch(
+          "https://sataskmanagementbackend.onrender.com/api/clients"
+        );
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        console.log("Clients data:", data); // Debug log
+
+        // Ensure the data is in the expected format
+        const formattedClients = Array.isArray(data)
+          ? data.map((client) => ({
+              label: client.name || client, // Handle both object and string responses
+              value: client.name || client,
+            }))
+          : [];
+
+        setClientOptions(formattedClients);
+      } catch (err) {
+        console.error("Failed to fetch clients", err);
+        // Add error state to show to user if needed
+      }
+    };
+
+    fetchClients();
+  }, []);
 
   // Handling form submit
   const handleSubmit = async () => {
-    
     // Validate form fields
     if (!taskName || !dueDate || assignees.length === 0) {
       return alert("Please fill all fields.");
@@ -146,25 +178,24 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       }
 
       // Check if the response is not OK
-  //     if (!response.ok) {
-  //       // console.error(
-  //       //   "Failed to save task, server responded with:",
-  //       //   response.statusText
-  //       // );
-  //       const text = await response.text();
-  // console.error("❌ Failed to save task - status:", response.status);
-  // console.error("❌ Response body:", text);
-  // throw new Error("Failed to save task");
-        
-  //     }
-  if (!response.ok) {
-    console.error("❌ Task save failed", {
-      status: response.status,
-      response: responseData,
-    });
-    throw new Error(responseData.message || "Failed to save task");
-  }
-  
+      //     if (!response.ok) {
+      //       // console.error(
+      //       //   "Failed to save task, server responded with:",
+      //       //   response.statusText
+      //       // );
+      //       const text = await response.text();
+      // console.error("❌ Failed to save task - status:", response.status);
+      // console.error("❌ Response body:", text);
+      // throw new Error("Failed to save task");
+
+      //     }
+      if (!response.ok) {
+        console.error("❌ Task save failed", {
+          status: response.status,
+          response: responseData,
+        });
+        throw new Error(responseData.message || "Failed to save task");
+      }
 
       alert(
         initialData
@@ -178,6 +209,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       console.error("Error saving task:", error);
       // alert("Error saving task");
     }
+
   };  
 
 
@@ -186,6 +218,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   
 
   
+
   // Filter employees according to selected taskCategory
   const filteredEmployees = taskCategory
     ? employees.filter(
@@ -225,73 +258,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             className="p-2 border border-gray-300 rounded-md"
           />
 
-          {/* Task Category */}
-          {/* <div>
-            <label className="text-sm font-semibold text-gray-700 mb-1 block">
-              Task Department:
-            </label>
-            <select
-              value={taskCategory}
-              onChange={(e) => {
-                setTaskCategory(e.target.value);
-                setAssignees([]); // ✅ Clear selected assignees if department changes
-              }}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">Select Department</option>
-              <option value="marketing">Marketing</option>
-              <option value="operations">Operations</option>
-              <option value="sales">Sales</option>
-              <option value="it/software">IT / Software</option>
-              <option value="hr">HR</option>
-              <option value="__new">+ Add new</option>
-            </select>
-            {taskCategory === "__new" && (
-              <input
-                type="text"
-                placeholder="Enter new Department"
-                className="mt-2 p-2 border border-gray-300 rounded-md"
-                onChange={(e) => setNewTaskCategory(e.target.value)}
-              />
-            )}
-          </div> */}
-
-          {/* <CreatableSelect
-  isMulti
-  name="departments"
-  options={allDepartments.map((dep) => ({
-    label: dep,
-    value: dep,
-  }))}
-  value={department.map((dep) => ({ label: dep, value: dep }))}
-  onChange={async (selectedOptions) => {
-    const selectedValues = selectedOptions.map((option) => option.value);
-
-    const newOnes = selectedValues.filter(
-      (val) => !allDepartments.includes(val)
-    );
-
-    // Add newly typed departments to DB
-    for (let dept of newOnes) {
-      try {
-        await fetch("https://sataskmanagementbackend.onrender.com/api/departments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: dept }),
-        });
-      } catch (err) {
-        console.error("Failed to add department:", dept);
-      }
-    }
-
-    // Update state
-    setAllDepartments((prev) => [...new Set([...prev, ...newOnes])]);
-    setDepartment(selectedValues);
-  }}
-  className="w-full"
-  classNamePrefix="react-select"
-  placeholder="Select or add departments"
-/> */}
           {/* Department Selection */}
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
@@ -304,38 +270,34 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           </div>
 
           {/* Client Name */}
-          <input
-            type="text"
-            placeholder="Client Name"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            className="p-2 border border-gray-300 rounded-md"
-          />
-
-          {/* Task Code */}
-          {/* <div>
+          <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
-              Task Code:
+              Client Name:
             </label>
-            <select
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">Select code</option>
-              <option value="report">Report</option>
-              <option value="registration">Registartion</option>
-              <option value="__new">+ Add new</option>
-            </select>
-            {code === "__new" && (
-              <input
-                type="text"
-                placeholder="Enter new code"
-                className="mt-2 p-2 border border-gray-300 rounded-md"
-                onChange={(e) => setNewCode(e.target.value)}
-              />
-            )}
-          </div> */}
+            <CreatableSelect
+              isClearable
+              isSearchable
+              options={clientOptions}
+              onChange={(selectedOption) => {
+                if (!selectedOption) {
+                  setClientName("");
+                } else {
+                  setClientName(selectedOption.value);
+                }
+              }}
+              value={
+                clientName
+                  ? clientOptions.find((opt) => opt.value === clientName) || {
+                      label: clientName,
+                      value: clientName,
+                    }
+                  : null
+              }
+              placeholder="Select or create client..."
+              className="text-sm"
+            />
+          </div>
+
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
               Task Code:
@@ -357,6 +319,26 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               onChange={(e) => setDueDate(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
             />
+          </div>
+
+          {/* Repeat Type */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Repeat:
+            </label>
+            <select
+              value={repeatType}
+              onChange={(e) => setRepeatType(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option>Does not repeat</option>
+              <option>Daily</option>
+              <option>Weekly on selected day</option>
+              <option>Monthly on date</option>
+              <option>Annually</option>
+              <option>Every weekday (Mon–Fri)</option>
+              <option>Custom</option>
+            </select>
           </div>
 
           {/* Priority */}
@@ -389,6 +371,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               <option>In Progress</option>
               <option>Completed</option>
               <option>Overdue</option>
+              <option>Abbstulate</option>
             </select>
           </div>
 
@@ -424,6 +407,22 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             }}
             className="w-full"
             classNamePrefix="react-select"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                height: "20px", // Adjust the height of the control (input box)
+              }),
+              menu: (provided) => ({
+                ...provided,
+                maxHeight: "200px", // Maximum height for the dropdown menu
+                overflowY: "auto", // Enable vertical scrolling
+              }),
+              menuList: (provided) => ({
+                ...provided,
+                maxHeight: "100px", // Apply max height to the list of options
+                overflowY: "auto", // Enable scrolling within the dropdown
+              }),
+            }}
           />
         </div>
 

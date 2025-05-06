@@ -11,6 +11,7 @@ import Reminders from "./pages/Reminders";
 import Inbox from "./pages/Inbox";
 import AllTasks from "./pages/AllTasks";
 import Departments from "./pages/Departments";
+import Completed from "./pages/Completed";
 
 const App = () => {
   return (
@@ -105,6 +106,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <Departments />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/completed"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Completed />
               </MainLayout>
             </ProtectedRoute>
           }

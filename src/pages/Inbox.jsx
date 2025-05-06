@@ -3,6 +3,8 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "../redux/userSlice";
+import { FaTrashAlt, FaUsers } from "react-icons/fa";
+import EmojiPicker from "emoji-picker-react";
 
 // Assume socket.io client setup
 const socket = io("https://sataskmanagementbackend.onrender.com", {
@@ -18,7 +20,11 @@ const Inbox = () => {
   const [showGroups, setShowGroups] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null); // For personal chat
   const [users, setUsers] = useState([]); // ✅ Must be an array
-  const [userUnreadCounts, setUserUnreadCounts] = useState([]);
+  const [userUnreadCounts, setUserUnreadCounts] = useState({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const messageInputRef = useRef(null); // Add a ref for the input field
+
+  
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
@@ -26,25 +32,99 @@ const Inbox = () => {
     role: localStorage.getItem("role"),
   };
 
+
+const professionalEmojis = [
+  '✅', '✔️', '☑️', '✖️', '❌', '❎', '➕', '➖', '➗', '✖️',
+  '‼️', '⁉️', '❓', '❔', '❕', '❗', '©️', '®️', '™️',
+  '⚡', '⏳', '⌛', '⏰', '🕒', '🕓', '🕔', '📅', '📆',
+  '📊', '📈', '📉', '📌', '📍', '📎', '🖇️', '📏', '📐',
+  '✂️', '📋', '📁', '📂', '📄', '📑', '📝', '📌', '📍',
+  '🔍', '🔎', '🔏', '🔐', '🔒', '🔓', '📧', '📨', '📩',
+  '📤', '📥', '📦', '📫', '📪', '📬', '📭', '📮', '🗂️',
+  '🗃️', '🗄️', '🗑️', '🔖', '🔗', '📎', '🖇️', '📐', '✂️',
+  '💡', '🔦', '📲', '📱', '📶', '📳', '📴', '🔋', '🔌',
+  '💻', '🖥️', '🖨️', '⌨️', '🖱️', '🖲️', '💽', '💾', '💿',
+  '📀', '🎥', '📺', '📷', '📹', '📼', '🔍', '🔎', '🔬',
+  '🔭', '📡', '🛰️', '💉', '💊', '🩺', '🚪', '🛏️', '🛋️',
+  '🚿', '🛁', '🚽', '🧻', '🧸', '🧷', '🧹', '🧺', '🧻',
+  '🧼', '🧽', '🧯', '🛒', '🚬', '⚰️', '⚱️', '🗿', '🏧',
+  '🚮', '🚰', '♿', '🚹', '🚺', '🚻', '🚼', '🚾', '🛂',
+  '🛃', '🛄', '🛅', '⚠️', '🚸', '⛔', '🚫', '🚳', '🚭',
+  '🚯', '🚱', '🚷', '📵', '🔞', '☢️', '☣️', '⬆️', '↗️',
+  '➡️', '↘️', '⬇️', '↙️', '⬅️', '↖️', '↕️', '↔️', '↩️',
+  '↪️', '⤴️', '⤵️', '🔃', '🔄', '🔙', '🔚', '🔛', '🔜',
+  '🔝', '🛐', '⚛️', '🕉️', '✡️', '☸️', '☯️', '✝️', '☦️',
+  '☪️', '☮️', '🕎', '🔯', '♈', '♉', '♊', '♋', '♌', '♍',
+  '♎', '♏', '♐', '♑', '♒', '♓', '⛎', '🔀', '🔁', '🔂',
+  '▶️', '⏩', '⏭️', '⏯️', '◀️', '⏪', '⏮️', '🔼', '⏫', '🔽',
+  '⏬', '⏸️', '⏹️', '⏺️', '⏏️', '🎦', '🔅', '🔆', '📶',
+  '📳', '📴', '♻️', '🔱', '📛', '🔰', '⭕', '✅', '☑️',
+  '✔️', '❌', '❎', '➰', '➿', '〽️', '✳️', '✴️', '❇️',
+  '©️', '®️', '™️', '#️⃣', '*️⃣', '0️⃣', '1️⃣', '2️⃣', '3️⃣',
+  '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔠', '🔡',
+  '🔢', '🔣', '🔤', '🅰️', '🆎', '🅱️', '🆑', '🆒', '🆓',
+  'ℹ️', '🆔', 'Ⓜ️', '🆕', '🆖', '🅾️', '🆗', '🅿️', '🆘',
+  '🆙', '🆚', '🈁', '🈂️', '🈷️', '🈶', '🈯', '🉐', '🈹',
+  '🈚', '🈲', '🉑', '🈸', '🈴', '🈳', '㊗️', '㊙️', '🈺',
+  '🈵', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚫',
+  '⚪', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟫', '⬛',
+  '⬜', '◼️', '◻️', '◾', '◽', '▪️', '▫️', '🔶', '🔷',
+  '🔸', '🔹', '🔺', '🔻', '💠', '🔘', '🔳', '🔲', '🏁',
+  '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏴‍☠️'
+];
+
+
+  // Add this function to handle emoji selection
+  const onEmojiClick = (emojiObject) => {
+    const cursorPosition = messageInputRef.current.selectionStart;
+    const textBeforeCursor = messageText.substring(0, cursorPosition);
+    const textAfterCursor = messageText.substring(cursorPosition);
+
+    setMessageText(textBeforeCursor + emojiObject.emoji + textAfterCursor);
+    setShowEmojiPicker(false);
+
+    // Focus back on input and set cursor position after emoji
+    setTimeout(() => {
+      messageInputRef.current.focus();
+      messageInputRef.current.selectionEnd =
+        cursorPosition + emojiObject.emoji.length;
+    }, 0);
+  };
+
   // Fetch groups when the component is mounted or updated
   useEffect(() => {
-    // Get groups based on user role
-    const allGroups = [
-      "Marketing",
-      "Sales",
-      "Operations",
-      "IT/Software",
-      "HR",
-      "Administrator",
-    ];
+    const fetchUserDepartments = async () => {
+      try {
+        if (currentUser.role === "admin") {
+          const res = await axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/departments"
+          );
+          setGroups(res.data.map((dept) => dept.name));
+        } else {
+          // Fetch all employees and find the current user
+          const res = await axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/employees"
+          );
+          const currentEmployee = res.data.find(
+            (emp) => emp.name === currentUser.name
+          );
+          if (currentEmployee && currentEmployee.department) {
+            setGroups(currentEmployee.department);
+            setSelectedGroup(currentEmployee.department[0]);
+          }
+        }
+      } catch (err) {
+        console.error("❌ Error fetching departments:", err.message);
+        // Fallback
+        if (currentUser.department) {
+          setGroups([currentUser.department]);
+          setSelectedGroup(currentUser.department);
+        }
+      }
+    };
 
-    if (currentUser.role === "admin") {
-      setGroups(allGroups); // Admin sees all groups
-    } else if (currentUser.department) {
-      setGroups([currentUser.department]); // Regular user sees only their department
-      setSelectedGroup(currentUser.department); // Auto-set group for users
-    }
-  }, [currentUser.role, currentUser.department]);
+    fetchUserDepartments();
+  }, [currentUser.role, currentUser.name]);
 
   const scrollRef = useRef(null); // Your existing scrollRef
 
@@ -111,7 +191,12 @@ const Inbox = () => {
             );
           });
 
-          setMessages(filteredMessages.reverse()); // No need to reverse, as you'll append new messages at the bottom
+          const sortedMessages = [...filteredMessages].sort((a, b) => {
+            const timeA = new Date(`1970/01/01 ${a.timestamp}`);
+            const timeB = new Date(`1970/01/01 ${b.timestamp}`);
+            return timeA - timeB; // oldest to newest
+          });
+          setMessages(sortedMessages);
         } else if (selectedGroup) {
           const encodedGroup = encodeURIComponent(selectedGroup);
           const res = await axios.get(
@@ -181,34 +266,35 @@ const Inbox = () => {
 
   const markMessagesAsRead = async (identifier) => {
     try {
-      // Call the API to mark messages as read for this group or user
+      // Optimistically update the UI first
+      if (selectedGroup) {
+        setGroupUnreadCounts((prev) => ({ ...prev, [selectedGroup]: 0 }));
+      } else if (selectedUser) {
+        setUserUnreadCounts((prev) => ({ ...prev, [selectedUser.name]: 0 }));
+      }
+
+      // Then make the API call
       const res = await axios.put(
         "https://sataskmanagementbackend.onrender.com/api/mark-read",
-        {
-          identifier,
-        }
+        { identifier }
       );
-      console.log(`Marked messages as read for ${identifier}:`, res.data);
 
-      // Emit a socket event to mark messages as read
+      // Emit socket event after successful API call
       socket.emit("markRead", { identifier });
-
-      // Update the unread count locally for real-time update
-      if (selectedGroup) {
-        setGroupUnreadCounts((prevCounts) => {
-          const updatedCounts = { ...prevCounts };
-          updatedCounts[selectedGroup] = 0; // Reset unread count for the group
-          return updatedCounts;
-        });
-      } else if (selectedUser) {
-        setUserUnreadCounts((prevCounts) => {
-          const updatedCounts = { ...prevCounts };
-          updatedCounts[selectedUser.name] = 0; // Reset unread count for the user
-          return updatedCounts;
-        });
-      }
     } catch (err) {
       console.error("❌ Failed to mark messages as read:", err.message);
+      // Revert the optimistic update if failed
+      if (selectedGroup) {
+        setGroupUnreadCounts((prev) => ({
+          ...prev,
+          [selectedGroup]: prev[selectedGroup],
+        }));
+      } else if (selectedUser) {
+        setUserUnreadCounts((prev) => ({
+          ...prev,
+          [selectedUser.name]: prev[selectedUser.name],
+        }));
+      }
     }
   };
 
@@ -249,16 +335,60 @@ const Inbox = () => {
     markMessagesAsRead(group);
   };
 
-  const handleUserClick = (user) => {
+  const handleUserClick = async (user) => {
     setSelectedUser(user);
-    setSelectedGroup(null); // Clear selected group when switching to a user
+    setSelectedGroup(null);
 
-    // Mark messages as read for this user
-    markMessagesAsRead(user.name);
+    // Mark messages as read immediately when clicking the chat
+    await markMessagesAsRead(user.name);
+
+    // Force update the unread counts
+    setUserUnreadCounts((prev) => ({
+      ...prev,
+      [user.name]: 0, // Immediately set to 0
+    }));
   };
+  // useEffect(() => {
+  //   socket.on("receiveMessage", (msg) => {
+  //     console.log("📨 Real-time message received:", msg);
+
+  //     // For Groups:
+  //     if (
+  //       msg.group &&
+  //       typeof msg.group === "string" &&
+  //       msg.group.trim() !== ""
+  //     ) {
+  //       if (!selectedGroup || msg.group !== selectedGroup) {
+  //         setGroupUnreadCounts((prevCounts) => {
+  //           const updatedCounts = { ...prevCounts };
+  //           updatedCounts[msg.group] = (updatedCounts[msg.group] || 0) + 1;
+  //           return updatedCounts;
+  //         });
+  //       }
+  //     }
+
+  //     // For Personal Messages:
+  //     if (
+  //       msg.recipient === currentUser.name &&
+  //       msg.sender !== currentUser.name
+  //     ) {
+  //       setUserUnreadCounts((prevCounts) => {
+  //         const updatedCounts = { ...prevCounts };
+  //         updatedCounts[msg.sender] = (updatedCounts[msg.sender] || 0) + 1;
+  //         return updatedCounts;
+  //       });
+  //     }
+  //   });
+
+  //   return () => {
+  //     socket.off("receiveMessage");
+  //   };
+  // }, [selectedGroup, currentUser.name]);
+
+  //fetch group unread badge
 
   useEffect(() => {
-    socket.on("receiveMessage", (msg) => {
+    const handleReceiveMessage = (msg) => {
       console.log("📨 Real-time message received:", msg);
 
       // For Groups:
@@ -275,26 +405,27 @@ const Inbox = () => {
           });
         }
       }
-
       // For Personal Messages:
-      if (
+      else if (
         msg.recipient === currentUser.name &&
         msg.sender !== currentUser.name
       ) {
         setUserUnreadCounts((prevCounts) => {
           const updatedCounts = { ...prevCounts };
+          // Always use sender's name as the key
           updatedCounts[msg.sender] = (updatedCounts[msg.sender] || 0) + 1;
           return updatedCounts;
         });
       }
-    });
+    };
+
+    socket.on("receiveMessage", handleReceiveMessage);
 
     return () => {
-      socket.off("receiveMessage");
+      socket.off("receiveMessage", handleReceiveMessage);
     };
   }, [selectedGroup, currentUser.name]);
 
-  //fetch group unread badge
   useEffect(() => {
     const fetchGroupUnreadCounts = async () => {
       try {
@@ -323,20 +454,41 @@ const Inbox = () => {
   }, []);
 
   useEffect(() => {
+    const fetchUserUnreadCounts = async () => {
+      try {
+        const name = localStorage.getItem("name");
+        const res = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/user-unread-counts",
+          { params: { name } }
+        );
+        setUserUnreadCounts(res.data.userUnreadCounts || {});
+      } catch (err) {
+        console.error("❌ Failed to fetch user unread counts:", err.message);
+      }
+    };
+
+    fetchUserUnreadCounts();
+    socket.on("inboxCountUpdated", fetchUserUnreadCounts);
+
+    return () => {
+      socket.off("inboxCountUpdated", fetchUserUnreadCounts);
+    };
+  }, []);
+
+  useEffect(() => {
     console.log("Selected Group:", selectedGroup);
     console.log("Selected User:", selectedUser);
   }, [selectedGroup, selectedUser]);
 
   socket.on("receiveMessage", (msg) => {
     console.log("📨 received:", msg);
-  
+
     if (msg.group && msg.group.trim() !== "") {
       console.log("📌 Group message for:", msg.group);
     } else {
       console.log("📬 Personal message from:", msg.sender);
     }
   });
-  
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
@@ -352,7 +504,6 @@ const Inbox = () => {
             }`}
           >
             Groups
-            {/* Show unread badge on Groups button */}
             {Object.values(groupUnreadCounts).reduce(
               (acc, count) => acc + count,
               0
@@ -366,56 +517,34 @@ const Inbox = () => {
             )}
           </button>
 
-          {/* Personal Chat for User */}
-          {currentUser.role === "user" && (
-            <button
-              onClick={() => setShowGroups(false)}
-              className={`relative px-4 py-2 text-sm rounded-lg ${
-                !showGroups ? "bg-indigo-100" : "bg-gray-200"
-              }`}
-            >
-              Personal Chat
-              {/* Show unread badge on Personal Chat button */}
-              {Object.values(userUnreadCounts).some((count) => count > 0) && (
-                <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
-                  {Object.values(userUnreadCounts).reduce(
-                    (acc, count) => acc + count,
-                    0
-                  )}
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* Users for Admin */}
-          {currentUser.role === "admin" && (
-            <button
-              onClick={() => setShowGroups(false)}
-              className={`relative px-4 py-2 text-sm rounded-lg ${
-                !showGroups ? "bg-indigo-100" : "bg-gray-200"
-              }`}
-            >
-              Users
-              {/* Show unread badge on Users button */}
-              {Object.values(userUnreadCounts).some((count) => count > 0) && (
-                <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
-                  {Object.values(userUnreadCounts).reduce(
-                    (acc, count) => acc + count,
-                    0
-                  )}
-                </span>
-              )}
-            </button>
-          )}
+          {/* Personal Chat/Users Button */}
+          <button
+            onClick={() => setShowGroups(false)}
+            className={`relative px-4 py-2 text-sm rounded-lg ${
+              !showGroups ? "bg-indigo-100" : "bg-gray-200"
+            }`}
+          >
+            {currentUser.role === "user" ? "Personal Chat" : "Users"}
+            {Object.values(userUnreadCounts).reduce(
+              (acc, count) => acc + count,
+              0
+            ) > 0 && (
+              <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
+                {Object.values(userUnreadCounts).reduce(
+                  (acc, count) => acc + count,
+                  0
+                )}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Section 1: Groups */}
+        {/* Groups Section */}
         {showGroups ? (
           <div className="flex-1 overflow-auto mb-6">
             <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">
               {currentUser.role === "user" ? "Your Groups" : "Groups"}
             </h3>
-
             {groups.length === 0 ? (
               <p className="text-center text-gray-400 italic">
                 No chat group assigned.
@@ -433,10 +562,10 @@ const Inbox = () => {
                     }`}
                   >
                     <div className="flex flex-row items-center gap-2">
-                      <span className="text-indigo-600 font-medium text-sm hover:underline relative">
+                      <span className="text-indigo-600 flex gap-4 items-center font-medium text-sm hover:underline relative">
+                        <FaUsers className="text-indigo-600 text-lg" />
                         {group}
                       </span>
-                      {/* Show unread badge if there are unread messages */}
                       {groupUnreadCounts[group] > 0 && (
                         <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
                           {groupUnreadCounts[group]}
@@ -450,98 +579,70 @@ const Inbox = () => {
           </div>
         ) : (
           <div className="border-t border-gray-200 pt-4">
-            {/* Section 2: Users (For admin only) */}
-            {currentUser.role === "admin" && (
-              <>
-                <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
-                  Users
-                </h3>
-                <div className="overflow-y-auto space-y-2 pr-1">
-                  {Array.isArray(users) && users.length > 0 ? (
-                    users.map((user, index) => (
-                      <div
-                        key={user.name}
-                        onClick={() => handleUserClick(user)} // Store the entire user object
-                        className={`cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200 ${
-                          selectedUser && selectedUser.name === user.name
-                            ? "bg-indigo-100"
-                            : ""
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span>{user.name}</span>
-                          {/* Show unread badge if there are unread messages */}
-                          {userUnreadCounts[user.name] > 0 && (
-                            <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
-                              {userUnreadCounts[user.name]}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-400 text-center">
-                      No users found.
-                    </p>
+            <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
+              {currentUser.role === "user" ? "Personal Chat" : "Users"}
+            </h3>
+            <div className="overflow-y-auto space-y-2 pr-1">
+              {currentUser.role === "user" ? (
+                <div
+                  onClick={() => {
+                    const admin = { name: "Admin", id: "admin" };
+                    setSelectedUser(admin);
+                  }}
+                  className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+                    selectedUser?.name === "Admin"
+                      ? "bg-indigo-100 border-indigo-300"
+                      : "bg-white hover:bg-gray-100 border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                      A
+                    </div>
+                    <span className="text-sm font-medium text-gray-800">
+                      Admin
+                    </span>
+                  </div>
+                  {/* Always check for 'Admin' name key */}
+                  {userUnreadCounts["Admin"] > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                      {userUnreadCounts["Admin"]}
+                    </span>
                   )}
                 </div>
-              </>
-            )}
-
-            {/* Section for Personal Chat (for user only) */}
-            {currentUser.role === "user" && (
-              <>
-                <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
-                  Personal Chat
-                </h3>
-                <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
-                  {/* Map over the users to display personal chat options */}
-
-                  {Array.isArray(users) && users.length > 0 ? (
-                    currentUser.role === "admin" ? (
-                      // For admins, display all users for personal chat
-                      users.map((user, index) => (
-                        <div
-                          key={index}
-                          onClick={() => {
-                            setSelectedUser(user); // Store the entire user object
-                            console.log("Admin selected user:", user.name); // Log the selected user when admin selects
-                          }}
-                          className={`cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200 ${
-                            selectedUser && selectedUser.name === user.name
-                              ? "bg-indigo-100"
-                              : ""
-                          }`}
-                        >
-                          {user.name ? user.name : "No name available"}
-                          {/* Displaying the user name */}
-                        </div>
-                      ))
-                    ) : (
-                      // For users, only display the admin's name in the sidebar
-                      <div
-                        key="admin"
-                        onClick={() => {
-                          const admin = { name: "Admin" }; // Set the admin object
-                          setSelectedUser(admin); // Set the entire admin object for selectedUser
-                          console.log("User selected admin:", admin.name); // Log when user selects the admin
-                        }}
-                        className="cursor-pointer px-3 py-2 rounded-md bg-white hover:bg-gray-100 text-sm text-gray-700 transition-all duration-200"
-                      >
-                        {/* Display the admin's name when the logged-in user is a 'user' */}
-                        {currentUser.role === "user"
-                          ? "Admin"
-                          : currentUser.name}
+              ) : users.length > 0 ? (
+                users.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => handleUserClick(user)}
+                    className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+                      selectedUser?.name === user.name
+                        ? "bg-indigo-100 border-indigo-300"
+                        : "bg-white hover:bg-gray-100 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                        {user.name?.charAt(0).toUpperCase()}
                       </div>
-                    )
-                  ) : (
-                    <p className="text-sm text-gray-400 text-center">
-                      No users found.
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
+                      <span className="text-sm font-medium text-gray-800">
+                        {user.name}
+                      </span>
+                    </div>
+                    {/* Always use user.name as the key */}
+                    {userUnreadCounts[user.name] > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {userUnreadCounts[user.name]}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-400 text-center">
+                  No users found.
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -571,46 +672,80 @@ const Inbox = () => {
         >
           {/* Check if messages is an array and has messages */}
           {Array.isArray(messages) && messages.length > 0 ? (
-            messages.map((msg, idx) => {
-              const isCurrentUser = msg.sender === currentUser.name;
-              return (
-                <div
-                  key={idx}
-                  className={`max-w-sm p-3 rounded-xl shadow-md ${
-                    isCurrentUser
-                      ? "bg-indigo-500 text-white ml-auto rounded-br-none"
-                      : "bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span
-                      className={`text-xs font-semibold ${
-                        isCurrentUser ? "text-indigo-100" : "text-gray-600"
+            <>
+              {/* ✅ Read Messages */}
+              {messages
+                .filter((msg) => msg.read || msg.sender === currentUser.name)
+                .map((msg, idx) => {
+                  const isCurrentUser = msg.sender === currentUser.name;
+                  return (
+                    <div
+                      key={`read-${idx}`}
+                      className={`max-w-sm p-3 rounded-xl shadow-md ${
+                        isCurrentUser
+                          ? "bg-indigo-500 text-white ml-auto rounded-br-none"
+                          : "bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
                       }`}
                     >
-                      {msg.sender}
-                    </span>
-                    <span
-                      className={`text-[10px] ${
-                        isCurrentUser ? "text-indigo-200" : "text-gray-500"
-                      }`}
-                    >
-                      {msg.timestamp}
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold">
+                          {msg.sender}
+                        </span>
+                        <span
+                          className={`text-[10px] ${
+                            msg.sender === currentUser.name
+                              ? "text-gray-50" // Light color for sent messages (on dark background)
+                              : "text-gray-500" // Darker color for received messages (on light background)
+                          }`}
+                        >
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {msg.text}
+                      </p>
+                    </div>
+                  );
+                })}
+
+              {/* ✅ Header for unread messages */}
+              {messages.some(
+                (msg) => !msg.read && msg.sender !== currentUser.name
+              ) && (
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200"></div>
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-3 py-1 text-xs font-semibold tracking-wide text-white bg-green-500 rounded-lg shadow-md">
+                      New Messages
                     </span>
                   </div>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {msg.text}
-                  </p>
-
-                  {/* Read/Unread Badge */}
-                  {msg.read ? (
-                    <span className="text-xs text-green-500">Read</span>
-                  ) : (
-                    <span className="text-xs text-red-500">Unread</span>
-                  )}
                 </div>
-              );
-            })
+              )}
+
+              {/* ✅ Unread Messages */}
+              {messages
+                .filter((msg) => !msg.read && msg.sender !== currentUser.name)
+                .map((msg, idx) => {
+                  const isCurrentUser = msg.sender === currentUser.name;
+                  return (
+                    <div className="max-w-sm p-3 rounded-xl shadow-md border-2 border-gray-200 bg-gray-200 text-gray-800 mr-auto rounded-bl-none">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold">
+                          {msg.sender}
+                        </span>
+                        <span className="text-[10px] text-gray-800">
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {msg.text}
+                      </p>
+                    </div>
+                  );
+                })}
+            </>
           ) : (
             <div className="text-center text-gray-500">
               No messages available.
@@ -621,14 +756,57 @@ const Inbox = () => {
         {/* Input field and Send button (Fixed at the bottom) */}
         <div className="relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto">
           <div className="flex items-center">
+            {/* Emoji Picker Button */}
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="mr-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6 text-gray-500"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z"
+                />
+              </svg>
+            </button>
+
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="absolute bottom-16 left-0 z-10">
+                <EmojiPicker
+                  onEmojiClick={onEmojiClick}
+                  width={300}
+                  height={350}
+                  previewConfig={{ showPreview: false }} // Hide preview
+                  searchDisabled={false} // Keep search enabled
+                  skinTonesDisabled={true} // Disable skin tone variations
+                  categories={[
+                    { category: "symbols", name: "Symbols" },
+                    { category: "objects", name: "Objects" },
+                    { category: "flags", name: "Flags" },
+                  ]}
+                />
+              </div>
+            )}
+
             <input
               type="text"
+              ref={messageInputRef}
               value={messageText}
               onChange={handleChange}
               onKeyDown={handleKeyPress}
               placeholder="Type your message..."
               className="flex-1 px-4 py-2 text-sm bg-transparent focus:outline-none placeholder-gray-400 text-gray-700"
             />
+
             <button
               onClick={sendMessage}
               className="ml-2 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150"
