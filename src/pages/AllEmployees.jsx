@@ -185,7 +185,7 @@ const AllEmployees = () => {
         <div className="fixed inset-0 flex justify-center items-center bg-gray-800 bg-opacity-50 z-20 backdrop-blur-md">
           <div className="bg-white bg-opacity-70 p-8 rounded-lg shadow-lg w-1/3 backdrop-blur-lg">
             <h3 className="text-xl font-semibold mb-4 text-center">
-              Edit Employee
+              Edit User
             </h3>
             <form onSubmit={(e) => e.preventDefault()}>
               <div className="mb-4">

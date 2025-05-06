@@ -15,14 +15,21 @@ const TaskReminderToasts = () => {
   // 🛠 Create handleReminder OUTSIDE
   const handleReminder = (message) => {
     console.log('RAW REMINDER MESSAGE:', message);
-    const reminderTime = moment(message.timestamp).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss");
+    // const reminderTime = moment(message.timestamp).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss");
+    const reminderTime = moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss");
     console.log("reminder Time", reminderTime);
     const currentISTTime = moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss");
     console.log( "current IST Time ", currentISTTime);
+    // const newToast = {
+    //   id: Date.now(),
+    //   message,
+    //   type: message.includes('TODAY') ? 'urgent' : 'regular',
+    // };
+    const rawMessage = typeof message === 'string' ? message : message.message || "🔔 You have a new reminder!";
     const newToast = {
       id: Date.now(),
-      message,
-      type: message.includes('TODAY') ? 'urgent' : 'regular',
+      message: rawMessage,
+      type: rawMessage.includes('TODAY') ? 'urgent' : 'regular',
     };
 
     setNotifications(prev => [...prev, newToast]);
@@ -46,9 +53,15 @@ const TaskReminderToasts = () => {
       console.log('Audio not unlocked yet 🚫');
     }
 
+    const rawNotificationMessage =
+  typeof message === "string"
+    ? message
+    : message?.message || "🔔 You have a new reminder!";
+
+
     if (Notification.permission === "granted") {
       const notification = new Notification("Task Reminder", {
-        body: message,
+        body: rawNotificationMessage,
         icon: "/icon.png", // optional: path to your favicon or bell icon
       });
     
@@ -60,7 +73,7 @@ const TaskReminderToasts = () => {
     
     setTimeout(() => {
       setNotifications(prev => prev.filter(t => t.id !== newToast.id));
-    }, 5000);
+    }, 10000);
   };
 
   // 🛠 Setup socket and unlock audio
@@ -97,14 +110,38 @@ const TaskReminderToasts = () => {
     window.addEventListener('keydown', unlockAudio);
 
     // Setup socket listeners
-    socketRef.current.on('connect', () => {
-      console.log('Socket connected ✅');
-      const userEmail = localStorage.getItem('userId');
-      const userName = localStorage.getItem('name');
-      if (userEmail && userName) {
-        socketRef.current.emit('register', userEmail, userName);
-      }
-    });
+    // socketRef.current.on('connect', () => {
+    //   console.log('Socket connected ✅');
+    //   const userEmail = localStorage.getItem('userId');
+    //   const userName = localStorage.getItem('name');
+    //   if (userEmail && userName) {
+    //     socketRef.current.emit('register', userEmail, userName);
+    //   }
+    // });
+    // Setup socket listeners
+socketRef.current.on('connect', () => {
+  console.log('Socket connected ✅');
+  const userEmail = localStorage.getItem('userId');
+  const userName = localStorage.getItem('name');
+  const shouldTriggerLoginReminder = localStorage.getItem("triggerLoginReminder") === "true";
+
+  if (userEmail && userName) {
+    // Register the socket
+    socketRef.current.emit('register', userEmail, userName);
+
+    // 🆕 Request login reminder manually
+    // socketRef.current.emit('request-login-reminder', userEmail);
+    // console.log("📨 Requested login reminder for:", userEmail);
+
+    if (shouldTriggerLoginReminder) {
+      socketRef.current.emit('request-login-reminder', userEmail);
+      console.log("📨 Requested login reminder for:", userEmail);
+      // 🚫 Only once per login
+      localStorage.removeItem("triggerLoginReminder");
+    }
+  }
+});
+
 
     socketRef.current.on('task-reminder', handleReminder);
 
