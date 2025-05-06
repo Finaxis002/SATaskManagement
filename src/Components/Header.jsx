@@ -25,10 +25,10 @@ const Header = () => {
     const role = localStorage.getItem("role");
     const name = localStorage.getItem("name");
 
-    if (role === "admin") {
-      setProfileInitial("Fi");
-    } else if (name) {
-      // Get first letter(s) from name, e.g., "John Doe" => "JD"
+    // if (role === "admin") {
+    //   setProfileInitial("Fi");
+    // } else 
+     if (name) {
       const initials = name
         .split(" ")
         .map((n) => n[0]?.toUpperCase())
