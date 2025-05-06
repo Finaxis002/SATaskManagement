@@ -31,12 +31,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [department, setDepartment] = useState([]);
   const [taskCode, setTaskCode] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [clientOptions, setClientOptions] = useState([]);
-
   const [overdueNote, setOverdueNote] = useState("");
-
-
+  const [repeatType, setRepeatType] = useState("Does not repeat");
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -68,12 +65,13 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     }
   }, [initialData]);
 
-
   // Replace your current fetchClients useEffect with this:
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const res = await fetch("https://sataskmanagementbackend.onrender.com/api/clients");
+        const res = await fetch(
+          "https://sataskmanagementbackend.onrender.com/api/clients"
+        );
 
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -102,7 +100,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
   // Handling form submit
   const handleSubmit = async () => {
-    
     // Validate form fields
     if (!taskName || !dueDate || assignees.length === 0) {
       return alert("Please fill all fields.");
@@ -181,25 +178,24 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       }
 
       // Check if the response is not OK
-  //     if (!response.ok) {
-  //       // console.error(
-  //       //   "Failed to save task, server responded with:",
-  //       //   response.statusText
-  //       // );
-  //       const text = await response.text();
-  // console.error("❌ Failed to save task - status:", response.status);
-  // console.error("❌ Response body:", text);
-  // throw new Error("Failed to save task");
-        
-  //     }
-  if (!response.ok) {
-    console.error("❌ Task save failed", {
-      status: response.status,
-      response: responseData,
-    });
-    throw new Error(responseData.message || "Failed to save task");
-  }
-  
+      //     if (!response.ok) {
+      //       // console.error(
+      //       //   "Failed to save task, server responded with:",
+      //       //   response.statusText
+      //       // );
+      //       const text = await response.text();
+      // console.error("❌ Failed to save task - status:", response.status);
+      // console.error("❌ Response body:", text);
+      // throw new Error("Failed to save task");
+
+      //     }
+      if (!response.ok) {
+        console.error("❌ Task save failed", {
+          status: response.status,
+          response: responseData,
+        });
+        throw new Error(responseData.message || "Failed to save task");
+      }
 
       alert(
         initialData
@@ -215,11 +211,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     }
   };
 
- 
-  
-  
-
-  
   // Filter employees according to selected taskCategory
   const filteredEmployees = taskCategory
     ? employees.filter(
@@ -320,6 +311,26 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               onChange={(e) => setDueDate(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
             />
+          </div>
+
+          {/* Repeat Type */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Repeat:
+            </label>
+            <select
+              value={repeatType}
+              onChange={(e) => setRepeatType(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option>Does not repeat</option>
+              <option>Daily</option>
+              <option>Weekly on selected day</option>
+              <option>Monthly on date</option>
+              <option>Annually</option>
+              <option>Every weekday (Mon–Fri)</option>
+              <option>Custom</option>
+            </select>
           </div>
 
           {/* Priority */}
@@ -434,6 +445,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       </div>
     </div>
   );
-}
+};
 
 export default TaskFormModal;
