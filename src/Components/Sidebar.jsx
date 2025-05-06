@@ -9,7 +9,10 @@ import {
   FaClipboardList,
   FaClock,
   FaSitemap,
+  FaCheckCircle,
+
 } from "react-icons/fa";
+import { MdDoneAll } from "react-icons/md";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
 
@@ -33,7 +36,7 @@ const Sidebar = () => {
   // console.log("🔢 Notification count state:", notificationCount);
 
   return (
-    <div className="bg-[#1e1f21] text-white w-45 pt-[10vh] h-screen flex flex-col justify-between border-r border-gray-700">
+    <div className="bg-[#1e1f21] text-white pt-[10vh] h-screen flex flex-col justify-between border-r border-gray-700">
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {/* Core nav */}
@@ -92,6 +95,13 @@ const Sidebar = () => {
             icon={<FaSitemap />}
             label="Departments"
             to="/departments"
+          />
+        )}
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaCheckCircle />}
+            label="Completed Tasks"
+            to="/completed"
           />
         )}
       </div>

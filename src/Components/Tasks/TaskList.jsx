@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -8,7 +8,8 @@ import { FaTrashAlt, FaPen } from "react-icons/fa";
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
 
-const TaskList = ({ onEdit, refreshTrigger }) => {
+const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride , hideCompleted }) => {
+
   const [tasks, setTasks] = useState([]);
   const [editingStatus, setEditingStatus] = useState(null); // Track the task being edited
   const [newStatus, setNewStatus] = useState(""); // Store new status value
@@ -30,6 +31,8 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
   const [workDescMode, setWorkDescMode] = useState("view"); // "edit" or "view"
   const [remarkMode, setRemarkMode] = useState("view"); // "edit" or "view"
   const [departments, setDepartments] = useState([]); // To store departments
+  const [uniqueUsers, setUniqueUsers] = useState([]);
+
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -64,26 +67,33 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
         "https://sataskmanagementbackend.onrender.com/api/tasks"
       );
       const data = await response.json();
-
+  
+      // Read hidden task IDs from localStorage
+      const hiddenTaskIds = JSON.parse(localStorage.getItem("hiddenCompletedTasks") || "[]");
+  
+      const visibleTasks = data.filter((task) => !hiddenTaskIds.includes(task._id));
+  
       if (role !== "admin") {
-        const filtered = data.filter((task) =>
+        const filtered = visibleTasks.filter((task) =>
           task.assignees.some((a) => a.email === userEmail)
         );
         setTasks(filtered);
+        if (setTaskListExternally) setTaskListExternally(filtered);
       } else {
-        setTasks(data);
+        setTasks(visibleTasks);
+        if (setTaskListExternally) setTaskListExternally(visibleTasks);
       }
-
-      // Map over the tasks to extract remarks and store them
+  
       const taskRemarks = {};
-      data.forEach((task) => {
-        taskRemarks[task._id] = task.remark || ""; // Ensure it's not undefined
+      visibleTasks.forEach((task) => {
+        taskRemarks[task._id] = task.remark || "";
       });
-      setRemarks(taskRemarks); // Store the remarks in the state
+      setRemarks(taskRemarks);
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
   };
+  
 
   useEffect(() => {
     socket.on("task-updated", (data) => {
@@ -265,25 +275,24 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
     }
   };
 
-  const filteredTasks = tasks
-    .filter((task) => {
-      return (
-        (filters.department === "" ||
-          task.department.includes(filters.department)) && // Check if array contains the filter
-        (filters.code === "" || task.code === filters.code) &&
-        (filters.assignee === "" ||
-          task.assignees?.some((a) => a.name === filters.assignee)) &&
-        (filters.assignedBy === "" ||
-          task.assignedBy?.name === filters.assignedBy) &&
-        (filters.priority === "" || task.priority === filters.priority) &&
-        (filters.status === "" || task.status === filters.status)
-      );
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.dueDate);
-      const dateB = new Date(b.dueDate);
-      return dateA - dateB;
-    });
+  const sourceTasks = tasksOverride || tasks; // <-- use externally passed tasks if available
+
+
+  const filteredTasks = (tasksOverride || tasks)
+  .filter((task) => {
+    const matchesFilter = (
+      (filters.department === "" || task.department.includes(filters.department)) &&
+      (filters.code === "" || task.code === filters.code) &&
+      (filters.assignee === "" || task.assignees?.some((a) => a.name === filters.assignee)) &&
+      (filters.assignedBy === "" || task.assignedBy?.name === filters.assignedBy) &&
+      (filters.priority === "" || task.priority === filters.priority) &&
+      (filters.status === "" || task.status === filters.status)
+    );
+    const shouldHide = hideCompleted && task.status === "Completed";
+    return matchesFilter && !shouldHide;
+  })
+  .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
 
   const highPriorityTasks = filteredTasks.filter(
     (task) => task.priority === "High"
@@ -321,6 +330,21 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
       alert("Failed to delete task. Please try again.");
     }
   };
+
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setEditingStatus(null); // 👈 Close dropdown on outside click
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
 
   const renderTaskRow = (task, index) => (
     <tr
@@ -447,8 +471,11 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
       {/* 6. Status (with click to change dropdown) */}
       <td className="py-4 px-6 text-center relative">
         {editingStatus === task._id ? (
-          <div className="flex flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg z-50">
-            {["To Do", "In Progress", "Completed", "Overdue"].map(
+          <div
+            ref={dropdownRef}
+            className="flex flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg z-50"
+          >
+            {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
               (statusOption) => (
                 <span
                   key={statusOption}
@@ -459,6 +486,8 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                       ? "bg-yellow-200 text-yellow-600"
                       : statusOption === "To Do"
                       ? "bg-blue-200 text-blue-600"
+                      : statusOption === "Abbstulate"
+                      ? "bg-purple-200 text-purple-600"
                       : "bg-red-200 text-red-600"
                   }`}
                   onClick={() => {
@@ -481,6 +510,8 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                 ? "bg-yellow-200 text-yellow-600"
                 : task.status === "To Do"
                 ? "bg-blue-200 text-blue-600"
+                : task.status === "Abbstulate"
+                ? "bg-purple-200 text-purple-600"
                 : "bg-red-200 text-red-600"
             }`}
             onClick={() => setEditingStatus(task._id)}
@@ -654,6 +685,29 @@ const TaskList = ({ onEdit, refreshTrigger }) => {
                   {status}
                 </option>
               ))}
+          </select>
+        </div>
+
+        {/* Filter by User (Assignee) */}
+        <div className="flex items-center space-x-2">
+          <label
+            htmlFor="userFilter"
+            className="text-sm font-medium text-gray-700"
+          >
+            Filter by User:
+          </label>
+          <select
+            id="userFilter"
+            value={filters.assignee}
+            onChange={(e) => handleFilterChange("assignee", e.target.value)}
+            className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">All Users</option>
+            {uniqueUsers.map((user) => (
+              <option key={user} value={user}>
+                {user}
+              </option>
+            ))}
           </select>
         </div>
       </div>

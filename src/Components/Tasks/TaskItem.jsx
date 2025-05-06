@@ -2,7 +2,10 @@ import React from "react";
 
 const TaskItem = React.memo(({ task, onEdit, onStatusChange }) => {
   return (
-    <tr key={task._id} className="hover:bg-gray-100 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200">
+    <tr
+      key={task._id}
+      className="hover:bg-gray-100 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200"
+    >
       <td className="py-4 px-6">{task.taskName}</td>
       {/* Render other task details here */}
       <td className="py-4 px-6">
@@ -15,7 +18,9 @@ const TaskItem = React.memo(({ task, onEdit, onStatusChange }) => {
               ? "bg-yellow-200 text-yellow-600"
               : task.status === "To Do"
               ? "bg-blue-200 text-blue-600"
-              : "bg-red-200 text-red-600"
+              : task.status === "Abbstulate"
+              ? "bg-purple-200 text-purple-600"
+              : "bg-red-200 text-red-600" // For "Overdue" or fallback
           }`}
           onClick={() => onStatusChange(task._id, "Completed")} // Example
         >

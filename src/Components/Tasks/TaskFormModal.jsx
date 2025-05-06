@@ -31,7 +31,11 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [department, setDepartment] = useState([]);
   const [taskCode, setTaskCode] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [clientOptions, setClientOptions] = useState([]);
+
   const [overdueNote, setOverdueNote] = useState("");
+
 
 
   // Fetch assignees (employees) from the backend
@@ -64,6 +68,37 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     }
   }, [initialData]);
 
+
+  // Replace your current fetchClients useEffect with this:
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const res = await fetch("https://sataskmanagementbackend.onrender.com/api/clients");
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        console.log("Clients data:", data); // Debug log
+
+        // Ensure the data is in the expected format
+        const formattedClients = Array.isArray(data)
+          ? data.map((client) => ({
+              label: client.name || client, // Handle both object and string responses
+              value: client.name || client,
+            }))
+          : [];
+
+        setClientOptions(formattedClients);
+      } catch (err) {
+        console.error("Failed to fetch clients", err);
+        // Add error state to show to user if needed
+      }
+    };
+
+    fetchClients();
+  }, []);
 
   // Handling form submit
   const handleSubmit = async () => {
@@ -178,15 +213,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       console.error("Error saving task:", error);
       // alert("Error saving task");
     }
-  };  //     } catch (err) {
-  //       console.error("Failed to load departments", err);
-  //     }
-  //   };
-
-  //   loadDepartments();
-  // }, []);
-
-
+  };
 
  
   
@@ -232,73 +259,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             className="p-2 border border-gray-300 rounded-md"
           />
 
-          {/* Task Category */}
-          {/* <div>
-            <label className="text-sm font-semibold text-gray-700 mb-1 block">
-              Task Department:
-            </label>
-            <select
-              value={taskCategory}
-              onChange={(e) => {
-                setTaskCategory(e.target.value);
-                setAssignees([]); // ✅ Clear selected assignees if department changes
-              }}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">Select Department</option>
-              <option value="marketing">Marketing</option>
-              <option value="operations">Operations</option>
-              <option value="sales">Sales</option>
-              <option value="it/software">IT / Software</option>
-              <option value="hr">HR</option>
-              <option value="__new">+ Add new</option>
-            </select>
-            {taskCategory === "__new" && (
-              <input
-                type="text"
-                placeholder="Enter new Department"
-                className="mt-2 p-2 border border-gray-300 rounded-md"
-                onChange={(e) => setNewTaskCategory(e.target.value)}
-              />
-            )}
-          </div> */}
-
-          {/* <CreatableSelect
-  isMulti
-  name="departments"
-  options={allDepartments.map((dep) => ({
-    label: dep,
-    value: dep,
-  }))}
-  value={department.map((dep) => ({ label: dep, value: dep }))}
-  onChange={async (selectedOptions) => {
-    const selectedValues = selectedOptions.map((option) => option.value);
-
-    const newOnes = selectedValues.filter(
-      (val) => !allDepartments.includes(val)
-    );
-
-    // Add newly typed departments to DB
-    for (let dept of newOnes) {
-      try {
-        await fetch("https://sataskmanagementbackend.onrender.com/api/departments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: dept }),
-        });
-      } catch (err) {
-        console.error("Failed to add department:", dept);
-      }
-    }
-
-    // Update state
-    setAllDepartments((prev) => [...new Set([...prev, ...newOnes])]);
-    setDepartment(selectedValues);
-  }}
-  className="w-full"
-  classNamePrefix="react-select"
-  placeholder="Select or add departments"
-/> */}
           {/* Department Selection */}
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
@@ -311,38 +271,34 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           </div>
 
           {/* Client Name */}
-          <input
-            type="text"
-            placeholder="Client Name"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            className="p-2 border border-gray-300 rounded-md"
-          />
-
-          {/* Task Code */}
-          {/* <div>
+          <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
-              Task Code:
+              Client Name:
             </label>
-            <select
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">Select code</option>
-              <option value="report">Report</option>
-              <option value="registration">Registartion</option>
-              <option value="__new">+ Add new</option>
-            </select>
-            {code === "__new" && (
-              <input
-                type="text"
-                placeholder="Enter new code"
-                className="mt-2 p-2 border border-gray-300 rounded-md"
-                onChange={(e) => setNewCode(e.target.value)}
-              />
-            )}
-          </div> */}
+            <CreatableSelect
+              isClearable
+              isSearchable
+              options={clientOptions}
+              onChange={(selectedOption) => {
+                if (!selectedOption) {
+                  setClientName("");
+                } else {
+                  setClientName(selectedOption.value);
+                }
+              }}
+              value={
+                clientName
+                  ? clientOptions.find((opt) => opt.value === clientName) || {
+                      label: clientName,
+                      value: clientName,
+                    }
+                  : null
+              }
+              placeholder="Select or create client..."
+              className="text-sm"
+            />
+          </div>
+
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
               Task Code:
@@ -396,6 +352,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               <option>In Progress</option>
               <option>Completed</option>
               <option>Overdue</option>
+              <option>Abbstulate</option>
             </select>
           </div>
 
@@ -413,40 +370,41 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         <div className="mt-6">
           <label className="block text-sm text-gray-600 mb-2">Assign to:</label>
           <Select
-  isMulti
-  name="assignees"
-  options={assigneeOptions}
-  value={assignees.map((assignee) => ({
-    label: `${assignee.name} (${assignee.email})`,
-    value: assignee.email,
-  }))}
-  onChange={(selectedOptions) => {
-    const selectedAssignees = selectedOptions.map((option) => {
-      const employee = employees.find((emp) => emp.email === option.value);
-      return { name: employee.name, email: employee.email };
-    });
-    setAssignees(selectedAssignees);
-  }}
-  className="w-full"
-  classNamePrefix="react-select"
-  styles={{
-    control: (provided) => ({
-      ...provided,
-      height: '20px', // Adjust the height of the control (input box)
-    }),
-    menu: (provided) => ({
-      ...provided,
-      maxHeight: '200px', // Maximum height for the dropdown menu
-      overflowY: 'auto', // Enable vertical scrolling
-    }),
-    menuList: (provided) => ({
-      ...provided,
-      maxHeight: '100px', // Apply max height to the list of options
-      overflowY: 'auto', // Enable scrolling within the dropdown
-    }),
-  }}
-/>
-
+            isMulti
+            name="assignees"
+            options={assigneeOptions}
+            value={assignees.map((assignee) => ({
+              label: `${assignee.name} (${assignee.email})`,
+              value: assignee.email,
+            }))}
+            onChange={(selectedOptions) => {
+              const selectedAssignees = selectedOptions.map((option) => {
+                const employee = employees.find(
+                  (emp) => emp.email === option.value
+                );
+                return { name: employee.name, email: employee.email };
+              });
+              setAssignees(selectedAssignees);
+            }}
+            className="w-full"
+            classNamePrefix="react-select"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                height: "20px", // Adjust the height of the control (input box)
+              }),
+              menu: (provided) => ({
+                ...provided,
+                maxHeight: "200px", // Maximum height for the dropdown menu
+                overflowY: "auto", // Enable vertical scrolling
+              }),
+              menuList: (provided) => ({
+                ...provided,
+                maxHeight: "100px", // Apply max height to the list of options
+                overflowY: "auto", // Enable scrolling within the dropdown
+              }),
+            }}
+          />
         </div>
 
         {/* Action Buttons */}
@@ -476,6 +434,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       </div>
     </div>
   );
-};
+}
 
 export default TaskFormModal;
