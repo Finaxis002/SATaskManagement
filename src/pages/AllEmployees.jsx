@@ -211,6 +211,7 @@ const AllEmployees = () => {
 
       {/* Modal for editing employee */}
       {showEditModal && (
+
         <div className="fixed inset-0 flex justify-center items-center bg-[oklch(0.28 0.03 256.85 / 0.5)] bg-opacity-70 z-20 ">
             <div className="bg-white bg-opacity-80 p-10 rounded-lg shadow-xl backdrop-blur-md">
               <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">
@@ -236,6 +237,7 @@ const AllEmployees = () => {
                       className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </div>
+
 
                   {/* Email */}
                   <div className="mb-4">

@@ -46,12 +46,12 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
     setPasswordVisible(!passwordVisible);
   };
 
-  const handleCheckboxChange = (e) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      role: e.target.checked ? "admin" : "user", // Assign role based on checkbox
-    }));
-  };
+  // const handleCheckboxChange = (e) => {
+  //   setFormData((prevData) => ({
+  //     ...prevData,
+  //     role: e.target.checked ? "admin" : "user", // Assign role based on checkbox
+  //   }));
+  // };
 
 
   useEffect(() => {
@@ -227,7 +227,7 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
           </div>
 
           {/* Admin Checkbox */}
-          <div className="md:col-span-2">
+          {/* <div className="md:col-span-2">
             <label className="inline-flex items-center">
               <input
                 type="checkbox"
@@ -238,7 +238,24 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
               />
               <span className="ml-2 text-sm text-gray-900">Is this Admin?</span>
             </label>
-          </div>
+          </div> */}
+          {/* Role Dropdown */}
+<div className="relative md:col-span-2">
+  <label className="block mb-1 text-sm font-medium text-gray-700">
+    Select Role
+  </label>
+  <select
+    name="role"
+    value={formData.role}
+    onChange={handleChange}
+    className="w-40 py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+  >
+    <option value="user">User</option>
+    <option value="admin">Admin</option>
+    <option value="manager">Manager</option>
+  </select>
+</div>
+
 
           {/* Submit Button (Full Width) */}
           <div className="md:col-span-2 flex justify-center mt-6">
