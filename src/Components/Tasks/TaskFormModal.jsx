@@ -31,7 +31,12 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [department, setDepartment] = useState([]);
   const [taskCode, setTaskCode] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+<<<<<<< HEAD
   const [clientOptions, setClientOptions] = useState([]);
+=======
+  const [overdueNote, setOverdueNote] = useState("");
+
+>>>>>>> df7013e71139a49c529c64cc20e79787bbda5db6
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -97,6 +102,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
   // Handling form submit
   const handleSubmit = async () => {
+    
     // Validate form fields
     if (!taskName || !dueDate || assignees.length === 0) {
       return alert("Please fill all fields.");
@@ -175,13 +181,25 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       }
 
       // Check if the response is not OK
-      if (!response.ok) {
-        console.error(
-          "Failed to save task, server responded with:",
-          response.statusText
-        );
-        throw new Error("Failed to save task");
-      }
+  //     if (!response.ok) {
+  //       // console.error(
+  //       //   "Failed to save task, server responded with:",
+  //       //   response.statusText
+  //       // );
+  //       const text = await response.text();
+  // console.error("❌ Failed to save task - status:", response.status);
+  // console.error("❌ Response body:", text);
+  // throw new Error("Failed to save task");
+        
+  //     }
+  if (!response.ok) {
+    console.error("❌ Task save failed", {
+      status: response.status,
+      response: responseData,
+    });
+    throw new Error(responseData.message || "Failed to save task");
+  }
+  
 
       alert(
         initialData
@@ -193,9 +211,28 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       onClose(); // Close the modal after successful submission
     } catch (error) {
       console.error("Error saving task:", error);
-      alert("Error saving task");
+      // alert("Error saving task");
     }
+<<<<<<< HEAD
   };
+=======
+  };  //     } catch (err) {
+  //       console.error("Failed to load departments", err);
+  //     }
+  //   };
+
+  //   loadDepartments();
+  // }, []);
+
+
+
+ 
+  
+  
+
+  
+  // Filter employees according to selected taskCategory
+>>>>>>> df7013e71139a49c529c64cc20e79787bbda5db6
   const filteredEmployees = taskCategory
     ? employees.filter(
         (emp) => emp.department?.toLowerCase() === taskCategory.toLowerCase()

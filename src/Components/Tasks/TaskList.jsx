@@ -677,7 +677,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             onChange={(e) => handleFilterChange("status", e.target.value)}
             className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
-            <option value="">All Statuses</option>
+            <option value="">All Status</option>
             {Array.from(new Set(tasks.map((t) => t.status)))
               .filter(Boolean)
               .map((status) => (
