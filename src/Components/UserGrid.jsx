@@ -36,7 +36,7 @@ const UserCard = ({ user, index }) => {
 
       {/* Profile Hover Card */}
       {hover && (
-        <div className="absolute top-20 left-1/2 transform -translate-y-1/2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 flex p-4 transition-all duration-200 ease-in-out">
+        <div className="absolute top-20 left-1/2 transform -translate-y-1/2  bg-white rounded-xl shadow-xl border border-gray-200 z-50 flex p-4 transition-all duration-200 ease-in-out">
           {/* Left Circle with Initials */}
           <div
             className="flex items-center justify-center w-20 h-20 rounded-full text-3xl font-semibold text-black mr-4"
