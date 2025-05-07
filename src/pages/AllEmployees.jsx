@@ -10,6 +10,9 @@ import { FaTrash, FaSyncAlt, FaEdit } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
 import axios from "axios";
 import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
+import { showAlert } from "../utils/alert"; // Import the showAlert function
+import Swal from "sweetalert2";
+
 
 const AllEmployees = () => {
   const dispatch = useDispatch();
@@ -31,25 +34,56 @@ const AllEmployees = () => {
     dispatch(fetchUsers());
   }, [dispatch]);
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
+  // const handleDelete = (id) => {
+  //   if (window.confirm("Are you sure you want to delete this user?")) {
+  //     dispatch(deleteUser(id));
+  //   }
+  // };
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This user will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "custom-alert-popup",
+        confirmButton: "custom-alert-button",
+      },
+    });
+  
+    if (result.isConfirmed) {
       dispatch(deleteUser(id));
+  
+      Swal.fire({
+        title: "Deleted!",
+        text: "User has been deleted.",
+        icon: "success",
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "custom-alert-popup",
+          confirmButton: "custom-alert-button",
+        },
+      });
     }
   };
-
+  
   const handleResetPassword = async (id, name) => {
     const newPassword = window.prompt(`Enter new password for ${name}:`);
 
     if (!newPassword || newPassword.trim().length < 4) {
-      alert("Password must be at least 4 characters.");
+      showAlert("Password must be at least 4 characters.");
       return;
     }
 
     try {
       const result = await resetPassword(id, newPassword); // Directly call the function
-      alert("Password reset successfully.");
+      showAlert("Password reset successfully.");
     } catch (error) {
-      alert(`Failed to reset password: ${error.message || "Unknown error"}`);
+      showAlert(`Failed to reset password: ${error.message || "Unknown error"}`);
     }
   };
 
@@ -65,11 +99,11 @@ const AllEmployees = () => {
         updatedUserData
       ); // Directly call the update function
 
-      alert("Employee updated successfully!");
+      showAlert("Employee updated successfully!");
       dispatch(fetchUsers()); // Refetch the list of users after update
       handleCloseModal(); // Close the modal after update
     } catch (error) {
-      alert("Error updating employee. Please try again.");
+      showAlert("Error updating employee. Please try again.");
     }
   };
 

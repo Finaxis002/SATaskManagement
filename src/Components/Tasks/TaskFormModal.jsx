@@ -7,6 +7,7 @@ import TaskCodeSelector from "./TaskCodeSelector";
 import DepartmentSelector from "./DepartmentSelector";
 
 import { io } from "socket.io-client";
+import { showAlert } from "../../utils/alert"; // Import the showAlert function
 // Assume socket.io client setup
 const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
@@ -197,7 +198,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         throw new Error(responseData.message || "Failed to save task");
       }
 
-      alert(
+      showAlert(
         initialData
           ? "Task updated successfully!"
           : "Task created successfully!"
