@@ -6,6 +6,7 @@ import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen } from "react-icons/fa";
 import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
 import { useSelector } from "react-redux";
+import Swal from 'sweetalert2';
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
@@ -96,11 +97,12 @@ const TaskList = ({
       );
 
       if (role !== "admin") {
-        const filtered = visibleTasks.filter((task) =>
-          task.assignees.some((a) => a.email === userEmail) ||
-          task.assignedBy?.email === userEmail
+        const filtered = visibleTasks.filter(
+          (task) =>
+            task.assignees.some((a) => a.email === userEmail) ||
+            task.assignedBy?.email === userEmail
         );
-        
+
         setTasks(filtered);
         if (setTaskListExternally) setTaskListExternally(filtered);
       } else {
@@ -329,15 +331,72 @@ const TaskList = ({
     (task) => task.priority === "Low"
   );
 
-  const handleDeleteTask = async (taskId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this task?"
-    );
-    if (!confirmDelete) return;
+  // const handleDeleteTask = async (taskId) => {
+  //   const confirmDelete = window.confirm(
+  //     "Are you sure you want to delete this task?"
+  //   );
+  //   if (!confirmDelete) return;
 
+  //   try {
+  //     // Optimistically remove the task from UI immediately
+  //     setTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
+
+  //     const response = await fetch(
+  //       `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+  //       {
+  //         method: "DELETE",
+  //       }
+  //     );
+
+  //     if (!response.ok) {
+  //       throw new Error("Failed to delete task");
+  //       // Note: Since we already optimistically updated, we might want to
+  //       // revert if the deletion fails, but that might be confusing to users
+  //     }
+
+  //     // The socket.io event will trigger a refresh anyway
+  //   } catch (error) {
+  //     console.error("Error deleting task:", error);
+  //     alert("Failed to delete task. Please try again.");
+  //     // Optionally: Re-fetch tasks to restore the original state
+  //     fetchTasksFromAPI();
+  //   }
+  // };
+
+  const permanentlyStopRepetition = async (task) => {
     try {
-      // Optimistically remove the task from UI immediately
-      setTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
+      const updatedBy = {
+        name: localStorage.getItem("name"),
+        email: localStorage.getItem("userId"),
+      };
+
+      await fetch(
+        `https://sataskmanagementbackend.onrender.com/api/tasks/${task._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            isRepetitive: false,
+            nextRepetitionDate: null,
+            updatedBy,
+          }),
+        }
+      );
+
+      await deleteTaskRequest(task._id);
+      console.log("🔁 Repetition stopped and task deleted");
+    } catch (error) {
+      console.error("❌ Error stopping repetition", error);
+      alert("Failed to stop future repetitions.");
+    }
+  };
+
+  const deleteTaskRequest = async (taskId) => {
+    try {
+      // Optimistically update the UI
+      setTasks((prevTasks) => prevTasks.filter((t) => t._id !== taskId));
 
       const response = await fetch(
         `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
@@ -348,18 +407,76 @@ const TaskList = ({
 
       if (!response.ok) {
         throw new Error("Failed to delete task");
-        // Note: Since we already optimistically updated, we might want to
-        // revert if the deletion fails, but that might be confusing to users
       }
 
-      // The socket.io event will trigger a refresh anyway
-    } catch (error) {
-      console.error("Error deleting task:", error);
+      console.log("✅ Task deleted:", taskId);
+    } catch (err) {
+      console.error("❌ Error deleting task:", err);
       alert("Failed to delete task. Please try again.");
-      // Optionally: Re-fetch tasks to restore the original state
-      fetchTasksFromAPI();
+      fetchTasksFromAPI(); // fallback to restore
     }
   };
+
+  const handleDeleteTask = async (task) => {
+    if (!task || !task._id) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Task',
+        text: 'The selected task is not valid or is missing required data.',
+        confirmButtonColor: '#d33',
+      });
+      return;
+    }
+  
+    if (!task.isRepetitive) {
+      const confirmDelete = await Swal.fire({
+        title: '<strong>Delete Task?</strong>',
+        html: `<i>Task: <b>${task.taskName}</b> will be permanently removed.</i>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e3342f',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'No, keep it',
+        customClass: {
+          popup: 'sweet-modal',
+          confirmButton: 'sweet-confirm-btn',
+          cancelButton: 'sweet-cancel-btn',
+        },
+        backdrop: `rgba(0,0,0,0.5)`,
+      });
+  
+      if (!confirmDelete.isConfirmed) return;
+      return deleteTaskRequest(task._id);
+    }
+  
+    const result = await Swal.fire({
+      title: 'Repetitive Task Options',
+      html: `
+        <p>This task repeats regularly. What action do you want to take?</p>
+        <ul style="text-align: left; font-size: 14px;">
+          <li><b>Delete Only This:</b> Deletes this instance only.</li>
+          <li><b>Stop Repeating & Delete:</b> Ends the repetition and deletes it.</li>
+        </ul>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Delete Only This',
+      denyButtonText: 'Stop & Delete',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#3085d6',
+      denyButtonColor: '#e3342f',
+      cancelButtonColor: '#6c757d',
+    });
+  
+    if (result.isConfirmed) {
+      await deleteTaskRequest(task._id);
+    } else if (result.isDenied) {
+      await permanentlyStopRepetition(task);
+    }
+  };
+  
 
   const dropdownRef = useRef(null);
 
@@ -439,7 +556,7 @@ const TaskList = ({
                   : "Work Description"}
               </span>
               <button
-                className="text-red-500 font-bold"
+                className="text-red-500 font-bold text-2xl"
                 onClick={() => setOpenWorkDescPopup(null)}
               >
                 ×
@@ -590,7 +707,7 @@ const TaskList = ({
                 {remarkMode === "edit" ? "Edit Remark" : "Full Remark"}
               </span>
               <button
-                className="text-red-500 font-bold"
+                className="text-red-500 font-bold text-2xl"
                 onClick={() => setOpenRemarkPopup(null)}
               >
                 ×
@@ -652,7 +769,7 @@ const TaskList = ({
           <FaTrashAlt
             size={15}
             className="text-red-500 hover:text-red-700 cursor-pointer"
-            onClick={() => handleDeleteTask(task._id)}
+            onClick={() => handleDeleteTask(task)} // ✅ FIXED: pass task, not task._id
           />
         </td>
       )}

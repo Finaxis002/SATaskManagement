@@ -222,7 +222,19 @@ const Notifications = () => {
                       {notification.updatedBy &&
                         (() => {
                           try {
-                            const updater = JSON.parse(notification.updatedBy);
+                            if (notification.updatedBy === "System") {
+                              return (
+                                <p className="text-xs text-gray-500 italic">
+                                  Updated by System
+                                </p>
+                              );
+                            }
+
+                            const updater =
+                              typeof notification.updatedBy === "string"
+                                ? JSON.parse(notification.updatedBy)
+                                : notification.updatedBy;
+
                             return updater?.name ? (
                               <p className="text-xs text-gray-500 italic">
                                 Updated by {updater.name}
