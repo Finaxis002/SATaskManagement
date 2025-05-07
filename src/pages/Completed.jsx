@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import Select from "react-select";
+import TaskCodeSelector from "../Components/Tasks/TaskCodeSelector"; // Adjust path as needed
 
 const Completed = () => {
   const [tasks, setTasks] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
   const [clientOptions, setClientOptions] = useState([]);
+  const [selectedCode, setSelectedCode] = useState("");
+  const [codeOptions, setCodeOptions] = useState([]);
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -29,7 +32,9 @@ const Completed = () => {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const res = await fetch("https://sataskmanagementbackend.onrender.com/api/clients");
+        const res = await fetch(
+          "https://sataskmanagementbackend.onrender.com/api/clients"
+        );
         const data = await res.json();
         setClientOptions(data);
       } catch (err) {
@@ -40,62 +45,91 @@ const Completed = () => {
     fetchClients();
   }, []);
 
-  const completedTasks = tasks.filter(
-    (task) =>
-      task.status === "Completed" &&
-      (selectedClient === "" || task.clientName === selectedClient)
-  );
+  // Fetch task codes
+useEffect(() => {
+  const fetchCodes = async () => {
+    try {
+      const res = await fetch("https://sataskmanagementbackend.onrender.com/api/task-codes");
+      const data = await res.json();
+      const uniqueCodes = [...new Set(data.map((code) => code.name))];
+      setCodeOptions(uniqueCodes);
+    } catch (err) {
+      console.error("Failed to fetch task codes", err);
+    }
+  };
+  fetchCodes();
+}, []);
+const completedTasks = tasks.filter((task) => {
+  const clientMatch =
+    selectedClient === "" || task.clientName === selectedClient;
+
+  const codeMatch =
+    selectedCode === "" || task.code === selectedCode;
+
+  return task.status === "Completed" && clientMatch && codeMatch;
+});
 
   return (
     <div className="p-6 h-[90vh] w-[180vh]  overflow-auto">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:gap-4">
-        <label
-          htmlFor="client-filter"
-          className="text-sm font-medium text-gray-700"
-        >
-          Filter by Client:
-        </label>
-        {/* <select
-         id="client-filter"
-         options={[
-            { value: "", label: "All Clients" },
-            ...clientOptions.map((client) => ({
-              value: client.name,
-              label: client.name,
-            })),
-          ]}
-          
-          value={selectedClient}
-          onChange={(e) => setSelectedClient(e.target.value)}
-          className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-        >
-          <option value="">All Clients</option>
-          {clientOptions.map((client) => (
-            <option key={client} value={client}>
-              {client}
-            </option>
-          ))}
-        </select> */}
+       {/* Filter by Client */}
+<div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+  <label
+    htmlFor="client-filter"
+    className="text-sm font-medium text-gray-700"
+  >
+    Filter by Client:
+  </label>
+  <Select
+    id="client-filter"
+    options={[
+      { value: "", label: "All Clients" },
+      ...clientOptions.map((client) => ({
+        value: client,
+        label: client,
+      })),
+    ]}
+    value={
+      selectedClient
+        ? { value: selectedClient, label: selectedClient }
+        : { value: "", label: "All Clients" }
+    }
+    onChange={(selectedOption) => setSelectedClient(selectedOption.value)}
+    className="w-full sm:w-64 text-sm"
+    isSearchable
+    placeholder="Select client..."
+  />
+</div>
 
-        <Select
-          id="client-filter"
-          options={[
-            { value: "", label: "All Clients" },
-            ...clientOptions.map((client) => ({
-              value: client,
-              label: client,
-            })),
-          ]}
-          value={
-            selectedClient
-              ? { value: selectedClient, label: selectedClient }
-              : { value: "", label: "All Clients" }
-          }
-          onChange={(selectedOption) => setSelectedClient(selectedOption.value)}
-          className="w-full sm:w-64 text-sm"
-          isSearchable={true}
-          placeholder="Select client..."
-        />
+{/* Filter by Code */}
+<div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+  <label
+    htmlFor="code-filter"
+    className="text-sm font-medium text-gray-700"
+  >
+    Filter by Code:
+  </label>
+  <Select
+    id="code-filter"
+    options={[
+      { value: "", label: "All Codes" },
+      ...codeOptions.map((code) => ({
+        value: code,
+        label: code,
+      })),
+    ]}
+    value={
+      selectedCode
+        ? { value: selectedCode, label: selectedCode }
+        : { value: "", label: "All Codes" }
+    }
+    onChange={(selectedOption) => setSelectedCode(selectedOption.value)}
+    className="w-full sm:w-64 text-sm"
+    isSearchable
+    placeholder="Select code..."
+  />
+</div>
+
       </div>
 
       <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
@@ -103,6 +137,9 @@ const Completed = () => {
           <tr className="text-left">
             <th className="py-4 px-4 min-w-[70px] font-semibold">S. No</th>
             <th className="py-4 px-6 min-w-[180px] font-semibold">Task Name</th>
+            <th className="py-4 px-6 min-w-[180px] font-semibold">
+              Client Name
+            </th>
             <th className="py-4 px-6  min-w-[250px] font-semibold">
               Work Description + Code
             </th>
@@ -136,6 +173,7 @@ const Completed = () => {
                 <td className="py-3 px-4">{index + 1}</td>
 
                 <td className="py-3 px-4">{task.taskName}</td>
+                <td className="py-3 px-4">{task.clientName}</td>
 
                 <td className="py-3 px-4">
                   {task.workDesc}{" "}

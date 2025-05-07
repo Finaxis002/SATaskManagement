@@ -10,6 +10,8 @@ const AllTasks = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
 
+  const role = localStorage.getItem("role") || "user"; // Default to 'user' if not set
+
   const navigate = useNavigate();
 
   const handleCreateClick = () => {
@@ -60,12 +62,15 @@ const AllTasks = () => {
             >
               + Create Task
             </button>
-            <button
+            {role === "admin" && (
+              <button
               onClick={handleRemoveCompletedTasks} // ✅ This saves to localStorage and updates UI
-              className="bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-full shadow"
+              className="bg-red-100 text-sm hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-full shadow"
             >
               Remove Completed
             </button>
+            )}
+           
           </div>
         </div>
 

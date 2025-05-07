@@ -33,7 +33,13 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientOptions, setClientOptions] = useState([]);
   const [overdueNote, setOverdueNote] = useState("");
-  const [repeatType, setRepeatType] = useState("Does not repeat");
+  const [isRepetitive, setIsRepetitive] = useState(false);
+  const [showRepeatPopup, setShowRepeatPopup] = useState(false);
+  const [repeatType, setRepeatType] = useState("Daily");
+  const [customRepeat, setCustomRepeat] = useState({
+    day: "",
+    month: "",
+  });
 
   // Fetch assignees (employees) from the backend
   const employees = useSelector((state) => state.tasks.assignees);
@@ -62,6 +68,16 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           : null
       );
       setDepartment(initialData.department || []);
+
+      // 🔥 ADD THIS BLOCK to initialize repetition-related values
+      setIsRepetitive(initialData.isRepetitive || false);
+      setRepeatType(initialData.repeatType || "Monthly");
+      setCustomRepeat({
+        day: initialData.repeatDay ? initialData.repeatDay.toString() : "",
+        month: initialData.repeatMonth
+          ? initialData.repeatMonth.toString()
+          : "",
+      });
     }
   }, [initialData]);
 
@@ -98,116 +114,88 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     fetchClients();
   }, []);
 
-  // Handling form submit
   const handleSubmit = async () => {
-    // Validate form fields
     if (!taskName || !dueDate || assignees.length === 0) {
-      return alert("Please fill all fields.");
+      return alert("Please fill all required fields.");
     }
-
-    // Prepare payload
-    const updatedBy = {
-      name: localStorage.getItem("name"),
-      email: localStorage.getItem("userId"),
-    };
 
     const taskPayload = {
       taskName,
       workDesc,
-      assignees,
+      assignees: assignees.map((a) => ({ name: a.name, email: a.email })),
       assignedDate: new Date().toISOString(),
       dueDate: new Date(dueDate).toISOString(),
       priority,
       status,
-      overdueNote: status === "Overdue" ? overdueNote : "",
-      updatedBy,
       taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
       clientName,
-      department,
-      // code: code === "__new" ? newCode : code,
-      code: taskCode ? taskCode.value : "",
+      department: Array.isArray(department) ? department : [department],
+      code: taskCode?.value || "",
       assignedBy: {
         name: localStorage.getItem("name"),
         email: localStorage.getItem("userId"),
       },
+      isRepetitive,
     };
+    
+    // ✅ Add this 👇 to ensure updatedBy goes when it's an update
+    if (initialData) {
+      taskPayload.updatedBy = {
+        name: localStorage.getItem("name"),
+        email: localStorage.getItem("userId"),
+      };
+    }
+    
+
+    if (isRepetitive) {
+      taskPayload.repeatType = repeatType;
+
+      if (!["Daily", "Every 5 Minutes"].includes(repeatType)) {
+        taskPayload.repeatDay = Number(customRepeat.day);
+      }
+
+      if (repeatType === "Annually") {
+        taskPayload.repeatMonth = Number(customRepeat.month);
+      }
+
+      taskPayload.nextRepetitionDate = new Date(dueDate).toISOString();
+    }
 
     try {
-      let response;
-      let updatedTask;
+      setIsSubmitting(true);
 
-      if (initialData) {
-        // If there's a task to update, make a PUT request
-        response = await fetch(
-          `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(taskPayload),
-          }
-        );
-        updatedTask = await response.json(); // Get the updated task
+      const url = initialData
+        ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
+        : "https://sataskmanagementbackend.onrender.com/api/tasks";
 
-        // Emit a socket event to inform that the task was updated and unread count may need updating
+      const response = await fetch(url, {
+        method: initialData ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify(taskPayload),
+      });
 
-        // Dispatch updateTask action to update Redux state immediately
-        dispatch(updateTask(updatedTask));
+      const result = await response.json();
 
-        // Update local state directly for immediate UI update in parent component
-        onSave(updatedTask); // Pass the updated task to the parent to update the tasks state
-      } else {
-        // If no task to update, make a POST request
-        response = await fetch(
-          "https://sataskmanagementbackend.onrender.com/api/tasks",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(taskPayload),
-          }
-        );
-        updatedTask = await response.json(); // Get the newly created task
-
-        // Emit a socket event to inform that a new task was created and unread count may need updating
-        socket.emit("new-task-created", { taskId: updatedTask._id });
-
-        // Dispatch updateTask action to update Redux state immediately
-        dispatch(updateTask(updatedTask));
-
-        // Update local state directly for immediate UI update in parent component
-        onSave(updatedTask); // Pass the new task to the parent to update the tasks state
-      }
-
-      // Check if the response is not OK
-      //     if (!response.ok) {
-      //       // console.error(
-      //       //   "Failed to save task, server responded with:",
-      //       //   response.statusText
-      //       // );
-      //       const text = await response.text();
-      // console.error("❌ Failed to save task - status:", response.status);
-      // console.error("❌ Response body:", text);
-      // throw new Error("Failed to save task");
-
-      //     }
       if (!response.ok) {
-        console.error("❌ Task save failed", {
-          status: response.status,
-          response: responseData,
-        });
-        throw new Error(responseData.message || "Failed to save task");
+        throw new Error(result.message || "Failed to create task");
       }
 
-      alert(
-        initialData
-          ? "Task updated successfully!"
-          : "Task created successfully!"
-      );
+      console.log("✅ Task saved successfully:", result);
 
-      // Close the form and reset the form fields
-      onClose(); // Close the modal after successful submission
+      if (!initialData) {
+        socket.emit("new-task-created", { taskId: result._id });
+      }
+
+      onSave(result);
+      onClose();
     } catch (error) {
-      console.error("Error saving task:", error);
-      // alert("Error saving task");
+      console.error("❌ Submission error:", error);
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
 
   };  
@@ -321,26 +309,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             />
           </div>
 
-          {/* Repeat Type */}
-          <div>
-            <label className="text-sm font-semibold text-gray-700 mb-1 block">
-              Repeat:
-            </label>
-            <select
-              value={repeatType}
-              onChange={(e) => setRepeatType(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option>Does not repeat</option>
-              <option>Daily</option>
-              <option>Weekly on selected day</option>
-              <option>Monthly on date</option>
-              <option>Annually</option>
-              <option>Every weekday (Mon–Fri)</option>
-              <option>Custom</option>
-            </select>
-          </div>
-
           {/* Priority */}
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">
@@ -375,13 +343,154 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             </select>
           </div>
 
-          {/* Overdue Note */}
-          {status === "Overdue" && (
-            <textarea
-              placeholder="Enter reason for overdue"
-              onChange={(e) => setOverdueNote(e.target.value)}
-              className="col-span-2 p-2 border border-gray-300 rounded-md"
-            />
+          <div className="flex items-center gap-3 mt-4">
+            <label className="flex items-center cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={isRepetitive}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsRepetitive(checked);
+
+                    // Log the new state to check if it's correctly updated
+                    console.log("Updated isRepetitive state:", checked);
+
+                    if (checked) {
+                      setRepeatType("Monthly");
+                      setCustomRepeat({ day: new Date().getDate().toString() }); // Default to today's day
+                      setShowRepeatPopup(true);
+                    } else {
+                      setShowRepeatPopup(false);
+                      setCustomRepeat({ day: "", month: "" });
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+
+                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:bg-indigo-600 transition-all duration-300"></div>
+                <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform peer-checked:translate-x-full transition-all duration-300"></div>
+              </div>
+              <span className="ml-3 text-sm text-gray-800">
+                {isRepetitive
+                  ? "This is a repetitive task"
+                  : "Is this a repetitive task?"}
+              </span>
+            </label>
+          </div>
+
+          {showRepeatPopup && (
+            <div className="fixed inset-0 bg-opacity-40 flex justify-center items-center z-50">
+              <div className="bg-white rounded-lg shadow p-6 w-[350px] relative">
+                <h3 className="text-lg font-bold mb-4 text-center text-indigo-800">
+                  Repetition Settings
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Repeat Type:
+                    </label>
+                    <select
+                      value={repeatType}
+                      onChange={(e) => setRepeatType(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="Daily">Daily</option>
+                      <option value="Monthly">Monthly</option>
+                      <option value="Quarterly">Quarterly</option>
+                      <option value="Every 6 Months">Every 6 Months</option>
+                      <option value="Annually">Annually</option>
+                    </select>
+                  </div>
+
+                  {repeatType !== "Daily" && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Day of month (1-31):
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={customRepeat.day}
+                        onChange={(e) =>
+                          setCustomRepeat({
+                            ...customRepeat,
+                            day: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                  )}
+
+                  {repeatType === "Annually" && (
+                    <div>
+                     
+
+
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Month:
+                      </label>
+                      <select
+                        value={customRepeat.month}
+                        onChange={(e) =>
+                          setCustomRepeat({
+                            ...customRepeat,
+                            month: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="">Select Month</option>
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <option key={i + 1} value={i + 1}>
+                            {new Date(0, i).toLocaleString("default", {
+                              month: "long",
+                            })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    className="text-gray-600 hover:text-red-600"
+                    onClick={() => {
+                      setIsRepetitive(false);
+                      setShowRepeatPopup(false);
+                      setCustomRepeat({ day: "", month: "" });
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                    onClick={() => {
+                      // Validate before closing
+                      if (
+                        !["Daily", "Every 5 Minutes"].includes(repeatType) &&
+                        !customRepeat.day
+                      ) {
+                        alert("Please select a day");
+                        return;
+                      }
+
+                      if (repeatType === "Annually" && !customRepeat.month) {
+                        alert("Please select a month");
+                        return;
+                      }
+                      setShowRepeatPopup(false);
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
