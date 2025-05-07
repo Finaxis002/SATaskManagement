@@ -11,6 +11,7 @@ import {
 import bgImage from "../assets/bg.png";
 
 import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
+import { showAlert } from "../utils/alert"; // Import the showAlert function
 
 const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCloseModal }) => {
   const [formData, setFormData] = useState({
@@ -72,7 +73,7 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
     e.preventDefault();
 
     if (department.length === 0) {
-      alert("Please select at least one department.");
+      showAlert("Please select at least one department.");
       return;
     }
 
@@ -88,19 +89,19 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
           `https://sataskmanagementbackend.onrender.com/api/employees/${employeeToEdit._id}`,
           dataToSend
         );
-        alert("Employee updated successfully!");
+       showAlert("Employee updated successfully!");
       } else {
         // Add new employee
         await axios.post(
           "https://sataskmanagementbackend.onrender.com/api/employees",
           dataToSend
         );
-        alert("Employee added successfully!");
+        showAlert("Employee added successfully!");
       }
 
       handleCloseModal(); // Close the modal after submit
     } catch (err) {
-      alert("Failed to save employee!");
+      // alert("Failed to save employee!");
       console.error(err);
     }
   };
