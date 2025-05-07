@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { FaTrashAlt, FaPen } from "react-icons/fa";
+import { faFilter, faPen, faTrash , faCalendar } from "@fortawesome/free-solid-svg-icons";
+import { FaTrashAlt, FaPen , FaCalendar } from "react-icons/fa";
 import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
 import { useSelector } from "react-redux";
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
@@ -420,38 +420,38 @@ const TaskList = ({
   const handleDeleteTask = async (task) => {
     if (!task || !task._id) {
       Swal.fire({
-        icon: 'error',
-        title: 'Invalid Task',
-        text: 'The selected task is not valid or is missing required data.',
-        confirmButtonColor: '#d33',
+        icon: "error",
+        title: "Invalid Task",
+        text: "The selected task is not valid or is missing required data.",
+        confirmButtonColor: "#d33",
       });
       return;
     }
-  
+
     if (!task.isRepetitive) {
       const confirmDelete = await Swal.fire({
-        title: '<strong>Delete Task?</strong>',
+        title: "<strong>Delete Task?</strong>",
         html: `<i>Task: <b>${task.taskName}</b> will be permanently removed.</i>`,
-        icon: 'warning',
+        icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: '#e3342f',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'No, keep it',
+        confirmButtonColor: "#e3342f",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "No, keep it",
         customClass: {
-          popup: 'sweet-modal',
-          confirmButton: 'sweet-confirm-btn',
-          cancelButton: 'sweet-cancel-btn',
+          popup: "sweet-modal",
+          confirmButton: "sweet-confirm-btn",
+          cancelButton: "sweet-cancel-btn",
         },
         backdrop: `rgba(0,0,0,0.5)`,
       });
-  
+
       if (!confirmDelete.isConfirmed) return;
       return deleteTaskRequest(task._id);
     }
-  
+
     const result = await Swal.fire({
-      title: 'Repetitive Task Options',
+      title: "Repetitive Task Options",
       html: `
         <p>This task repeats regularly. What action do you want to take?</p>
         <ul style="text-align: left; font-size: 14px;">
@@ -459,24 +459,23 @@ const TaskList = ({
           <li><b>Stop Repeating & Delete:</b> Ends the repetition and deletes it.</li>
         </ul>
       `,
-      icon: 'question',
+      icon: "question",
       showCancelButton: true,
       showDenyButton: true,
-      confirmButtonText: 'Delete Only This',
-      denyButtonText: 'Stop & Delete',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#3085d6',
-      denyButtonColor: '#e3342f',
-      cancelButtonColor: '#6c757d',
+      confirmButtonText: "Delete Only This",
+      denyButtonText: "Stop & Delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#3085d6",
+      denyButtonColor: "#e3342f",
+      cancelButtonColor: "#6c757d",
     });
-  
+
     if (result.isConfirmed) {
       await deleteTaskRequest(task._id);
     } else if (result.isDenied) {
       await permanentlyStopRepetition(task);
     }
   };
-  
 
   const dropdownRef = useRef(null);
 
@@ -859,6 +858,17 @@ const TaskList = ({
             </select>
           </div>
         )}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => (window.location.href = "/calendar")} // Update if using React Router
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 transition duration-300"
+          >
+            <i className="text-lg">
+              <FaCalendar />
+            </i>
+           
+          </button>
+        </div>
       </div>
 
       <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
