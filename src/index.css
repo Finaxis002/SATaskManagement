@@ -4,7 +4,6 @@
 main{
     background-color: #fff !important;
 }
-
 .max-h-screen{
     height: 91vh !important;
 }
@@ -15,7 +14,6 @@ main{
     border-left: none;
     border-right: none;
 }
-
 
 /* Modal background */
 .modal-overlay {
