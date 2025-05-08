@@ -4,9 +4,8 @@ import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen } from "react-icons/fa";
-import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
+import { fetchUsers } from "../../redux/userSlice"; 
 import { useSelector } from "react-redux";
-
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
 
@@ -28,17 +27,20 @@ const TaskList = ({
     code: "",
     department: "",
   });
-  const [dueDateSortOrder, setDueDateSortOrder] = useState(null); // 'asc' or 'desc'
-  const [remarks, setRemarks] = useState({}); // Track remarks for each task
-  const [editingRemark, setEditingRemark] = useState(null); // Track which task is being edited for remarks
+  const [dueDateSortOrder, setDueDateSortOrder] = useState(null); 
+  const [remarks, setRemarks] = useState({}); 
+  const [editingRemark, setEditingRemark] = useState(null); 
   const [editingWorkDesc, setEditingWorkDesc] = useState(null);
   const [workDescs, setWorkDescs] = useState({});
   const [openRemarkPopup, setOpenRemarkPopup] = useState(null);
   const [openWorkDescPopup, setOpenWorkDescPopup] = useState(null);
-  const [workDescMode, setWorkDescMode] = useState("view"); // "edit" or "view"
-  const [remarkMode, setRemarkMode] = useState("view"); // "edit" or "view"
-  const [departments, setDepartments] = useState([]); // To store departments
+  const [workDescMode, setWorkDescMode] = useState("view"); 
+  const [remarkMode, setRemarkMode] = useState("view"); 
+  const [departments, setDepartments] = useState([]); 
   const [uniqueUsers, setUniqueUsers] = useState([]);
+  const [departmentsForAdmin, setDepartmentsForAdmin] = useState([]);
+  const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
+
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -51,6 +53,15 @@ const TaskList = ({
     dispatch(fetchUsers());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (role === "admin" && users?.length) {
+      const adminUser = users.find((u) => u.email === userEmail);
+      const adminDepartments = adminUser?.department || [];
+      setDepartmentsForAdmin(adminDepartments); // New state
+      setDepartmentsLoaded(true); // ✅ Mark as loaded here
+    }
+  }, [users, role, userEmail]);
+  
   useEffect(() => {
     dispatch(updateTaskStatus());
   }, [dispatch]);
@@ -76,8 +87,47 @@ const TaskList = ({
   };
 
   useEffect(() => {
-    fetchDepartments(); // Fetch departments when component mounts
+    fetchDepartments(); 
   }, []);
+
+  // const fetchTasksFromAPI = async () => {
+  //   try {
+  //     const response = await fetch(
+  //       "https://sataskmanagementbackend.onrender.com/api/tasks"
+  //     );
+  //     const data = await response.json();
+
+  //     // Read hidden task IDs from localStorage
+  //     const hiddenTaskIds = JSON.parse(
+  //       localStorage.getItem("hiddenCompletedTasks") || "[]"
+  //     );
+
+  //     const visibleTasks = data.filter(
+  //       (task) => !hiddenTaskIds.includes(task._id)
+  //     );
+
+  //     if (role !== "admin") {
+  //       const filtered = visibleTasks.filter((task) =>
+  //         task.assignees.some((a) => a.email === userEmail) ||
+  //         task.assignedBy?.email === userEmail
+  //       );
+        
+  //       setTasks(filtered);
+  //       if (setTaskListExternally) setTaskListExternally(filtered);
+  //     } else {
+  //       setTasks(visibleTasks);
+  //       if (setTaskListExternally) setTaskListExternally(visibleTasks);
+  //     }
+
+  //     const taskRemarks = {};
+  //     visibleTasks.forEach((task) => {
+  //       taskRemarks[task._id] = task.remark || "";
+  //     });
+  //     setRemarks(taskRemarks);
+  //   } catch (err) {
+  //     console.error("Failed to fetch tasks:", err);
+  //   }
+  // };
 
   const fetchTasksFromAPI = async () => {
     try {
@@ -85,31 +135,46 @@ const TaskList = ({
         "https://sataskmanagementbackend.onrender.com/api/tasks"
       );
       const data = await response.json();
-
-      // Read hidden task IDs from localStorage
+  
       const hiddenTaskIds = JSON.parse(
         localStorage.getItem("hiddenCompletedTasks") || "[]"
       );
-
+  
       const visibleTasks = data.filter(
         (task) => !hiddenTaskIds.includes(task._id)
       );
-
+  
+      let filtered = [];
+  
       if (role !== "admin") {
-        const filtered = visibleTasks.filter((task) =>
-          task.assignees.some((a) => a.email === userEmail) ||
-          task.assignedBy?.email === userEmail
+        // ✅ Regular user logic
+        filtered = visibleTasks.filter(
+          (task) =>
+            task.assignees.some((a) => a.email === userEmail) ||
+            task.assignedBy?.email === userEmail
         );
-        
-        setTasks(filtered);
-        if (setTaskListExternally) setTaskListExternally(filtered);
-      } else {
-        setTasks(visibleTasks);
-        if (setTaskListExternally) setTaskListExternally(visibleTasks);
+      }else if (userEmail === "admin@example.com") {
+        // ✅ Hardcoded super admin gets all tasks
+        filtered = visibleTasks;
       }
-
+       else if (departmentsForAdmin.length > 0) {
+        // ✅ Admin sees only tasks in their departments
+        filtered = visibleTasks.filter((task) => {
+          if (!task.department || !Array.isArray(task.department)) return false;
+          return task.department.some((dept) =>
+            departmentsForAdmin.includes(dept)
+          );
+        });
+      } else {
+        // ✅ If admin departments are not available, show nothing or fallback
+        filtered = [];
+      }
+  
+      setTasks(filtered);
+      if (setTaskListExternally) setTaskListExternally(filtered);
+  
       const taskRemarks = {};
-      visibleTasks.forEach((task) => {
+      filtered.forEach((task) => {
         taskRemarks[task._id] = task.remark || "";
       });
       setRemarks(taskRemarks);
@@ -117,10 +182,26 @@ const TaskList = ({
       console.error("Failed to fetch tasks:", err);
     }
   };
+  
+  // useEffect(() => {
+  //   fetchTasksFromAPI();
+  // }, [refreshTrigger]); // ✅ Run this when refreshTrigger changes
 
+  // useEffect(() => {
+  //   if (role !== "admin") {
+  //     fetchTasksFromAPI();
+  //   } else if (departmentsForAdmin.length > 0) {
+  //     fetchTasksFromAPI();
+  //   }
+  // }, [role, userEmail, refreshTrigger, departmentsForAdmin]);
+ 
+  
   useEffect(() => {
-    fetchTasksFromAPI();
-  }, [refreshTrigger]); // ✅ Run this when refreshTrigger changes
+    if (role !== "admin" || departmentsLoaded) {
+      fetchTasksFromAPI();
+    }
+  }, [role, userEmail, refreshTrigger, departmentsLoaded]);
+  
 
   useEffect(() => {
     socket.on("task-updated", (data) => {
@@ -131,30 +212,57 @@ const TaskList = ({
     return () => socket.off("task-updated");
   }, []);
 
-  useEffect(() => {
-    socket.on("new-task-created", (data) => {
-      console.log("🟢 Received new task event!", data);
-      fetchTasksFromAPI();
-    });
+  // useEffect(() => {
+  //   socket.on("new-task-created", (data) => {
+  //     console.log("🟢 Received new task event!", data);
+  //     fetchTasksFromAPI();
+  //   });
 
-    socket.on("task-updated", () => {
-      console.log("🟡 Task updated event!");
-      fetchTasksFromAPI();
-    });
+  //   socket.on("task-updated", () => {
+  //     console.log("🟡 Task updated event!");
+  //     fetchTasksFromAPI();
+  //   });
 
-    socket.on("task-deleted", () => {
-      console.log("🔴 Task deleted event!");
-      fetchTasksFromAPI();
-    });
+  //   socket.on("task-deleted", () => {
+  //     console.log("🔴 Task deleted event!");
+  //     fetchTasksFromAPI();
+  //   });
 
-    return () => {
-      socket.off("new-task-created");
-      socket.off("task-updated");
-      socket.off("task-deleted");
-    };
-  }, []);
+  //   return () => {
+  //     socket.off("new-task-created");
+  //     socket.off("task-updated");
+  //     socket.off("task-deleted");
+  //   };
+  // }, []);
 
   // Fetch tasks based on the user's role
+  useEffect(() => {
+    const handleTaskEvent = () => {
+      // Ensure we refresh only when departments are ready
+      if (role === "admin" && !departmentsLoaded) {
+        const interval = setInterval(() => {
+          if (departmentsLoaded) {
+            fetchTasksFromAPI();
+            clearInterval(interval);
+          }
+        }, 300); // Check every 300ms
+      } else {
+        fetchTasksFromAPI();
+      }
+    };
+  
+    socket.on("new-task-created", handleTaskEvent);
+    socket.on("task-updated", handleTaskEvent);
+    socket.on("task-deleted", handleTaskEvent);
+  
+    return () => {
+      socket.off("new-task-created", handleTaskEvent);
+      socket.off("task-updated", handleTaskEvent);
+      socket.off("task-deleted", handleTaskEvent);
+    };
+  }, [departmentsLoaded, role]);
+  
+
   useEffect(() => {
     fetchTasksFromAPI();
   }, [role, userEmail, refreshTrigger]);
