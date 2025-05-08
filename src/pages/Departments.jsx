@@ -6,7 +6,7 @@ import Swal from "sweetalert2";
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState("department"); // 'department' or 'report'
+  const [view, setView] = useState("department"); 
   const [taskCodes, setTaskCodes] = useState([]);
   const [showDeptModal, setShowDeptModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
@@ -83,7 +83,7 @@ const Departments = () => {
       const res = await axios.get(
         "https://sataskmanagementbackend.onrender.com/api/task-codes"
       );
-      setTaskCodes(res.data); // assuming the response is an array of codes
+      setTaskCodes(res.data); 
     } catch (err) {
       console.error("Failed to fetch task codes:", err);
     }
@@ -121,25 +121,67 @@ const Departments = () => {
     fetchClients(); // 👈 Add this line
   }, []);
 
-  const handleDeleteDepartment = async (dept) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the "${dept}" department? This will remove the department from all users.`
-    );
-    if (!confirmed) return;
+  // const handleDeleteDepartment = async (dept) => {
+  //   const confirmed = window.confirm(
+  //     `Are you sure you want to delete the "${dept}" department? This will remove the department from all users.`
+  //   );
+  //   if (!confirmed) return;
 
+  //   try {
+  //     // Sending request to remove department from users
+  //     await axios.put(
+  //       "https://sataskmanagementbackend.onrender.com/api/departments/remove-department",
+  //       { department: dept }
+  //     );
+  //     alert("Department deleted successfully!");
+  //     setDepartmentMap((prev) => {
+  //       const newMap = { ...prev };
+  //       delete newMap[dept];
+  //       return newMap;
+  //     });
+  //   } catch (err) {
+  //     console.error("Failed to delete department", err);
+  //     alert("Failed to delete department. Try again.");
+  //   }
+  // };
+
+  // Delete a task code
+  const handleDeleteDepartment = async (dept) => {
+    const result = await Swal.fire({
+      title: `Delete "${dept}" department?`,
+      text: "This will remove the department from all users.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "custom-alert-popup",
+        confirmButton: "custom-alert-button",
+      },
+    });
+  
+    if (!result.isConfirmed) return;
+  
     try {
-      // Sending request to remove department from users
       await axios.put(
         "https://sataskmanagementbackend.onrender.com/api/departments/remove-department",
         { department: dept }
       );
+
+  
       Swal.fire({
-        icon: "success",
         title: "Deleted!",
-        text: "Department deleted successfully!",
-        timer: 2000,
-        showConfirmButton: false,
+        text: `The "${dept}" department has been removed from all users.`,
+        icon: "success",
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "custom-alert-popup",
+          confirmButton: "custom-alert-button",
+        },
       });
+  
 
       setDepartmentMap((prev) => {
         const newMap = { ...prev };
@@ -148,20 +190,52 @@ const Departments = () => {
       });
     } catch (err) {
       console.error("Failed to delete department", err);
-      alert("Failed to delete department. Try again.");
+  
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to delete department. Try again.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "custom-alert-popup",
+          confirmButton: "custom-alert-button",
+        },
+      });
     }
   };
+ 
+  // const handleDeleteCode = async (codeId) => {
+  //   const confirmed = window.confirm(
+  //     `Are you sure you want to delete this code?`
+  //   );
+  //   if (!confirmed) return;
 
-  // Delete a task code
+  //   try {
+  //     await axios.delete(
+  //       `https://sataskmanagementbackend.onrender.com/api/task-codes/${codeId}`
+  //     );
+  //     alert("Code deleted successfully!");
+  //     fetchTaskCodes(); // Refresh list
+  //   } catch (err) {
+  //     alert("Failed to delete code");
+  //   }
+  // };
   const handleDeleteCode = async (codeId) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: "Do you really want to delete this code?",
-      icon: "warning",
+
+      text: "This code will be permanently deleted!",
+      icon: "warning", // ✅ default icon
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "custom-alert-popup",
+        confirmButton: "custom-alert-button",
+      },
+
     });
   
     if (!result.isConfirmed) return;
@@ -172,19 +246,33 @@ const Departments = () => {
       );
   
       Swal.fire({
-        icon: "success",
+
         title: "Deleted!",
-        text: "Code deleted successfully.",
-        timer: 2000,
-        showConfirmButton: false,
+        text: "The code has been deleted successfully.",
+        icon: "success", // ✅ default success icon
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "custom-alert-popup",
+          confirmButton: "custom-alert-button",
+        },
+
       });
   
       fetchTaskCodes(); // Refresh list
     } catch (err) {
+
+      console.error(err);
+  
       Swal.fire({
-        icon: "error",
-        title: "Failed",
-        text: "Failed to delete code. Please try again.",
+        title: "Error!",
+        text: "Failed to delete the code. Please try again.",
+        icon: "error", // ✅ default error icon
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "custom-alert-popup",
+          confirmButton: "custom-alert-button",
+        },
+
       });
     }
   };

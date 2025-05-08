@@ -4,7 +4,6 @@
 main{
     background-color: #fff !important;
 }
-
 .max-h-screen{
     height: 91vh !important;
 }
@@ -15,7 +14,6 @@ main{
     border-left: none;
     border-right: none;
 }
-
 
 /* Modal background */
 .modal-overlay {
@@ -40,6 +38,32 @@ main{
     max-width: 600px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   }
+
+  /* Make the alert popup smaller */
+.custom-alert-popup {
+    width: 350px !important;
+    padding: 20px 24px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Style the button */
+  .custom-alert-button {
+    background-color: #4f46e5;
+    color: white;
+    font-weight: 500;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .custom-alert-button:hover {
+    background-color: #4338ca;
+}
+
   
 
 
@@ -56,5 +80,6 @@ main{
   .swal2-cancel.btn.sweet-cancel-btn {
     background-color: #cbd5e1 !important;
     color: #000;
+
   }
   
