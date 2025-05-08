@@ -38,6 +38,7 @@ main{
     max-width: 600px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   }
+
   /* Make the alert popup smaller */
 .custom-alert-popup {
     width: 350px !important;
@@ -61,5 +62,24 @@ main{
   
   .custom-alert-button:hover {
     background-color: #4338ca;
+}
+
+  
+
+
+  .swal2-popup.sweet-modal {
+    font-family: 'Segoe UI', sans-serif;
+    border-radius: 12px;
+    padding: 25px;
+  }
+  
+  .swal2-confirm.btn.sweet-confirm-btn {
+    background-color: #38bdf8 !important;
+  }
+  
+  .swal2-cancel.btn.sweet-cancel-btn {
+    background-color: #cbd5e1 !important;
+    color: #000;
+
   }
   
