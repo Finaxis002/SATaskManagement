@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { FaTrashAlt, FaUsers, FaPlus, FaTimes } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
@@ -11,6 +12,10 @@ const Departments = () => {
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [newDeptName, setNewDeptName] = useState("");
   const [newCodeName, setNewCodeName] = useState("");
+  const [clients, setClients] = useState([]);
+  const [newClientName, setNewClientName] = useState("");
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [clientOptions, setClientOptions] = useState([]);
 
   // Fetch departments overview with users and tasks
   const fetchDepartmentsData = async () => {
@@ -73,10 +78,6 @@ const Departments = () => {
     }
   };
 
-  useEffect(() => {
-    fetchDepartmentsData();
-  }, []);
-
   const fetchTaskCodes = async () => {
     try {
       const res = await axios.get(
@@ -88,9 +89,36 @@ const Departments = () => {
     }
   };
 
+  const fetchClients = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/clients");
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log("Clients data:", data); // Debug log
+
+      const formattedClients = Array.isArray(data)
+        ? data.map((client) => ({
+            label: client.name || client,
+            value: client.name || client,
+          }))
+        : [];
+
+      // 🔁 This sets both states
+      setClientOptions(formattedClients);
+      setClients(formattedClients.map((c) => c.value)); // ✅ fix: sets raw client name strings for display
+    } catch (err) {
+      console.error("Failed to fetch clients", err);
+    }
+  };
+
   useEffect(() => {
     fetchDepartmentsData();
     fetchTaskCodes(); // 👈 add this
+    fetchClients(); // 👈 Add this line
   }, []);
 
   const handleDeleteDepartment = async (dept) => {
@@ -105,7 +133,14 @@ const Departments = () => {
         "https://sataskmanagementbackend.onrender.com/api/departments/remove-department",
         { department: dept }
       );
-      alert("Department deleted successfully!");
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Department deleted successfully!",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
       setDepartmentMap((prev) => {
         const newMap = { ...prev };
         delete newMap[dept];
@@ -119,19 +154,38 @@ const Departments = () => {
 
   // Delete a task code
   const handleDeleteCode = async (codeId) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete this code?`
-    );
-    if (!confirmed) return;
-
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you really want to delete this code?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+  
+    if (!result.isConfirmed) return;
+  
     try {
       await axios.delete(
         `https://sataskmanagementbackend.onrender.com/api/task-codes/${codeId}`
       );
-      alert("Code deleted successfully!");
+  
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Code deleted successfully.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+  
       fetchTaskCodes(); // Refresh list
     } catch (err) {
-      alert("Failed to delete code");
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: "Failed to delete code. Please try again.",
+      });
     }
   };
 
@@ -173,24 +227,68 @@ const Departments = () => {
       fetchTaskCodes();
       setNewCodeName("");
       setShowCodeModal(false);
+      // ✅ Success Alert
+      Swal.fire({
+        icon: "success",
+        title: "Created!",
+        text: "New code created successfully.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     } catch (err) {
       console.error("Failed to create code", err);
     }
   };
 
+  const handleDeleteClient = async (clientName) => {
+    const result = await Swal.fire({
+      title: `Delete "${clientName}"?`,
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await axios.delete(`http://localhost:5000/api/clients`, {
+        data: { name: clientName },
+      });
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: `Client "${clientName}" was deleted successfully.`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      fetchClients(); // Refresh
+    } catch (err) {
+      console.error("Delete failed", err);
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: "Failed to delete client. Please try again.",
+      });
+    }
+  };
+
   return (
-    <div className="p-4 bg-gray-100">
+    <div className="p-4 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold text-center text-indigo-900 mb-5">
         {view === "department" ? "Departments Overview" : "Reports Overview"}
       </h1>
 
       {/* 🔘 View Switch Buttons */}
-      <div className="flex justify-center gap-4 mb-4">
+      <div className="flex justify-center gap-4 mb-6">
         <button
-          className={`px-6 py-2 text-sm font-medium rounded-md ${
+          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
             view === "department"
               ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600"
+              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
           }`}
           onClick={() => setView("department")}
         >
@@ -198,46 +296,69 @@ const Departments = () => {
         </button>
 
         <button
-          className={`px-6 py-2 text-sm font-medium rounded-md ${
+          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
             view === "code"
               ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600"
+              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
           }`}
           onClick={() => setView("code")}
         >
           Code Overview
         </button>
+
+        <button
+          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
+            view === "client"
+              ? "bg-indigo-600 text-white"
+              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
+          }`}
+          onClick={() => setView("client")}
+        >
+          Client Overview
+        </button>
       </div>
 
-      <div className="flex justify-end mb-4">
+      {/* Action Buttons */}
+      <div className="flex justify-end mb-6">
         {view === "department" ? (
           <button
             onClick={handleCreateDepartment}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
           >
             <FaPlus /> Add Department
           </button>
-        ) : (
+        ) : view === "code" ? (
           <button
             onClick={handleCreateCode}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
           >
             <FaPlus /> Add Code
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowClientModal(true)}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+          >
+            <FaPlus /> Add Client
           </button>
         )}
       </div>
 
       {/* ✅ View Content */}
       {loading ? (
-        <p className="text-center text-gray-500">Loading data...</p>
+        <div className="flex justify-center items-center h-64">
+          <p className="text-center text-gray-500">Loading data...</p>
+        </div>
       ) : view === "department" ? (
         Object.keys(departmentMap).length === 0 ? (
-          <p className="text-center text-gray-500 text-lg">
-            No departments or data found.
-          </p>
+          <div className="flex justify-center items-center h-60">
+            <p className="text-center text-gray-500 text-lg">
+              No departments or data found.
+            </p>
+          </div>
         ) : (
           // === Department Overview ===
-          <div className="space-y-6 mx-auto h-[60vh] overflow-y-auto">
+          <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
             {Object.entries(departmentMap).map(([dept, { users }]) => (
               <div
                 key={dept}
@@ -257,7 +378,7 @@ const Departments = () => {
                   <button
                     type="button"
                     onClick={() => handleDeleteDepartment(dept)}
-                    className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700 transition-colors"
                     title="Delete Department"
                   >
                     <FaTrashAlt size={18} />
@@ -284,22 +405,53 @@ const Departments = () => {
       ) : view === "code" ? (
         // === Code Overview ===
         taskCodes.length === 0 ? (
-          <p className="text-center text-gray-500">No codes found.</p>
+          <div className="flex justify-center items-center h-64">
+            <p className="text-center text-gray-500">No codes found.</p>
+          </div>
         ) : (
-          <div className="space-y-6 mx-auto h-[70vh] overflow-y-auto">
+          <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {taskCodes.map((codeObj) => (
                 <div
                   key={codeObj._id}
-                  className="bg-white flex justify-between border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition relative"
+                  className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
                 >
                   <h3 className="text-lg font-semibold text-indigo-800">
                     {codeObj.name}
                   </h3>
                   <button
                     onClick={() => handleDeleteCode(codeObj._id)}
-                    className=" text-center text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700 transition-colors"
                     title="Delete Code"
+                  >
+                    <FaTrashAlt size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      ) : view === "client" ? (
+        // === Client Overview ===
+        clients.length === 0 ? (
+          <div className="flex justify-center items-center h-64">
+            <p className="text-center text-gray-500">No clients found.</p>
+          </div>
+        ) : (
+          <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {clients.map((clientName, index) => (
+                <div
+                  key={`${clientName}-${index}`}
+                  className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
+                >
+                  <h3 className="text-lg font-semibold text-indigo-800">
+                    {clientName || "Unnamed Client"}
+                  </h3>
+                  <button
+                    onClick={() => handleDeleteClient(clientName)}
+                    className="text-red-500 hover:text-red-700 transition-colors"
+                    title="Delete Client"
                   >
                     <FaTrashAlt size={16} />
                   </button>
@@ -312,13 +464,13 @@ const Departments = () => {
 
       {/* Department Creation Modal */}
       {showDeptModal && (
-        <div className="fixed inset-0 bg-opacity-50 flex  justify-center z-50">
-          <div className="bg-white p-6 rounded-lg h-50 w-96">
+        <div className="fixed inset-0  bg-opacity-50 flex h-50 justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Create New Department</h3>
               <button
                 onClick={() => setShowDeptModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <FaTimes />
               </button>
@@ -328,19 +480,19 @@ const Departments = () => {
               value={newDeptName}
               onChange={(e) => setNewDeptName(e.target.value)}
               placeholder="Enter department name"
-              className="w-full p-2 border border-gray-300 rounded mb-4"
+              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               autoFocus
             />
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowDeptModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded"
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitDepartment}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
               >
                 Create
               </button>
@@ -351,13 +503,13 @@ const Departments = () => {
 
       {/* Code Creation Modal */}
       {showCodeModal && (
-        <div className="fixed inset-0 flex justify-center z-50">
-          <div className="bg-white p-6 rounded-lg h-50 w-96">
+        <div className="fixed inset-0  bg-opacity-50 flex h-50 justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Create New Code</h3>
               <button
                 onClick={() => setShowCodeModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <FaTimes />
               </button>
@@ -367,19 +519,85 @@ const Departments = () => {
               value={newCodeName}
               onChange={(e) => setNewCodeName(e.target.value)}
               placeholder="Enter code name"
-              className="w-full p-2 border border-gray-300 rounded mb-4"
+              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               autoFocus
             />
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowCodeModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded"
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitCode}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Client Creation Modal */}
+      {showClientModal && (
+        <div className="fixed inset-0  bg-opacity-50 flex h-50 justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Create New Client</h3>
+              <button
+                onClick={() => setShowClientModal(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={newClientName}
+              onChange={(e) => setNewClientName(e.target.value)}
+              placeholder="Enter client name"
+              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowClientModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!newClientName.trim()) return;
+                  try {
+                    await axios.post(`http://localhost:5000/api/clients`, {
+                      name: newClientName,
+                    });
+
+                    Swal.fire({
+                      icon: "success",
+                      title: "Client Created",
+                      text: `"${newClientName}" was added successfully!`,
+                      timer: 2000,
+                      showConfirmButton: false,
+                    });
+
+                    fetchClients();
+                    setNewClientName("");
+                    setShowClientModal(false);
+                  } catch (err) {
+                    Swal.fire({
+                      icon: "error",
+                      title: "Creation Failed",
+                      text: "Unable to create client. Please try again.",
+                    });
+
+                    console.error("Client creation failed", err);
+                  }
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
               >
                 Create
               </button>

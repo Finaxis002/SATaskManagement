@@ -12,6 +12,8 @@ import Inbox from "./pages/Inbox";
 import AllTasks from "./pages/AllTasks";
 import Departments from "./pages/Departments";
 import Completed from "./pages/Completed";
+import CalendarPage from "./pages/CalendarPage";
+import ProfilePage from "./pages/ProfilePage"; // Adjust the path as per your structure
 
 const App = () => {
   return (
@@ -100,7 +102,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-         <Route
+        <Route
           path="/departments"
           element={
             <ProtectedRoute>
@@ -110,12 +112,32 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-         <Route
+        <Route
           path="/completed"
           element={
             <ProtectedRoute>
               <MainLayout>
                 <Completed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <CalendarPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ProfilePage />
               </MainLayout>
             </ProtectedRoute>
           }

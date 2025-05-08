@@ -29,10 +29,6 @@ const AllTasks = () => {
     setShowForm(true);
   };
 
-  const handleRemoveCompletedFromUI = () => {
-    setTasks((prev) => prev.filter((task) => task.status !== "Completed"));
-  };
-
   const handleRemoveCompletedTasks = () => {
     const existing = JSON.parse(
       localStorage.getItem("hiddenCompletedTasks") || "[]"
@@ -52,7 +48,7 @@ const AllTasks = () => {
 
   return (
     <>
-       <div className="p-6  w-[180vh]  overflow-auto">
+      <div className="p-6  w-[185vh]  overflow-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Task Manager</h2>
           <div className="flex gap-4">
@@ -64,13 +60,12 @@ const AllTasks = () => {
             </button>
             {role === "admin" && (
               <button
-              onClick={handleRemoveCompletedTasks} // ✅ This saves to localStorage and updates UI
-              className="bg-red-100 text-sm hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-full shadow"
-            >
-              Remove Completed
-            </button>
+                onClick={handleRemoveCompletedTasks} // ✅ This saves to localStorage and updates UI
+                className="bg-red-100 text-sm hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-full shadow"
+              >
+                Remove Completed
+              </button>
             )}
-           
           </div>
         </div>
 
