@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { FaBell, FaUserCircle, FaSearch } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+
+
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -9,6 +12,8 @@ const Header = () => {
   const filteredResults = mockData.filter((item) =>
     item.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -104,11 +109,20 @@ const Header = () => {
             style={{
               marginTop: "100%",
               position: "absolute",
-              zIndex: 12,
+              zIndex:10,
             }}
-            className="absolute right-0 mt-2 w-40 bg-white text-black rounded-lg shadow-lg p-2"
+            className="absolute right-0 w-40 bg-white text-black rounded-lg shadow-lg p-2"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Profile Button */}
+            <button
+              onClick={() => navigate("/profile")} // <-- Replace with your profile route or modal trigger
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-md"
+            >
+              Profile
+            </button>
+
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
               className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100 rounded-md"

@@ -10,15 +10,34 @@ const generateInitials = (name) => {
     : (names[0][0] + names[1][0]).toLowerCase();
 };
 
+
+
 const UserCard = ({ user, index }) => {
   const [hover, setHover] = useState(false);
+  const [hoverPosition, setHoverPosition] = useState("center");
+
   const colorPalette = ["#CD95EA", "#FC979A"];
   const assignedColor = colorPalette[index % colorPalette.length];
+
+  const handleMouseEnter = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const screenWidth = window.innerWidth;
+
+    if (rect.left < screenWidth / 3) {
+      setHoverPosition("left");
+    } else if (rect.right > (2 * screenWidth) / 3) {
+      setHoverPosition("right");
+    } else {
+      setHoverPosition("center");
+    }
+
+    setHover(true);
+  };
 
   return (
     <div
       className="relative flex flex-col items-center m-2 cursor-pointer group"
-      onMouseEnter={() => setHover(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setHover(false)}
     >
       {/* Avatar Circle */}
@@ -36,33 +55,46 @@ const UserCard = ({ user, index }) => {
 
       {/* Profile Hover Card */}
       {hover && (
-        <div className="absolute top-20 left-1/2 transform -translate-y-1/2  bg-white rounded-xl shadow-xl border border-gray-200 z-50 flex p-4 transition-all duration-200 ease-in-out">
-          {/* Left Circle with Initials */}
+        <div
+          className={`absolute top-[-22vh] z-50 flex items-center gap-5 p-5 w-[400px] transition-all duration-200 ease-in-out bg-white rounded-lg shadow-2xl border border-gray-200
+            ${
+              hoverPosition === "left"
+                ? "left-0"
+                : hoverPosition === "right"
+                ? "right-0"
+                : "left-1/2 -translate-x-1/2"
+            }
+          `}
+        >
+          {/* Left Circular Avatar */}
           <div
-            className="flex items-center justify-center w-20 h-20 rounded-full text-3xl font-semibold text-black mr-4"
+            className="flex items-center justify-center w-20 aspect-square rounded-full text-3xl font-bold text-white shadow-md"
             style={{ backgroundColor: assignedColor }}
           >
-            {user.name?.substring(0, 2).toUpperCase()}
+            {user.name?.substring(0, 1).toUpperCase()}
           </div>
 
-          {/* Right Details */}
-          <div className="flex flex-col justify-center">
-            <p className="text-lg font-bold text-gray-900 leading-tight">
-              {user.name}
-            </p>
-            <p className="text-sm text-gray-700">{user.email}</p>
-            <p className="text-sm text-gray-600">
-              Position: <span className="font-medium">{user.position}</span>
-            </p>
-            <p className="text-sm text-gray-600">
-              Department: <span className="font-medium">{user.department}</span>
-            </p>
+          {/* Right User Info */}
+          <div className="flex flex-col">
+            <p className="text-lg font-semibold text-gray-900">{user.name}</p>
+            <p className="text-sm text-gray-600">{user.email}</p>
+            <div className="mt-2 space-y-1 text-sm text-gray-700">
+              <p>
+                <span className="font-medium text-gray-800">Position:</span>{" "}
+                {user.position}
+              </p>
+              <p>
+                <span className="font-medium text-gray-800">Department:</span>{" "}
+                {user.department}
+              </p>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 };
+
 
 const UserGrid = () => {
   const [users, setUsers] = useState([]);

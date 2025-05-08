@@ -2,11 +2,19 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFilter, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { FaTrashAlt, FaPen } from "react-icons/fa";
-import { fetchUsers } from "../../redux/userSlice"; 
+
+import {
+  faFilter,
+  faPen,
+  faTrash,
+  faCalendar,
+} from "@fortawesome/free-solid-svg-icons";
+import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
+import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
 import { useSelector } from "react-redux";
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
+
+
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
 
@@ -360,6 +368,9 @@ const TaskList = ({
     }));
   };
 
+  const uniqueAssignedBy = [...new Set(tasks.map((t) => t.assignedBy?.name).filter(Boolean))];
+
+
   const handleWorkDescSave = async (taskId) => {
     const workDescText = workDescs[taskId] || "";
 
@@ -513,38 +524,38 @@ const TaskList = ({
   const handleDeleteTask = async (task) => {
     if (!task || !task._id) {
       Swal.fire({
-        icon: 'error',
-        title: 'Invalid Task',
-        text: 'The selected task is not valid or is missing required data.',
-        confirmButtonColor: '#d33',
+        icon: "error",
+        title: "Invalid Task",
+        text: "The selected task is not valid or is missing required data.",
+        confirmButtonColor: "#d33",
       });
       return;
     }
-  
+
     if (!task.isRepetitive) {
       const confirmDelete = await Swal.fire({
-        title: '<strong>Delete Task?</strong>',
+        title: "<strong>Delete Task?</strong>",
         html: `<i>Task: <b>${task.taskName}</b> will be permanently removed.</i>`,
-        icon: 'warning',
+        icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: '#e3342f',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'No, keep it',
+        confirmButtonColor: "#e3342f",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "No, keep it",
         customClass: {
-          popup: 'sweet-modal',
-          confirmButton: 'sweet-confirm-btn',
-          cancelButton: 'sweet-cancel-btn',
+          popup: "sweet-modal",
+          confirmButton: "sweet-confirm-btn",
+          cancelButton: "sweet-cancel-btn",
         },
         backdrop: `rgba(0,0,0,0.5)`,
       });
-  
+
       if (!confirmDelete.isConfirmed) return;
       return deleteTaskRequest(task._id);
     }
-  
+
     const result = await Swal.fire({
-      title: 'Repetitive Task Options',
+      title: "Repetitive Task Options",
       html: `
         <p>This task repeats regularly. What action do you want to take?</p>
         <ul style="text-align: left; font-size: 14px;">
@@ -552,24 +563,23 @@ const TaskList = ({
           <li><b>Stop Repeating & Delete:</b> Ends the repetition and deletes it.</li>
         </ul>
       `,
-      icon: 'question',
+      icon: "question",
       showCancelButton: true,
       showDenyButton: true,
-      confirmButtonText: 'Delete Only This',
-      denyButtonText: 'Stop & Delete',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#3085d6',
-      denyButtonColor: '#e3342f',
-      cancelButtonColor: '#6c757d',
+      confirmButtonText: "Delete Only This",
+      denyButtonText: "Stop & Delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#3085d6",
+      denyButtonColor: "#e3342f",
+      cancelButtonColor: "#6c757d",
     });
-  
+
     if (result.isConfirmed) {
       await deleteTaskRequest(task._id);
     } else if (result.isDenied) {
       await permanentlyStopRepetition(task);
     }
   };
-  
 
   const dropdownRef = useRef(null);
 
@@ -878,7 +888,7 @@ const TaskList = ({
   }, [filters.department, tasks]);
 
   return (
-    <div className="overflow-x-auto h-[78vh] w-[180vh]">
+    <div className="overflow-x-auto h-[78vh]">
       <div className="flex items-center justify-start mb-6 space-x-6">
         {/* Department Filter (already exists) */}
         <div className="flex items-center space-x-2">
@@ -930,31 +940,70 @@ const TaskList = ({
 
         {/* Filter by User (Assignee) */}
         {role === "admin" && (
-          <div className="flex items-center space-x-2">
-            <label
-              htmlFor="userFilter"
-              className="text-sm font-medium text-gray-700"
-            >
-              Filter by User:
-            </label>
-            <select
-              id="userFilter"
-              value={filters.assignee}
-              onChange={(e) => handleFilterChange("assignee", e.target.value)}
-              className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="">All Users</option>
-              {uniqueUsers.map((user) => (
-                <option key={user} value={user}>
-                  {user}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center space-x-4">
+            {/* Filter by Assignee */}
+            <div className="flex items-center space-x-2">
+              <label
+                htmlFor="userFilter"
+                className="text-sm font-medium text-gray-700"
+              >
+                Filter by Assignee:
+              </label>
+              <select
+                id="userFilter"
+                value={filters.assignee}
+                onChange={(e) => handleFilterChange("assignee", e.target.value)}
+                className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Users</option>
+                {uniqueUsers.map((user) => (
+                  <option key={user} value={user}>
+                    {user}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter by Assigned By */}
+            <div className="flex items-center space-x-2">
+              <label
+                htmlFor="assignedByFilter"
+                className="text-sm font-medium text-gray-700"
+              >
+                Assigned By:
+              </label>
+              <select
+                id="assignedByFilter"
+                value={filters.assignedBy}
+                onChange={(e) =>
+                  handleFilterChange("assignedBy", e.target.value)
+                }
+                className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Users</option>
+                {uniqueAssignedBy.map((user) => (
+                  <option key={user} value={user}>
+                    {user}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
+
+        {/* <div className="flex items-center space-x-2">
+          <button
+            onClick={() => (window.location.href = "/calendar")} // Update if using React Router
+            className="flex items-center gap-2 px-4 py-2 text-indigo-600  hover:text-indigo-700 transition duration-300"
+          >
+            <i className="text-lg">
+              <FaCalendar />
+            </i>
+          </button>
+        </div> */}
       </div>
 
-      <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
+      <table className=" w-full table-auto border-collapse text-sm text-gray-800">
         <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-sm">
           <tr className="text-left">
             <th className="py-4 px-4 min-w-[70px] font-semibold">S. No</th>
