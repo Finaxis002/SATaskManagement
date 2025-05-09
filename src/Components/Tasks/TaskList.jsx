@@ -408,22 +408,23 @@ const TaskList = ({
     }
   };
 
-  const filteredTasks = (tasksOverride || tasks)
-    .filter((task) => {
-      const matchesFilter =
-        (filters.department === "" ||
-          task.department.includes(filters.department)) &&
-        (filters.code === "" || task.code === filters.code) &&
-        (filters.assignee === "" ||
-          task.assignees?.some((a) => a.name === filters.assignee)) &&
-        (filters.assignedBy === "" ||
-          task.assignedBy?.name === filters.assignedBy) &&
-        (filters.priority === "" || task.priority === filters.priority) &&
-        (filters.status === "" || task.status === filters.status);
-      const shouldHide = hideCompleted && task.status === "Completed";
-      return matchesFilter && !shouldHide;
-    })
-    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+const filteredTasks = (tasksOverride || tasks)
+  .filter((task) => {
+    const matchesFilter =
+      (filters.department === "" ||
+        task.department.includes(filters.department)) &&
+      (filters.code === "" || task.code === filters.code) &&
+    (!filters.user || filters.user === "All Users" ||
+ task.assignees?.some((a) => a.name === filters.user) ||
+ task.assignedBy?.name === filters.user)
+ &&
+      (filters.priority === "" || task.priority === filters.priority) &&
+      (filters.status === "" || task.status === filters.status);
+
+    const shouldHide = hideCompleted && task.status === "Completed";
+    return matchesFilter && !shouldHide;
+  })
+  .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
   const highPriorityTasks = filteredTasks.filter(
     (task) => task.priority === "High"
@@ -938,58 +939,33 @@ const TaskList = ({
           </select>
         </div>
 
-        {/* Filter by User (Assignee) */}
-        {role === "admin" && (
-          <div className="flex items-center space-x-4">
-            {/* Filter by Assignee */}
-            <div className="flex items-center space-x-2">
-              <label
-                htmlFor="userFilter"
-                className="text-sm font-medium text-gray-700"
-              >
-                Filter by Assignee:
-              </label>
-              <select
-                id="userFilter"
-                value={filters.assignee}
-                onChange={(e) => handleFilterChange("assignee", e.target.value)}
-                className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Users</option>
-                {uniqueUsers.map((user) => (
-                  <option key={user} value={user}>
-                    {user}
-                  </option>
-                ))}
-              </select>
-            </div>
+       {/* Unified Filter by User (Assignee or Assigned By) */}
+{role === "admin" && (
+  <div className="flex items-center space-x-4">
+    <div className="flex items-center space-x-2">
+      <label
+        htmlFor="userFilter"
+        className="text-sm font-medium text-gray-700"
+      >
+        Filter by User:
+      </label>
+      <select
+        id="userFilter"
+        value={filters.user}
+        onChange={(e) => handleFilterChange("user", e.target.value)}
+        className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+      >
+        <option value="">All Users</option>
+        {[...new Set([...uniqueUsers, ...uniqueAssignedBy])].map((user) => (
+          <option key={user} value={user}>
+            {user}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+)}
 
-            {/* Filter by Assigned By */}
-            <div className="flex items-center space-x-2">
-              <label
-                htmlFor="assignedByFilter"
-                className="text-sm font-medium text-gray-700"
-              >
-                Assigned By:
-              </label>
-              <select
-                id="assignedByFilter"
-                value={filters.assignedBy}
-                onChange={(e) =>
-                  handleFilterChange("assignedBy", e.target.value)
-                }
-                className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Users</option>
-                {uniqueAssignedBy.map((user) => (
-                  <option key={user} value={user}>
-                    {user}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
 
         {/* <div className="flex items-center space-x-2">
           <button
