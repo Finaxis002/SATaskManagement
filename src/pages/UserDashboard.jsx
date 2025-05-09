@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import { format, isBefore, isToday } from "date-fns";
+import { useDispatch } from "react-redux";
+import { fetchTasks } from "../redux/taskSlice";
 
 const UserDashboard = () => {
   const [tasks, setTasks] = useState([]);
@@ -9,19 +11,12 @@ const UserDashboard = () => {
 
   const { userId } = useSelector((state) => state.auth);
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/tasks");
-        const userTasks = res.data.filter(task => task.assignee?._id === userId);
-        setTasks(userTasks);
-      } catch (err) {
-        console.error("Failed to fetch tasks", err);
-      }
-    };
+  const dispatch = useDispatch();
 
-    fetchTasks();
-  }, [userId]);
+  useEffect(() => { 
+    dispatch(fetchTasks());
+  }, [dispatch]);
+
 
   const now = new Date();
   const completed = tasks.filter(t => t.completed);

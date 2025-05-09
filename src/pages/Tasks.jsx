@@ -55,27 +55,10 @@ const TaskBoard = () => {
   const assignees = useSelector((state) => state.tasks.assignees);
 
   // Fetch tasks initially from the backend
-  useEffect(() => {
-    fetch("https://sataskmanagementbackend.onrender.com/api/tasks")
-      .then((res) => res.json())
-      .then((data) => setTasks(data))
-      .catch((error) => console.error("Error fetching tasks:", error));
 
-    // Listen for the task-updated event to handle real-time updates
-    socket.on("task-updated", (updatedTask) => {
-      setTasks((prevTasks) => {
-        // Update the task in the state
-        return prevTasks.map((task) =>
-          task._id === updatedTask._id ? updatedTask : task
-        );
-      });
-    });
-
-    // Clean up the socket listener when the component unmounts
-    return () => {
-      socket.off("task-updated");
-    };
-  }, []);
+  useEffect(() => { 
+    dispatch(fetchTasks());
+  }, [dispatch]);
 
   const popupRef = useRef(null);
 

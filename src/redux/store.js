@@ -1,9 +1,11 @@
-// src/redux/store.js
 import { configureStore } from '@reduxjs/toolkit';
 import taskReducer from './taskSlice';
 import authReducer from './authSlice';
 import userReducer from "./userSlice";
-import notificationReducer from './notificationSlice'
+import departmentReducer from "./departmentSlice";
+import notificationReducer from './notificationSlice';
+import taskCodeReducer from './taskCodeSlice'; // ✅ Single import
+import clientReducer from "./clientSlice"; // ✅ new import
 
 export const store = configureStore({
   reducer: {
@@ -11,7 +13,9 @@ export const store = configureStore({
     tasks: taskReducer,
     users: userReducer,
     notifications: notificationReducer,
+    departments: departmentReducer,
+    taskCodes: taskCodeReducer, // ✅ Correct key
+    clients: clientReducer, // ✅ add here
   },
-  // Redux DevTools is enabled by default in development mode
   devTools: process.env.NODE_ENV !== 'production',
 });

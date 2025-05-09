@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from "react";
 import Select from "react-select";
 import TaskCodeSelector from "../Components/Tasks/TaskCodeSelector"; // Adjust path as needed
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTaskCodes } from "../redux/taskCodeSlice"; // Adjust path as needed
+import { fetchClients } from "../redux/clientSlice"; // Adjust path as needed
 
 const Completed = () => {
   const [tasks, setTasks] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
-  const [clientOptions, setClientOptions] = useState([]);
+
+
   const [selectedCode, setSelectedCode] = useState("");
-  const [codeOptions, setCodeOptions] = useState([]);
+const codeOptions = useSelector((state) => state.taskCodes.list); // ✅ Use Redux data
+ const clientOptions = useSelector((state) => state.clients.list);
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
   const userEmail = localStorage.getItem("userId");
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -29,36 +35,22 @@ const Completed = () => {
     fetchTasks();
   }, []);
 
+
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const res = await fetch(
-          "https://sataskmanagementbackend.onrender.com/api/clients"
-        );
-        const data = await res.json();
-        setClientOptions(data);
-      } catch (err) {
-        console.error("Failed to fetch clients", err);
-      }
-    };
+  dispatch(fetchClients());
+}, [dispatch]);
 
-    fetchClients();
-  }, []);
 
-  // Fetch task codes
+
+
+
 useEffect(() => {
-  const fetchCodes = async () => {
-    try {
-      const res = await fetch("https://sataskmanagementbackend.onrender.com/api/task-codes");
-      const data = await res.json();
-      const uniqueCodes = [...new Set(data.map((code) => code.name))];
-      setCodeOptions(uniqueCodes);
-    } catch (err) {
-      console.error("Failed to fetch task codes", err);
-    }
-  };
-  fetchCodes();
-}, []);
+  dispatch(fetchTaskCodes());
+}, [dispatch]);
+
+const codeLoading = useSelector((state) => state.taskCodes.loading);
+const codeError = useSelector((state) => state.taskCodes.error);
+
 const completedTasks = tasks.filter((task) => {
   const clientMatch =
     selectedClient === "" || task.clientName === selectedClient;

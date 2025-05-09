@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
-import { FaBell, FaUserCircle, FaSearch } from "react-icons/fa";
+import {
+  FaBell,
+  FaUserCircle,
+  FaSearch,
+  FaSignOutAlt,
+  FaHome,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-
-
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -32,8 +36,8 @@ const Header = () => {
 
     // if (role === "admin") {
     //   setProfileInitial("Fi");
-    // } else 
-     if (name) {
+    // } else
+    if (name) {
       const initials = name
         .split(" ")
         .map((n) => n[0]?.toUpperCase())
@@ -107,26 +111,46 @@ const Header = () => {
           <div
             id="profile-menu-dropdown"
             style={{
-              marginTop: "100%",
+              top: "110%",
+              right: 0,
               position: "absolute",
-              zIndex:10,
+              zIndex: 10,
             }}
-            className="absolute right-0 w-40 bg-white text-black rounded-lg shadow-lg p-2"
+            className="w-40 bg-white text-black rounded-lg shadow-lg p-2"
             onClick={(e) => e.stopPropagation()}
           >
+              {/* Home Button */}
+            <button
+              onClick={() => {
+                navigate("/");
+                setIsMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-md flex items-center gap-2"
+            >
+              <FaHome className="text-gray-600" />
+              Home
+            </button>
             {/* Profile Button */}
             <button
-              onClick={() => navigate("/profile")} // <-- Replace with your profile route or modal trigger
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-md"
+              onClick={() => {
+                navigate("/profile");
+                setIsMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-md flex items-center gap-2"
             >
+              <FaUserCircle className="text-gray-600" />
               Profile
             </button>
 
             {/* Logout Button */}
             <button
-              onClick={handleLogout}
-              className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100 rounded-md"
+              onClick={() => {
+                handleLogout();
+                setIsMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100 rounded-md flex items-center gap-2"
             >
+              <FaSignOutAlt className="text-red-500" />
               Logout
             </button>
           </div>
