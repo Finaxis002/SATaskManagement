@@ -674,11 +674,16 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [assignedByUser, setAssignedByUser] = useState(null);
 
   const employees = useSelector((state) => state.tasks.assignees);
-  const adminUsers = employees.filter(emp => emp.role === "admin");
-  const adminOptions = adminUsers.map(emp => ({
-    label: `${emp.name} (${emp.email})`,
-    value: emp.email,
-  }));
+  // const adminUsers = employees.filter(emp => emp.role === "admin");
+  // const adminOptions = adminUsers.map(emp => ({
+  //   label: `${emp.name} (${emp.email})`,
+  //   value: emp.email,
+  // }));
+  const adminOptions = employees.map(emp => ({
+  label: `${emp.name} (${emp.email})`,
+  value: emp.email,
+}));
+
 
   useEffect(() => {
     dispatch(fetchAssignees());
@@ -760,7 +765,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       code: taskCode?.value || "",
       assignedBy: assignedByUser
         ? {
-            name: adminUsers.find((admin) => admin.email === assignedByUser.value)?.name,
+            // name: adminUsers.find((admin) => admin.email === assignedByUser.value)?.name,
+             name: employees.find((user) => user.email === assignedByUser.value)?.name,
             email: assignedByUser.value,
           }
         : {
@@ -768,6 +774,10 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             email: localStorage.getItem("userId"),
           },
       isRepetitive,
+      createdBy: {
+    name: localStorage.getItem("name"),
+    email: localStorage.getItem("userId"),
+  },
     };
     
     if (initialData) {
