@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
 import { io } from "socket.io-client";
+
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
 
 const TaskList = ({
@@ -127,25 +128,48 @@ useEffect(() => {
 
       let filtered = [];
 
-      if (role !== "admin") {
-        const filtered = visibleTasks.filter(
-          (task) =>
-            task.assignees.some((a) => a.email === userEmail) ||
-            task.assignedBy?.email === userEmail
-        );
+  
+      // if (role !== "admin") {
+      //   const filtered = visibleTasks.filter((task) =>
+      //     task.assignees.some((a) => a.email === userEmail) ||
+      //     task.assignedBy?.email === userEmail ||
+      //     task.createdBy?.email === userEmail
+      //   );
+        
+      //   setTasks(filtered);
+      //   if (setTaskListExternally) setTaskListExternally(filtered);
+      // } else {
+      //   setTasks(visibleTasks);
+      //   if (setTaskListExternally) setTaskListExternally(visibleTasks);
+      // }
 
-        setTasks(filtered);
-        if (setTaskListExternally) setTaskListExternally(filtered);
-      } else {
-        setTasks(visibleTasks);
-        if (setTaskListExternally) setTaskListExternally(visibleTasks);
-      }
+      // const taskRemarks = {};
+      // filtered.forEach((task) => {
+      //   taskRemarks[task._id] = task.remark || "";
+      // });
+      // setRemarks(taskRemarks);
+   
 
-      const taskRemarks = {};
-      filtered.forEach((task) => {
-        taskRemarks[task._id] = task.remark || "";
-      });
-      setRemarks(taskRemarks);
+if (role !== "admin") {
+  filtered = visibleTasks.filter((task) =>
+    task.assignees?.some((a) => a.email === userEmail) ||
+    task.assignedBy?.email === userEmail ||
+    task.createdBy?.email === userEmail
+  );
+} else {
+  filtered = visibleTasks;
+}
+
+setTasks(filtered);
+if (setTaskListExternally) setTaskListExternally(filtered);
+
+const taskRemarks = {};
+filtered.forEach((task) => {
+  taskRemarks[task._id] = task.remark || "";
+});
+setRemarks(taskRemarks);
+
+
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
