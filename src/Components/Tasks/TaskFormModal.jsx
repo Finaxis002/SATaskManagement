@@ -346,7 +346,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               <option>In Progress</option>
               <option>Completed</option>
               <option>Overdue</option>
-              <option>Abbstulate</option>
+              <option>Obsolete</option>
             </select>
           </div>
 
