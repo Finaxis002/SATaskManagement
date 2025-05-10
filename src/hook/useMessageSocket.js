@@ -14,9 +14,12 @@ const useMessageSocket = (setInboxCount) => {
 
     const fetchUpdatedCount = async () => {
       try {
-        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/unread-count", {
-          params: { name, role },
-        });
+        const res = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/unread-count",
+          {
+            params: { name, role },
+          }
+        );
         console.log("📩 Updated inbox count:", res.data.unreadCount);
         setInboxCount(res.data.unreadCount);
       } catch (err) {
@@ -27,10 +30,27 @@ const useMessageSocket = (setInboxCount) => {
     fetchUpdatedCount(); // ✅ Immediately fetch on mount
 
     // Listen for real-time incoming messages
-    socket.on("receiveMessage", (msg) => {
-      console.log("📥 Received new message in Sidebar socket");
-      fetchUpdatedCount(); // Fetch unread count immediately when new message arrives
-    });
+   socket.on("receiveMessage", (msg) => {
+  const currentUser = localStorage.getItem("name");
+  const currentRole = localStorage.getItem("role");
+
+  const isGroupMessage = !!msg.group?.trim();
+  const isRecipient = msg.recipient === currentUser;
+  const isSender = msg.sender === currentUser;
+
+  // ✅ Filter logic:
+  if (
+    (isGroupMessage && currentRole === "admin") || // admin receives group messages
+    isRecipient || // user is the recipient of a personal message
+    isSender       // user sent the message
+  ) {
+    console.log("📥 Relevant message, updating inbox count");
+    fetchUpdatedCount();
+  } else {
+    console.log("🚫 Irrelevant message ignored by inbox count");
+  }
+});
+
 
     // Listen for inbox count updates separately
     socket.on("inboxCountUpdated", () => {
@@ -38,12 +58,11 @@ const useMessageSocket = (setInboxCount) => {
       fetchUpdatedCount();
     });
 
-      // 🆕 Whenever any message is marked as read
-      socket.on("markRead", () => {
-        console.log("📬 Message marked as read");
-        fetchUpdatedCount();
-      });
-  
+    // 🆕 Whenever any message is marked as read
+    socket.on("markRead", () => {
+      console.log("📬 Message marked as read");
+      fetchUpdatedCount();
+    });
 
     return () => {
       socket.off("receiveMessage");
@@ -54,4 +73,3 @@ const useMessageSocket = (setInboxCount) => {
 };
 
 export default useMessageSocket;
-

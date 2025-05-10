@@ -228,7 +228,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   }));
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-opacity-40">
+   <div className="fixed inset-0 flex items-center justify-center  bg-opacity-50 z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
         <h3 className="text-lg font-semibold mb-4 text-center">
           {initialData ? "Update Task" : "Create Task"}
