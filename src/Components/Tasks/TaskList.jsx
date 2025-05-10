@@ -17,6 +17,7 @@ import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
 import { io } from "socket.io-client";
+
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
 
 const TaskList = ({
@@ -126,6 +127,7 @@ const TaskList = ({
 
       let filtered = [];
 
+
       if (role !== "admin") {
         filtered = visibleTasks.filter(
           (task) =>
@@ -146,6 +148,8 @@ const TaskList = ({
         taskRemarks[task._id] = task.remark || "";
       });
       setRemarks(taskRemarks);
+
+
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
