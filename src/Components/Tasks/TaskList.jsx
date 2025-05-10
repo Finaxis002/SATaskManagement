@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
+import { updateTaskStatus, fetchTasks , } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { fetchDepartments } from "../../redux/departmentSlice";
 
 import {
   faFilter,
@@ -13,6 +14,7 @@ import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
 import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
+
 import { io } from "socket.io-client";
 
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
@@ -35,20 +37,19 @@ const TaskList = ({
     code: "",
     department: "",
   });
-  const [dueDateSortOrder, setDueDateSortOrder] = useState(null); 
-  const [remarks, setRemarks] = useState({}); 
-  const [editingRemark, setEditingRemark] = useState(null); 
+  const [dueDateSortOrder, setDueDateSortOrder] = useState(null);
+  const [remarks, setRemarks] = useState({});
+  const [editingRemark, setEditingRemark] = useState(null);
   const [editingWorkDesc, setEditingWorkDesc] = useState(null);
   const [workDescs, setWorkDescs] = useState({});
   const [openRemarkPopup, setOpenRemarkPopup] = useState(null);
   const [openWorkDescPopup, setOpenWorkDescPopup] = useState(null);
-  const [workDescMode, setWorkDescMode] = useState("view"); 
-  const [remarkMode, setRemarkMode] = useState("view"); 
-  const [departments, setDepartments] = useState([]); 
+  const [workDescMode, setWorkDescMode] = useState("view");
+  const [remarkMode, setRemarkMode] = useState("view");
+  const [departments, setDepartments] = useState([]);
   const [uniqueUsers, setUniqueUsers] = useState([]);
   const [departmentsForAdmin, setDepartmentsForAdmin] = useState([]);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
-
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -61,6 +62,18 @@ const TaskList = ({
     dispatch(fetchUsers());
   }, [dispatch]);
 
+const departmentData = useSelector((state) => state.departments.list);
+
+useEffect(() => {
+  dispatch(fetchDepartments());
+}, [dispatch]);
+
+useEffect(() => {
+  setDepartments(departmentData); // ✅ Set local state from Redux store
+}, [departmentData]);
+
+
+
   useEffect(() => {
     if (role === "admin" && users?.length) {
       const adminUser = users.find((u) => u.email === userEmail);
@@ -69,7 +82,7 @@ const TaskList = ({
       setDepartmentsLoaded(true); // ✅ Mark as loaded here
     }
   }, [users, role, userEmail]);
-  
+
   useEffect(() => {
     dispatch(updateTaskStatus());
   }, [dispatch]);
@@ -82,60 +95,21 @@ const TaskList = ({
   }, [users]);
 
   // Fetch departments from API
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/departments"
-      );
-      const data = await response.json();
-      setDepartments(data); // Store fetched departments
-    } catch (err) {
-      console.error("Failed to fetch departments:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchDepartments(); 
-  }, []);
-
-  // const fetchTasksFromAPI = async () => {
+  // const fetchDepartments = async () => {
   //   try {
   //     const response = await fetch(
-  //       "https://sataskmanagementbackend.onrender.com/api/tasks"
+  //       "https://sataskmanagementbackend.onrender.com/api/departments"
   //     );
   //     const data = await response.json();
-
-  //     // Read hidden task IDs from localStorage
-  //     const hiddenTaskIds = JSON.parse(
-  //       localStorage.getItem("hiddenCompletedTasks") || "[]"
-  //     );
-
-  //     const visibleTasks = data.filter(
-  //       (task) => !hiddenTaskIds.includes(task._id)
-  //     );
-
-  //     if (role !== "admin") {
-  //       const filtered = visibleTasks.filter((task) =>
-  //         task.assignees.some((a) => a.email === userEmail) ||
-  //         task.assignedBy?.email === userEmail
-  //       );
-        
-  //       setTasks(filtered);
-  //       if (setTaskListExternally) setTaskListExternally(filtered);
-  //     } else {
-  //       setTasks(visibleTasks);
-  //       if (setTaskListExternally) setTaskListExternally(visibleTasks);
-  //     }
-
-  //     const taskRemarks = {};
-  //     visibleTasks.forEach((task) => {
-  //       taskRemarks[task._id] = task.remark || "";
-  //     });
-  //     setRemarks(taskRemarks);
+  //     setDepartments(data); // Store fetched departments
   //   } catch (err) {
-  //     console.error("Failed to fetch tasks:", err);
+  //     console.error("Failed to fetch departments:", err);
   //   }
   // };
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
 
   const fetchTasksFromAPI = async () => {
     try {
@@ -143,16 +117,17 @@ const TaskList = ({
         "https://sataskmanagementbackend.onrender.com/api/tasks"
       );
       const data = await response.json();
-  
+
       const hiddenTaskIds = JSON.parse(
         localStorage.getItem("hiddenCompletedTasks") || "[]"
       );
-  
+
       const visibleTasks = data.filter(
         (task) => !hiddenTaskIds.includes(task._id)
       );
-  
+
       let filtered = [];
+
   
       // if (role !== "admin") {
       //   const filtered = visibleTasks.filter((task) =>
@@ -194,30 +169,17 @@ filtered.forEach((task) => {
 });
 setRemarks(taskRemarks);
 
+
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
   };
-  
-  // useEffect(() => {
-  //   fetchTasksFromAPI();
-  // }, [refreshTrigger]); // ✅ Run this when refreshTrigger changes
 
-  // useEffect(() => {
-  //   if (role !== "admin") {
-  //     fetchTasksFromAPI();
-  //   } else if (departmentsForAdmin.length > 0) {
-  //     fetchTasksFromAPI();
-  //   }
-  // }, [role, userEmail, refreshTrigger, departmentsForAdmin]);
- 
-  
   useEffect(() => {
     if (role !== "admin" || departmentsLoaded) {
       fetchTasksFromAPI();
     }
   }, [role, userEmail, refreshTrigger, departmentsLoaded]);
-  
 
   useEffect(() => {
     socket.on("task-updated", (data) => {
@@ -227,29 +189,6 @@ setRemarks(taskRemarks);
 
     return () => socket.off("task-updated");
   }, []);
-
-  // useEffect(() => {
-  //   socket.on("new-task-created", (data) => {
-  //     console.log("🟢 Received new task event!", data);
-  //     fetchTasksFromAPI();
-  //   });
-
-  //   socket.on("task-updated", () => {
-  //     console.log("🟡 Task updated event!");
-  //     fetchTasksFromAPI();
-  //   });
-
-  //   socket.on("task-deleted", () => {
-  //     console.log("🔴 Task deleted event!");
-  //     fetchTasksFromAPI();
-  //   });
-
-  //   return () => {
-  //     socket.off("new-task-created");
-  //     socket.off("task-updated");
-  //     socket.off("task-deleted");
-  //   };
-  // }, []);
 
   // Fetch tasks based on the user's role
   useEffect(() => {
@@ -266,18 +205,17 @@ setRemarks(taskRemarks);
         fetchTasksFromAPI();
       }
     };
-  
+
     socket.on("new-task-created", handleTaskEvent);
     socket.on("task-updated", handleTaskEvent);
     socket.on("task-deleted", handleTaskEvent);
-  
+
     return () => {
       socket.off("new-task-created", handleTaskEvent);
       socket.off("task-updated", handleTaskEvent);
       socket.off("task-deleted", handleTaskEvent);
     };
   }, [departmentsLoaded, role]);
-  
 
   useEffect(() => {
     fetchTasksFromAPI();
@@ -389,8 +327,9 @@ setRemarks(taskRemarks);
     }));
   };
 
-  const uniqueAssignedBy = [...new Set(tasks.map((t) => t.assignedBy?.name).filter(Boolean))];
-
+  const uniqueAssignedBy = [
+    ...new Set(tasks.map((t) => t.assignedBy?.name).filter(Boolean)),
+  ];
 
   const handleWorkDescSave = async (taskId) => {
     const workDescText = workDescs[taskId] || "";
@@ -435,12 +374,13 @@ setRemarks(taskRemarks);
         (filters.department === "" ||
           task.department.includes(filters.department)) &&
         (filters.code === "" || task.code === filters.code) &&
-        (filters.assignee === "" ||
-          task.assignees?.some((a) => a.name === filters.assignee)) &&
-        (filters.assignedBy === "" ||
-          task.assignedBy?.name === filters.assignedBy) &&
+        (!filters.user ||
+          filters.user === "All Users" ||
+          task.assignees?.some((a) => a.name === filters.user) ||
+          task.assignedBy?.name === filters.user) &&
         (filters.priority === "" || task.priority === filters.priority) &&
         (filters.status === "" || task.status === filters.status);
+
       const shouldHide = hideCompleted && task.status === "Completed";
       return matchesFilter && !shouldHide;
     })
@@ -623,11 +563,11 @@ setRemarks(taskRemarks);
       className="hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200"
     >
       {/* 1. S. No */}
-      <td className="py-4 px-4 font-medium">{index + 1}</td>
+      <td className="py-3 px-4 font-medium">{index + 1}</td>
 
       {/* 2. Task Name (with pencil icon for edit) */}
-      <td className="py-4 px-6 relative flex items-center gap-2">
-        <span className="text-sm">{task.taskName}</span>
+      <td className="py-3 px-6 relative flex items-center gap-2">
+        <span className="text-xs">{task.taskName}</span>
         <FontAwesomeIcon
           icon={faPen}
           className="cursor-pointer text-blue-500 hover:text-blue-700"
@@ -636,9 +576,9 @@ setRemarks(taskRemarks);
       </td>
 
       {/* 3. Work Description + Code */}
-      <td className="py-4 px-6 relative">
+      <td className="py-3 px-6 relative">
         <div className="flex items-center gap-2">
-          <span className="text-sm">
+          <span className="text-xs">
             {(task.workDesc || "No description").length > 60
               ? `${task.workDesc.slice(0, 60)}...`
               : task.workDesc || "No description"}
@@ -674,7 +614,7 @@ setRemarks(taskRemarks);
         {openWorkDescPopup === task._id && (
           <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
             <div className="flex justify-between items-center mb-3">
-              <span className="font-semibold text-sm">
+              <span className="font-semibold text-xs">
                 {workDescMode === "edit"
                   ? "Edit Work Description"
                   : "Work Description"}
@@ -699,7 +639,7 @@ setRemarks(taskRemarks);
                   }
                   rows="4"
                   placeholder="Edit Work Description"
-                  className="w-full px-2 py-1 text-sm border rounded-md text-justify"
+                  className="w-full px-2 py-1 text-xs border rounded-md text-justify"
                 />
 
                 <div className="flex justify-end mt-2">
@@ -715,7 +655,7 @@ setRemarks(taskRemarks);
                 </div>
               </>
             ) : (
-              <div className="text-gray-700 text-sm whitespace-pre-wrap">
+              <div className="text-gray-700 text-xs whitespace-pre-wrap">
                 {task.workDesc || "No description available"}
               </div>
             )}
@@ -728,10 +668,10 @@ setRemarks(taskRemarks);
       </td>
 
       {/* 4. Date of Work */}
-      <td className="py-4 px-6">{formatAssignedDate(task.assignedDate)}</td>
+      <td className="py-3 px-6">{formatAssignedDate(task.assignedDate)}</td>
 
       {/* 5. Due Date */}
-      <td className="py-4 px-6">
+      <td className="py-3 px-6">
         {new Date(task.dueDate).toLocaleDateString("en-GB", {
           day: "2-digit",
           month: "2-digit",
@@ -740,7 +680,7 @@ setRemarks(taskRemarks);
       </td>
 
       {/* 6. Status (with click to change dropdown) */}
-      <td className="py-4 px-6 text-center relative">
+      <td className="py-3 px-6 text-center relative">
         {editingStatus === task._id ? (
           <div
             ref={dropdownRef}
@@ -795,7 +735,7 @@ setRemarks(taskRemarks);
       {/* 7. Remark */}
       <td className="py-2 px-6 relative">
         <div className="flex items-center gap-2">
-          <span className="text-sm">
+          <span className="text-xs">
             {(remarks[task._id] || "No remark").length > 20
               ? `${(remarks[task._id] || "No remark").slice(0, 20)}...`
               : remarks[task._id] || "No remark"}
@@ -827,7 +767,7 @@ setRemarks(taskRemarks);
         {openRemarkPopup === task._id && (
           <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
             <div className="flex justify-between items-center mb-3">
-              <span className="font-semibold text-sm">
+              <span className="font-semibold text-xs">
                 {remarkMode === "edit" ? "Edit Remark" : "Full Remark"}
               </span>
               <button
@@ -850,7 +790,7 @@ setRemarks(taskRemarks);
                   }
                   rows="4"
                   placeholder="Edit Remark"
-                  className="w-full px-2 py-1 text-sm border rounded-md text-justify"
+                  className="w-full px-2 py-1 text-xs border rounded-md text-justify"
                 />
                 <div className="flex justify-end mt-2">
                   <button
@@ -865,7 +805,7 @@ setRemarks(taskRemarks);
                 </div>
               </>
             ) : (
-              <div className="text-gray-700 text-sm whitespace-pre-wrap">
+              <div className="text-gray-700 text-xs whitespace-pre-wrap">
                 {remarks[task._id] || "No remark"}
               </div>
             )}
@@ -874,11 +814,11 @@ setRemarks(taskRemarks);
       </td>
 
       {/* 8. Team (Assignees) */}
-      <td className="py-4 px-6 flex flex-wrap gap-2">
+      <td className="py-3 px-6 flex flex-wrap gap-2">
         {task.assignees?.map((assignee) => (
           <div
             key={assignee.email}
-            className="text-sm bg-indigo-100 text-indigo-800 py-1 px-3 rounded-full shadow-md hover:shadow-lg transition duration-200 ease-in-out"
+            className="text-xs bg-indigo-100 text-indigo-800 py-1 px-3 rounded-full shadow-md hover:shadow-lg transition duration-200 ease-in-out"
           >
             {assignee.name}
           </div>
@@ -886,10 +826,10 @@ setRemarks(taskRemarks);
       </td>
 
       {/* 9. Assigned By */}
-      <td className="py-4 px-6 font-medium">{task.assignedBy?.name || "—"}</td>
+      <td className="py-3 px-6 font-medium">{task.assignedBy?.name || "—"}</td>
 
       {role === "admin" && (
-        <td className="py-4 px-6 text-center">
+        <td className="py-3 px-6 text-center">
           <FaTrashAlt
             size={15}
             className="text-red-500 hover:text-red-700 cursor-pointer"
@@ -915,7 +855,7 @@ setRemarks(taskRemarks);
         <div className="flex items-center space-x-2">
           <label
             htmlFor="departmentFilter"
-            className="text-sm font-medium text-gray-700"
+            className="text-xs font-medium text-gray-700"
           >
             Filter by Department:
           </label>
@@ -923,7 +863,7 @@ setRemarks(taskRemarks);
             id="departmentFilter"
             value={filters.department}
             onChange={(e) => handleFilterChange("department", e.target.value)}
-            className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="appearance-none w-56 pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">All Departments</option>
             {departments.map((dept) => (
@@ -938,7 +878,7 @@ setRemarks(taskRemarks);
         <div className="flex items-center space-x-2">
           <label
             htmlFor="statusFilter"
-            className="text-sm font-medium text-gray-700"
+            className="text-xs font-medium text-gray-700"
           >
             Filter by Status:
           </label>
@@ -946,7 +886,7 @@ setRemarks(taskRemarks);
             id="statusFilter"
             value={filters.status}
             onChange={(e) => handleFilterChange("status", e.target.value)}
-            className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="appearance-none w-56 pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">All Status</option>
             {Array.from(new Set(tasks.map((t) => t.status)))
@@ -959,54 +899,30 @@ setRemarks(taskRemarks);
           </select>
         </div>
 
-        {/* Filter by User (Assignee) */}
+        {/* Unified Filter by User (Assignee or Assigned By) */}
         {role === "admin" && (
           <div className="flex items-center space-x-4">
-            {/* Filter by Assignee */}
             <div className="flex items-center space-x-2">
               <label
                 htmlFor="userFilter"
-                className="text-sm font-medium text-gray-700"
+                className="text-xs font-medium text-gray-700"
               >
-                Filter by Assignee:
+                Filter by User:
               </label>
               <select
                 id="userFilter"
-                value={filters.assignee}
-                onChange={(e) => handleFilterChange("assignee", e.target.value)}
-                className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={filters.user}
+                onChange={(e) => handleFilterChange("user", e.target.value)}
+                className="appearance-none w-56 pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="">All Users</option>
-                {uniqueUsers.map((user) => (
-                  <option key={user} value={user}>
-                    {user}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Filter by Assigned By */}
-            <div className="flex items-center space-x-2">
-              <label
-                htmlFor="assignedByFilter"
-                className="text-sm font-medium text-gray-700"
-              >
-                Assigned By:
-              </label>
-              <select
-                id="assignedByFilter"
-                value={filters.assignedBy}
-                onChange={(e) =>
-                  handleFilterChange("assignedBy", e.target.value)
-                }
-                className="appearance-none w-56 pl-4 pr-10 py-2 text-sm border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Users</option>
-                {uniqueAssignedBy.map((user) => (
-                  <option key={user} value={user}>
-                    {user}
-                  </option>
-                ))}
+                {[...new Set([...uniqueUsers, ...uniqueAssignedBy])].map(
+                  (user) => (
+                    <option key={user} value={user}>
+                      {user}
+                    </option>
+                  )
+                )}
               </select>
             </div>
           </div>
@@ -1024,19 +940,19 @@ setRemarks(taskRemarks);
         </div> */}
       </div>
 
-      <table className=" w-full table-auto border-collapse text-sm text-gray-800">
-        <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-sm">
+      <table className=" w-full table-auto border-collapse text-xs text-gray-800">
+        <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs">
           <tr className="text-left">
-            <th className="py-4 px-4 min-w-[70px] font-semibold">S. No</th>
-            <th className="py-4 px-6 min-w-[180px] font-semibold">Task Name</th>
-            <th className="py-4 px-6  min-w-[250px] font-semibold">
+            <th className="py-3 px-4 min-w-[70px] font-semibold">S. No</th>
+            <th className="py-3 px-6 min-w-[180px] font-semibold">Task Name</th>
+            <th className="py-3 px-6  min-w-[250px] font-semibold">
               Work Description + Code
             </th>
-            <th className="py-4 px-6 min-w-[180px] font-semibold">
+            <th className="py-3 px-6 min-w-[150px] font-semibold">
               Date of Work
             </th>
             <th
-              className="py-4 px-6 min-w-[180px] font-semibold cursor-pointer"
+              className="py-3 px-6  font-semibold cursor-pointer"
               onClick={() => {
                 setDueDateSortOrder((prev) =>
                   prev === "asc" ? "desc" : "asc"
@@ -1050,23 +966,23 @@ setRemarks(taskRemarks);
                 ? " 🔽"
                 : ""}
             </th>
-            <th className="py-4 px-6 min-w-[160px] font-semibold text-center">
+            <th className="py-3 px-6 min-w-[140px] font-semibold text-center">
               Status
             </th>
-            <th className="py-4 px-6 min-w-[160px] font-semibold">Remarks</th>
-            <th className="py-4 px-6 min-w-[250px] font-semibold">Team</th>
-            <th className="py-4 px-6 min-w-[130px] font-semibold">
+            <th className="py-3 px-6 min-w-[160px] font-semibold">Remarks</th>
+            <th className="py-3 px-6 min-w-[150px] font-semibold">Team</th>
+            <th className="py-3 px-6 min-w-[130px] font-semibold">
               Assigned By
             </th>
             {role === "admin" && (
-              <th className="py-4 px-6 min-w-[80px] font-semibold text-center">
+              <th className="py-3 px-6 min-w-[80px] font-semibold text-center">
                 Delete
               </th>
             )}
           </tr>
         </thead>
 
-        <tbody className="text-sm text-gray-700">
+        <tbody className="text-xs text-gray-700">
           {/* High Priority Section */}
           {highPriorityTasks.length === 0 &&
           mediumPriorityTasks.length === 0 &&
@@ -1080,7 +996,7 @@ setRemarks(taskRemarks);
             <>
               {highPriorityTasks.length > 0 && (
                 <>
-                  <tr className="bg-red-100 text-red-800 font-bold text-sm">
+                  <tr className="bg-red-100 text-red-800 font-bold text-xs">
                     <td colSpan="13" className="py-2 px-6">
                       High Priority Tasks
                     </td>
@@ -1094,7 +1010,7 @@ setRemarks(taskRemarks);
               {/* Medium Priority Section */}
               {mediumPriorityTasks.length > 0 && (
                 <>
-                  <tr className="bg-yellow-100 text-yellow-800 font-bold text-sm">
+                  <tr className="bg-yellow-100 text-yellow-800 font-bold text-xs">
                     <td colSpan="13" className="py-2 px-6">
                       Medium Priority Tasks
                     </td>
@@ -1108,7 +1024,7 @@ setRemarks(taskRemarks);
               {/* Low Priority Section */}
               {lowPriorityTasks.length > 0 && (
                 <>
-                  <tr className="bg-green-100 text-green-800 font-bold text-sm">
+                  <tr className="bg-green-100 text-green-800 font-bold text-xs">
                     <td colSpan="13" className="py-2 px-6">
                       Low Priority Tasks
                     </td>
