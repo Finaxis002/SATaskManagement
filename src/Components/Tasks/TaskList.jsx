@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { updateTaskStatus, fetchTasks , } from "../../redux/taskSlice";
+import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
 
@@ -9,6 +9,7 @@ import {
   faPen,
   faTrash,
   faCalendar,
+  faCopy,
 } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
 import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
@@ -62,17 +63,15 @@ const TaskList = ({
     dispatch(fetchUsers());
   }, [dispatch]);
 
-const departmentData = useSelector((state) => state.departments.list);
+  const departmentData = useSelector((state) => state.departments.list);
 
-useEffect(() => {
-  dispatch(fetchDepartments());
-}, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchDepartments());
+  }, [dispatch]);
 
-useEffect(() => {
-  setDepartments(departmentData); // ✅ Set local state from Redux store
-}, [departmentData]);
-
-
+  useEffect(() => {
+    setDepartments(departmentData); // ✅ Set local state from Redux store
+  }, [departmentData]);
 
   useEffect(() => {
     if (role === "admin" && users?.length) {
@@ -128,46 +127,27 @@ useEffect(() => {
 
       let filtered = [];
 
-  
-      // if (role !== "admin") {
-      //   const filtered = visibleTasks.filter((task) =>
-      //     task.assignees.some((a) => a.email === userEmail) ||
-      //     task.assignedBy?.email === userEmail ||
-      //     task.createdBy?.email === userEmail
-      //   );
-        
-      //   setTasks(filtered);
-      //   if (setTaskListExternally) setTaskListExternally(filtered);
-      // } else {
-      //   setTasks(visibleTasks);
-      //   if (setTaskListExternally) setTaskListExternally(visibleTasks);
-      // }
 
-      // const taskRemarks = {};
-      // filtered.forEach((task) => {
-      //   taskRemarks[task._id] = task.remark || "";
-      // });
-      // setRemarks(taskRemarks);
-   
+      if (role !== "admin") {
+        filtered = visibleTasks.filter(
+          (task) =>
+            task.assignees?.some((a) => a.email === userEmail) ||
+            task.assignedBy?.email === userEmail
+        );
+        setTasks(filtered);
+        if (setTaskListExternally) setTaskListExternally(filtered);
+      } else {
+        setTasks(visibleTasks);
+        if (setTaskListExternally) setTaskListExternally(visibleTasks);
+      }
 
-if (role !== "admin") {
-  filtered = visibleTasks.filter((task) =>
-    task.assignees?.some((a) => a.email === userEmail) ||
-    task.assignedBy?.email === userEmail ||
-    task.createdBy?.email === userEmail
-  );
-} else {
-  filtered = visibleTasks;
-}
-
-setTasks(filtered);
-if (setTaskListExternally) setTaskListExternally(filtered);
-
-const taskRemarks = {};
-filtered.forEach((task) => {
-  taskRemarks[task._id] = task.remark || "";
-});
-setRemarks(taskRemarks);
+      // Initialize remarks state with all task remarks
+      const taskRemarks = {};
+      const tasksToProcess = role !== "admin" ? filtered : visibleTasks;
+      tasksToProcess.forEach((task) => {
+        taskRemarks[task._id] = task.remark || "";
+      });
+      setRemarks(taskRemarks);
 
 
     } catch (err) {
@@ -183,7 +163,7 @@ setRemarks(taskRemarks);
 
   useEffect(() => {
     socket.on("task-updated", (data) => {
-      console.log("🟡 task-updated received on frontend!", data); // <-- Add this
+      // console.log("🟡 task-updated received on frontend!", data); // <-- Add this
       fetchTasksFromAPI();
     });
 
@@ -283,9 +263,8 @@ setRemarks(taskRemarks);
   };
 
   const handleRemarkSave = async (taskId) => {
-    let remarkText = remarks[taskId] || "";
+    const remarkText = remarks[taskId] ?? "";
 
-    // Update remark in the backend
     const updatedBy = {
       name: localStorage.getItem("name"),
       email: localStorage.getItem("userId"),
@@ -305,12 +284,24 @@ setRemarks(taskRemarks);
 
       if (response.ok) {
         const updatedTask = await response.json();
+
+        // ✅ Update tasks
         setTasks((prevTasks) =>
           prevTasks.map((task) =>
             task._id === updatedTask._id ? updatedTask : task
           )
         );
-        setEditingRemark(null); // Exit editing mode after saving
+
+        // ✅ Update remarks
+        setRemarks((prev) => ({
+          ...prev,
+          [taskId]: updatedTask.remark ?? "",
+        }));
+
+        setOpenRemarkPopup(null); // close popup
+
+        // ✅ Optional: force full refetch to be 100% up-to-date
+        fetchTasksFromAPI();
       } else {
         throw new Error("Failed to update remark");
       }
@@ -396,38 +387,6 @@ setRemarks(taskRemarks);
     (task) => task.priority === "Low"
   );
 
-  // const handleDeleteTask = async (taskId) => {
-  //   const confirmDelete = window.confirm(
-  //     "Are you sure you want to delete this task?"
-  //   );
-  //   if (!confirmDelete) return;
-
-  //   try {
-  //     // Optimistically remove the task from UI immediately
-  //     setTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
-
-  //     const response = await fetch(
-  //       `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
-  //       {
-  //         method: "DELETE",
-  //       }
-  //     );
-
-  //     if (!response.ok) {
-  //       throw new Error("Failed to delete task");
-  //       // Note: Since we already optimistically updated, we might want to
-  //       // revert if the deletion fails, but that might be confusing to users
-  //     }
-
-  //     // The socket.io event will trigger a refresh anyway
-  //   } catch (error) {
-  //     console.error("Error deleting task:", error);
-  //     alert("Failed to delete task. Please try again.");
-  //     // Optionally: Re-fetch tasks to restore the original state
-  //     fetchTasksFromAPI();
-  //   }
-  // };
-
   const permanentlyStopRepetition = async (task) => {
     try {
       const updatedBy = {
@@ -473,6 +432,8 @@ setRemarks(taskRemarks);
       if (!response.ok) {
         throw new Error("Failed to delete task");
       }
+      // Refresh the task list
+      fetchTasksFromAPI();
 
       console.log("✅ Task deleted:", taskId);
     } catch (err) {
@@ -557,6 +518,149 @@ setRemarks(taskRemarks);
     };
   }, [dropdownRef]);
 
+  const handleCopyTask = async (originalTask) => {
+    // Enhanced confirmation dialog with more details
+    const { isConfirmed } = await Swal.fire({
+      title: "Duplicate Task",
+      html: `
+      <div class="text-left">
+        <p>Create a copy of: <strong>${originalTask.taskName}</strong></p>
+        <p class="mt-2 text-sm text-gray-600">The new task will have "Status" reset to "To Do" and current date as "Assigned Date".</p>
+      </div>
+    `,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Create Copy",
+      cancelButtonText: "Cancel",
+      focusConfirm: false,
+      backdrop: `
+      rgba(0,0,123,0.4)
+      url("/images/nyan-cat.gif")
+      left top
+      no-repeat
+    `,
+    });
+
+    if (!isConfirmed) return;
+
+    try {
+      // Create modified task copy with reset fields
+      const newTask = {
+        ...originalTask,
+        _id: undefined, // Ensure new ID will be generated
+        taskName: `${originalTask.taskName} (Copy)`,
+        assignedDate: new Date().toISOString(),
+        status: "To Do",
+        remark: "",
+        updatedBy: {
+          name: localStorage.getItem("name"),
+          email: localStorage.getItem("userId"),
+        },
+        history: [
+          ...(originalTask.history || []),
+          {
+            action: "copied",
+            by: {
+              name: localStorage.getItem("name"),
+              email: localStorage.getItem("userId"),
+            },
+            date: new Date().toISOString(),
+          },
+        ],
+      };
+
+      // Show loading with better UX
+      const loadingSwal = Swal.fire({
+        title: "Creating Task Copy",
+        html: "Please wait while we duplicate the task...",
+        timerProgressBar: true,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        allowEnterKey: false,
+      });
+
+      // API call to create the new task
+      const response = await fetch(
+        "https://sataskmanagementbackend.onrender.com/api/tasks",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(newTask),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create task copy");
+      }
+
+      const createdTask = await response.json();
+      await loadingSwal.close();
+
+      // Enhanced success notification
+      await Swal.fire({
+        icon: "success",
+        title: "Copy Created!",
+        html: `
+        <div class="text-center">
+          <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <p class="mb-2">New task created:</p>
+          <p class="font-bold text-lg">${createdTask.taskName}</p>
+          <p class="text-sm text-gray-500 mt-2">Status: ${createdTask.status}</p>
+        </div>
+      `,
+        showConfirmButton: false,
+        timer: 2000,
+      });
+
+      // Refresh task list and highlight the new task
+      fetchTasksFromAPI();
+
+      // Optional: Scroll to the new task in the list
+      setTimeout(() => {
+        const newTaskElement = document.getElementById(
+          `task-${createdTask._id}`
+        );
+        if (newTaskElement) {
+          newTaskElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          newTaskElement.classList.add("animate-pulse", "bg-green-50");
+          setTimeout(() => {
+            newTaskElement.classList.remove("animate-pulse", "bg-green-50");
+          }, 3000);
+        }
+      }, 500);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Copy Failed",
+        html: `
+        <div class="text-left">
+          <p>Failed to create task copy:</p>
+          <p class="font-medium text-red-600 mt-2">${error.message}</p>
+          <p class="text-sm text-gray-500 mt-2">Please try again or contact support.</p>
+        </div>
+      `,
+        confirmButtonText: "Try Again",
+        confirmButtonColor: "#3085d6",
+        showCancelButton: true,
+        cancelButtonText: "Cancel",
+      });
+    }
+  };
+
   const renderTaskRow = (task, index) => (
     <tr
       key={task._id}
@@ -576,22 +680,22 @@ setRemarks(taskRemarks);
       </td>
 
       {/* 3. Work Description + Code */}
-      <td className="py-3 px-6 relative">
-        <div className="flex items-center gap-2">
-          <span className="text-xs">
+      <td className="py-3 px-6 relative group">
+        <div className="flex items-center gap-2 min-h-[24px]">
+          <span className="text-xs text-gray-700">
             {(task.workDesc || "No description").length > 60
               ? `${task.workDesc.slice(0, 60)}...`
               : task.workDesc || "No description"}
-            {task.code ? (
-              <span className="ml-2 text-blue-700 font-medium">
+            {task.code && (
+              <span className="ml-2 text-blue-600 font-medium">
                 ({task.code})
               </span>
-            ) : null}
+            )}
           </span>
 
           {(task.workDesc || "").length > 60 && (
             <button
-              className="text-blue-500 hover:text-blue-700 text-xs"
+              className="text-blue-500 hover:text-blue-700 text-xs font-medium transition-colors"
               onClick={() => {
                 setOpenWorkDescPopup(task._id);
                 setWorkDescMode("view");
@@ -602,7 +706,7 @@ setRemarks(taskRemarks);
           )}
           <FontAwesomeIcon
             icon={faPen}
-            className="cursor-pointer text-blue-500 hover:text-blue-700"
+            className="cursor-pointer text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity w-3 h-3"
             onClick={() => {
               setOpenWorkDescPopup(task._id);
               setWorkDescMode("edit");
@@ -612,15 +716,13 @@ setRemarks(taskRemarks);
 
         {/* Popup box for read/edit work description */}
         {openWorkDescPopup === task._id && (
-          <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
-            <div className="flex justify-between items-center mb-3">
-              <span className="font-semibold text-xs">
-                {workDescMode === "edit"
-                  ? "Edit Work Description"
-                  : "Work Description"}
+          <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-4 transition-all duration-200">
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+              <span className="font-semibold text-sm text-gray-800">
+                {workDescMode === "edit" ? "Edit Description" : "Description"}
               </span>
               <button
-                className="text-red-500 font-bold text-2xl"
+                className="text-gray-400 hover:text-gray-600 transition-colors text-lg"
                 onClick={() => setOpenWorkDescPopup(null)}
               >
                 ×
@@ -637,32 +739,41 @@ setRemarks(taskRemarks);
                       [task._id]: e.target.value,
                     }))
                   }
-                  rows="4"
-                  placeholder="Edit Work Description"
-                  className="w-full px-2 py-1 text-xs border rounded-md text-justify"
+                  rows={4}
+                  placeholder="Enter work description..."
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                  autoFocus
                 />
 
-                <div className="flex justify-end mt-2">
+                <div className="flex justify-end mt-3 gap-2">
+                  <button
+                    onClick={() => setOpenWorkDescPopup(null)}
+                    className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
                   <button
                     onClick={() => {
                       handleWorkDescSave(task._id);
                       setOpenWorkDescPopup(null);
                     }}
-                    className="bg-green-500 hover:bg-green-600 text-white py-1 px-4 rounded-md"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
                   >
                     Save
                   </button>
                 </div>
               </>
             ) : (
-              <div className="text-gray-700 text-xs whitespace-pre-wrap">
+              <div className="text-gray-700 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
                 {task.workDesc || "No description available"}
               </div>
             )}
 
-            <div className="text-xs text-gray-500 mt-2">
-              Code: {task.code || "—"}
-            </div>
+            {task.code && (
+              <div className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100">
+                <span className="font-medium">Code:</span> {task.code}
+              </div>
+            )}
           </div>
         )}
       </td>
@@ -736,9 +847,9 @@ setRemarks(taskRemarks);
       <td className="py-2 px-6 relative">
         <div className="flex items-center gap-2">
           <span className="text-xs">
-            {(remarks[task._id] || "No remark").length > 20
-              ? `${(remarks[task._id] || "No remark").slice(0, 20)}...`
-              : remarks[task._id] || "No remark"}
+            {(remarks[task._id] ?? "No remark").length > 20
+              ? `${(remarks[task._id] ?? "No remark").slice(0, 20)}...`
+              : remarks[task._id] ?? "No remark"}
           </span>
 
           {(remarks[task._id] || "").length > 20 && (
@@ -781,7 +892,7 @@ setRemarks(taskRemarks);
             {remarkMode === "edit" ? (
               <>
                 <textarea
-                  value={remarks[task._id] || ""}
+                  value={remarks[task._id] ?? ""} // ✅ Use ?? instead of || to preserve empty string
                   onChange={(e) =>
                     setRemarks((prev) => ({
                       ...prev,
@@ -790,8 +901,9 @@ setRemarks(taskRemarks);
                   }
                   rows="4"
                   placeholder="Edit Remark"
-                  className="w-full px-2 py-1 text-xs border rounded-md text-justify"
+                  className="w-full px-2 py-1 text-xs border rounded-md"
                 />
+
                 <div className="flex justify-end mt-2">
                   <button
                     onClick={() => {
@@ -827,29 +939,39 @@ setRemarks(taskRemarks);
 
       {/* 9. Assigned By */}
       <td className="py-3 px-6 font-medium">{task.assignedBy?.name || "—"}</td>
-
+      <td className="py-3 px-4 text-center">
+        <button
+          onClick={() => handleCopyTask(task)}
+          className="text-blue-500 hover:text-blue-700 cursor-pointer"
+          title="Copy Task"
+        >
+          <FontAwesomeIcon icon={faCopy} />
+        </button>
+      </td>
       {role === "admin" && (
-        <td className="py-3 px-6 text-center">
-          <FaTrashAlt
-            size={15}
-            className="text-red-500 hover:text-red-700 cursor-pointer"
-            onClick={() => handleDeleteTask(task)} // ✅ FIXED: pass task, not task._id
-          />
-        </td>
+        <>
+          <td className="py-3 px-6 text-center">
+            <FaTrashAlt
+              size={15}
+              className="text-red-500 hover:text-red-700 cursor-pointer"
+              onClick={() => handleDeleteTask(task)}
+            />
+          </td>
+        </>
       )}
     </tr>
   );
 
   useEffect(() => {
-    console.log("Current department filter:", filters.department);
-    console.log(
-      "Task departments:",
-      tasks.map((t) => t.department || t.taskCategory)
-    );
+    // console.log("Current department filter:", filters.department);
+    // console.log(
+    //   "Task departments:",
+    //   tasks.map((t) => t.department || t.taskCategory)
+    // );
   }, [filters.department, tasks]);
 
   return (
-    <div className="overflow-x-auto h-[78vh]">
+    <div className="overflow-x-auto h-[78vh] relative">
       <div className="flex items-center justify-start mb-6 space-x-6">
         {/* Department Filter (already exists) */}
         <div className="flex items-center space-x-2">
@@ -939,105 +1061,111 @@ setRemarks(taskRemarks);
           </button>
         </div> */}
       </div>
-
-      <table className=" w-full table-auto border-collapse text-xs text-gray-800">
-        <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs">
-          <tr className="text-left">
-            <th className="py-3 px-4 min-w-[70px] font-semibold">S. No</th>
-            <th className="py-3 px-6 min-w-[180px] font-semibold">Task Name</th>
-            <th className="py-3 px-6  min-w-[250px] font-semibold">
-              Work Description + Code
-            </th>
-            <th className="py-3 px-6 min-w-[150px] font-semibold">
-              Date of Work
-            </th>
-            <th
-              className="py-3 px-6  font-semibold cursor-pointer"
-              onClick={() => {
-                setDueDateSortOrder((prev) =>
-                  prev === "asc" ? "desc" : "asc"
-                );
-              }}
-            >
-              Due Date
-              {dueDateSortOrder === "asc"
-                ? " 🔼"
-                : dueDateSortOrder === "desc"
-                ? " 🔽"
-                : ""}
-            </th>
-            <th className="py-3 px-6 min-w-[140px] font-semibold text-center">
-              Status
-            </th>
-            <th className="py-3 px-6 min-w-[160px] font-semibold">Remarks</th>
-            <th className="py-3 px-6 min-w-[150px] font-semibold">Team</th>
-            <th className="py-3 px-6 min-w-[130px] font-semibold">
-              Assigned By
-            </th>
-            {role === "admin" && (
-              <th className="py-3 px-6 min-w-[80px] font-semibold text-center">
-                Delete
+      <div className="overflow-y-auto" style={{ height: "calc(78vh - 60px)" }}>
+        <table className=" w-full table-auto border-collapse text-xs text-gray-800">
+          <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs sticky top-0 z-10">
+            <tr className="text-left">
+              <th className="py-3 px-4 min-w-[70px] font-semibold">S. No</th>
+              <th className="py-3 px-6 min-w-[180px] font-semibold">
+                Task Name
               </th>
-            )}
-          </tr>
-        </thead>
-
-        <tbody className="text-xs text-gray-700">
-          {/* High Priority Section */}
-          {highPriorityTasks.length === 0 &&
-          mediumPriorityTasks.length === 0 &&
-          lowPriorityTasks.length === 0 ? (
-            <tr>
-              <td colSpan="13" className="text-center py-6 text-gray-500">
-                🚫 No tasks Assigned Yet.
-              </td>
+              <th className="py-3 px-6  min-w-[250px] font-semibold">
+                Work Description + Code
+              </th>
+              <th className="py-3 px-6 min-w-[150px] font-semibold">
+                Date of Work
+              </th>
+              <th
+                className="py-3 px-6  font-semibold cursor-pointer"
+                onClick={() => {
+                  setDueDateSortOrder((prev) =>
+                    prev === "asc" ? "desc" : "asc"
+                  );
+                }}
+              >
+                Due Date
+                {dueDateSortOrder === "asc"
+                  ? " 🔼"
+                  : dueDateSortOrder === "desc"
+                  ? " 🔽"
+                  : ""}
+              </th>
+              <th className="py-3 px-6 min-w-[140px] font-semibold text-center">
+                Status
+              </th>
+              <th className="py-3 px-6 min-w-[160px] font-semibold">Remarks</th>
+              <th className="py-3 px-6 min-w-[150px] font-semibold">Team</th>
+              <th className="py-3 px-6 min-w-[130px] font-semibold">
+                Assigned By
+              </th>
+              <th className="py-3 px-4 min-w-[80px] font-semibold text-center">
+                Copy
+              </th>
+              {role === "admin" && (
+                <th className="py-3 px-6 min-w-[80px] font-semibold text-center">
+                  Delete
+                </th>
+              )}
             </tr>
-          ) : (
-            <>
-              {highPriorityTasks.length > 0 && (
-                <>
-                  <tr className="bg-red-100 text-red-800 font-bold text-xs">
-                    <td colSpan="13" className="py-2 px-6">
-                      High Priority Tasks
-                    </td>
-                  </tr>
-                  {highPriorityTasks.map((task, idx) =>
-                    renderTaskRow(task, idx)
-                  )}
-                </>
-              )}
+          </thead>
 
-              {/* Medium Priority Section */}
-              {mediumPriorityTasks.length > 0 && (
-                <>
-                  <tr className="bg-yellow-100 text-yellow-800 font-bold text-xs">
-                    <td colSpan="13" className="py-2 px-6">
-                      Medium Priority Tasks
-                    </td>
-                  </tr>
-                  {mediumPriorityTasks.map((task, idx) =>
-                    renderTaskRow(task, idx)
-                  )}
-                </>
-              )}
+          <tbody className="text-xs text-gray-700">
+            {/* High Priority Section */}
+            {highPriorityTasks.length === 0 &&
+            mediumPriorityTasks.length === 0 &&
+            lowPriorityTasks.length === 0 ? (
+              <tr>
+                <td colSpan="13" className="text-center py-6 text-gray-500">
+                  🚫 No tasks Assigned Yet.
+                </td>
+              </tr>
+            ) : (
+              <>
+                {highPriorityTasks.length > 0 && (
+                  <>
+                    <tr className="bg-red-100 text-red-800 font-bold text-xs">
+                      <td colSpan="13" className="py-2 px-6">
+                        High Priority Tasks
+                      </td>
+                    </tr>
+                    {highPriorityTasks.map((task, idx) =>
+                      renderTaskRow(task, idx)
+                    )}
+                  </>
+                )}
 
-              {/* Low Priority Section */}
-              {lowPriorityTasks.length > 0 && (
-                <>
-                  <tr className="bg-green-100 text-green-800 font-bold text-xs">
-                    <td colSpan="13" className="py-2 px-6">
-                      Low Priority Tasks
-                    </td>
-                  </tr>
-                  {lowPriorityTasks.map((task, idx) =>
-                    renderTaskRow(task, idx)
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </tbody>
-      </table>
+                {/* Medium Priority Section */}
+                {mediumPriorityTasks.length > 0 && (
+                  <>
+                    <tr className="bg-yellow-100 text-yellow-800 font-bold text-xs">
+                      <td colSpan="13" className="py-2 px-6">
+                        Medium Priority Tasks
+                      </td>
+                    </tr>
+                    {mediumPriorityTasks.map((task, idx) =>
+                      renderTaskRow(task, idx)
+                    )}
+                  </>
+                )}
+
+                {/* Low Priority Section */}
+                {lowPriorityTasks.length > 0 && (
+                  <>
+                    <tr className="bg-green-100 text-green-800 font-bold text-xs">
+                      <td colSpan="13" className="py-2 px-6">
+                        Low Priority Tasks
+                      </td>
+                    </tr>
+                    {lowPriorityTasks.map((task, idx) =>
+                      renderTaskRow(task, idx)
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

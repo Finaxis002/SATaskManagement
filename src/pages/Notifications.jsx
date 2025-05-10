@@ -115,13 +115,51 @@ const Notifications = () => {
       .join("/");
   };
 
+  const handleMarkAllAsRead = async () => {
+    try {
+      const unreadNotifications = notifications.filter((n) => !n.read);
+
+      if (unreadNotifications.length === 0) return;
+
+      // Send request to backend for each unread notification
+      await Promise.all(
+        unreadNotifications.map((notif) =>
+          axios.patch(
+            `https://sataskmanagementbackend.onrender.com/api/notifications/${notif._id}`,
+            {
+              read: true,
+            }
+          )
+        )
+      );
+
+      // Update state locally
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, read: true }))
+      );
+
+      // Reset notification count
+      setNotificationCount(0);
+
+      // Emit updated count via socket
+      socket.emit("notificationCountUpdated", {
+        email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+      });
+    } catch (error) {
+      console.error("Error marking all notifications as read", error);
+    }
+  };
+
   return (
     <div className="p-4 mx-auto h-[90vh] overflow-y-auto">
-      <div className="flex gap-8">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        {/* Title */}
+        <h2 className="text-2xl font-semibold text-gray-800">
           🔔 Notifications
         </h2>
-        <div className="relative w-full sm:w-72 mb-4">
+
+        {/* Search Input */}
+        <div className="relative w-full sm:w-100">
           <input
             type="text"
             placeholder="Search notifications..."
@@ -146,6 +184,15 @@ const Notifications = () => {
             </svg>
           </div>
         </div>
+
+        {/* Mark All as Read Button */}
+        <button
+          onClick={handleMarkAllAsRead}
+          disabled={notifications.every((n) => n.read)}
+          className="text-sm font-medium px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Mark All as Read
+        </button>
       </div>
 
       {loading ? (

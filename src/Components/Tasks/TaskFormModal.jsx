@@ -847,18 +847,118 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   }));
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-opacity-40 z-50 p-4">
+
+   <div className="fixed inset-0 flex items-center justify-center  bg-opacity-50 z-50">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
+        <h3 className="text-lg font-semibold mb-4 text-center">
+          {initialData ? "Update Task" : "Create Task"}
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Task Name */}
+          <input
+            type="text"
+            placeholder="Task name"
+            value={taskName}
+            onChange={(e) => setTaskName(e.target.value)}
+            className="p-2 border border-gray-300 rounded-md"
+          />
+
+          {/* Work Description */}
+          <input
+            type="text"
+            placeholder="Work Description"
+            value={workDesc}
+            onChange={(e) => setWorkDesc(e.target.value)}
+            className="p-2 border border-gray-300 rounded-md"
+          />
+
+          {/* Department Selection */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Task Department:
+            </label>
+            <DepartmentSelector
+              selectedDepartments={department}
+              setSelectedDepartments={setDepartment}
+            />
+          </div>
+
+          {/* Client Name */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Client Name:
+            </label>
+            <CreatableSelect
+              isClearable
+              isSearchable
+              options={clientOptions}
+              onChange={(selectedOption) => {
+                if (!selectedOption) {
+                  setClientName("");
+                } else {
+                  setClientName(selectedOption.value);
+                }
+              }}
+              value={
+                clientName
+                  ? clientOptions.find((opt) => opt.value === clientName) || {
+                      label: clientName,
+                      value: clientName,
+                    }
+                  : null
+              }
+              placeholder="Select or create client..."
+              className="text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Task Code:
+            </label>
+            <TaskCodeSelector
+              selectedCode={taskCode}
+              setSelectedCode={setTaskCode}
+            />
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Due Date:
+            </label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+
+          {/* Priority */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">
+              Priority:
+            </label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+// =======
+//     <div className="fixed inset-0 flex items-center justify-center bg-opacity-40 z-50 p-4">
       
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Modal Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-gray-800">
-              {initialData ? "Update Task" : "Create New Task"}
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 focus:outline-none"
+//       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+//         {/* Modal Header */}
+//         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
+//           <div className="flex items-center justify-between">
+//             <h3 className="text-xl font-bold text-gray-800">
+//               {initialData ? "Update Task" : "Create New Task"}
+//             </h3>
+//             <button
+//               onClick={onClose}
+//               className="text-gray-500 hover:text-gray-700 focus:outline-none"
+// >>>>>>> main
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

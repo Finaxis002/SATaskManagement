@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { FaTrashAlt, FaUsers, FaPlus, FaTimes } from "react-icons/fa";
 import Swal from "sweetalert2";
+import ReportGeneration from "../Components/ReportGeneration";
 
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState("department"); 
+  const [view, setView] = useState("department");
   const [taskCodes, setTaskCodes] = useState([]);
   const [showDeptModal, setShowDeptModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
@@ -83,7 +84,18 @@ const Departments = () => {
       const res = await axios.get(
         "https://sataskmanagementbackend.onrender.com/api/task-codes"
       );
-      setTaskCodes(res.data); 
+
+      const sortedData = res.data.sort((a, b) => {
+        // Extract the leading number from the name (before first space)
+        const getNumber = (str) => {
+          const match = str.match(/^\d+/);
+          return match ? parseInt(match[0], 10) : 0;
+        };
+
+        return getNumber(a.name) - getNumber(b.name);
+      });
+
+      setTaskCodes(sortedData);
     } catch (err) {
       console.error("Failed to fetch task codes:", err);
     }
@@ -91,7 +103,9 @@ const Departments = () => {
 
   const fetchClients = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/clients");
+      const res = await fetch(
+        "https://sataskmanagementbackend.onrender.com/api/clients"
+      );
 
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
@@ -121,30 +135,6 @@ const Departments = () => {
     fetchClients(); // 👈 Add this line
   }, []);
 
-  // const handleDeleteDepartment = async (dept) => {
-  //   const confirmed = window.confirm(
-  //     `Are you sure you want to delete the "${dept}" department? This will remove the department from all users.`
-  //   );
-  //   if (!confirmed) return;
-
-  //   try {
-  //     // Sending request to remove department from users
-  //     await axios.put(
-  //       "https://sataskmanagementbackend.onrender.com/api/departments/remove-department",
-  //       { department: dept }
-  //     );
-  //     alert("Department deleted successfully!");
-  //     setDepartmentMap((prev) => {
-  //       const newMap = { ...prev };
-  //       delete newMap[dept];
-  //       return newMap;
-  //     });
-  //   } catch (err) {
-  //     console.error("Failed to delete department", err);
-  //     alert("Failed to delete department. Try again.");
-  //   }
-  // };
-
   // Delete a task code
   const handleDeleteDepartment = async (dept) => {
     const result = await Swal.fire({
@@ -161,16 +151,15 @@ const Departments = () => {
         confirmButton: "custom-alert-button",
       },
     });
-  
+
     if (!result.isConfirmed) return;
-  
+
     try {
       await axios.put(
         "https://sataskmanagementbackend.onrender.com/api/departments/remove-department",
         { department: dept }
       );
 
-  
       Swal.fire({
         title: "Deleted!",
         text: `The "${dept}" department has been removed from all users.`,
@@ -181,7 +170,6 @@ const Departments = () => {
           confirmButton: "custom-alert-button",
         },
       });
-  
 
       setDepartmentMap((prev) => {
         const newMap = { ...prev };
@@ -190,7 +178,7 @@ const Departments = () => {
       });
     } catch (err) {
       console.error("Failed to delete department", err);
-  
+
       Swal.fire({
         title: "Error!",
         text: "Failed to delete department. Try again.",
@@ -203,23 +191,7 @@ const Departments = () => {
       });
     }
   };
- 
-  // const handleDeleteCode = async (codeId) => {
-  //   const confirmed = window.confirm(
-  //     `Are you sure you want to delete this code?`
-  //   );
-  //   if (!confirmed) return;
 
-  //   try {
-  //     await axios.delete(
-  //       `https://sataskmanagementbackend.onrender.com/api/task-codes/${codeId}`
-  //     );
-  //     alert("Code deleted successfully!");
-  //     fetchTaskCodes(); // Refresh list
-  //   } catch (err) {
-  //     alert("Failed to delete code");
-  //   }
-  // };
   const handleDeleteCode = async (codeId) => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -235,18 +207,16 @@ const Departments = () => {
         popup: "custom-alert-popup",
         confirmButton: "custom-alert-button",
       },
-
     });
-  
+
     if (!result.isConfirmed) return;
-  
+
     try {
       await axios.delete(
         `https://sataskmanagementbackend.onrender.com/api/task-codes/${codeId}`
       );
-  
-      Swal.fire({
 
+      Swal.fire({
         title: "Deleted!",
         text: "The code has been deleted successfully.",
         icon: "success", // ✅ default success icon
@@ -255,14 +225,12 @@ const Departments = () => {
           popup: "custom-alert-popup",
           confirmButton: "custom-alert-button",
         },
-
       });
-  
+
       fetchTaskCodes(); // Refresh list
     } catch (err) {
-
       console.error(err);
-  
+
       Swal.fire({
         title: "Error!",
         text: "Failed to delete the code. Please try again.",
@@ -272,7 +240,6 @@ const Departments = () => {
           popup: "custom-alert-popup",
           confirmButton: "custom-alert-button",
         },
-
       });
     }
   };
@@ -342,9 +309,12 @@ const Departments = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/clients`, {
-        data: { name: clientName },
-      });
+      await axios.delete(
+        `https://sataskmanagementbackend.onrender.com/api/clients`,
+        {
+          data: { name: clientName },
+        }
+      );
       Swal.fire({
         icon: "success",
         title: "Deleted!",
@@ -404,10 +374,20 @@ const Departments = () => {
         >
           Client Overview
         </button>
+        <button
+          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
+            view === "report"
+              ? "bg-indigo-600 text-white"
+              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
+          }`}
+          onClick={() => setView("report")}
+        >
+          Report Generation
+        </button>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-2">
         {view === "department" ? (
           <button
             onClick={handleCreateDepartment}
@@ -422,14 +402,14 @@ const Departments = () => {
           >
             <FaPlus /> Add Code
           </button>
-        ) : (
+        ) : view === "client" ? (
           <button
             onClick={() => setShowClientModal(true)}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
           >
             <FaPlus /> Add Client
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* ✅ View Content */}
@@ -497,7 +477,7 @@ const Departments = () => {
             <p className="text-center text-gray-500">No codes found.</p>
           </div>
         ) : (
-          <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto">
+          <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {taskCodes.map((codeObj) => (
                 <div
@@ -526,7 +506,7 @@ const Departments = () => {
             <p className="text-center text-gray-500">No clients found.</p>
           </div>
         ) : (
-          <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto">
+          <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {clients.map((clientName, index) => (
                 <div
@@ -548,6 +528,8 @@ const Departments = () => {
             </div>
           </div>
         )
+      ) : view === "report" ? (
+        <ReportGeneration />
       ) : null}
 
       {/* Department Creation Modal */}
@@ -660,9 +642,12 @@ const Departments = () => {
                 onClick={async () => {
                   if (!newClientName.trim()) return;
                   try {
-                    await axios.post(`http://localhost:5000/api/clients`, {
-                      name: newClientName,
-                    });
+                    await axios.post(
+                      `https://sataskmanagementbackend.onrender.com/api/clients`,
+                      {
+                        name: newClientName,
+                      }
+                    );
 
                     Swal.fire({
                       icon: "success",

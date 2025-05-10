@@ -83,3 +83,45 @@ main{
 
   }
   
+
+  /* Replace any oklch colors with standard formats */
+.bg-indigo-600 {
+  background-color: rgb(79, 70, 229) !important; /* Example replacement */
+}
+
+.text-white {
+  color: rgb(255, 255, 255) !important;
+}
+
+/* Add this to your global CSS */
+/* @media print {
+  body, body * {
+    visibility: visible !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  table {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .overflow-x-auto, .overflow-y-auto {
+    overflow: visible !important;
+    height: auto !important;
+  }
+} */
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #report-content, #report-content * {
+    visibility: visible;
+  }
+  #report-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
