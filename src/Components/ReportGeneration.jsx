@@ -16,6 +16,10 @@ import { fetchUsers } from "../redux/userSlice"; // Adjust path based on your fo
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import html2pdf from "html2pdf.js";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import { io } from "socket.io-client";
 const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
@@ -543,65 +547,120 @@ const ReportGeneration = ({
     // );
   }, [filters.department, tasks]);
 
+  const handleDownloadPDF = () => {
+    if (!filters.user) {
+      alert("Please select a user to generate the report.");
+      return;
+    }
 
-const handleDownloadPDF = async () => {
-  if (!filters.user) {
-    alert("Please select a user to generate the report.");
-    return;
-  }
-
-  setIsGeneratingPDF(true);
-
-  try {
-    const element = reportRef.current.cloneNode(true);
-
-    // 🧹 Remove all oklch color functions
-    const elementsWithOklch = element.querySelectorAll("*");
-    elementsWithOklch.forEach((el) => {
-      const style = getComputedStyle(el);
-
-      if (style.color.includes("oklch")) {
-        el.style.color = "#000"; // fallback to black
-      }
-      if (style.backgroundColor.includes("oklch")) {
-        el.style.backgroundColor = "#fff"; // fallback to white
-      }
-      if (style.borderColor.includes("oklch")) {
-        el.style.borderColor = "#ccc";
-      }
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "pt",
+      format: "A4",
     });
 
-    const opt = {
-      margin: 0.5,
-      filename: `${filters.user.replace(/\s+/g, "_")}-Task-Report.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        scrollY: 0,
-        logging: false,
+    const title = `${filters.user}'s Task Report`;
+    const subtitle =
+      fromDate && toDate
+        ? `From ${new Date(fromDate).toLocaleDateString("en-GB")} to ${new Date(
+            toDate
+          ).toLocaleDateString("en-GB")}`
+        : "";
+
+    doc.setFont("helvetica", "bold"); // Font and style
+    doc.setFontSize(20);
+    doc.setTextColor(44, 62, 80); // Dark blue/gray
+    doc.text(title, doc.internal.pageSize.getWidth() / 2, 40, {
+      align: "center",
+    });
+
+    if (subtitle) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100); // Gray
+      doc.text(subtitle, doc.internal.pageSize.getWidth() / 2, 60, {
+        align: "center",
+      });
+    }
+
+    const tableData = filteredTasks.map((task, index) => [
+      index + 1,
+      task.taskName,
+      task.workDesc || "No description",
+      task.code || "",
+      formatAssignedDate(task.assignedDate),
+      new Date(task.dueDate).toLocaleDateString("en-GB"),
+      task.status,
+      task.priority,
+    ]);
+
+    autoTable(doc, {
+      head: [
+        [
+          "S. No",
+          "Task Name",
+          "Work Description",
+          "Code",
+          "Date of Work",
+          "Due Date",
+          "Status",
+          "Priority",
+        ],
+      ],
+      body: tableData,
+      startY: 80,
+      styles: {
+        fontSize: 8,
+        cellPadding: 5,
       },
-      jsPDF: {
-        unit: "in",
-        format: "letter",
-        orientation: "landscape",
+      headStyles: {
+        fillColor: [47, 62, 158],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
       },
-    };
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+    });
 
-    await html2pdf().set(opt).from(element).save();
-  } catch (err) {
-    console.error("❌ PDF generation error:", err);
-    alert("Failed to generate PDF. Try again.");
-  } finally {
-    setIsGeneratingPDF(false);
-  }
-};
+    doc.save(`${filters.user.replace(/\s+/g, "_")}-Task-Report.pdf`);
+  };
 
+  const handleDownloadExcel = () => {
+    if (!filters.user) {
+      alert("Please select a user to generate the report.");
+      return;
+    }
 
+    const exportData = filteredTasks.map((task, index) => ({
+      "S. No": index + 1,
+      "Task Name": task.taskName,
+      "Work Description": task.workDesc || "No description",
+      Code: task.code || "",
+      "Date of Work": formatAssignedDate(task.assignedDate),
+      "Due Date": new Date(task.dueDate).toLocaleDateString("en-GB"),
+      Status: task.status,
+      Priority: task.priority,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
+
+    const fileName = `${filters.user.replace(/\s+/g, "_")}-Task-Report.xlsx`;
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+
+    const dataBlob = new Blob([excelBuffer], {
+      type: "application/octet-stream",
+    });
+    saveAs(dataBlob, fileName);
+  };
 
   return (
-    <div className="overflow-x-auto h-[70vh] w-[180vh] relative">
+    <div className="overflow-x-auto h-[68vh] w-[180vh] relative">
       <div className="flex items-center justify-between mb-6 flex-wrap">
         {/* Left section: Filters */}
         <div className="flex items-center space-x-6 flex-wrap">
@@ -658,11 +717,16 @@ const handleDownloadPDF = async () => {
         {/* Right section: Download button */}
         <div>
           <button
-            onClick={handleDownloadPDF}
-            disabled={isGeneratingPDF}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-md shadow"
+            onClick={handleDownloadExcel}
+            className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-4 py-2 rounded-md shadow"
           >
-            {isGeneratingPDF ? "Generating..." : "📥 Download Report"}
+            📊 Download Excel
+          </button>
+          <button
+            onClick={handleDownloadPDF}
+            className="ml-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-md shadow"
+          >
+            📄 Download PDF
           </button>
         </div>
       </div>
@@ -703,10 +767,7 @@ const handleDownloadPDF = async () => {
               </h2>
             </div>
 
-            <div
-              className="overflow-y-auto"
-              style={{ height: "calc(78vh - 60px)" }}
-            >
+            <div className="overflow-y-auto">
               <table className=" w-full table-auto border-collapse text-xs text-gray-800">
                 <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs sticky top-0 z-10">
                   <tr className="text-left">

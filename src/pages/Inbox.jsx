@@ -57,15 +57,11 @@ const Inbox = () => {
     const fetchUserDepartments = async () => {
       try {
         if (currentUser.role === "admin") {
-          const res = await axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/departments"
-          );
+          const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/departments");
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
-          const res = await axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/employees"
-          );
+          const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
           );
@@ -94,7 +90,7 @@ const Inbox = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]); // This will run whenever messages change
+  }, [messages]);
 
   const dispatch = useDispatch();
 
@@ -105,9 +101,7 @@ const Inbox = () => {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/employees"
-        );
+        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
         console.log("Fetched users:", res.data);
 
         // Separate admins and regular users
@@ -182,53 +176,58 @@ const Inbox = () => {
     fetchMessages();
   }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
 
-  const sendMessage = async () => {
-    if (!messageText.trim()) return;
+const sendMessage = async () => {
+  if (!messageText.trim()) return;
 
-    const newMessage = {
-      sender: currentUser.name,
-      text: messageText,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      read: false,
-      // Add recipient information for direct messages
-      ...(selectedUser && { recipient: selectedUser.name }),
-      // Add group information for group messages
-      ...(selectedGroup && { group: selectedGroup }),
-      // Add this to ensure it's marked as a direct message
-      isDirectMessage: !!selectedUser,
-    };
-
-    try {
-      let res;
-      if (selectedUser) {
-        res = await axios.post(
-          `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`,
-          newMessage
-        );
-        // Emit specifically to the recipient
-        socket.emit("sendDirectMessage", {
-          message: res.data,
-          recipient: selectedUser.name,
-        });
-      } else if (selectedGroup) {
-        res = await axios.post(
-          `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
-            selectedGroup
-          )}`,
-          newMessage
-        );
-        socket.emit("sendMessage", res.data);
-      }
-
-      setMessages((prevMessages) => [...prevMessages, res.data]);
-      setMessageText("");
-    } catch (err) {
-      console.error("❌ Failed to send message:", err.message);
-    }
+  const newMessage = {
+    sender: currentUser.name,
+    text: messageText,
+    timestamp: new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    read: false,
+    ...(selectedUser && { recipient: selectedUser.name }),
+    ...(selectedGroup && { group: selectedGroup }),
+    isDirectMessage: !!selectedUser,
   };
+
+  try {
+    let res;
+    if (selectedUser) {
+      res = await axios.post(
+        `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`,
+        newMessage
+      );
+      socket.emit("sendDirectMessage", {
+        message: res.data,
+        recipient: selectedUser.name,
+      });
+    } else if (selectedGroup) {
+      res = await axios.post(
+        `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
+          selectedGroup
+        )}`,
+        newMessage
+      );
+      socket.emit("sendMessage", res.data);
+    }
+
+    // Update state and clear input
+    setMessages(prev => [...prev, res.data]);
+    setMessageText("");
+    
+    // Ensure input is focused after send
+    setTimeout(() => {
+      messageInputRef.current?.focus();
+    }, 0);
+
+  } catch (err) {
+    console.error("❌ Failed to send message:", err.message);
+    // Optionally keep the message if sending fails
+    // setMessageText(messageText); 
+  }
+};
 
   const handleChange = (e) => {
     const { value } = e.target;
@@ -245,10 +244,9 @@ const Inbox = () => {
       }
 
       // Then make the API call
-      const res = await axios.put(
-        "https://sataskmanagementbackend.onrender.com/api/mark-read",
-        { identifier }
-      );
+      const res = await axios.put("https://sataskmanagementbackend.onrender.com/api/mark-read", {
+        identifier,
+      });
 
       // Emit socket event after successful API call
       socket.emit("markRead", { identifier });
@@ -319,71 +317,74 @@ const Inbox = () => {
       [user.name]: 0, // Immediately set to 0
     }));
   };
+
   // useEffect(() => {
-  //   socket.on("receiveMessage", (msg) => {
+  //   const handleReceiveMessage = (msg) => {
   //     console.log("📨 Real-time message received:", msg);
 
-  //     // For Groups:
-  //     if (
-  //       msg.group &&
-  //       typeof msg.group === "string" &&
-  //       msg.group.trim() !== ""
-  //     ) {
-  //       if (!selectedGroup || msg.group !== selectedGroup) {
-  //         setGroupUnreadCounts((prevCounts) => {
-  //           const updatedCounts = { ...prevCounts };
-  //           updatedCounts[msg.group] = (updatedCounts[msg.group] || 0) + 1;
-  //           return updatedCounts;
-  //         });
+  //     // For Group Messages
+  //     if (msg.group) {
+  //       // Only increment if user belongs to this group
+  //       if (groups.includes(msg.group) && (!selectedGroup || msg.group !== selectedGroup)) {
+  //         setGroupUnreadCounts(prev => ({
+  //           ...prev,
+  //           [msg.group]: (prev[msg.group] || 0) + 1
+  //         }));
   //       }
   //     }
-
-  //     // For Personal Messages:
-  //     if (
-  //       msg.recipient === currentUser.name &&
-  //       msg.sender !== currentUser.name
-  //     ) {
-  //       setUserUnreadCounts((prevCounts) => {
-  //         const updatedCounts = { ...prevCounts };
-  //         updatedCounts[msg.sender] = (updatedCounts[msg.sender] || 0) + 1;
-  //         return updatedCounts;
-  //       });
+  //     // For Direct Messages
+  //     else if (msg.recipient === currentUser.name && msg.sender !== currentUser.name) {
+  //       setUserUnreadCounts(prev => ({
+  //         ...prev,
+  //         [msg.sender]: (prev[msg.sender] || 0) + 1
+  //       }));
   //     }
-  //   });
-
-  //   return () => {
-  //     socket.off("receiveMessage");
   //   };
-  // }, [selectedGroup, currentUser.name]);
 
-  //fetch group unread badge
+  //   socket.on("receiveMessage", handleReceiveMessage);
+  //   return () => socket.off("receiveMessage", handleReceiveMessage);
+  // }, [selectedGroup, currentUser.name, groups]);
 
-useEffect(() => {
-  const handleReceiveMessage = (msg) => {
-    console.log("📨 Real-time message received:", msg);
+  useEffect(() => {
+    const handleReceiveMessage = (msg) => {
+      console.log("📨 Real-time message received:", msg);
 
-    // For Group Messages
-    if (msg.group) {
-      // Only increment if user belongs to this group
-      if (groups.includes(msg.group) && (!selectedGroup || msg.group !== selectedGroup)) {
-        setGroupUnreadCounts(prev => ({
+      // For Group Messages
+      if (msg.group) {
+        // Only process if this is the currently selected group
+        if (selectedGroup === msg.group) {
+          setMessages((prev) => [...prev, msg]);
+        }
+
+        // Update unread counts if needed
+        if (
+          groups.includes(msg.group) &&
+          (!selectedGroup || msg.group !== selectedGroup)
+        ) {
+          setGroupUnreadCounts((prev) => ({
+            ...prev,
+            [msg.group]: (prev[msg.group] || 0) + 1,
+          }));
+        }
+      }
+      // For Direct Messages
+      else if (
+        msg.recipient === currentUser.name &&
+        msg.sender !== currentUser.name
+      ) {
+        if (selectedUser && selectedUser.name === msg.sender) {
+          setMessages((prev) => [...prev, msg]);
+        }
+        setUserUnreadCounts((prev) => ({
           ...prev,
-          [msg.group]: (prev[msg.group] || 0) + 1
+          [msg.sender]: (prev[msg.sender] || 0) + 1,
         }));
       }
-    } 
-    // For Direct Messages
-    else if (msg.recipient === currentUser.name && msg.sender !== currentUser.name) {
-      setUserUnreadCounts(prev => ({
-        ...prev,
-        [msg.sender]: (prev[msg.sender] || 0) + 1
-      }));
-    }
-  };
+    };
 
-  socket.on("receiveMessage", handleReceiveMessage);
-  return () => socket.off("receiveMessage", handleReceiveMessage);
-}, [selectedGroup, currentUser.name, groups]);
+    socket.on("receiveMessage", handleReceiveMessage);
+    return () => socket.off("receiveMessage", handleReceiveMessage);
+  }, [selectedGroup, selectedUser, currentUser.name, groups]);
 
   useEffect(() => {
     const fetchGroupUnreadCounts = async () => {
@@ -842,9 +843,9 @@ useEffect(() => {
             <input
               type="text"
               ref={messageInputRef}
-              value={messageText}
-              onChange={handleChange}
-              onKeyDown={handleKeyPress}
+              value={messageText} // Bind the input to the state
+              onChange={handleChange} // This updates the state when typing
+              onKeyDown={handleKeyPress} // Handle enter key press
               placeholder="Type your message..."
               className="flex-1 px-4 py-2 text-sm bg-transparent focus:outline-none placeholder-gray-400 text-gray-700"
             />
