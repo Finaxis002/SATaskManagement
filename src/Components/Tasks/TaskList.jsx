@@ -797,7 +797,7 @@ const TaskList = ({
             ref={dropdownRef}
             className="flex flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg z-50"
           >
-            {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
+            {["To Do", "In Progress", "Completed", "Overdue", "Obsolete"].map(
               (statusOption) => (
                 <span
                   key={statusOption}
@@ -808,7 +808,7 @@ const TaskList = ({
                       ? "bg-yellow-200 text-yellow-600"
                       : statusOption === "To Do"
                       ? "bg-blue-200 text-blue-600"
-                      : statusOption === "Abbstulate"
+                      : statusOption === "Obsolete"
                       ? "bg-purple-200 text-purple-600"
                       : "bg-red-200 text-red-600"
                   }`}
@@ -832,7 +832,7 @@ const TaskList = ({
                 ? "bg-yellow-200 text-yellow-600"
                 : task.status === "To Do"
                 ? "bg-blue-200 text-blue-600"
-                : task.status === "Abbstulate"
+                : task.status === "Obsolete"
                 ? "bg-purple-200 text-purple-600"
                 : "bg-red-200 text-red-600"
             }`}
