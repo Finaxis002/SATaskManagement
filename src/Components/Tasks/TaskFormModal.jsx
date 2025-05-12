@@ -115,101 +115,106 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     fetchClients();
   }, []);
 
-  const handleSubmit = async () => {
-    if (!taskName || !dueDate || assignees.length === 0) {
-      return alert("Please fill all required fields.");
-    }
+const handleSubmit = async () => {
+  if (!taskName || !dueDate || assignees.length === 0) {
+    return alert("Please fill all required fields.");
+  }
 
-    const taskPayload = {
-      taskName,
-      workDesc,
-      assignees: assignees.map((a) => ({ name: a.name, email: a.email })),
-      assignedDate: new Date().toISOString(),
-      dueDate: new Date(dueDate).toISOString(),
-      priority,
-      status,
-      taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
-      clientName,
-      department: Array.isArray(department) ? department : [department],
-      code: taskCode?.value || "",
-      assignedBy: assignedByUser
-        ? {
-            // name: adminUsers.find((admin) => admin.email === assignedByUser.value)?.name,
-             name: employees.find((user) => user.email === assignedByUser.value)?.name,
-            email: assignedByUser.value,
-          }
-        : {
-            name: localStorage.getItem("name"),
-            email: localStorage.getItem("userId"),
-          },
-      isRepetitive,
-      createdBy: {
-    name: localStorage.getItem("name"),
-    email: localStorage.getItem("userId"),
-  },
-    };
-    
-    if (initialData) {
-      taskPayload.updatedBy = {
-        name: localStorage.getItem("name"),
-        email: localStorage.getItem("userId"),
-      };
-    }
-
-    if (isRepetitive) {
-      taskPayload.repeatType = repeatType;
-      if (!["Daily", "Every 5 Minutes"].includes(repeatType)) {
-        taskPayload.repeatDay = Number(customRepeat.day);
-      }
-      if (repeatType === "Annually") {
-        taskPayload.repeatMonth = Number(customRepeat.month);
-      }
-      taskPayload.nextRepetitionDate = new Date(dueDate).toISOString();
-    }
-
-    try {
-      setIsSubmitting(true);
-      const url = initialData
-        ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
-        : "https://sataskmanagementbackend.onrender.com/api/tasks";
-      const response = await fetch(url, {
-        method: initialData ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+  const taskPayload = {
+    taskName,
+    workDesc,
+    assignees: assignees.map((a) => ({ name: a.name, email: a.email })),
+    assignedDate: new Date().toISOString(),
+    dueDate: new Date(dueDate).toISOString(),
+    priority,
+    status,
+    taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
+    clientName,
+    department: Array.isArray(department) ? department : [department],
+    code: taskCode?.value || "",
+    assignedBy: assignedByUser
+      ? {
+          name: employees.find((user) => user.email === assignedByUser.value)
+            ?.name,
+          email: assignedByUser.value,
+        }
+      : {
+          name: localStorage.getItem("name"),
+          email: localStorage.getItem("userId"),
         },
-        body: JSON.stringify(taskPayload),
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-  console.error("Backend error response:", result);
-  throw new Error(result.message || "Failed to create task");
-}
-
-      // if (!response.ok) throw new Error(result.message || "Failed to create task");
-
-      showAlert(
-        initialData
-          ? "Task updated successfully!"
-          : "Task created successfully!"
-      );
-      
-      if (!initialData) {
-        // socket.emit("new-task-created", { taskId: result._id });
-        socket.emit("new-task-created", { taskId: result.task._id });
-      }
-
-      // onSave(result);
-      onSave(result.task); 
-      onClose();
-    } catch (error) {
-      console.error("❌ Submission error:", error);
-      alert(`❌ Error: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
+    createdBy: {
+      name: localStorage.getItem("name"),
+      email: localStorage.getItem("userId"),
+    },
+    isRepetitive,
   };
+
+  if (initialData) {
+    taskPayload.updatedBy = {
+      name: localStorage.getItem("name"),
+      email: localStorage.getItem("userId"),
+    };
+  }
+
+  // ➕ Repeat Settings (DO NOT send `nextRepetitionDate` or `nextDueDate`)
+  if (isRepetitive) {
+    taskPayload.repeatType = repeatType;
+
+    if (!["Daily"].includes(repeatType)) {
+      taskPayload.repeatDay = Number(customRepeat.day);
+    }
+
+    if (repeatType === "Annually") {
+      taskPayload.repeatMonth = Number(customRepeat.month);
+    }
+
+    // ❌ DO NOT send nextRepetitionDate or nextDueDate — backend handles this
+  } else {
+    taskPayload.repeatType = null;
+    taskPayload.repeatDay = null;
+    taskPayload.repeatMonth = null;
+  }
+
+  try {
+    setIsSubmitting(true);
+    const url = initialData
+      ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
+      : "https://sataskmanagementbackend.onrender.com/api/tasks";
+
+    const response = await fetch(url, {
+      method: initialData ? "PUT" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+      },
+      body: JSON.stringify(taskPayload),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Backend error response:", result);
+      throw new Error(result.message || "Failed to create task");
+    }
+
+    showAlert(
+      initialData ? "Task updated successfully!" : result.message || "Task created successfully!"
+    );
+
+    if (!initialData) {
+      socket.emit("new-task-created", { taskId: result.task._id });
+    }
+
+    onSave(result.task);
+    onClose();
+  } catch (error) {
+    console.error("❌ Submission error:", error);
+    alert(`❌ Error: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const filteredEmployees = taskCategory
     ? employees.filter(
@@ -536,7 +541,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
       {/* Repetition Settings Popup */}
       {showRepeatPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">
               Repetition Settings

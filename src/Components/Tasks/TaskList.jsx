@@ -127,7 +127,6 @@ const TaskList = ({
 
       let filtered = [];
 
-
       if (role !== "admin") {
         filtered = visibleTasks.filter(
           (task) =>
@@ -148,8 +147,6 @@ const TaskList = ({
         taskRemarks[task._id] = task.remark || "";
       });
       setRemarks(taskRemarks);
-
-
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
@@ -365,10 +362,10 @@ const TaskList = ({
         (filters.department === "" ||
           task.department.includes(filters.department)) &&
         (filters.code === "" || task.code === filters.code) &&
-        (!filters.user ||
-          filters.user === "All Users" ||
-          task.assignees?.some((a) => a.name === filters.user) ||
-          task.assignedBy?.name === filters.user) &&
+        (filters.assignee === "" ||
+          task.assignees?.some((a) => a.name === filters.assignee)) &&
+        (filters.assignedBy === "" ||
+          task.assignedBy?.name === filters.assignedBy) &&
         (filters.priority === "" || task.priority === filters.priority) &&
         (filters.status === "" || task.status === filters.status);
 
@@ -971,97 +968,112 @@ const TaskList = ({
   }, [filters.department, tasks]);
 
   return (
-    <div className="overflow-x-auto h-[78vh] relative">
-      <div className="flex items-center justify-start mb-6 space-x-6">
-        {/* Department Filter (already exists) */}
-        <div className="flex items-center space-x-2">
-          <label
-            htmlFor="departmentFilter"
-            className="text-xs font-medium text-gray-700"
-          >
-            Filter by Department:
-          </label>
-          <select
-            id="departmentFilter"
-            value={filters.department}
-            onChange={(e) => handleFilterChange("department", e.target.value)}
-            className="appearance-none w-56 pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">All Departments</option>
-            {departments.map((dept) => (
-              <option key={dept._id} value={dept.name}>
-                {dept.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ✅ Status Filter */}
-        <div className="flex items-center space-x-2">
-          <label
-            htmlFor="statusFilter"
-            className="text-xs font-medium text-gray-700"
-          >
-            Filter by Status:
-          </label>
-          <select
-            id="statusFilter"
-            value={filters.status}
-            onChange={(e) => handleFilterChange("status", e.target.value)}
-            className="appearance-none w-56 pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">All Status</option>
-            {Array.from(new Set(tasks.map((t) => t.status)))
-              .filter(Boolean)
-              .map((status) => (
-                <option key={status} value={status}>
-                  {status}
+    <div className="overflow-x-auto  relative">
+      <div className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
+          {/* Department */}
+          <div>
+            <label
+              htmlFor="departmentFilter"
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              Filter by Department
+            </label>
+            <select
+              id="departmentFilter"
+              value={filters.department}
+              onChange={(e) => handleFilterChange("department", e.target.value)}
+              className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">All Departments</option>
+              {departments.map((dept) => (
+                <option key={dept._id} value={dept.name}>
+                  {dept.name}
                 </option>
               ))}
-          </select>
-        </div>
+            </select>
+          </div>
 
-        {/* Unified Filter by User (Assignee or Assigned By) */}
-        {role === "admin" && (
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+          {/* Status */}
+          <div>
+            <label
+              htmlFor="statusFilter"
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              Filter by Status
+            </label>
+            <select
+              id="statusFilter"
+              value={filters.status}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
+              className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">All Status</option>
+              {Array.from(new Set(tasks.map((t) => t.status)))
+                .filter(Boolean)
+                .map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          {/* Assignee */}
+          {role === "admin" && (
+            <div>
               <label
-                htmlFor="userFilter"
-                className="text-xs font-medium text-gray-700"
+                htmlFor="assigneeFilter"
+                className="block text-xs font-medium text-gray-700 mb-1"
               >
-                Filter by User:
+                Filter by Assignee
               </label>
               <select
-                id="userFilter"
-                value={filters.user}
-                onChange={(e) => handleFilterChange("user", e.target.value)}
-                className="appearance-none w-56 pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                id="assigneeFilter"
+                value={filters.assignee}
+                onChange={(e) => handleFilterChange("assignee", e.target.value)}
+                className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="">All Users</option>
-                {[...new Set([...uniqueUsers, ...uniqueAssignedBy])].map(
-                  (user) => (
-                    <option key={user} value={user}>
-                      {user}
-                    </option>
-                  )
-                )}
+                <option value="">All Assignees</option>
+                {uniqueUsers.map((user) => (
+                  <option key={user} value={user}>
+                    {user}
+                  </option>
+                ))}
               </select>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* <div className="flex items-center space-x-2">
-          <button
-            onClick={() => (window.location.href = "/calendar")} // Update if using React Router
-            className="flex items-center gap-2 px-4 py-2 text-indigo-600  hover:text-indigo-700 transition duration-300"
-          >
-            <i className="text-lg">
-              <FaCalendar />
-            </i>
-          </button>
-        </div> */}
+          {/* Assigned By */}
+          {role === "admin" && (
+            <div>
+              <label
+                htmlFor="assignedByFilter"
+                className="block text-xs font-medium text-gray-700 mb-1"
+              >
+                Filter by Assigned By
+              </label>
+              <select
+                id="assignedByFilter"
+                value={filters.assignedBy}
+                onChange={(e) =>
+                  handleFilterChange("assignedBy", e.target.value)
+                }
+                className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">All Assigners</option>
+                {uniqueAssignedBy.map((user) => (
+                  <option key={user} value={user}>
+                    {user}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
-      <div className="overflow-y-auto" style={{ height: "calc(78vh - 60px)" }}>
+
+      <div className="overflow-y-auto" style={{ height: "calc(75vh - 60px)" }}>
         <table className=" w-full table-auto border-collapse text-xs text-gray-800">
           <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs sticky top-0 z-10">
             <tr className="text-left">
@@ -1094,7 +1106,7 @@ const TaskList = ({
                 Status
               </th>
               <th className="py-3 px-6 min-w-[160px] font-semibold">Remarks</th>
-              <th className="py-3 px-6 min-w-[150px] font-semibold">Team</th>
+              <th className="py-3 px-6 min-w-[180px] font-semibold">Team</th>
               <th className="py-3 px-6 min-w-[130px] font-semibold">
                 Assigned By
               </th>
