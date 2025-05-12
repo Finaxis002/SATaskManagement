@@ -57,11 +57,15 @@ const Inbox = () => {
     const fetchUserDepartments = async () => {
       try {
         if (currentUser.role === "admin") {
-          const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/departments");
+          const res = await axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/departments"
+          );
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
-          const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
+          const res = await axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/employees"
+          );
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
           );
@@ -101,7 +105,9 @@ const Inbox = () => {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
+        const res = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/employees"
+        );
         console.log("Fetched users:", res.data);
 
         // Separate admins and regular users
@@ -176,58 +182,58 @@ const Inbox = () => {
     fetchMessages();
   }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
 
-const sendMessage = async () => {
-  if (!messageText.trim()) return;
+  const sendMessage = async () => {
+    const trimmedMessage = messageText.trim();
+    if (!trimmedMessage) return;
 
-  const newMessage = {
-    sender: currentUser.name,
-    text: messageText,
-    timestamp: new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    read: false,
-    ...(selectedUser && { recipient: selectedUser.name }),
-    ...(selectedGroup && { group: selectedGroup }),
-    isDirectMessage: !!selectedUser,
-  };
+    const newMessage = {
+      sender: currentUser.name,
+      text: trimmedMessage,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      read: false,
+      ...(selectedUser && { recipient: selectedUser.name }),
+      ...(selectedGroup && { group: selectedGroup }),
+      isDirectMessage: !!selectedUser,
+    };
 
-  try {
-    let res;
-    if (selectedUser) {
-      res = await axios.post(
-        `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`,
-        newMessage
-      );
-      socket.emit("sendDirectMessage", {
-        message: res.data,
-        recipient: selectedUser.name,
-      });
-    } else if (selectedGroup) {
-      res = await axios.post(
-        `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
-          selectedGroup
-        )}`,
-        newMessage
-      );
-      socket.emit("sendMessage", res.data);
+    try {
+      let res;
+      if (selectedUser) {
+        res = await axios.post(
+          `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`,
+          newMessage
+        );
+        socket.emit("sendDirectMessage", {
+          message: res.data,
+          recipient: selectedUser.name,
+        });
+      } else if (selectedGroup) {
+        res = await axios.post(
+          `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
+            selectedGroup
+          )}`,
+          newMessage
+        );
+        socket.emit("sendMessage", res.data);
+      }
+
+      // Push the message to chat and clear input
+      setMessages((prev) => [...prev, res.data]);
+    } catch (err) {
+      console.error("❌ Failed to send message:", err.message);
+    } finally {
+      // Always clear the input
+      setMessageText("");
+
+      // Optional: Refocus
+      setTimeout(() => {
+        messageInputRef.current?.focus();
+      }, 0);
     }
-
-    // Update state and clear input
-    setMessages(prev => [...prev, res.data]);
-    setMessageText("");
-    
-    // Ensure input is focused after send
-    setTimeout(() => {
-      messageInputRef.current?.focus();
-    }, 0);
-
-  } catch (err) {
-    console.error("❌ Failed to send message:", err.message);
-    // Optionally keep the message if sending fails
-    // setMessageText(messageText); 
-  }
-};
+  };
 
   const handleChange = (e) => {
     const { value } = e.target;
@@ -244,9 +250,12 @@ const sendMessage = async () => {
       }
 
       // Then make the API call
-      const res = await axios.put("https://sataskmanagementbackend.onrender.com/api/mark-read", {
-        identifier,
-      });
+      const res = await axios.put(
+        "https://sataskmanagementbackend.onrender.com/api/mark-read",
+        {
+          identifier,
+        }
+      );
 
       // Emit socket event after successful API call
       socket.emit("markRead", { identifier });
@@ -318,32 +327,7 @@ const sendMessage = async () => {
     }));
   };
 
-  // useEffect(() => {
-  //   const handleReceiveMessage = (msg) => {
-  //     console.log("📨 Real-time message received:", msg);
 
-  //     // For Group Messages
-  //     if (msg.group) {
-  //       // Only increment if user belongs to this group
-  //       if (groups.includes(msg.group) && (!selectedGroup || msg.group !== selectedGroup)) {
-  //         setGroupUnreadCounts(prev => ({
-  //           ...prev,
-  //           [msg.group]: (prev[msg.group] || 0) + 1
-  //         }));
-  //       }
-  //     }
-  //     // For Direct Messages
-  //     else if (msg.recipient === currentUser.name && msg.sender !== currentUser.name) {
-  //       setUserUnreadCounts(prev => ({
-  //         ...prev,
-  //         [msg.sender]: (prev[msg.sender] || 0) + 1
-  //       }));
-  //     }
-  //   };
-
-  //   socket.on("receiveMessage", handleReceiveMessage);
-  //   return () => socket.off("receiveMessage", handleReceiveMessage);
-  // }, [selectedGroup, currentUser.name, groups]);
 
   useEffect(() => {
     const handleReceiveMessage = (msg) => {
@@ -357,14 +341,19 @@ const sendMessage = async () => {
         }
 
         // Update unread counts if needed
-        if (
-          groups.includes(msg.group) &&
-          (!selectedGroup || msg.group !== selectedGroup)
-        ) {
-          setGroupUnreadCounts((prev) => ({
-            ...prev,
-            [msg.group]: (prev[msg.group] || 0) + 1,
-          }));
+        if (groups.includes(msg.group)) {
+          setGroupUnreadCounts((prev) => {
+            // If the currently selected group is not this group, increment the badge
+            if (selectedGroup !== msg.group) {
+              return {
+                ...prev,
+                [msg.group]: (prev[msg.group] || 0) + 1,
+              };
+            } else {
+              // Still show message in chat (handled above), but don’t increment unread
+              return prev;
+            }
+          });
         }
       }
       // For Direct Messages
@@ -445,12 +434,21 @@ const sendMessage = async () => {
   }, [selectedGroup, selectedUser]);
 
   socket.on("receiveMessage", (msg) => {
-    console.log("📨 received:", msg);
-
-    if (msg.group && msg.group.trim() !== "") {
-      console.log("📌 Group message for:", msg.group);
-    } else {
-      console.log("📬 Personal message from:", msg.sender);
+    // Always fetch fresh count after any group message
+    if (msg.group && groups.includes(msg.group)) {
+      axios
+        .get("/api/group-unread-counts", {
+          params: { name: currentUser.name },
+        })
+        .then((res) => {
+          setGroupUnreadCounts(res.data.groupUnreadCounts || {});
+        })
+        .catch((err) => {
+          console.error(
+            "❌ Failed to refetch group unread counts:",
+            err.message
+          );
+        });
     }
   });
 

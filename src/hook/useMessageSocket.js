@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import axios from "axios";
-
 import { io } from "socket.io-client";
 
+// Create socket only once globally (not inside hook)
 const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
 });
@@ -14,60 +14,78 @@ const useMessageSocket = (setInboxCount) => {
 
     const fetchUpdatedCount = async () => {
       try {
-        const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/unread-count",
-          {
-            params: { name, role },
-          }
+        const name = localStorage.getItem("name");
+        const role = localStorage.getItem("role");
+
+        const [directRes, groupRes] = await Promise.all([
+          axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/unread-count",
+            {
+              params: { name, role },
+            }
+          ),
+          axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/group-unread-counts",
+            {
+              params: { name },
+            }
+          ),
+        ]);
+
+        const directCount = directRes.data.unreadCount || 0;
+
+        const groupCountsObj = groupRes.data.groupUnreadCounts || {};
+        const groupCount = Object.values(groupCountsObj).reduce(
+          (acc, val) => acc + val,
+          0
         );
-        console.log("📩 Updated inbox count:", res.data.unreadCount);
-        setInboxCount(res.data.unreadCount);
+
+        const totalUnread = directCount + groupCount;
+
+        console.log("📩 Combined unread count:", totalUnread);
+        setInboxCount(totalUnread);
       } catch (err) {
-        console.error("❌ Failed fetching inbox count:", err.message);
+        console.error("❌ Failed fetching combined inbox count:", err.message);
       }
     };
 
-    fetchUpdatedCount(); // ✅ Immediately fetch on mount
+    fetchUpdatedCount(); // Fetch once on mount
 
-    // Listen for real-time incoming messages
-   socket.on("receiveMessage", (msg) => {
-  const currentUser = localStorage.getItem("name");
-  const currentRole = localStorage.getItem("role");
+    const handleReceiveMessage = (msg) => {
+      console.log("📨 Message received in hook:", msg); // Add this
+      const currentUser = localStorage.getItem("name");
+      const currentRole = localStorage.getItem("role");
 
-  const isGroupMessage = !!msg.group?.trim();
-  const isRecipient = msg.recipient === currentUser;
-  const isSender = msg.sender === currentUser;
+      const isGroupMessage = !!msg.group?.trim();
+      const isRecipient = msg.recipient === currentUser;
+      const isSender = msg.sender === currentUser;
 
-  // ✅ Filter logic:
-  if (
-    (isGroupMessage && currentRole === "admin") || // admin receives group messages
-    isRecipient || // user is the recipient of a personal message
-    isSender       // user sent the message
-  ) {
-    console.log("📥 Relevant message, updating inbox count");
-    fetchUpdatedCount();
-  } else {
-    console.log("🚫 Irrelevant message ignored by inbox count");
-  }
-});
+      if (
+        (isGroupMessage && currentRole === "admin") ||
+        isRecipient ||
+        isSender
+      ) {
+        console.log("📥 Relevant message, updating inbox count");
+        fetchUpdatedCount();
+      } else {
+        console.log("🚫 Message not relevant to this user");
+      }
+    };
 
+    // 🔄 Attach listeners ONCE
+    socket.off("receiveMessage", handleReceiveMessage); // Clear previous
+    socket.on("receiveMessage", handleReceiveMessage);
 
-    // Listen for inbox count updates separately
-    socket.on("inboxCountUpdated", () => {
-      console.log("📡 inboxCountUpdated event received");
-      fetchUpdatedCount();
-    });
+    socket.off("inboxCountUpdated");
+    socket.on("inboxCountUpdated", fetchUpdatedCount);
 
-    // 🆕 Whenever any message is marked as read
-    socket.on("markRead", () => {
-      console.log("📬 Message marked as read");
-      fetchUpdatedCount();
-    });
+    socket.off("markRead");
+    socket.on("markRead", fetchUpdatedCount);
 
     return () => {
-      socket.off("receiveMessage");
-      socket.off("inboxCountUpdated");
-      socket.off("markRead"); // Cleanup
+      socket.off("receiveMessage", handleReceiveMessage);
+      socket.off("inboxCountUpdated", fetchUpdatedCount);
+      socket.off("markRead", fetchUpdatedCount);
     };
   }, [setInboxCount]);
 };
