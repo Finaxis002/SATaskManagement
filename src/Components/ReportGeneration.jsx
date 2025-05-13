@@ -356,9 +356,18 @@ const ReportGeneration = ({
   }, [dropdownRef]);
 
   const renderTaskRow = (task, index) => (
-    <tr
+   <tr
       key={task._id}
-      className="hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200"
+      id={`task-${task._id}`}
+      className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200 
+    ${
+      new Date(task.dueDate) < new Date() &&
+      task.status !== "Completed" &&
+      task.status !== "Obsolete"
+        ? "bg-orange-100 hover:bg-orange-200" // 🔴 Overdue tasks
+        : ""
+    }
+  `}
     >
       {/* 1. S. No */}
       <td className="py-3 px-4 font-medium">{index + 1}</td>

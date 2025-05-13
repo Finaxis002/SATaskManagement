@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useDispatch } from "react-redux";
-import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
+import { useDispatch , useSelector } from "react-redux";
+import { updateTaskStatus, setHideCompletedTrue } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
 
@@ -13,7 +13,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
 import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
-import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
 import { io } from "socket.io-client";
@@ -40,7 +39,6 @@ const TaskList = ({
   });
   const [dueDateSortOrder, setDueDateSortOrder] = useState(null);
   const [remarks, setRemarks] = useState({});
-  const [editingRemark, setEditingRemark] = useState(null);
   const [editingWorkDesc, setEditingWorkDesc] = useState(null);
   const [workDescs, setWorkDescs] = useState({});
   const [openRemarkPopup, setOpenRemarkPopup] = useState(null);
@@ -51,6 +49,7 @@ const TaskList = ({
   const [uniqueUsers, setUniqueUsers] = useState([]);
   const [departmentsForAdmin, setDepartmentsForAdmin] = useState([]);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
+
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -658,10 +657,22 @@ const TaskList = ({
     }
   };
 
+  const hideCompletedTasks = useSelector((state) => state.tasks.hideCompletedTasks);
+
+
   const renderTaskRow = (task, index) => (
     <tr
       key={task._id}
-      className="hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200"
+      id={`task-${task._id}`}
+      className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200 
+    ${
+      new Date(task.dueDate) < new Date() &&
+      task.status !== "Completed" &&
+      task.status !== "Obsolete"
+        ? "bg-orange-100 hover:bg-orange-200" // 🔴 Overdue tasks
+        : ""
+    }
+  `}
     >
       {/* 1. S. No */}
       <td className="py-3 px-4 font-medium">{index + 1}</td>
@@ -794,7 +805,7 @@ const TaskList = ({
             ref={dropdownRef}
             className="flex flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg z-50"
           >
-            {["To Do", "In Progress", "Completed", "Overdue", "Obsolete"].map(
+            {["To Do", "In Progress", "Completed", "Obsolete"].map(
               (statusOption) => (
                 <span
                   key={statusOption}

@@ -32,7 +32,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [taskCode, setTaskCode] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientOptions, setClientOptions] = useState([]);
-  const [overdueNote, setOverdueNote] = useState("");
   const [isRepetitive, setIsRepetitive] = useState(false);
   const [showRepeatPopup, setShowRepeatPopup] = useState(false);
   const [repeatType, setRepeatType] = useState("Daily");
@@ -381,7 +380,6 @@ const handleSubmit = async () => {
                 <option value="To Do">To Do</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
-                <option value="Overdue">Overdue</option>
                 <option value="Abbstulate">Abbstulate</option>
               </select>
             </div>
