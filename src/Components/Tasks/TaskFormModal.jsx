@@ -158,33 +158,13 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     if (isRepetitive) {
       taskPayload.repeatType = repeatType;
 
-
       if (!["Daily"].includes(repeatType)) {
         taskPayload.repeatDay = Number(customRepeat.day);
       }
 
-    // ❌ DO NOT send nextRepetitionDate or nextDueDate — backend handles this
-  } else {
-    taskPayload.repeatType = null;
-    taskPayload.repeatDay = null;
-    taskPayload.repeatMonth = null;
-  }
-
-  try {
-    setIsSubmitting(true);
-    const url = initialData
-      ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
-      : "https://sataskmanagementbackend.onrender.com/api/tasks";
-
-    const response = await fetch(url, {
-      method: initialData ? "PUT" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-      body: JSON.stringify(taskPayload),
-    });
-
+    if (repeatType === "Annually") {
+      taskPayload.repeatMonth = Number(customRepeat.month);
+    }
 
       if (repeatType === "Annually") {
         taskPayload.repeatMonth = Number(customRepeat.month);
@@ -214,12 +194,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
       const result = await response.json();
 
-    if (!initialData) {
-      socket.emit("new-task-created", { taskId: result.task._id });
-
-    }
-
-
       if (!response.ok) {
         console.error("Backend error response:", result);
         throw new Error(result.message || "Failed to create task");
@@ -231,9 +205,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           : result.message || "Task created successfully!"
       );
 
-      if (!initialData) {
-        socket.emit("new-task-created", { taskId: result.task._id });
-      }
+    if (!initialData) {
+      socket.emit("new-task-created", { taskId: result.task._id });
+    }
 
       onSave(result.task);
       onClose();
