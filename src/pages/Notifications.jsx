@@ -23,7 +23,7 @@ const Notifications = () => {
         }
       );
 
-      console.log("🧹 Marked notification as read:", id);
+      // console.log("🧹 Marked notification as read:", id);
 
       // ✅ Update that specific notification in local state
       setNotifications((prev) =>
@@ -67,7 +67,7 @@ const Notifications = () => {
       }
 
       const allNotifications = response.data;
-      console.log("Fetched notifications:", allNotifications);
+      // console.log("Fetched notifications:", allNotifications);
 
       const filteredNotifications = allNotifications.filter((notification) => {
         const currentEmail = localStorage.getItem("userId");
