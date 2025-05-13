@@ -167,6 +167,7 @@ const handleSubmit = async () => {
       taskPayload.repeatMonth = Number(customRepeat.month);
     }
 
+
     // ❌ DO NOT send nextRepetitionDate or nextDueDate — backend handles this
   } else {
     taskPayload.repeatType = null;
@@ -202,6 +203,7 @@ const handleSubmit = async () => {
 
     if (!initialData) {
       socket.emit("new-task-created", { taskId: result.task._id });
+
     }
 
     onSave(result.task);
