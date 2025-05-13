@@ -14,7 +14,7 @@ import {
 import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
 
 import { fetchUsers } from "../../redux/userSlice"; 
-import { useSelector } from "react-redux";
+
 
 import Swal from "sweetalert2";
 
