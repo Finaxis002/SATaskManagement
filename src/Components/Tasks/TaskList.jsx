@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
 import {
   faFilter,
   faPen,
@@ -10,13 +9,12 @@ import {
   faCalendar,
 } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
-import { fetchUsers } from "../../redux/userSlice"; // Adjust path based on your folder structure
+import { fetchUsers } from "../../redux/userSlice"; 
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { io } from "socket.io-client";
 
-const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
-
+const socket = io("https://sataskmanagementbackend.onrender.com"); 
 const TaskList = ({
   onEdit,
   refreshTrigger,

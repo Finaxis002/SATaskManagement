@@ -813,7 +813,12 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Failed to create task");
+      if (!response.ok) {
+  console.error("Backend error response:", result);
+  throw new Error(result.message || "Failed to create task");
+}
+
+      // if (!response.ok) throw new Error(result.message || "Failed to create task");
 
       showAlert(
         initialData
@@ -822,10 +827,12 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       );
       
       if (!initialData) {
-        socket.emit("new-task-created", { taskId: result._id });
+        // socket.emit("new-task-created", { taskId: result._id });
+        socket.emit("new-task-created", { taskId: result.task._id });
       }
 
-      onSave(result);
+      // onSave(result);
+      onSave(result.task); 
       onClose();
     } catch (error) {
       console.error("❌ Submission error:", error);
