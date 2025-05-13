@@ -32,30 +32,31 @@ export const updateTask = createAsyncThunk(
   }
 );
 
-
 export const updateTaskCompletion = createAsyncThunk(
   "tasks/updateTaskCompletion",
   async ({ taskId, completed }, { rejectWithValue }) => {
     try {
       // Get user data from localStorage using your exact keys
-      const userName = localStorage.getItem('name') || 'Unknown';
-      const userEmail = localStorage.getItem('userId') || 'unknown@example.com';
-      
+      const userName = localStorage.getItem("name") || "Unknown";
+      const userEmail = localStorage.getItem("userId") || "unknown@example.com";
+
       const response = await axios.patch(
         `http://localhost:5000/api/tasks/${taskId}`,
         { completed },
         {
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-            'X-User-Name': userName,
-            'X-User-Email': userEmail
-          }
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            "X-User-Name": userName,
+            "X-User-Email": userEmail,
+          },
         }
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { message: error.message });
+      return rejectWithValue(
+        error.response?.data || { message: error.message }
+      );
     }
   }
 );
@@ -81,7 +82,6 @@ export const updateTaskStatus = createAsyncThunk(
   }
 );
 
-
 const initialState = {
   taskColumns: [
     {
@@ -95,6 +95,7 @@ const initialState = {
   assignees: [], // Store employee list
   selectedAssignee: {}, // Optional: store currently selected assignee
   loading: false,
+  hideCompletedTasks: false, // <-- NEW FLAG
 };
 
 const taskSlice = createSlice({
@@ -136,6 +137,9 @@ const taskSlice = createSlice({
     // Optional: Set selected assignee globally
     setSelectedAssignee: (state, action) => {
       state.selectedAssignee = action.payload;
+    },
+    setHideCompletedTrue(state) {
+      state.hideCompletedTasks = true;
     },
   },
 
@@ -202,7 +206,7 @@ const taskSlice = createSlice({
       .addCase(updateTaskCompletion.fulfilled, (state, action) => {
         state.loading = false;
         const updatedTask = action.payload;
-        
+
         for (let col of state.taskColumns) {
           const idx = col.tasks.findIndex((t) => t._id === updatedTask._id);
           if (idx !== -1) {
@@ -213,7 +217,7 @@ const taskSlice = createSlice({
       })
       .addCase(updateTaskCompletion.rejected, (state, action) => {
         state.loading = false;
-        console.error('Task update failed:', action.payload);
+        console.error("Task update failed:", action.payload);
       });
   },
 });
@@ -223,7 +227,7 @@ export const {
   toggleTaskCompletion,
   removeTaskFromColumn,
   setSelectedAssignee,
-
+  setHideCompletedTrue
 } = taskSlice.actions;
 
 export default taskSlice.reducer;

@@ -3,6 +3,7 @@ import { isToday, isBefore, isTomorrow, parseISO, format } from "date-fns";
 import bgImage from "../assets/bg.png";
 import { FaCalendarAlt, FaClock, FaPlus, FaTimes } from "react-icons/fa";
 
+
 const Reminders = () => {
   const [reminders, setReminders] = useState(() => {
     const saved = localStorage.getItem("reminders");
@@ -24,7 +25,6 @@ const Reminders = () => {
       `${newReminder.date}T${newReminder.time}`
     ).toISOString();
 
-  
     setNewReminder({ text: "", date: "", time: "" });
     setShowPopup(false);
     setReminders((prev) => [
@@ -36,8 +36,6 @@ const Reminders = () => {
         snoozed: false, // 🆕 prevent duplicate alerts
       },
     ]);
-    
-    
   };
 
   const handleDeleteReminder = (datetime) => {
@@ -48,13 +46,16 @@ const Reminders = () => {
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(reminders));
   }, [reminders]);
-  
+
+
+
+
   useEffect(() => {
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }, []);
-  
+
   const updatedReminders = reminders.map((reminder) => {
     const parsedDate = parseISO(reminder.datetime);
     const isOutdated = parsedDate < new Date() && !isToday(parsedDate);
@@ -86,50 +87,20 @@ const Reminders = () => {
     return date < now;
   });
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
   
-      reminders.forEach((reminder) => {
-        const reminderTime = parseISO(reminder.datetime);
-        const snoozeMinutes = parseInt(reminder.snoozeBefore || "0", 10);
-        const snoozeTime = new Date(reminderTime.getTime() - snoozeMinutes * 60000);
-  
-        const isDueForSnooze =
-          now >= snoozeTime &&
-          now < new Date(snoozeTime.getTime() + 60000) && // Trigger only once within 1-minute window
-          !reminder.snoozed;
-  
-        if (isDueForSnooze) {
-          alert(`⏰ Reminder Alert: "${reminder.text}" is due in ${snoozeMinutes} min`);
-  
-          // Mark as snoozed (local state update only)
-          setReminders((prev) =>
-            prev.map((r) =>
-              r.datetime === reminder.datetime
-                ? { ...r, snoozed: true }
-                : r
-            )
-          );
-        }
-      });
-    }, 30000); // Check every 30 seconds
-  
-    return () => clearInterval(interval);
-  }, [reminders]);
-  
-
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(updatedReminders));
   }, [updatedReminders]);
 
   return (
     <div className="h-screen p-4 relative bg-gradient-to-br from-blue-50 to-purple-100 overflow-hidden">
+      
       <img
         src={bgImage}
         alt="Background"
         className="absolute top-0 left-0 w-full h-full object-cover z-0"
       />
+     
       <div className="max-w-5xl relative mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800">📅 My Reminders</h2>
@@ -159,10 +130,8 @@ const Reminders = () => {
             color="bg-red-300"
             data={outdatedReminders}
             onDelete={handleDeleteReminder}
-            
           />
         </div>
-        
 
         {/* Reminder Modal */}
         {showPopup && (
