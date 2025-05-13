@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import { isToday, isBefore, isTomorrow, parseISO, format } from "date-fns";
 import bgImage from "../assets/bg.png";
 import { FaCalendarAlt, FaClock, FaPlus, FaTimes } from "react-icons/fa";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import showDesktopNotification from "../utils/showDesktopNotification";
+
 
 const Reminders = () => {
   const [reminders, setReminders] = useState(() => {
@@ -18,95 +16,6 @@ const Reminders = () => {
     time: "",
     snoozeBefore: "1", // default value in minutes
   });
-
-  // Unified notification function
-  const showReminderNotification = (reminder, minutesBefore) => {
-    const notificationMessage = `⏰ "${
-      reminder.text
-    }" is due in ${minutesBefore} minute${minutesBefore > 1 ? "s" : ""}!`;
-
-    // Show browser notification if available and permitted
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("⏰ Reminder", {
-        body: notificationMessage,
-        icon: "/favicon.ico",
-      });
-    }
-
-    // Always show toast notification
-    toast.warning(notificationMessage, {
-      position: "bottom-right",
-      autoClose: minutesBefore * 60 * 1000, // Auto-close when reminder is due
-      hideProgressBar: false,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "colored",
-      style: { backgroundColor: "#f59e0b" }, // amber-500
-      onClick: () => {
-        // Optional: Add action when toast is clicked
-        console.log("Reminder clicked:", reminder.text);
-      },
-    });
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-
-      reminders.forEach((reminder) => {
-        const reminderTime = parseISO(reminder.datetime);
-        const snoozeMinutes = parseInt(reminder.snoozeBefore || "0", 10);
-        const snoozeTime = new Date(
-          reminderTime.getTime() - snoozeMinutes * 60000
-        );
-
-        const isDueForSnooze =
-          now >= snoozeTime &&
-          now < new Date(snoozeTime.getTime() + 60000) && // Trigger only once within 1-minute window
-          !reminder.snoozed;
-
-        if (isDueForSnooze) {
-          showReminderNotification(reminder, snoozeMinutes);
-
-          // Mark as snoozed (local state update only)
-          setReminders((prev) =>
-            prev.map((r) =>
-              r.datetime === reminder.datetime ? { ...r, snoozed: true } : r
-            )
-          );
-        }
-
-        // Additional check for when the reminder is actually due
-        const isDueNow =
-          now >= reminderTime &&
-          now < new Date(reminderTime.getTime() + 60000) && // 1-minute window
-          !reminder.notifiedAtDueTime;
-
-        if (isDueNow) {
-          toast.error(`🚨 "${reminder.text}" is due now!`, {
-            position: "bottom-right",
-            autoClose: false, // Don't auto-close
-            closeOnClick: false,
-            theme: "colored",
-            style: { backgroundColor: "#ef4444" }, // red-500
-          });
-
-          // Mark as notified
-          setReminders((prev) =>
-            prev.map((r) =>
-              r.datetime === reminder.datetime
-                ? { ...r, notifiedAtDueTime: true }
-                : r
-            )
-          );
-        }
-      });
-    }, 30000); // Check every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [reminders]);
 
   const addReminder = () => {
     if (!newReminder.text || !newReminder.date || !newReminder.time) return;
@@ -138,11 +47,12 @@ const Reminders = () => {
     localStorage.setItem("reminders", JSON.stringify(reminders));
   }, [reminders]);
 
+
+
+
   useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().then((permission) => {
-        console.log("Notification permission:", permission);
-      });
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
     }
   }, []);
 
@@ -177,69 +87,20 @@ const Reminders = () => {
     return date < now;
   });
 
-
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-
-      reminders.forEach((reminder) => {
-        const reminderTime = parseISO(reminder.datetime);
-        const snoozeMinutes = parseInt(reminder.snoozeBefore || "0", 10);
-        const snoozeTime = new Date(
-          reminderTime.getTime() - snoozeMinutes * 60000
-        );
-
-        const isDueForSnooze =
-          now >= snoozeTime &&
-          now < new Date(snoozeTime.getTime() + 60000) && // Trigger only once within 1-minute window
-          !reminder.snoozed;
-
-        if (isDueForSnooze) {
-          showDesktopNotification(
-            "⏰ Reminder Alert",
-            `"${reminder.text}" is due in ${snoozeMinutes} minute(s)!`,
-            "/favicon.ico"
-          );
-
-          // Mark as snoozed (local state update only)
-          setReminders((prev) =>
-            prev.map((r) =>
-              r.datetime === reminder.datetime ? { ...r, snoozed: true } : r
-            )
-          );
-        }
-      });
-    }, 30000); // Check every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [reminders]);
-
+  
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(updatedReminders));
   }, [updatedReminders]);
 
   return (
     <div className="h-screen p-4 relative bg-gradient-to-br from-blue-50 to-purple-100 overflow-hidden">
-      {/* Add ToastContainer at the root of your component */}
-      <ToastContainer
-        position="bottom-right"
-        autoClose={false} // Controlled individually
-        newestOnTop
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        limit={3}
-        style={{ width: "400px" }}
-      />
-
+      
       <img
         src={bgImage}
         alt="Background"
         className="absolute top-0 left-0 w-full h-full object-cover z-0"
       />
+     
       <div className="max-w-5xl relative mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800">📅 My Reminders</h2>
@@ -249,8 +110,6 @@ const Reminders = () => {
           >
             <FaPlus /> Add Reminder
           </button>
-
-        
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -369,14 +228,7 @@ const ReminderSection = ({ title, color, data, onDelete }) => (
             key={index}
             className="bg-white p-3 rounded shadow text-sm text-gray-800 border border-gray-200 relative"
           >
-            <div className="font-medium pr-6">
-              {reminder.text}
-              {reminder.snoozed && (
-                <span className="ml-2 text-xs text-amber-600">
-                  (Snoozed {reminder.snoozeBefore} min before)
-                </span>
-              )}
-            </div>
+            <div className="font-medium pr-6">{reminder.text}</div>
             <div className="text-xs text-gray-500">
               ⏰ {format(parseISO(reminder.datetime), "dd MMM yyyy, hh:mm a")}
             </div>
