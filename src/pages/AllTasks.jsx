@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import TaskFormModal from "../Components/Tasks/TaskFormModal";
 import TaskList from "../Components/Tasks/TaskList";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setHideCompletedTrue } from "../redux/taskSlice";
+
 
 const AllTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -9,6 +12,9 @@ const AllTasks = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
+
+const dispatch = useDispatch();
+
 
   const role = localStorage.getItem("role") || "user"; // Default to 'user' if not set
 
@@ -29,22 +35,26 @@ const AllTasks = () => {
     setShowForm(true);
   };
 
-  const handleRemoveCompletedTasks = () => {
-    const existing = JSON.parse(
-      localStorage.getItem("hiddenCompletedTasks") || "[]"
-    );
+const handleRemoveCompletedTasks = () => {
+  const existing = JSON.parse(
+    localStorage.getItem("hiddenCompletedTasks") || "[]"
+  );
 
-    const newHidden = tasks
-      .filter((task) => task.status === "Completed")
-      .map((task) => task._id);
+  const newHidden = tasks
+    .filter((task) => task.status === "Completed")
+    .map((task) => task._id);
 
-    const combined = [...new Set([...existing, ...newHidden])];
+  const combined = [...new Set([...existing, ...newHidden])];
 
-    localStorage.setItem("hiddenCompletedTasks", JSON.stringify(combined));
+  localStorage.setItem("hiddenCompletedTasks", JSON.stringify(combined));
 
-    // Now update UI
-    setTasks((prev) => prev.filter((task) => task.status !== "Completed"));
-  };
+  // Update local UI
+  setTasks((prev) => prev.filter((task) => task.status !== "Completed"));
+
+  // ✅ Also update global Redux flag
+  dispatch(setHideCompletedTrue());
+};
+
 
   return (
     <>
