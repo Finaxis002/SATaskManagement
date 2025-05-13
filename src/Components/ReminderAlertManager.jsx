@@ -1,107 +1,96 @@
-import React, { useEffect, useState } from "react";
-import { parseISO, subMinutes, isAfter, isBefore, format } from "date-fns";
+// ReminderAlertManager.jsx
+// This component manages reminder alerts, including system notifications, in-app toasts, and sound alerts.
+import React, { useEffect, useRef } from "react";
+import { parseISO, format } from "date-fns";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ReminderAlertManager = () => {
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertReminder, setAlertReminder] = useState(null);
-  const [playedAlerts, setPlayedAlerts] = useState([]);
+  const playedAlertsRef = useRef(new Set());
+  const notificationSound = useRef(new Audio("/reminder-sound.mp3"));
 
-  const notificationSound = new Audio("/reminder-sound.mp3"); // Place in public/
+  // Ask for browser notification permission on mount
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission().then((perm) => {
+        console.log("🔔 Notification permission:", perm);
+      });
+    }
+  }, []);
+
+
+  // Function to show Chrome system-level notification
+  const showDesktopNotification = (title, message, link = "http://localhost:5173/reminders") => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      const notification = new Notification(title, {
+        body: message,
+        icon: "/icon.png", // Replace with your icon path if needed
+        requireInteraction: true,
+      });
+
+      notification.onclick = () => {
+        window.open(link, "_blank");
+      };
+    }
+  };
 
   useEffect(() => {
-    const checkReminders = () => {
+    const interval = setInterval(() => {
       const saved = localStorage.getItem("reminders");
       if (!saved) return;
 
       const reminders = JSON.parse(saved);
       const now = new Date();
 
-      for (let reminder of reminders) {
-        const reminderDate = parseISO(reminder.datetime);
-        const alertTime = subMinutes(reminderDate, 1); // 🔔 1 min before
+      reminders.forEach((reminder) => {
+        const reminderTime = parseISO(reminder.datetime);
+        const snoozeMinutes = parseInt(reminder.snoozeBefore || "1", 10);
+        const snoozeTime = new Date(reminderTime.getTime() - snoozeMinutes * 60000);
 
-        const isDueSoon =
-          isAfter(now, alertTime) &&
-          now <= reminderDate &&
-          !playedAlerts.includes(reminder.datetime);
+        const isDue =
+          now >= snoozeTime &&
+          now < new Date(snoozeTime.getTime() + 60000) &&
+          !playedAlertsRef.current.has(reminder.datetime);
 
-        if (isDueSoon) {
-          setAlertReminder(reminder);
-          setShowAlert(true);
+        if (isDue) {
+          const reminderTimeStr = format(reminderTime, "dd MMM yyyy, hh:mm a");
+
+          // ✅ Chrome system-level notification
+          showDesktopNotification("🔔 Reminder Alert!", `${reminder.text} is due at ${reminderTimeStr}`);
+
+          // ✅ In-app toast
+          toast.info(
+            <div>
+              <strong className="text-red-600">🔔 Reminder Alert!</strong>
+              <div>{reminder.text}</div>
+              <small className="text-gray-500">Due at {reminderTimeStr}</small>
+            </div>,
+            {
+              position: "bottom-right",
+              autoClose: false,
+              closeOnClick: true,
+              draggable: true,
+            }
+          );
+
+          // ✅ Play sound
           try {
-            notificationSound.play();
+            notificationSound.current.play();
           } catch (err) {
-            console.warn("🔇 Sound play was blocked:", err);
+            console.warn("🔇 Sound play failed:", err);
           }
-          setPlayedAlerts((prev) => [...prev, reminder.datetime]);
+
+          // ✅ Avoid duplicate alerts
+          playedAlertsRef.current.add(reminder.datetime);
         }
-      }
-    };
+      });
+    }, 10000); // Check every 10 seconds
 
-    const interval = setInterval(checkReminders, 5000); // ✅ every 5 sec
     return () => clearInterval(interval);
-  }, [playedAlerts]);
+  }, []);
 
-//   useEffect(() => {
-//     const checkReminders = () => {
-//       const saved = localStorage.getItem("reminders");
-//       if (!saved) return;
-  
-//       const reminders = JSON.parse(saved);
-//       const now = new Date();
-  
-//       for (let reminder of reminders) {
-//         const reminderDate = parseISO(reminder.datetime);
-//         const diffInMs = reminderDate - now;
-//         const diffInMinutes = Math.floor(diffInMs / 60000); // convert ms to minutes
-  
-//         const triggerMinutes = [180, 120, 90, 60, 30]; // Time before reminder
-  
-//         const shouldAlert =
-//           triggerMinutes.includes(diffInMinutes) &&
-//           !playedAlerts.includes(`${reminder.datetime}-${diffInMinutes}`); // Unique for each stage
-  
-//         if (shouldAlert) {
-//           setAlertReminder(reminder);
-//           setShowAlert(true);
-  
-//           try {
-//             notificationSound.play();
-//           } catch (err) {
-//             console.warn("🔇 Sound play was blocked:", err);
-//           }
-  
-//           // Mark this minute slot as alerted
-//           setPlayedAlerts((prev) => [...prev, `${reminder.datetime}-${diffInMinutes}`]);
-//         }
-//       }
-//     };
-  
-//     const interval = setInterval(checkReminders, 5000); // Check every 5s
-//     return () => clearInterval(interval);
-//   }, [playedAlerts]);
-  
-
-  return (
-    showAlert && (
-      <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-xl px-6 py-4 rounded-lg z-50 text-center">
-        <h3 className="text-lg font-bold text-red-600">🔔 Reminder Alert!</h3>
-        <p className="text-gray-800 mt-2">{alertReminder.text}</p>
-        {alertReminder && (
-          <p className="text-xs text-gray-500 mt-1">
-            At {format(parseISO(alertReminder?.datetime), "hh:mm a")}
-          </p>
-        )}
-
-        <button
-          onClick={() => setShowAlert(false)}
-          className="mt-3 text-sm text-indigo-600 hover:underline"
-        >
-          Dismiss
-        </button>
-      </div>
-    )
-  );
+  return <ToastContainer position="bottom-right" />;
 };
 
 export default ReminderAlertManager;
+
