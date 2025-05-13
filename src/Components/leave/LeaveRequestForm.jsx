@@ -67,7 +67,7 @@ const handleSubmit = async () => {
       userId, // Include user ID
     };
 
-    await axios.post("http://localhost:5000/api/leave", payload);
+    await axios.post("https://sataskmanagementbackend.onrender.com/api/leave", payload);
     alert("Leave submitted successfully!");
     setComments("");
   } catch (error) {
