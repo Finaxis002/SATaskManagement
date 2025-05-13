@@ -10,7 +10,8 @@ import {
   FaClock,
   FaSitemap,
   FaCheckCircle,
-  FaCog
+  FaCog,
+  FaUber
 
 } from "react-icons/fa";
 import { MdDoneAll } from "react-icons/md";
@@ -91,6 +92,14 @@ const Sidebar = () => {
         />
 
         <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
+        <SidebarItem icon={<FaUber />} label="Leave" to="/leave" />
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaUber />}
+            label="LeaveManagement"
+            to="/leavemanagement"
+          />
+        )}
         {role === "admin" && (
           <SidebarItem
             icon={<FaCog />}

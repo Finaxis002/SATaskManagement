@@ -255,110 +255,139 @@
 //3rd version
 
 // ReminderAlertManager.jsx
-import React, { useEffect, useRef } from "react";
-import { parseISO, format } from "date-fns";
+// ReminderAlertManager.jsx
+import React, { useEffect, useRef, useState } from "react";
+import { parseISO, format, isAfter, isBefore, subMinutes } from "date-fns";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ReminderAlertManager = () => {
-  const playedAlertsRef = useRef(new Set());
-  const notificationSound = useRef(new Audio("/reminder-sound.mp3"));
+  const [activeAlerts, setActiveAlerts] = useState([]);
+  const notificationSound = useRef(null);
 
-  // Ask for browser notification permission on mount
+  // Initialize audio when user interacts with page
   useEffect(() => {
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission().then((perm) => {
-        console.log("🔔 Notification permission:", perm);
-      });
-    }
+    const initAudio = () => {
+      notificationSound.current = new Audio("/reminder-sound.mp3");
+      document.removeEventListener('click', initAudio);
+    };
+    document.addEventListener('click', initAudio);
+    return () => document.removeEventListener('click', initAudio);
   }, []);
 
-  const showDesktopNotification = (title, message, link = "http://localhost:5173/reminders") => {
+  // Request notification permission on user interaction
+  useEffect(() => {
+    const requestPermission = () => {
+      if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+    };
+    document.addEventListener('click', requestPermission);
+    return () => document.removeEventListener('click', requestPermission);
+  }, []);
+
+  const showDesktopNotification = (title, message) => {
     if ("Notification" in window && Notification.permission === "granted") {
-      const notification = new Notification(title, {
+      new Notification(title, {
         body: message,
         icon: "/icon.png",
         requireInteraction: true,
       });
-
-      notification.onclick = () => {
-        window.open(link, "_blank");
-      };
     }
   };
 
-  const triggerAlert = (reminder) => {
+  const playNotificationSound = () => {
+    try {
+      if (notificationSound.current) {
+        notificationSound.current.currentTime = 0;
+        notificationSound.current.play();
+      }
+    } catch (err) {
+      console.warn("Sound play failed:", err);
+    }
+  };
+
+  const showAlert = (reminder) => {
     const reminderTime = parseISO(reminder.datetime);
     const reminderTimeStr = format(reminderTime, "dd MMM yyyy, hh:mm a");
+    const message = `${reminder.text} is due at ${reminderTimeStr}`;
 
-    // Chrome system-level notification
-    showDesktopNotification("🔔 Reminder Alert!", `${reminder.text} is due at ${reminderTimeStr}`);
+    // System notification (works even if tab is backgrounded)
+    showDesktopNotification("🔔 Reminder Alert!", message);
 
-    // In-app toast
-    toast.info(
-      <div>
-        <strong className="text-red-600">🔔 Reminder Alert!</strong>
-        <div>{reminder.text}</div>
-        <small className="text-gray-500">Due at {reminderTimeStr}</small>
-      </div>,
-      {
-        position: "bottom-right",
-        autoClose: false,
-        closeOnClick: true,
-        draggable: true,
-      }
-    );
-
-    // Play sound
-    try {
-      notificationSound.current.play();
-    } catch (err) {
-      console.warn("🔇 Sound play failed:", err);
+    // In-app toast (only shows when tab is active)
+    if (document.visibilityState === 'visible') {
+      toast.info(
+        <div>
+          <strong className="text-red-600">🔔 Reminder Alert!</strong>
+          <div>{reminder.text}</div>
+          <small className="text-gray-500">Due at {reminderTimeStr}</small>
+        </div>,
+        {
+          position: "bottom-right",
+          autoClose: false,
+          closeOnClick: true,
+          draggable: true,
+        }
+      );
     }
 
-    // Mark as shown in localStorage
-    const shownAlerts = JSON.parse(localStorage.getItem("shownAlerts") || "[]");
-    shownAlerts.push(reminder.datetime);
-    localStorage.setItem("shownAlerts", JSON.stringify(shownAlerts));
-  };
-
-  const checkForMissedAlerts = () => {
-    const saved = localStorage.getItem("reminders");
-    if (!saved) return;
-
-    const reminders = JSON.parse(saved);
-    const shownAlerts = new Set(JSON.parse(localStorage.getItem("shownAlerts") || "[]"));
-    const now = new Date();
-
-    reminders.forEach((reminder) => {
-      const reminderTime = parseISO(reminder.datetime);
-      const snoozeMinutes = parseInt(reminder.snoozeBefore || "1", 10);
-      const snoozeTime = new Date(reminderTime.getTime() - snoozeMinutes * 60000);
-
-      // Check if alert should have been shown but wasn't
-      if (now >= snoozeTime && !shownAlerts.has(reminder.datetime)) {
-        triggerAlert(reminder);
-      }
-    });
+    // Play sound (works even if tab is backgrounded)
+    playNotificationSound();
   };
 
   useEffect(() => {
-    // Check every 10 seconds
-    const interval = setInterval(checkForMissedAlerts, 10000);
-    
-    // Also check when tab becomes visible again
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkForMissedAlerts();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const checkAlerts = () => {
+      const saved = localStorage.getItem("reminders");
+      if (!saved) return;
 
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      const reminders = JSON.parse(saved);
+      const now = new Date();
+      const newActiveAlerts = [];
+
+      reminders.forEach(reminder => {
+        const reminderTime = parseISO(reminder.datetime);
+        const snoozeMinutes = parseInt(reminder.snoozeBefore || "1", 10);
+        const alertTime = subMinutes(reminderTime, snoozeMinutes);
+
+        if (isAfter(now, alertTime) && isBefore(now, new Date(alertTime.getTime() + 60000))) {
+          newActiveAlerts.push(reminder.id);
+          if (!activeAlerts.includes(reminder.id)) {
+            showAlert(reminder);
+          }
+        }
+      });
+
+      setActiveAlerts(newActiveAlerts);
     };
+
+    // Check immediately
+    checkAlerts();
+
+    // Then check every 5 seconds
+    const interval = setInterval(checkAlerts, 5000);
+    return () => clearInterval(interval);
+  }, [activeAlerts]);
+
+  // Clear old alerts when they expire
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      setActiveAlerts(prev => prev.filter(id => {
+        const saved = localStorage.getItem("reminders");
+        if (!saved) return false;
+        
+        const reminders = JSON.parse(saved);
+        const reminder = reminders.find(r => r.id === id);
+        if (!reminder) return false;
+
+        const reminderTime = parseISO(reminder.datetime);
+        const snoozeMinutes = parseInt(reminder.snoozeBefore || "1", 10);
+        const alertTime = subMinutes(reminderTime, snoozeMinutes);
+        return isBefore(new Date(), new Date(alertTime.getTime() + 60000));
+      }));
+    }, 60000); // Every minute
+
+    return () => clearInterval(cleanupInterval);
   }, []);
 
   return <ToastContainer position="bottom-right" />;

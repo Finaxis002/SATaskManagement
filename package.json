@@ -40,6 +40,7 @@
     "moment-timezone": "^0.5.48",
     "react": "19.1.0",
     "react-calendar": "^5.1.0",
+    "react-date-range": "^2.0.1",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "19.1.0",

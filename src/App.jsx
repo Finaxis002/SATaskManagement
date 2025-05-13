@@ -14,6 +14,8 @@ import Departments from "./pages/Departments";
 import Completed from "./pages/Completed";
 import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage"; // Adjust the path as per your structure
+import Leave from "./pages/Leave";
+import LeaveManagement from "./pages/LeaveManagement"; // Adjust the path as per your structure
 
 const App = () => {
   return (
@@ -138,6 +140,26 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <ProfilePage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leave"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Leave />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leavemanagement"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <LeaveManagement />
               </MainLayout>
             </ProtectedRoute>
           }

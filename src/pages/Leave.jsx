@@ -1,0 +1,56 @@
+import {useEffect} from 'react'
+import LeaveRequestForm from '../Components/leave/LeaveRequestForm';
+import LeaveRequestList from '../Components/leave/LeaveRequestList' ;
+import LeaveSummary from '../Components/leave/LeaveSummary';
+import socket from "../socket";
+
+const Leave = () => {
+
+    const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    
+  useEffect(() => {
+  const email = localStorage.getItem("userId");
+  const name = localStorage.getItem("name");
+
+  if (email && name) {
+    socket.emit("register", email, name);
+    console.log("📡 User registered on socket:", email);
+  }
+
+  socket.on("leave-status-updated", (data) => {
+    if (Notification.permission === "granted") {
+      new Notification(`📢 Leave ${data.status}`, {
+        body: `Your ${data.leaveType} leave from ${formatDate(data.fromDate)} to ${formatDate(data.toDate)} was ${data.status}`,
+      });
+    }
+  });
+
+  return () => {
+    socket.off("leave-status-updated");
+  };
+}, []);
+
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+  <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-6">
+    {/* Left: Leave Request Form */}
+    <LeaveRequestForm />
+
+    {/* Right: Leave Requests + Summary */}
+    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <LeaveRequestList />
+      <LeaveSummary />
+    </div>
+  </div>
+</div>
+
+  )
+}
+
+export default Leave

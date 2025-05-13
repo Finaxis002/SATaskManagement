@@ -162,6 +162,10 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         taskPayload.repeatDay = Number(customRepeat.day);
       }
 
+    if (repeatType === "Annually") {
+      taskPayload.repeatMonth = Number(customRepeat.month);
+    }
+
       if (repeatType === "Annually") {
         taskPayload.repeatMonth = Number(customRepeat.month);
       }
@@ -201,9 +205,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           : result.message || "Task created successfully!"
       );
 
-      if (!initialData) {
-        socket.emit("new-task-created", { taskId: result.task._id });
-      }
+    if (!initialData) {
+      socket.emit("new-task-created", { taskId: result.task._id });
+    }
 
       onSave(result.task);
       onClose();
