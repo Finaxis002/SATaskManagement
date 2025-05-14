@@ -26,6 +26,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // 👇 Increase limit to 5MB or more
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+      },
       includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'Task Management App',
@@ -34,7 +38,6 @@ export default defineConfig({
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
-        scope: '/',
         start_url: '/',
         icons: [
           {
@@ -52,3 +55,4 @@ export default defineConfig({
     }),
   ],
 })
+
