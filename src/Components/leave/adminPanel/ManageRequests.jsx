@@ -19,7 +19,7 @@ const ManageRequests = () => {
   }, []);
 
   return (
-    <div className="bg-gray-800 p-6 rounded-xl mt-6">
+    <div className="bg-gray-800 p-6 rounded-xl mt-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
       <h2 className="text-2xl font-semibold mb-4">Manage Leave Requests</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-white">

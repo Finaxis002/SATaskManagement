@@ -93,23 +93,25 @@ main{
   color: rgb(255, 255, 255) !important;
 }
 
-/* Add this to your global CSS */
-/* @media print {
-  body, body * {
-    visibility: visible !important;
-  }
-  .no-print {
-    display: none !important;
-  }
-  table {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-  .overflow-x-auto, .overflow-y-auto {
-    overflow: visible !important;
-    height: auto !important;
-  }
-} */
+/* Custom dark scrollbar for Tailwind theme */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1f2937; /* Tailwind gray-800 */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #3b82f6; /* Tailwind blue-500 */
+  border-radius: 8px;
+  border: 2px solid #1f2937;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #2563eb; /* Tailwind blue-600 */
+}
+
 
 @media print {
   body * {
