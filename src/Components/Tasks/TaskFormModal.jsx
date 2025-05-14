@@ -194,6 +194,12 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
       const result = await response.json();
 
+    if (!initialData) {
+      socket.emit("new-task-created", { taskId: result.task._id });
+
+    }
+
+
       if (!response.ok) {
         console.error("Backend error response:", result);
         throw new Error(result.message || "Failed to create task");

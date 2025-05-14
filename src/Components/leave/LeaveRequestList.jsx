@@ -9,7 +9,7 @@ const LeaveRequestList = () => {
     const fetchLeaves = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/leave?userId=${userId}`
+          `https://sataskmanagementbackend.onrender.com/api/leave?userId=${userId}`
         );
         setLeaves(response.data);
       } catch (error) {
