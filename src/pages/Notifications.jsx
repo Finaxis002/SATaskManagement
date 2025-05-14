@@ -550,39 +550,40 @@ const Notifications = () => {
               🎉 No notifications match your filters
             </div>
           ) : (
-           Object.entries(filteredNotifications)
-  .sort(([dateA], [dateB]) => {
-    // Convert DD/MM/YYYY to Date object
-    const toDate = (str) => {
-      const [day, month, year] = str.split("/").map(Number);
-      return new Date(year, month - 1, day);
-    };
-    return toDate(dateB) - toDate(dateA); // Descending order
-  })
-  .map(([group, groupNotifications]) => (
-    <div key={group}>
-      {groupBy !== "none" && (
-        <h3 className="text-sm font-semibold text-gray-700 mb-2 sticky top-0 bg-white py-2 z-10">
-          {group}
-        </h3>
-      )}
-      <div className="space-y-4">
-        {groupNotifications
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .map((notification) => (
-            <NotificationItem
-              key={notification._id}
-              notification={notification}
-              onMarkAsRead={handleMarkAsRead}
-              selectedNotifications={selectedNotifications}
-              toggleSelectNotification={toggleSelectNotification}
-              viewMode={viewMode}
-            />
-          ))}
-      </div>
-    </div>
-  ))
-
+            Object.entries(filteredNotifications)
+              .sort(([dateA], [dateB]) => {
+                // Convert DD/MM/YYYY to Date object
+                const toDate = (str) => {
+                  const [day, month, year] = str.split("/").map(Number);
+                  return new Date(year, month - 1, day);
+                };
+                return toDate(dateB) - toDate(dateA); // Descending order
+              })
+              .map(([group, groupNotifications]) => (
+                <div key={group}>
+                  {groupBy !== "none" && (
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2 sticky top-0 bg-white py-2 z-10">
+                      {group}
+                    </h3>
+                  )}
+                  <div className="space-y-4">
+                    {groupNotifications
+                      .sort(
+                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                      )
+                      .map((notification) => (
+                        <NotificationItem
+                          key={notification._id}
+                          notification={notification}
+                          onMarkAsRead={handleMarkAsRead}
+                          selectedNotifications={selectedNotifications}
+                          toggleSelectNotification={toggleSelectNotification}
+                          viewMode={viewMode}
+                        />
+                      ))}
+                  </div>
+                </div>
+              ))
           )}
           {loading && page > 1 && (
             <div className="text-center text-sm text-gray-400 py-4">
