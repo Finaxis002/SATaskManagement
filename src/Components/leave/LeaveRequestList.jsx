@@ -21,7 +21,7 @@ const LeaveRequestList = () => {
   }, [userId]);
 
   return (
-    <div className="bg-gray-800 rounded-xl p-6 shadow-md">
+    <div className="bg-gray-800 rounded-xl p-6 shadow-md max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
       <h2 className="text-2xl font-semibold mb-4">Your Leave Requests</h2>
       {leaves.map((leave, idx) => (
         <div

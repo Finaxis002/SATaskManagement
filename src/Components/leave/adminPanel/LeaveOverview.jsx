@@ -55,7 +55,7 @@ const LeaveOverview = () => {
   }, [selectedUser, selectedMonth, leaves]);
 
   return (
-    <div className="bg-gray-800 p-6 rounded-xl">
+    <div className="bg-gray-800 p-6 rounded-xl max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
       <h2 className="text-2xl font-bold mb-4">Leave Overview</h2>
 
       {/* Filters */}
