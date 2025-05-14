@@ -8,14 +8,18 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileInitial, setProfileInitial] = useState("Fi");
   const [searchTerm, setSearchTerm] = useState("");
+
+
   const mockData = ["Dashboard", "Tasks", "Inbox", "Reminders"];
   const filteredResults = mockData.filter((item) =>
     item.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
 
   const navigate = useNavigate();
 
@@ -60,6 +64,20 @@ const Header = () => {
     setSearchTerm(e.target.value);
     console.log("Search Term:", e.target.value); // Replace with real logic
   };
+
+
+
+useEffect(() => {
+  const handleKeyDown = (e) => {
+    if ((e.ctrlKey && e.key === "k") || e.key === "/") {
+      e.preventDefault();
+      document.getElementById("global-search-input")?.focus();
+    }
+  };
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, []);
+
 
   return (
     <header className="bg-[#1e1f21] w-full text-white px-4 py-2 flex items-center justify-between border-b border-gray-700">
