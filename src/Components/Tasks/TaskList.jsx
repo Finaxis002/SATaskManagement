@@ -353,23 +353,29 @@ const TaskList = ({
     }
   };
 
-  const filteredTasks = (tasksOverride || tasks)
-    .filter((task) => {
-      const matchesFilter =
-        (filters.department === "" ||
-          task.department.includes(filters.department)) &&
-        (filters.code === "" || task.code === filters.code) &&
-        (filters.assignee === "" ||
-          task.assignees?.some((a) => a.name === filters.assignee)) &&
-        (filters.assignedBy === "" ||
-          task.assignedBy?.name === filters.assignedBy) &&
-        (filters.priority === "" || task.priority === filters.priority) &&
-        (filters.status === "" || task.status === filters.status);
+const filteredTasks = (tasksOverride || tasks)
+  .filter((task) => {
+    // exclude hidden tasks
+    if (task.isHidden) return false;
 
-      const shouldHide = hideCompleted && task.status === "Completed";
-      return matchesFilter && !shouldHide;
-    })
-    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    const matchesFilter =
+      (filters.department === "" ||
+        task.department.includes(filters.department)) &&
+      (filters.code === "" || task.code === filters.code) &&
+      (filters.assignee === "" ||
+        task.assignees?.some((a) => a.name === filters.assignee)) &&
+      (filters.assignedBy === "" ||
+        task.assignedBy?.name === filters.assignedBy) &&
+      (filters.priority === "" || task.priority === filters.priority) &&
+      (filters.status === "" || task.status === filters.status);
+
+    const shouldHide = hideCompleted && task.status === "Completed";
+
+    return matchesFilter && !shouldHide;
+  })
+  .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+
 
   const highPriorityTasks = filteredTasks.filter(
     (task) => task.priority === "High"

@@ -160,6 +160,12 @@ const filteredTasks = tasks.filter((task) => {
     setJustCompleted(new Set());
   }, [activeTab]);
 
+
+const isHiddenCompletedTask = (task) =>
+  task.status === "Completed" && task.isHidden === true;
+
+
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
       <div className="flex justify-between items-center px-6 py-4 border-b ">
@@ -171,7 +177,7 @@ const filteredTasks = tasks.filter((task) => {
               const visibleCount = categorizedTasks[tab]?.filter(
                 (task) =>
                   !(
-                   task.status === "Completed" && task.isHidden === true
+                  isHiddenCompletedTask(task)
 
                   )
               ).length;
@@ -199,7 +205,8 @@ const filteredTasks = tasks.filter((task) => {
         {getTasksByTab().filter(
           (task) =>
             !(
-             task.status === "Completed" && task.isHidden
+            isHiddenCompletedTask(task)
+
 
             )
         ).length === 0 ? (
@@ -209,7 +216,8 @@ const filteredTasks = tasks.filter((task) => {
             .filter(
               (task) =>
                 !(
-                 task.status === "Completed" && task.isHidden
+                isHiddenCompletedTask(task)
+
 
                 )
             )
