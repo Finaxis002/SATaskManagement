@@ -47,11 +47,10 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   //   label: `${emp.name} (${emp.email})`,
   //   value: emp.email,
   // }));
-  const adminOptions = employees.map(emp => ({
-  label: `${emp.name} (${emp.email})`,
-  value: emp.email,
-}));
-
+  const adminOptions = employees.map((emp) => ({
+    label: `${emp.name} (${emp.email})`,
+    value: emp.email,
+  }));
 
   useEffect(() => {
     dispatch(fetchAssignees());
@@ -114,108 +113,111 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     fetchClients();
   }, []);
 
-const handleSubmit = async () => {
-  if (!taskName || !dueDate || assignees.length === 0) {
-    return alert("Please fill all required fields.");
-  }
-
-  const taskPayload = {
-    taskName,
-    workDesc,
-    assignees: assignees.map((a) => ({ name: a.name, email: a.email })),
-    assignedDate: new Date().toISOString(),
-    dueDate: new Date(dueDate).toISOString(),
-    priority,
-    status,
-    taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
-    clientName,
-    department: Array.isArray(department) ? department : [department],
-    code: taskCode?.value || "",
-    assignedBy: assignedByUser
-      ? {
-          name: employees.find((user) => user.email === assignedByUser.value)
-            ?.name,
-          email: assignedByUser.value,
-        }
-      : {
-          name: localStorage.getItem("name"),
-          email: localStorage.getItem("userId"),
-        },
-    createdBy: {
-      name: localStorage.getItem("name"),
-      email: localStorage.getItem("userId"),
-    },
-    isRepetitive,
-  };
-
-  if (initialData) {
-    taskPayload.updatedBy = {
-      name: localStorage.getItem("name"),
-      email: localStorage.getItem("userId"),
-    };
-  }
-
-  // ➕ Repeat Settings (DO NOT send `nextRepetitionDate` or `nextDueDate`)
-  if (isRepetitive) {
-    taskPayload.repeatType = repeatType;
-
-    if (!["Daily"].includes(repeatType)) {
-      taskPayload.repeatDay = Number(customRepeat.day);
+  const handleSubmit = async () => {
+    if (!taskName || !dueDate || assignees.length === 0) {
+      return alert("Please fill all required fields.");
     }
+
+    const taskPayload = {
+      taskName,
+      workDesc,
+      assignees: assignees.map((a) => ({ name: a.name, email: a.email })),
+      assignedDate: new Date().toISOString(),
+      dueDate: new Date(dueDate).toISOString(),
+      priority,
+      status,
+      taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
+      clientName,
+      department: Array.isArray(department) ? department : [department],
+      code: taskCode?.value || "",
+      assignedBy: assignedByUser
+        ? {
+            name: employees.find((user) => user.email === assignedByUser.value)
+              ?.name,
+            email: assignedByUser.value,
+          }
+        : {
+            name: localStorage.getItem("name"),
+            email: localStorage.getItem("userId"),
+          },
+      createdBy: {
+        name: localStorage.getItem("name"),
+        email: localStorage.getItem("userId"),
+      },
+      isRepetitive,
+    };
+
+    if (initialData) {
+      taskPayload.updatedBy = {
+        name: localStorage.getItem("name"),
+        email: localStorage.getItem("userId"),
+      };
+    }
+
+    // ➕ Repeat Settings (DO NOT send `nextRepetitionDate` or `nextDueDate`)
+    if (isRepetitive) {
+      taskPayload.repeatType = repeatType;
+
+      if (!["Daily"].includes(repeatType)) {
+        taskPayload.repeatDay = Number(customRepeat.day);
+      }
 
     if (repeatType === "Annually") {
       taskPayload.repeatMonth = Number(customRepeat.month);
     }
 
+      if (repeatType === "Annually") {
+        taskPayload.repeatMonth = Number(customRepeat.month);
+      }
 
-    // ❌ DO NOT send nextRepetitionDate or nextDueDate — backend handles this
-  } else {
-    taskPayload.repeatType = null;
-    taskPayload.repeatDay = null;
-    taskPayload.repeatMonth = null;
-  }
-
-  try {
-    setIsSubmitting(true);
-    const url = initialData
-      ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
-      : "https://sataskmanagementbackend.onrender.com/api/tasks";
-
-    const response = await fetch(url, {
-      method: initialData ? "PUT" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-      body: JSON.stringify(taskPayload),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("Backend error response:", result);
-      throw new Error(result.message || "Failed to create task");
+      // ❌ DO NOT send nextRepetitionDate or nextDueDate — backend handles this
+    } else {
+      taskPayload.repeatType = null;
+      taskPayload.repeatDay = null;
+      taskPayload.repeatMonth = null;
     }
 
-    showAlert(
-      initialData ? "Task updated successfully!" : result.message || "Task created successfully!"
-    );
+    try {
+      setIsSubmitting(true);
+      const url = initialData
+        ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
+        : "https://sataskmanagementbackend.onrender.com/api/tasks";
+
+      const response = await fetch(url, {
+        method: initialData ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify(taskPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("Backend error response:", result);
+        throw new Error(result.message || "Failed to create task");
+      }
+
+      showAlert(
+        initialData
+          ? "Task updated successfully!"
+          : result.message || "Task created successfully!"
+      );
 
     if (!initialData) {
       socket.emit("new-task-created", { taskId: result.task._id });
-
     }
 
-    onSave(result.task);
-    onClose();
-  } catch (error) {
-    console.error("❌ Submission error:", error);
-    alert(`❌ Error: ${error.message}`);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
+      onSave(result.task);
+      onClose();
+    } catch (error) {
+      console.error("❌ Submission error:", error);
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const filteredEmployees = taskCategory
     ? employees.filter(
@@ -230,9 +232,7 @@ const handleSubmit = async () => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-opacity-40 z-50 p-4">
-      
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Modal Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-gray-800">
@@ -242,8 +242,18 @@ const handleSubmit = async () => {
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 focus:outline-none"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -424,7 +434,9 @@ const handleSubmit = async () => {
                       setIsRepetitive(checked);
                       if (checked) {
                         setRepeatType("Monthly");
-                        setCustomRepeat({ day: new Date().getDate().toString() });
+                        setCustomRepeat({
+                          day: new Date().getDate().toString(),
+                        });
                         setShowRepeatPopup(true);
                       } else {
                         setShowRepeatPopup(false);
@@ -527,7 +539,7 @@ const handleSubmit = async () => {
                   maxHeight: "250px",
                   padding: 0,
                 }),
-                menuPortal: base => ({ ...base, zIndex: 9999 }), // For portal positioning
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }), // For portal positioning
                 option: (provided) => ({
                   ...provided,
                   padding: "8px 12px",
@@ -554,13 +566,33 @@ const handleSubmit = async () => {
           >
             {isSubmitting ? (
               <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 {initialData ? "Updating..." : "Creating..."}
               </span>
-            ) : initialData ? "Update Task" : "Create Task"}
+            ) : initialData ? (
+              "Update Task"
+            ) : (
+              "Create Task"
+            )}
           </button>
         </div>
       </div>
