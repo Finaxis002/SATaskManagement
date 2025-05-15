@@ -23,10 +23,13 @@ const Leave = () => {
   }
 
   socket.on("leave-status-updated", (data) => {
+    
+
     if (Notification.permission === "granted") {
       new Notification(`📢 Leave ${data.status}`, {
         body: `Your ${data.leaveType} leave from ${formatDate(data.fromDate)} to ${formatDate(data.toDate)} was ${data.status}`,
       });
+      localStorage.setItem("showLeaveAlert", "true");
     }
   });
 
@@ -35,6 +38,9 @@ const Leave = () => {
   };
 }, []);
 
+useEffect(() => {
+  localStorage.setItem("showLeaveAlert", "false");
+}, []);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 ">

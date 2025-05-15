@@ -16,6 +16,7 @@ import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage"; // Adjust the path as per your structure
 import Leave from "./pages/Leave";
 import LeaveManagement from "./pages/LeaveManagement"; // Adjust the path as per your structure
+import InvoiceForm from "./pages/InvoiceForm";
 
 const App = () => {
   return (
@@ -160,6 +161,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <LeaveManagement />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/invoice"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoiceForm />
               </MainLayout>
             </ProtectedRoute>
           }

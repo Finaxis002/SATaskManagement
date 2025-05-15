@@ -1,0 +1,207 @@
+.invoice-page {
+  background-color: #f5f5f5;
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #007f8f;
+  color: white;
+  padding: 1rem 2rem;
+}
+
+.header-right button {
+  margin-left: 10px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-reset {
+  background-color: #f4f4f4;
+}
+
+.btn-download {
+  background-color: #00bfa5;
+  color: white;
+}
+
+.invoice-body {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: auto;
+}
+
+.invoice-section {
+  background: white;
+  padding: 1.5rem;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+}
+
+.invoice-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.invoice-section input,
+.invoice-section textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.invoice-section textarea {
+  resize: vertical;
+}
+
+.note {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.btn-icon {
+  border: none;
+  background: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.btn-icon.danger {
+  color: red;
+}
+
+.btn-add {
+  background-color: #007f8f;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 2rem;
+  padding-bottom: 1rem;
+}
+.invoice-body {
+  display: flex;
+  gap: 30px;
+  max-width: 1200px;
+  margin: auto;
+  padding: 2rem;
+  height: calc(100vh - 80px); /* Full viewport height minus header */
+}
+
+.invoice-left {
+  flex: 1;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 20px;
+  overflow-y: auto; /* Enable vertical scrolling */
+  max-height: 100%;
+}
+
+.invoice-right {
+  width: 600px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* scrollbar styling (optional) */
+.invoice-left::-webkit-scrollbar, .invoice-right::-webkit-scrollbar {
+  width: 8px;
+}
+.invoice-left::-webkit-scrollbar-thumb, .invoice-right::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 4px;
+}
+.invoice-left::-webkit-scrollbar-track, .invoice-right::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+/* General label styling */
+.invoice-left label {
+  display: block;
+  margin-top: 1rem;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+/* Style all inputs and selects uniformly */
+.invoice-left input,
+.invoice-left select,
+.invoice-left textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1.8px solid #007f8f;
+  font-size: 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #222;
+  background-color: white;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  appearance: none; /* Remove default arrow in some browsers */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+}
+
+/* Custom arrow for selects */
+.invoice-left select {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M0 0L5 6L10 0H0Z' fill='%23007F8F'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 10px 6px;
+  padding-right: 36px;
+}
+
+/* Focus style */
+.invoice-left input:focus,
+.invoice-left select:focus,
+.invoice-left textarea:focus {
+  outline: none;
+  border-color: #005a66;
+  box-shadow: 0 0 6px #3399aa88;
+}
+
+/* Disabled / read-only inputs */
+.invoice-left input[readonly] {
+  background-color: #e9ecef;
+  color: #555;
+  cursor: not-allowed;
+}
+
+/* For textarea */
+.invoice-left textarea {
+  min-height: 80px;
+  resize: vertical;
+}

@@ -297,7 +297,7 @@ const handleSubmit = async () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Client Name
               </label>
-              <CreatableSelect
+              {/* <CreatableSelect
                 isClearable
                 isSearchable
                 options={clientOptions}
@@ -325,7 +325,33 @@ const handleSubmit = async () => {
                     },
                   }),
                 }}
-              />
+              /> */}
+              <Select
+    isClearable
+    isSearchable
+    options={clientOptions}
+    onChange={(selectedOption) => {
+      setClientName(selectedOption?.value || "");
+    }}
+    value={
+      clientName
+        ? clientOptions.find((opt) => opt.value === clientName) || null
+        : null
+    }
+    placeholder="Select client..."
+    className="text-sm"
+    classNamePrefix="select"
+    styles={{
+      control: (base) => ({
+        ...base,
+        minHeight: "42px",
+        borderColor: "#d1d5db",
+        "&:hover": {
+          borderColor: "#d1d5db",
+        },
+      }),
+    }}
+  />
             </div>
 
             {/* Task Code */}
