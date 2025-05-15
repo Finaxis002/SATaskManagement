@@ -11,18 +11,37 @@ import {
   FaSitemap,
   FaCheckCircle,
   FaCog,
-  FaUber
-
+  FaUber,
+  FaDotCircle,
 } from "react-icons/fa";
 import { MdDoneAll } from "react-icons/md";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
+import InvoiceForm from "../pages/InvoiceForm";
 
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [role, setRole] = useState("");
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
+  const [leaveAlert, setLeaveAlert] = useState(false);
+
+ useEffect(() => {
+  const updateLeaveAlert = () => {
+    const leaveFlag = localStorage.getItem("showLeaveAlert") === "true";
+    console.log("🔁 Detected localStorage change → showLeaveAlert:", leaveFlag);
+    setLeaveAlert(leaveFlag);
+  };
+
+  // Initial load
+  updateLeaveAlert();
+
+  // Listen to localStorage change
+  window.addEventListener("storage", updateLeaveAlert);
+
+  return () => window.removeEventListener("storage", updateLeaveAlert);
+}, []);
+
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
@@ -92,21 +111,41 @@ const Sidebar = () => {
         />
 
         <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
-        <SidebarItem icon={<FaUber />} label="Leave" to="/leave" />
+
+         {! role === "admin" && (<SidebarItem
+          icon={
+            <div className="relative">
+              <FaUber />
+              {leaveAlert && (
+                <span className="absolute -top-2 -right-2 text-red-500 text-lg leave-alert-animation">
+                  <FaDotCircle />
+                </span>
+              )}
+            </div>
+          }
+          label="Leave"
+          to="/leave"
+        />)}
+
         {role === "admin" && (
           <SidebarItem
-            icon={<FaUber />}
+            icon={
+              <div className="relative">
+                <FaUber />
+                {leaveAlert && (
+                  <span className="absolute -top-2 -right-2 text-red-500 text-lg leave-alert-animation">
+                    <FaDotCircle />
+                  </span>
+                )}
+              </div>
+            }
             label="LeaveManagement"
             to="/leavemanagement"
           />
         )}
-        {role === "admin" && (
-          <SidebarItem
-            icon={<FaCog />}
-            label="Settings"
-            to="/departments"
-          />
-        )}
+        
+          <SidebarItem icon={<FaCog />} label="Settings" to="/departments" />
+        
         {role === "admin" && (
           <SidebarItem
             icon={<FaCheckCircle />}
@@ -114,6 +153,14 @@ const Sidebar = () => {
             to="/completed"
           />
         )}
+
+        {/* {role === "admin" && (
+          <SidebarItem
+            icon={<FaCheckCircle />}
+            label="Invoice"
+            to="/invoice"
+          />
+        )} */}
       </div>
 
       {/* Footer */}

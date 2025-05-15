@@ -32,6 +32,8 @@ useEffect(() => {
 
   // Now listen to leave notifications
   socket.on("new-leave", (data) => {
+    
+
     console.log("📩 New leave request received:", data);
 
     const role = localStorage.getItem("role");
@@ -39,6 +41,8 @@ useEffect(() => {
       new Notification("📩 New Leave Request", {
         body: `${data.userId} applied for ${data.leaveType} leave\n${formatDate(data.fromDate)} → ${formatDate(data.toDate)}`,
       });
+
+      localStorage.setItem("showLeaveAlert", "true");
     }
   });
 
@@ -47,7 +51,9 @@ useEffect(() => {
   };
 }, []);
 
-
+useEffect(() => {
+  localStorage.setItem("showLeaveAlert", "false");
+}, []);
 
 
 

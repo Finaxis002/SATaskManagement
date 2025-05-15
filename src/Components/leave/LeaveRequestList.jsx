@@ -37,7 +37,11 @@ const LeaveRequestList = () => {
           </div>
           <span
             className={`text-sm font-semibold px-2 py-1 rounded-md ${
-              leave.status === "Pending" ? "bg-yellow-500" : "bg-green-500"
+              leave.status === "Pending"
+                        ? "bg-yellow-500"
+                        : leave.status === "Approved"
+                        ? "bg-green-500"
+                        : "bg-red-500"
             }`}
           >
             {leave.status}
