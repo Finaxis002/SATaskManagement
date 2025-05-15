@@ -39,7 +39,7 @@ const dispatch = useDispatch();
 const handleRemoveCompletedTasks = async () => {
   try {
     const response = await fetch(
-      "http://localhost:5000/api/tasks/hide-completed",
+      "https://sataskmanagementbackend.onrender.com/api/tasks/hide-completed",
       {
         method: "PUT",
         headers: {
