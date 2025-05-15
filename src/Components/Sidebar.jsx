@@ -112,7 +112,7 @@ const Sidebar = () => {
 
         <SidebarItem icon={<FaClock />} label="Reminders" to="/reminders" />
 
-         {! role === "admin" && (<SidebarItem
+         <SidebarItem
           icon={
             <div className="relative">
               <FaUber />
@@ -125,7 +125,7 @@ const Sidebar = () => {
           }
           label="Leave"
           to="/leave"
-        />)}
+        />
 
         {role === "admin" && (
           <SidebarItem
@@ -154,13 +154,13 @@ const Sidebar = () => {
           />
         )}
 
-        {/* {role === "admin" && (
+        {role === "admin" && (
           <SidebarItem
             icon={<FaCheckCircle />}
             label="Invoice"
             to="/invoice"
           />
-        )} */}
+        )}
       </div>
 
       {/* Footer */}
