@@ -1,8 +1,30 @@
 {
-    "buildCommand": "npm install --legacy-peer-deps && npm run build",
-    "outputDirectory": "dist",
-    "cleanUrls": true,
-    "rewrites": [
-      { "source": "/(.*)", "destination": "/" }
-    ]
-  }
+  "buildCommand": "npm install --legacy-peer-deps && npm run build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" },
+    {
+      "headers": [
+        {
+          "source": "/(.*)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/pwa-.*.png",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "image/png"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

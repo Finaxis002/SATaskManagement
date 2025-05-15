@@ -118,13 +118,9 @@ const TaskList = ({
       );
       const data = await response.json();
 
-      const hiddenTaskIds = JSON.parse(
-        localStorage.getItem("hiddenCompletedTasks") || "[]"
-      );
+    const visibleTasks = data.filter(task => !task.isHidden);
 
-      const visibleTasks = data.filter(
-        (task) => !hiddenTaskIds.includes(task._id)
-      );
+
 
       let filtered = [];
 
