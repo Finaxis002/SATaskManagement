@@ -209,9 +209,9 @@ export default function InvoiceForm() {
             
           </div>
 
-          <div className="invoice-section">
+          {/* <div className="invoice-section">
             <h2>Items</h2>
-            {/* <p className="note">Click the sparkle icon to fetch tax details based on description.</p> */}
+            
 
             {items.map((item, idx) => (
               <div className="item-row" key={idx}>
@@ -243,9 +243,7 @@ export default function InvoiceForm() {
                   step="0.01"
                   min={0}
                 />
-                {/* <button className="btn-icon" title="Fetch Tax Details">
-                  ⚙️
-                </button> */}
+                
                 <button
                   className="btn-icon danger"
                   title="Remove Item"
@@ -262,7 +260,103 @@ export default function InvoiceForm() {
             <button className="btn-add" onClick={addItem}>
               + Add Item
             </button>
-          </div>
+          </div> */}
+<div className="invoice-section">
+  <h2 className="text-lg font-semibold mb-4 text-[#004d51]">Items</h2>
+
+  {items.map((item, idx) => {
+    const amount = (item.qty * item.rate).toFixed(2);
+    return (
+      <div
+        key={idx}
+        className="grid grid-cols-[4fr_1.2fr_1.5fr_1.2fr_1.5fr_0.7fr] gap-3 items-start mb-5"
+      >
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold mb-1 text-gray-700">Description</label>
+          <input
+            className="border-2 border-teal-700 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+            value={item.description}
+            onChange={(e) => updateItem(idx, "description", e.target.value)}
+            placeholder="Description"
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold mb-1 text-gray-700">Qty</label>
+          <input
+            type="number"
+            className="border-2 border-teal-700 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+            value={item.qty}
+            onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
+            placeholder="Qty"
+            min={1}
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold mb-1 text-gray-700">Rate</label>
+          <input
+            type="number"
+            className="border-2 border-teal-700 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+            value={item.rate}
+            onChange={(e) => updateItem(idx, "rate", Number(e.target.value))}
+            placeholder="Rate"
+            step="0.01"
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold mb-1 text-gray-700">GST</label>
+          <input
+            type="number"
+            className="border-2 border-teal-700 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+            value={item.gst}
+            onChange={(e) => updateItem(idx, "gst", Number(e.target.value))}
+            placeholder="GST %"
+            step="0.01"
+            min={0}
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold mb-1 text-gray-700">Amount</label>
+          <input
+            type="text"
+            readOnly
+            value={`₹${amount}`}
+            className="border-2 border-gray-300 rounded-md p-2 bg-gray-100 text-base cursor-not-allowed"
+          />
+        </div>
+
+        <div className="flex flex-col items-center justify-end">
+          <label className="text-sm font-semibold mb-1 text-gray-700 invisible">Del</label>
+          <button
+            className="text-red-600 hover:text-red-800 text-lg p-0"
+            title="Remove Item"
+            type="button"
+            onClick={() => {
+              const newItems = items.filter((_, i) => i !== idx);
+              setItems(newItems);
+            }}
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+    );
+  })}
+
+  <button
+    className="mt-4 bg-teal-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-teal-800"
+    onClick={addItem}
+    type="button"
+  >
+    + Add Item
+  </button>
+</div>
+
+
+
 
           <div className="invoice-section">
             <h2>Additional Information</h2>
@@ -315,7 +409,7 @@ export default function InvoiceForm() {
                 <tr>
                   <th>#</th>
                   <th>Description</th>
-                  <th>HSN/SAC</th>
+                  
                   <th>Qty</th>
                   <th>Rate</th>
                   <th>GST %</th>
@@ -329,7 +423,7 @@ export default function InvoiceForm() {
                     <tr key={i}>
                       <td>{i + 1}</td>
                       <td>{item.description}</td>
-                      <td>{item.hsn}</td>
+                     
                       <td>{item.qty}</td>
                       <td>₹{item.rate.toFixed(2)}</td>
                       <td>{item.gst}%</td>
