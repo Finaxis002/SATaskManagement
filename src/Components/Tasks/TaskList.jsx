@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useDispatch , useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { updateTaskStatus, setHideCompletedTrue } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
@@ -13,14 +13,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
 
-import { fetchUsers } from "../../redux/userSlice"; 
-
+import { fetchUsers } from "../../redux/userSlice";
 
 import Swal from "sweetalert2";
 
 import { io } from "socket.io-client";
 
-const socket = io("https://sataskmanagementbackend.onrender.com"); 
+const socket = io("https://sataskmanagementbackend.onrender.com");
 const TaskList = ({
   onEdit,
   refreshTrigger,
@@ -51,7 +50,6 @@ const TaskList = ({
   const [uniqueUsers, setUniqueUsers] = useState([]);
   const [departmentsForAdmin, setDepartmentsForAdmin] = useState([]);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
-
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -118,9 +116,7 @@ const TaskList = ({
       );
       const data = await response.json();
 
-    const visibleTasks = data.filter(task => !task.isHidden);
-
-
+      const visibleTasks = data.filter((task) => !task.isHidden);
 
       let filtered = [];
 
@@ -353,29 +349,27 @@ const TaskList = ({
     }
   };
 
-const filteredTasks = (tasksOverride || tasks)
-  .filter((task) => {
-    // exclude hidden tasks
-    if (task.isHidden) return false;
+  const filteredTasks = (tasksOverride || tasks)
+    .filter((task) => {
+      // exclude hidden tasks
+      if (task.isHidden) return false;
 
-    const matchesFilter =
-      (filters.department === "" ||
-        task.department.includes(filters.department)) &&
-      (filters.code === "" || task.code === filters.code) &&
-      (filters.assignee === "" ||
-        task.assignees?.some((a) => a.name === filters.assignee)) &&
-      (filters.assignedBy === "" ||
-        task.assignedBy?.name === filters.assignedBy) &&
-      (filters.priority === "" || task.priority === filters.priority) &&
-      (filters.status === "" || task.status === filters.status);
+      const matchesFilter =
+        (filters.department === "" ||
+          task.department.includes(filters.department)) &&
+        (filters.code === "" || task.code === filters.code) &&
+        (filters.assignee === "" ||
+          task.assignees?.some((a) => a.name === filters.assignee)) &&
+        (filters.assignedBy === "" ||
+          task.assignedBy?.name === filters.assignedBy) &&
+        (filters.priority === "" || task.priority === filters.priority) &&
+        (filters.status === "" || task.status === filters.status);
 
-    const shouldHide = hideCompleted && task.status === "Completed";
+      const shouldHide = hideCompleted && task.status === "Completed";
 
-    return matchesFilter && !shouldHide;
-  })
-  .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
-
+      return matchesFilter && !shouldHide;
+    })
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
   const highPriorityTasks = filteredTasks.filter(
     (task) => task.priority === "High"
@@ -661,8 +655,9 @@ const filteredTasks = (tasksOverride || tasks)
     }
   };
 
-  const hideCompletedTasks = useSelector((state) => state.tasks.hideCompletedTasks);
-
+  const hideCompletedTasks = useSelector(
+    (state) => state.tasks.hideCompletedTasks
+  );
 
   const renderTaskRow = (task, index) => (
     <tr
