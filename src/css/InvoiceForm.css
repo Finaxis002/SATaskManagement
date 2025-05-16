@@ -387,7 +387,7 @@
 .invoice-table th {
   background-color: #007f8f;
   color: white;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .invoice-table tbody tr:hover {

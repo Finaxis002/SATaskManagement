@@ -369,9 +369,7 @@ useEffect(() => {
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      {/* <h1 className="text-3xl font-bold text-center text-indigo-900 mb-5">
-        {view === "department" ? "Departments Overview" : "Reports Overview"}
-      </h1> */}
+      
        <h1 className="text-3xl font-bold text-center text-indigo-900 mb-5">
       {view === "department"
         ? "Departments Overview"
@@ -606,7 +604,7 @@ useEffect(() => {
         </button>
       )}
 
-      <button
+      {/* <button
         className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
           view === "client"
             ? "bg-indigo-600 text-white"
@@ -615,7 +613,7 @@ useEffect(() => {
         onClick={() => setView("client")}
       >
         Client Overview
-      </button>
+      </button> */}
 
       {role === "admin" && (
         <button
@@ -651,14 +649,14 @@ useEffect(() => {
         </button>
       )}
 
-      {view === "client" &&  (
+      {/* {view === "client" &&  (
         <button
           onClick={() => setShowClientModal(true)}
           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
         >
           <FaPlus /> Add Client
         </button>
-      )}
+      )} */}
     </div>
 
     {/* 🔁 View Content */}
