@@ -17,6 +17,7 @@ import ProfilePage from "./pages/ProfilePage"; // Adjust the path as per your st
 import Leave from "./pages/Leave";
 import LeaveManagement from "./pages/LeaveManagement"; // Adjust the path as per your structure
 import InvoiceForm from "./pages/InvoiceForm";
+import Clients from "./pages/Clients";
 
 const App = () => {
   return (
@@ -75,6 +76,17 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/clients"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Clients />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/notifications"
           element={

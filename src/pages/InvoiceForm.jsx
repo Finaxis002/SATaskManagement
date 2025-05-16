@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import html2pdf from "html2pdf.js";
 import "../css/InvoiceForm.css";
+import axios from "axios";
+import Select from 'react-select';
+import { v4 as uuidv4 } from 'uuid';
 
 const firms = [
   {
@@ -54,410 +56,1168 @@ export default function InvoiceForm() {
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
   const [invoiceNumber, setInvoiceNumber] = useState(generateInvoiceNumber());
   const [invoiceDate, setInvoiceDate] = useState("2025-05-15");
-  const [dueDate, setDueDate] = useState("2025-06-14");
+  const [placeOfSupply, setPlaceOfSupply] = useState("Gujarat"); // Add this line with your other states
   const [customer, setCustomer] = useState({
-    name: "RK Firms",
-    address: "Raipur, Chhattisgarh",
-    gstin: "GST4575",
-    phone: "295555",
-    email: "rk@gmail.com",
+    __id: "",
+    name: "",
+    address: "",
+    GSTIN: "",
+    mobile: "",
+    emailId: "",
   });
+  const [clients, setClients] = useState([]);
+  const clientOptions = clients.map(client => ({
+    value: client._id,
+    label: `${client.name}${client.businessName ? ` (${client.businessName})` : ''}`
+  }));
+  // const [items, setItems] = useState([
+  //   { description: "Project Report", hsn: "9983", qty: 1, rate: 1000, gst: 0 },
+  // ]);
   const [items, setItems] = useState([
-    { description: "Project Report", hsn: "9983", qty: 1, rate: 1000, gst: 0 },
-  ]);
+  { id: uuidv4(), description: "Project Report", hsn: "9983", qty: 1, rate: 1000, gst: 0 },
+]);
 
   const invoiceRef = useRef();
+
+  // Fetch clients on component mount
+  // Fetch clients on component mount
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        console.log("Fetching clients..."); // Debug log
+        const response = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/clients/details"
+        );
+        console.log("Clients fetched:", response.data); // Debug log
+        setClients(response.data);
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+        // Add error state if needed
+      }
+    };
+
+    fetchClients();
+  }, []);
+
+  // Handle client selection
+  // const handleClientChange = async (e) => {
+  //   const clientId = e.target.value;
+  //   if (!clientId) {
+  //     setCustomer({
+  //       _id: "",
+  //       name: "",
+  //       address: "",
+  //       GSTIN: "",
+  //       mobile: "",
+  //       emailId: "",
+  //     });
+  //     return;
+  //   }
+
+  //   try {
+  //     const client = clients.find((c) => c._id === clientId);
+  //     if (client) {
+  //       setCustomer({
+  //         _id: client._id,
+  //         name: client.name,
+  //         address: client.address || "",
+  //         GSTIN: client.GSTIN || "", // Using GSTIN instead of gstin
+  //         mobile: client.mobile || "", // Using mobile instead of phone
+  //         emailId: client.emailId || "", // Using emailId instead of email
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching client details:", error);
+  //   }
+  // };
+const handleClientChange = async (selectedOption) => {
+     if (!selectedOption) {
+      setCustomer({
+        _id: "",
+        name: "",
+        address: "",
+        GSTIN: "",
+        mobile: "",
+        emailId: "",
+      });
+      return;
+    }
+  const clientId = selectedOption.value;
+    try {
+      const client = clients.find((c) => c._id === clientId);
+      if (client) {
+        setCustomer({
+          _id: client._id,
+          name: client.name,
+          address: client.address || "",
+          GSTIN: client.GSTIN || "", // Using GSTIN instead of gstin
+          mobile: client.mobile || "", // Using mobile instead of phone
+          emailId: client.emailId || "", // Using emailId instead of email
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching client details:", error);
+    }
+  };
 
   useEffect(() => {
     setInvoiceNumber(generateInvoiceNumber());
   }, [selectedFirm]);
 
-  // Print/Download PDF function (prints invoice preview only)
-  const handlePrint = () => {
-    if (!invoiceRef.current) return;
-
-    html2canvas(invoiceRef.current, { scale: 2 }).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${invoiceNumber}.pdf`);
-    });
-  };
-
-  // Update items handler (for simple demo, only description input shown)
+  // const updateItem = (index, field, value) => {
+  //   const newItems = [...items];
+  //   newItems[index][field] = value;
+  //   setItems(newItems);
+  // };
   const updateItem = (index, field, value) => {
-    const newItems = [...items];
-    newItems[index][field] = value;
-    setItems(newItems);
-  };
+  setItems((prevItems) => {
+    const updated = [...prevItems];
+    updated[index] = { ...updated[index], [field]: value };
+    return updated;
+  });
+};
 
-  // Add new empty item
-  const addItem = () => {
-    setItems([...items, { description: "", hsn: "", qty: 1, rate: 0, gst: 0 }]);
-  };
 
-  // Calculate total amount
-  const totalAmount = items.reduce((sum, item) => sum + item.qty * item.rate, 0);
+  // const addItem = () => {
+  //   setItems([...items, { description: "", hsn: "", qty: 1, rate: 0, gst: 0 }]);
+  // };
+const addItem = () => {
+  setItems([...items, { id: uuidv4(), description: "", hsn: "", qty: 1, rate: 0, gst: 0 }]);
+};
+
+  const totalAmount = items.reduce(
+    (sum, item) => sum + item.qty * item.rate,
+    0
+  );
+
+  // const handleDownloadPDF = () => {
+  //   if (!invoiceRef.current) return;
+  //   const element = invoiceRef.current;
+
+  //   const opt = {
+  //     margin: [10, 10, 10, 10], // uniform margin
+  //     filename: `${invoiceNumber}.pdf`,
+  //     image: { type: "jpeg", quality: 0.98 },
+  //     html2canvas: {
+  //       scale: 3,
+  //       dpi: 300,
+  //       letterRendering: true,
+  //       useCORS: true,
+  //     },
+  //     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+  //   };
+
+  //   html2pdf().set(opt).from(element).save();
+  // };
+  const handleDownloadPDF = () => {
+    if (!invoiceRef.current) return;
+    const element = invoiceRef.current;
+
+    const opt = {
+      margin: 0, // Changed from [10, 10, 10, 10] to 0 for full width
+      filename: `${invoiceNumber}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
+        scale: 3,
+        dpi: 300,
+        letterRendering: true,
+        useCORS: true,
+        width: element.scrollWidth, // Explicitly set width
+        windowWidth: element.scrollWidth, // Match window width
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+        // Optionally add this if needed:
+        // putOnlyUsedFonts: true,
+        // hotfixes: ["px_scaling"]
+      },
+    };
+
+    // Add this to ensure proper scaling
+    element.style.width = `${element.scrollWidth}px`;
+
+    html2pdf().set(opt).from(element).save();
+
+    // Reset the width after PDF generation if needed
+    setTimeout(() => {
+      element.style.width = "";
+    }, 1000);
+  };
 
   return (
-    <div className="invoice-page">
-      <div className="invoice-header">
-        <h1>BillEase</h1>
-        <div className="header-right">
-          <button className="btn-reset" onClick={() => window.location.reload()}>
-            🔁 Reset Form
-          </button>
-          <button className="btn-download" onClick={handlePrint}>
-            📄 Print / Download PDF
-          </button>
-        </div>
-      </div>
-
-      <div className="invoice-body">
-        {/* Left side form */}
-        <div className="invoice-left scrollable-panel">
-          <div className="invoice-section">
-            <h2>Your Details</h2>
-
-            <label>Firm Name</label>
-            <select
-              value={selectedFirm.name}
-              onChange={(e) => {
-                const firm = firms.find((f) => f.name === e.target.value);
-                if (firm) setSelectedFirm(firm);
-              }}
-            >
-              {firms.map((f) => (
-                <option key={f.name}>{f.name}</option>
-              ))}
-            </select>
-
-            
-
-            <label>Invoice Number</label>
-            <input type="text" readOnly value={invoiceNumber} />
-
-            <label>Address</label>
-            <input
-              type="text"
-              value={selectedFirm.address}
-              readOnly
-              style={{ backgroundColor: "#f9f9f9" }}
-            />
-            <label>GSTIN</label>
-            <input
-              type="text"
-              value={selectedFirm.gstin}
-              readOnly
-              style={{ backgroundColor: "#f9f9f9" }}
-            />
-            <label>Phone</label>
-            <input type="text" value={selectedFirm.phone} readOnly style={{ backgroundColor: "#f9f9f9" }} />
-            <label>Email</label>
-            <input type="text" value={selectedFirm.email} readOnly style={{ backgroundColor: "#f9f9f9" }} />
-
-            <label>Logo URL</label>
-            <input type="text" defaultValue="https://placehold.co/150x50?text=Your+Logo" />
-          </div>
-
-          <div className="invoice-section">
-            <h2>Customer Details</h2>
-            <input
-              placeholder="Name"
-              value={customer.name}
-              onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-            />
-            <textarea
-              placeholder="Address"
-              value={customer.address}
-              onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-            />
-            <input
-              placeholder="GSTIN"
-              value={customer.gstin}
-              onChange={(e) => setCustomer({ ...customer, gstin: e.target.value })}
-            />
-            <input
-              placeholder="Phone"
-              value={customer.phone}
-              onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-            />
-            <input
-              placeholder="Email"
-              value={customer.email}
-              onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-            />
-          </div>
-
-          <div className="invoice-section">
-            <h2>Invoice Details</h2>
-            <label>Invoice Type</label>
-            <select value={invoiceType} onChange={(e) => setInvoiceType(e.target.value)}>
-              {invoiceTypes.map((type) => (
-                <option key={type}>{type}</option>
-              ))}
-            </select>
-
-            <label>Invoice Date</label>
-            <input
-              type="date"
-              value={invoiceDate}
-              onChange={(e) => setInvoiceDate(e.target.value)}
-            />
-            
-          </div>
-
-          {/* <div className="invoice-section">
-            <h2>Items</h2>
-            
-
-            {items.map((item, idx) => (
-              <div className="item-row" key={idx}>
-                <input
-                  value={item.description}
-                  onChange={(e) => updateItem(idx, "description", e.target.value)}
-                  placeholder="Description"
-                />
-                
-                <input
-                  type="number"
-                  value={item.qty}
-                  onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
-                  placeholder="Qty"
-                  min={1}
-                />
-                <input
-                  type="number"
-                  value={item.rate}
-                  onChange={(e) => updateItem(idx, "rate", Number(e.target.value))}
-                  placeholder="Rate"
-                  step="0.01"
-                />
-                <input
-                  type="number"
-                  value={item.gst}
-                  onChange={(e) => updateItem(idx, "gst", Number(e.target.value))}
-                  placeholder="GST %"
-                  step="0.01"
-                  min={0}
-                />
-                
-                <button
-                  className="btn-icon danger"
-                  title="Remove Item"
-                  onClick={() => {
-                    const newItems = items.filter((_, i) => i !== idx);
-                    setItems(newItems);
-                  }}
-                >
-                  🗑️
-                </button>
-              </div>
-            ))}
-
-            <button className="btn-add" onClick={addItem}>
-              + Add Item
-            </button>
-          </div> */}
-<div className="invoice-section">
-  <h2 className="text-lg font-semibold mb-4 text-[#004d51]">Items</h2>
-
-  {items.map((item, idx) => {
-    const amount = (item.qty * item.rate).toFixed(2);
-    return (
-      <div
-        key={idx}
-        className="grid grid-cols-[4fr_1.2fr_1.5fr_1.2fr_1.5fr_0.7fr] gap-3 items-start mb-5"
+    <div
+      className="invoice-page"
+      style={{
+        display: "flex",
+        gap: 20,
+        padding: 20,
+        flexWrap: "wrap",
+        justifyContent: "center",
+        background: "#f9f9f9",
+      }}
+    >
+      <button
+        onClick={handleDownloadPDF}
+        style={{
+          marginTop: 20,
+          padding: "12px 24px",
+          backgroundColor: "#1a73e8",
+          color: "white",
+          border: "none",
+          borderRadius: "6px",
+          fontSize: "16px",
+          fontWeight: "600",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+          transition: "all 0.3s ease",
+          position: "relative",
+          overflow: "hidden",
+          ":hover": {
+            backgroundColor: "#0d5bba",
+            boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+            transform: "translateY(-2px)",
+          },
+          ":active": {
+            transform: "translateY(0)",
+          },
+        }}
       >
-        <div className="flex flex-col">
-          <label className="text-sm font-semibold mb-1 text-gray-700">Description</label>
-          <input
-            className="border-2 border-teal-700 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-            value={item.description}
-            onChange={(e) => updateItem(idx, "description", e.target.value)}
-            placeholder="Description"
-          />
-        </div>
+        <span style={{ fontSize: "20px" }}>📄</span>
+        <span>Generate PDF</span>
+        <span
+          style={{
+            position: "absolute",
+            background: "rgba(255,255,255,0.2)",
+            borderRadius: "50%",
+            transform: "scale(0)",
+            animation: "ripple 0.6s linear",
+            pointerEvents: "none",
+          }}
+        ></span>
+      </button>
+      {/* Left form side */}
+      <div
+        className="invoice-left scrollable-panel"
+        style={{ flex: "1 1 400px", maxWidth: 400 }}
+      >
+        {/* ... Your left side inputs and controls ... */}
 
-        <div className="flex flex-col">
-          <label className="text-sm font-semibold mb-1 text-gray-700">Qty</label>
-          <input
-            type="number"
-            className="border-2 border-teal-700 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-            value={item.qty}
-            onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
-            placeholder="Qty"
-            min={1}
-          />
-        </div>
+        <h2>Your Details</h2>
+        <select
+          value={selectedFirm.name}
+          onChange={(e) => {
+            const firm = firms.find((f) => f.name === e.target.value);
+            if (firm) setSelectedFirm(firm);
+          }}
+        >
+          {firms.map((f) => (
+            <option key={f.name}>{f.name}</option>
+          ))}
+        </select>
 
-        <div className="flex flex-col">
-          <label className="text-sm font-semibold mb-1 text-gray-700">Rate</label>
-          <input
-            type="number"
-            className="border-2 border-teal-700 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-            value={item.rate}
-            onChange={(e) => updateItem(idx, "rate", Number(e.target.value))}
-            placeholder="Rate"
-            step="0.01"
-          />
-        </div>
+        {/* <label>Invoice Number</label>
+        <input type="text" readOnly value={invoiceNumber} /> */}
 
-        <div className="flex flex-col">
-          <label className="text-sm font-semibold mb-1 text-gray-700">GST</label>
-          <input
-            type="number"
-            className="border-2 border-teal-700 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
-            value={item.gst}
-            onChange={(e) => updateItem(idx, "gst", Number(e.target.value))}
-            placeholder="GST %"
-            step="0.01"
-            min={0}
-          />
-        </div>
+        <label>Invoice Type</label>
+        <select
+          value={invoiceType}
+          onChange={(e) => setInvoiceType(e.target.value)}
+        >
+          {invoiceTypes.map((type) => (
+            <option key={type}>{type}</option>
+          ))}
+        </select>
 
-        <div className="flex flex-col">
-          <label className="text-sm font-semibold mb-1 text-gray-700">Amount</label>
-          <input
-            type="text"
-            readOnly
-            value={`₹${amount}`}
-            className="border-2 border-gray-300 rounded-md p-2 bg-gray-100 text-base cursor-not-allowed"
-          />
-        </div>
+        <label>Invoice Date</label>
+        <input
+          type="date"
+          value={invoiceDate}
+          onChange={(e) => setInvoiceDate(e.target.value)}
+        />
 
-        <div className="flex flex-col items-center justify-end">
-          <label className="text-sm font-semibold mb-1 text-gray-700 invisible">Del</label>
-          <button
-            className="text-red-600 hover:text-red-800 text-lg p-0"
-            title="Remove Item"
-            type="button"
-            onClick={() => {
-              const newItems = items.filter((_, i) => i !== idx);
-              setItems(newItems);
+        {/* Add other form controls here as needed */}
+
+        <h2>Customer Details</h2>
+        {/* <input
+          placeholder="Name"
+          value={customer.name}
+          onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+        /> */}
+        {/* <select
+          value={customer._id}
+          onChange={handleClientChange}
+          style={{ marginBottom: "10px", width: "100%", padding: "8px" }}
+        >
+          <option value="">Select a client</option>
+          {clients.map((client) => (
+            <option key={client._id} value={client._id}>
+              {client.name}{" "}
+              {client.businessName ? `(${client.businessName})` : ""}
+            </option>
+          ))}
+        </select> */}
+
+ <Select
+        options={clientOptions}
+        value={clientOptions.find(option => option.value === customer._id)}
+        onChange={handleClientChange}
+        placeholder="Search or select client..."
+        isClearable
+        styles={{
+          control: (base) => ({
+            ...base,
+            marginBottom: '10px',
+            minHeight: '40px',
+          }),
+          menu: (base) => ({
+            ...base,
+            zIndex: 9999, // ensure dropdown appears above other elements
+          }),
+        }}
+        theme={(theme) => ({
+          ...theme,
+          colors: {
+            ...theme.colors,
+            primary: '#1a73e8', // match your button color
+          },
+        })}
+      />
+        {/* <textarea
+          placeholder="Address"
+          value={customer.address}
+          onChange={(e) =>
+            setCustomer({ ...customer, address: e.target.value })
+          }
+        />
+        <input
+          placeholder="GSTIN"
+          value={customer.gstin}
+          onChange={(e) => setCustomer({ ...customer, gstin: e.target.value })}
+        />
+        <input
+          placeholder="Phone"
+          value={customer.phone}
+          onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+        />
+        <input
+          placeholder="Email"
+          value={customer.email}
+          onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+        /> */}
+        <input
+          placeholder="Place of Supply"
+          value={placeOfSupply}
+          onChange={(e) => setPlaceOfSupply(e.target.value)}
+        />
+
+        <h2>Items</h2>
+        {items.map((item, idx) => {
+          const amount = (item.qty * item.rate).toFixed(2);
+          return (
+            <div key={idx} style={{ marginBottom: 10 }}>
+              <label>Description</label>
+              <input
+      value={item.description}
+      onChange={(e) => updateItem(idx, "description", e.target.value)}
+      placeholder="Description"
+    />
+              <label>Quantity</label>
+              <input
+                type="number"
+                value={item.qty}
+                onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
+                placeholder="Qty"
+                min={1}
+              />
+              <label style={{marginTop:"1px"}}>Rate</label>
+              <input
+                type="number"
+                value={item.rate}
+                onChange={(e) =>
+                  updateItem(idx, "rate", Number(e.target.value))
+                }
+                placeholder="Rate"
+                step="0.01"
+              />
+              <label style={{marginTop:"1px"}}>GST %</label>
+              <input
+                type="number"
+                value={item.gst}
+                onChange={(e) => updateItem(idx, "gst", Number(e.target.value))}
+                placeholder="GST %"
+                step="0.01"
+                min={0}
+              />
+              <label style={{marginTop:"1px"}}>Amount</label>
+              <input readOnly value={`₹${amount}`} />
+            </div>
+          );
+        })}
+        <button onClick={addItem} className="mb-20">
+          + Add Item
+        </button>
+      </div>
+      {/* Right side invoice preview */}
+      <div
+        className="invoice-right"
+        ref={invoiceRef}
+        style={{
+          flex: "1 1 800px",
+          maxWidth: 800,
+          backgroundColor: "#fff",
+          border: "1px solid #000",
+          padding: 20,
+          fontFamily: "'Arial Black', Arial, sans-serif",
+          fontSize: 12,
+          color: "#000",
+        }}
+      >
+        <div
+          style={{
+            borderTop: "20px solid #82C8E5",
+            marginTop: "-20px",
+            marginLeft: -20,
+            marginRight: -20,
+            marginBottom: 5,
+          }}
+        ></div>
+        <div
+          style={{
+            paddingBottom: 10,
+            marginBottom: 15,
+            display: "flex",
+            alignItems: "flex-start",
+          }}
+        >
+          {/* Logo space (left side) */}
+          {/* <div
+            style={{
+              width: 100,
+              height: 80,
+              border: "1px dashed #ccc",
+              marginRight: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#999",
+              fontSize: 10,
             }}
           >
-            🗑️
-          </button>
-        </div>
-      </div>
-    );
-  })}
+           
+          </div> */}
 
-  <button
-    className="mt-4 bg-teal-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-teal-800"
-    onClick={addItem}
-    type="button"
-  >
-    + Add Item
-  </button>
-</div>
+          {/* Company name (right side) */}
 
-
-
-
-          <div className="invoice-section">
-            <h2>Additional Information</h2>
-            <label>Terms & Conditions</label>
-            <textarea defaultValue="Thank you for your business. Please pay within the due date." />
-            <label>Notes</label>
-            <textarea placeholder="Any additional notes for the customer." />
+          <div style={{textAlign: "center", marginLeft:"188px"}}>
+            <div
+              style={{
+                fontSize: 24,
+                color: "#0E1D3E",
+                lineHeight: 1,
+                textAlign:"center",
+                
+              }}
+            >
+              FINAXIS
+            </div>
+            <div
+              style={{
+                fontSize: 14,
+                color: "#666",
+                marginTop: 5,
+              }}
+            >
+              Business Consultancy
+            </div>
           </div>
         </div>
 
-        {/* Right side Invoice Preview */}
-        <div className="invoice-right" ref={invoiceRef}>
-          <div className="invoice-box">
-            <div className="invoice-header">
-              <div className="logo-box">Your Logo</div>
-              <div className="invoice-meta">
-                <h2>{invoiceType.toUpperCase()}</h2>
-                <p>
-                  <strong>Invoice #: </strong>
-                  {invoiceNumber}
-                </p>
-                <p>
-                  <strong>Date:</strong> {invoiceDate}
-                </p>
-                <p>
-                  <strong>Due Date:</strong> {dueDate}
-                </p>
-              </div>
-            </div>
-
-            <div className="firm-details">
-              <h4>{selectedFirm.name}</h4>
-              <p>{selectedFirm.address}</p>
-              <p>GSTIN: {selectedFirm.gstin}</p>
-              <p>Phone: {selectedFirm.phone}</p>
-              <p>Email: {selectedFirm.email}</p>
-            </div>
-
-            <div className="bill-to">
-              <strong>Bill To:</strong>
-              <p>{customer.name}</p>
-              <p>{customer.address}</p>
-              <p>GSTIN: {customer.gstin}</p>
-              <p>Phone: {customer.phone}</p>
-              <p>Email: {customer.email}</p>
-            </div>
-
-            <table className="invoice-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Description</th>
-                  
-                  <th>Qty</th>
-                  <th>Rate</th>
-                  <th>GST %</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, i) => {
-                  const amount = item.qty * item.rate;
-                  return (
-                    <tr key={i}>
-                      <td>{i + 1}</td>
-                      <td>{item.description}</td>
-                     
-                      <td>{item.qty}</td>
-                      <td>₹{item.rate.toFixed(2)}</td>
-                      <td>{item.gst}%</td>
-                      <td>₹{amount.toFixed(2)}</td>
+        {/* Container to mimic screenshot's invoice layout */}
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            border: "1px solid black",
+            tableLayout: "fixed",
+          }}
+        >
+          <thead>
+            <tr style={{ backgroundColor: "#eee" }}>
+              <th
+                colSpan={3}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                GSTIN: {selectedFirm.gstin}
+              </th>
+              <th
+                colSpan={3}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                {invoiceType}
+              </th>
+            </tr>
+            <tr>
+              <th
+                colSpan={3}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                  fontSize: 12,
+                  textAlign: "center",
+                }}
+              >
+                CLIENT DETAILS
+              </th>
+              <th
+                colSpan={3}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                  fontSize: 12,
+                  textAlign: "center",
+                }}
+              >
+                COMPANY DETAILS
+              </th>
+            </tr>
+            <tr>
+              <td
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "semi-Bold",
+                  width: "15%",
+                }}
+              >
+                Name
+              </td>
+              <td
+                colSpan={2}
+                style={{ border: "1px solid black", padding: 6, width: "35%" }}
+              >
+                {customer.name}
+              </td>
+              <td
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                  width: "15%",
+                }}
+              >
+                Name
+              </td>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+                {selectedFirm.name}
+              </td>
+            </tr>
+            <tr>
+              <td
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                }}
+              >
+                Address
+              </td>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+                {customer.address}
+              </td>
+              <td
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                }}
+              >
+                Address
+              </td>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+                {selectedFirm.address}
+              </td>
+            </tr>
+            <tr>
+              <td
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                }}
+              >
+                GSTIN
+              </td>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+                {customer.GSTIN}
+              </td>
+              <td
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                }}
+              >
+                Contact No.
+              </td>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+                {selectedFirm.phone}
+              </td>
+            </tr>
+            <tr>
+              <td
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                }}
+              >
+                Place of Supply
+              </td>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+                {placeOfSupply} {/* Now using the separate state */}
+              </td>
+              <td
+                colSpan={3}
+                style={{
+                  border: "1px solid black",
+                  padding: 0,
+                  width: "50%", // Add this to ensure proper width
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    tableLayout: "fixed",
+                  }}
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          width: "50%",
+                        }}
+                      >
+                        Invoice No.
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          width: "50%",
+                        }}
+                      >
+                        {invoiceNumber}
+                      </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    <tr>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Invoice Date
+                      </td>
+                      <td style={{ border: "1px solid black", padding: 6 }}>
+                        {invoiceDate}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  width: "5%",
+                  fontWeight: "bold",
+                }}
+              >
+                Sr. No.
+              </th>
+              <th
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  width: "50%",
+                  fontWeight: "bold",
+                  textAlign: "left",
+                }}
+              >
+                Description of Services
+              </th>
+              <th
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  width: "15%",
+                  fontWeight: "bold",
+                }}
+              >
+                SAC CODE
+              </th>
+              <th
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  width: "10%",
+                  fontWeight: "bold",
+                }}
+              >
+                Unit(s)
+              </th>
+              <th
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  width: "10%",
+                  fontWeight: "bold",
+                }}
+              >
+                Rate
+              </th>
+              <th
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  width: "10%",
+                  fontWeight: "bold",
+                }}
+              >
+                Amount
+              </th>
+            </tr>
+            {items.map((item, idx) => {
+              const amount = item.qty * item.rate;
+              return (
+                <tr key={idx}>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                    }}
+                  >
+                    {idx + 1}
+                  </td>
+                  <td style={{ border: "1px solid black", padding: 6 }}>
+                    {item.description}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                    }}
+                  >
+                    {item.hsn || "9971"}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                    }}
+                  >
+                    {item.qty}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "right",
+                    }}
+                  >
+                    ₹{item.rate.toFixed(2)}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "right",
+                    }}
+                  >
+                    ₹{amount.toFixed(2)}
+                  </td>
+                  
+                </tr>
+              );
+            })}
+            
+            <tr>
+              <td
+                colSpan={5}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "bold",
+                  textAlign: "right",
+                }}
+              >
+                Total in Rupees
+              </td>
+              <td
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  textAlign: "right",
+                  fontWeight: "bold",
+                }}
+              >
+                ₹{totalAmount.toFixed(2)}
+              </td>
+            </tr>
+            {/* Add empty rows if needed to fix minimum height */}
+            {/* {[...Array(3 - items.length > 0 ? 3 - items.length : 0)].map(
+              (_, i) => (
+                <tr key={`empty-${i}`}>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      height: 25,
+                    }}
+                    colSpan={6}
+                  />
+                </tr>
+              )
+            )} */}
 
-            <div className="payment-summary">
-              <p>Subtotal: ₹{totalAmount.toFixed(2)}</p>
-              <p>CGST: ₹0.00</p>
-              <p>SGST/UTGST: ₹0.00</p>
-              <h3>Grand Total: ₹{totalAmount.toFixed(2)}</h3>
-            </div>
+            {/* <tr>
+              <td colSpan={6} style={{ border: "none", padding: 6 }}>
+                
+              </td>
+            </tr> */}
+            {/* <table>
+              <table>
+                <tr>
+                  <td
+                    colSpan={3}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                      fontSize: 10,
+                    }}
+                  >
+                    Total Amount in Words
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    colSpan={3}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                      fontSize: 10,
+                      textAlign: "center",
+                    }}
+                  >
+                    
+                    Rupees Only
+                  </td>
+                </tr>
+              </table>
 
-            <div className="bank-payment">
-              <h4>Bank Details for Payment:</h4>
-              <p>Bank: {selectedFirm.bank.name}</p>
-              <p>A/C No: {selectedFirm.bank.account}</p>
-              <p>IFSC: {selectedFirm.bank.ifsc}</p>
-            </div>
+              <table>
+                <tr>
+                  <td
+                    colSpan={3}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                      fontSize: 10,
+                    }}
+                  >
+                    Bank Details
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    colSpan={3}
+                    style={{ border: "1px solid black", padding: 6 }}
+                  >
+                    Bank Name: {selectedFirm.bank.name} <br />
+                    Account Number: {selectedFirm.bank.account} <br />
+                    IFSC Code: {selectedFirm.bank.ifsc}
+                  </td>
+                </tr>
 
-            <div className="footer-note">
-              <p>
-                <strong>Terms & Conditions:</strong> Please pay within the due date.
-              </p>
-              <p style={{ textAlign: "right", marginTop: "30px" }}>
-                <strong>Authorized Signatory</strong>
-              </p>
-            </div>
-          </div>
-        </div>
+                <tr>
+                  <td colSpan={3} />
+                  <td
+                    colSpan={3}
+                    style={{ border: "1px solid black", padding: 6 }}
+                  >
+                    Taxable Value: ₹{totalAmount.toFixed(2)} <br />
+                    Add: IGST (18%): ₹0.00 <br />
+                    Add: CGST (9%): ₹0.00 <br />
+                    Add: SGST (9%): ₹0.00 <br />
+                    <strong>Total Amount: ₹{totalAmount.toFixed(2)}</strong>
+                  </td>
+                </tr>
+              </table>
+            </table> */}
+
+            {/* Add empty rows if needed to fix minimum height */}
+            {[...Array(3 - items.length > 0 ? 3 - items.length : 0)].map(
+              (_, i) => (
+                <tr key={`empty-${i}`}>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      height: 25,
+                    }}
+                    colSpan={6}
+                  />
+                </tr>
+              )
+            )}
+
+            {/* Footer section */}
+            <tr>
+              <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    tableLayout: "fixed",
+                  }}
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          fontSize: 10,
+                        }}
+                      >
+                        Total Amount in Words
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                        }}
+                      >
+                        Rupees Only
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontWeight: "light",
+                          fontSize: 10,
+                        }}
+                      >
+                        Bank Details
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: 6, fontSize: 10 }}>
+                        Bank Name: {selectedFirm.bank.name} <br />
+                        Account Number: {selectedFirm.bank.account} <br />
+                        IFSC Code: {selectedFirm.bank.ifsc}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+              <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    tableLayout: "fixed",
+                  }}
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          fontSize: 10,
+                          width: "70%",
+                        }}
+                      >
+                        Taxable Value
+                      </td>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                          width: "30%",
+                        }}
+                      >
+                        ₹{totalAmount.toFixed(2)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          fontSize: 10,
+                        }}
+                      >
+                        Add: IGST (18%)
+                      </td>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}
+                      >
+                        ₹{(totalAmount * 0.18).toFixed(2)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          fontSize: 10,
+                        }}
+                      >
+                        Add: CGST (9%)
+                      </td>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}
+                      >
+                        ₹{(totalAmount * 0.09).toFixed(2)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          fontSize: 10,
+                        }}
+                      >
+                        Add: SGST (9%)
+                      </td>
+                      <td
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}
+                      >
+                        ₹{(totalAmount * 0.09).toFixed(2)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          padding: 6,
+                          fontWeight: "bold",
+                          fontSize: 10,
+                        }}
+                      >
+                        Total Amount
+                      </td>
+                      <td
+                        style={{
+                          padding: 6,
+                          fontSize: 10,
+                          fontWeight: "bold",
+                          textAlign: "right",
+                        }}
+                      >
+                        ₹{(totalAmount * 1.18).toFixed(2)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p
+          style={{
+            fontSize: 10,
+            marginTop: 10,
+            fontStyle: "italic",
+            textAlign: "center",
+          }}
+        >
+          This is a system generated invoice and does not require any signature.
+        </p>
+        <div
+          style={{
+            borderTop: "20px solid #82C8E5",
+            marginTop: 20,
+            paddingTop: 10,
+            marginLeft: -20,
+            marginRight: -20,
+          }}
+        ></div>
+        <div
+          style={{
+            borderTop: "20px solid #000",
+            marginTop: -10,
+            paddingTop: 0,
+            textAlign: "center",
+            marginLeft: -20,
+            marginRight: -20,
+          }}
+        ></div>
       </div>
     </div>
   );

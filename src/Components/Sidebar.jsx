@@ -13,6 +13,7 @@ import {
   FaCog,
   FaUber,
   FaDotCircle,
+  FaBriefcase,
 } from "react-icons/fa";
 
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
@@ -79,6 +80,7 @@ const Sidebar = () => {
         )}
 
         <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/all-tasks" />
+         <SidebarItem icon={<FaBriefcase />} label="Clients" to="/clients" />
         <SidebarItem
           icon={
             <div className="relative">
@@ -143,8 +145,10 @@ const Sidebar = () => {
             to="/leavemanagement"
           />
         )}
-        
+        {role === 'admin' && (
           <SidebarItem icon={<FaCog />} label="Settings" to="/departments" />
+          )}
+          
         
         {role === "admin" && (
           <SidebarItem
