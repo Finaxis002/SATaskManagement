@@ -242,7 +242,7 @@ export default function ViewInvoices() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/clients/details")
+      .get("https://sataskmanagementbackend.onrender.com/api/clients/details")
       .then((res) => {
         console.log("Clients fetched:", res.data);
         setClients(res.data);
@@ -262,7 +262,7 @@ export default function ViewInvoices() {
     }
     axios
       .get(
-        `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
+        `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
       )
       .then((res) => {
         console.log(
