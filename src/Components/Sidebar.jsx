@@ -165,6 +165,14 @@ const Sidebar = () => {
             to="/invoice"
           />
         )}
+
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaCheckCircle />}
+            label="View Invoice"
+            to="/viewinvoices"
+          />
+        )}
       </div>
 
       {/* Footer */}

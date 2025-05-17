@@ -18,6 +18,7 @@ import Leave from "./pages/Leave";
 import LeaveManagement from "./pages/LeaveManagement"; // Adjust the path as per your structure
 import InvoiceForm from "./pages/InvoiceForm";
 import Clients from "./pages/Clients";
+import ViewInvoices from "./pages/ViewInvoices";
 
 const App = () => {
   return (
@@ -183,6 +184,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <InvoiceForm />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/viewinvoices"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ViewInvoices />
               </MainLayout>
             </ProtectedRoute>
           }
