@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import html2pdf from "html2pdf.js";
 import "../css/InvoiceForm.css";
 import axios from "axios";
-import Select from 'react-select';
-import { v4 as uuidv4 } from 'uuid';
+import Select from "react-select";
+import { v4 as uuidv4 } from "uuid";
 
 const firms = [
   {
     name: "Finaxis Business Consultancy",
+    subtitle: "Business Consultancy",
     gstin: "GST5454",
     address: "Vidhya Nagar, Bhopal",
     email: "finaxis@gmail.com",
@@ -16,6 +17,7 @@ const firms = [
   },
   {
     name: "Sharda Associates",
+    subtitle: "Associates",
     gstin: "GST9876",
     address: "Indrapuri, Bhopal",
     email: "sharda@gmail.com",
@@ -24,6 +26,7 @@ const firms = [
   },
   {
     name: "Kailash Real Estate",
+    subtitle: "Real Estate",
     gstin: "GST1122",
     address: "MP Nagar, Bhopal",
     email: "kailashre@gmail.com",
@@ -32,6 +35,7 @@ const firms = [
   },
   {
     name: "Bhojpal Realities",
+    subtitle: "Realities",
     gstin: "GST3344",
     address: "Arera Colony, Bhopal",
     email: "bhojpalr@gmail.com",
@@ -51,6 +55,8 @@ const generateInvoiceNumber = () => {
   return id;
 };
 
+
+
 export default function InvoiceForm() {
   const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
@@ -66,20 +72,28 @@ export default function InvoiceForm() {
     emailId: "",
   });
   const [clients, setClients] = useState([]);
-  const clientOptions = clients.map(client => ({
+  const clientOptions = clients.map((client) => ({
     value: client._id,
-    label: `${client.name}${client.businessName ? ` (${client.businessName})` : ''}`
+    label: `${client.name}${
+      client.businessName ? ` (${client.businessName})` : ""
+    }`,
   }));
   // const [items, setItems] = useState([
   //   { description: "Project Report", hsn: "9983", qty: 1, rate: 1000, gst: 0 },
   // ]);
   const [items, setItems] = useState([
-  { id: uuidv4(), description: "Project Report", hsn: "9983", qty: 1, rate: 1000, gst: 0 },
-]);
+    {
+      id: uuidv4(),
+      description: "Project Report",
+      hsn: "9983",
+      qty: 1,
+      rate: 1000,
+      gst: 0,
+    },
+  ]);
 
   const invoiceRef = useRef();
 
-  // Fetch clients on component mount
   // Fetch clients on component mount
   useEffect(() => {
     const fetchClients = async () => {
@@ -130,8 +144,8 @@ export default function InvoiceForm() {
   //     console.error("Error fetching client details:", error);
   //   }
   // };
-const handleClientChange = async (selectedOption) => {
-     if (!selectedOption) {
+  const handleClientChange = async (selectedOption) => {
+    if (!selectedOption) {
       setCustomer({
         _id: "",
         name: "",
@@ -142,7 +156,7 @@ const handleClientChange = async (selectedOption) => {
       });
       return;
     }
-  const clientId = selectedOption.value;
+    const clientId = selectedOption.value;
     try {
       const client = clients.find((c) => c._id === clientId);
       if (client) {
@@ -150,9 +164,9 @@ const handleClientChange = async (selectedOption) => {
           _id: client._id,
           name: client.name,
           address: client.address || "",
-          GSTIN: client.GSTIN || "", // Using GSTIN instead of gstin
-          mobile: client.mobile || "", // Using mobile instead of phone
-          emailId: client.emailId || "", // Using emailId instead of email
+          GSTIN: client.GSTIN || "", 
+          mobile: client.mobile || "", 
+          emailId: client.emailId || "", 
         });
       }
     } catch (error) {
@@ -164,31 +178,45 @@ const handleClientChange = async (selectedOption) => {
     setInvoiceNumber(generateInvoiceNumber());
   }, [selectedFirm]);
 
-  // const updateItem = (index, field, value) => {
-  //   const newItems = [...items];
-  //   newItems[index][field] = value;
-  //   setItems(newItems);
-  // };
   const updateItem = (index, field, value) => {
-  setItems((prevItems) => {
-    const updated = [...prevItems];
-    updated[index] = { ...updated[index], [field]: value };
-    return updated;
-  });
-};
-
+    setItems((prevItems) => {
+      const updated = [...prevItems];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
 
   // const addItem = () => {
   //   setItems([...items, { description: "", hsn: "", qty: 1, rate: 0, gst: 0 }]);
   // };
-const addItem = () => {
-  setItems([...items, { id: uuidv4(), description: "", hsn: "", qty: 1, rate: 0, gst: 0 }]);
-};
+  const addItem = () => {
+    setItems([
+      ...items,
+      { id: uuidv4(), description: "", hsn: "", qty: 1, rate: 0, gst: 0 },
+    ]);
+  };
+  const isLocalSupply = () => {
+    const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
+    return place === "mp" || place === "madhyapradesh";
+  };
+
 
   const totalAmount = items.reduce(
     (sum, item) => sum + item.qty * item.rate,
     0
   );
+
+  const taxableValue = totalAmount;
+  const igstRate = 0.18;
+  const cgstRate = 0.09;
+  const sgstRate = 0.09;
+
+  const igstAmount = isLocalSupply() ? 0 : taxableValue * igstRate;
+  const cgstAmount = isLocalSupply() ? taxableValue * cgstRate : 0;
+  const sgstAmount = isLocalSupply() ? taxableValue * sgstRate : 0;
+  const totalTax = igstAmount + cgstAmount + sgstAmount;
+  const totalAmountWithTax = taxableValue + totalTax;
+
 
   // const handleDownloadPDF = () => {
   //   if (!invoiceRef.current) return;
@@ -246,6 +274,26 @@ const addItem = () => {
     }, 1000);
   };
 
+  const saveInvoice = async () => {
+  try {
+    const invoiceData = {
+      invoiceNumber,
+      invoiceDate,
+      invoiceType,
+      selectedFirm,  // full firm info object
+      placeOfSupply,
+      customer,      // full customer object
+      items,         // array of items with description, qty, rate, gst
+      totalAmount: totalAmountWithTax, // total after taxes
+    };
+    await axios.post("http://localhost:5000/api/invoices", invoiceData); // your backend URL
+    alert("Invoice saved successfully!");
+  } catch (error) {
+    console.error("Failed to save invoice", error);
+    alert("Failed to save invoice");
+  }
+};
+
   return (
     <div
       className="invoice-page"
@@ -301,6 +349,11 @@ const addItem = () => {
           }}
         ></span>
       </button>
+
+      <button onClick={saveInvoice} style={{ marginTop: 20, marginLeft: 10 }}>
+  Save Invoice
+</button>
+
       {/* Left form side */}
       <div
         className="invoice-left scrollable-panel"
@@ -363,31 +416,31 @@ const addItem = () => {
           ))}
         </select> */}
 
- <Select
-        options={clientOptions}
-        value={clientOptions.find(option => option.value === customer._id)}
-        onChange={handleClientChange}
-        placeholder="Search or select client..."
-        isClearable
-        styles={{
-          control: (base) => ({
-            ...base,
-            marginBottom: '10px',
-            minHeight: '40px',
-          }),
-          menu: (base) => ({
-            ...base,
-            zIndex: 9999, // ensure dropdown appears above other elements
-          }),
-        }}
-        theme={(theme) => ({
-          ...theme,
-          colors: {
-            ...theme.colors,
-            primary: '#1a73e8', // match your button color
-          },
-        })}
-      />
+        <Select
+          options={clientOptions}
+          value={clientOptions.find((option) => option.value === customer._id)}
+          onChange={handleClientChange}
+          placeholder="Search or select client..."
+          isClearable
+          styles={{
+            control: (base) => ({
+              ...base,
+              marginBottom: "10px",
+              minHeight: "40px",
+            }),
+            menu: (base) => ({
+              ...base,
+              zIndex: 9999, // ensure dropdown appears above other elements
+            }),
+          }}
+          theme={(theme) => ({
+            ...theme,
+            colors: {
+              ...theme.colors,
+              primary: "#1a73e8", // match your button color
+            },
+          })}
+        />
         {/* <textarea
           placeholder="Address"
           value={customer.address}
@@ -423,10 +476,10 @@ const addItem = () => {
             <div key={idx} style={{ marginBottom: 10 }}>
               <label>Description</label>
               <input
-      value={item.description}
-      onChange={(e) => updateItem(idx, "description", e.target.value)}
-      placeholder="Description"
-    />
+                value={item.description}
+                onChange={(e) => updateItem(idx, "description", e.target.value)}
+                placeholder="Description"
+              />
               <label>Quantity</label>
               <input
                 type="number"
@@ -435,7 +488,7 @@ const addItem = () => {
                 placeholder="Qty"
                 min={1}
               />
-              <label style={{marginTop:"1px"}}>Rate</label>
+              <label style={{ marginTop: "1px" }}>Rate</label>
               <input
                 type="number"
                 value={item.rate}
@@ -445,7 +498,7 @@ const addItem = () => {
                 placeholder="Rate"
                 step="0.01"
               />
-              <label style={{marginTop:"1px"}}>GST %</label>
+              {/* <label style={{ marginTop: "1px" }}>GST %</label>
               <input
                 type="number"
                 value={item.gst}
@@ -453,8 +506,8 @@ const addItem = () => {
                 placeholder="GST %"
                 step="0.01"
                 min={0}
-              />
-              <label style={{marginTop:"1px"}}>Amount</label>
+              /> */}
+              <label style={{ marginTop: "1px" }}>Amount</label>
               <input readOnly value={`₹${amount}`} />
             </div>
           );
@@ -514,26 +567,51 @@ const addItem = () => {
 
           {/* Company name (right side) */}
 
-          <div style={{textAlign: "center", marginLeft:"188px"}}>
+          {/* <div style={{ textAlign: "center", marginLeft: "188px" }}>
             <div
-              style={{
-                fontSize: 24,
-                color: "#0E1D3E",
-                lineHeight: 1,
-                textAlign:"center",
-                
-              }}
-            >
-              FINAXIS
-            </div>
-            <div
-              style={{
-                fontSize: 14,
-                color: "#666",
-                marginTop: 5,
-              }}
-            >
-              Business Consultancy
+                      style={{
+                        fontSize: 24,
+                        color: "#0E1D3E",
+                        lineHeight: 1,
+                        textAlign: "center",
+                      }}
+                    >
+                      FINAXIS
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        color: "#666",
+                        marginTop: 5,
+                      }}
+                    >
+                      Business Consultancy
+                    </div>
+          </div> */}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            
+            <div style={{ textAlign: "center" }}>
+              <div
+                style={{
+                  fontSize: 24,
+                  color: "#1A2B59",
+                  lineHeight: 1.1,
+                  textAlign: "center",
+                  fontWeight: "",
+                  marginLeft: 0,
+                  marginRight: 0,
+                }}
+              >
+                {/* {selectedFirm.name.split(" ").join("\n")} */}
+                {selectedFirm.name}
+              </div>
             </div>
           </div>
         </div>
@@ -868,11 +946,10 @@ const addItem = () => {
                   >
                     ₹{amount.toFixed(2)}
                   </td>
-                  
                 </tr>
               );
             })}
-            
+
             <tr>
               <td
                 colSpan={5}
@@ -1071,7 +1148,7 @@ const addItem = () => {
                   }}
                 >
                   <tbody>
-                    <tr>
+                    {/* <tr>
                       <td
                         style={{
                           borderBottom: "1px solid black",
@@ -1181,7 +1258,88 @@ const addItem = () => {
                       >
                         ₹{(totalAmount * 1.18).toFixed(2)}
                       </td>
-                    </tr>
+                    </tr> */}
+                    {/* Taxable Value */}
+<tr>
+  <td style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>Taxable Value</td>
+  <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>₹{taxableValue.toFixed(2)}</td>
+</tr>
+
+{/* Conditional Taxes */}
+{isLocalSupply() ? (
+  <>
+    <tr>
+      <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>Add: CGST (9%)</td>
+      <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>₹{cgstAmount.toFixed(2)}</td>
+    </tr>
+    <tr>
+      <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>Add: SGST (9%)</td>
+      <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>₹{sgstAmount.toFixed(2)}</td>
+    </tr>
+  </>
+) : (
+  <tr>
+    <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>Add: IGST (18%)</td>
+    <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>₹{igstAmount.toFixed(2)}</td>
+  </tr>
+)}
+
+{/* Total Amount */}
+<tr>
+  <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>Total Amount</td>
+  <td  style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          textAlign: "right",
+                        }}>₹{totalAmountWithTax.toFixed(2)}</td>
+</tr>
+
                   </tbody>
                 </table>
               </td>
