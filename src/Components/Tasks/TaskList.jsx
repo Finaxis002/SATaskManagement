@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useDispatch , useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { updateTaskStatus, setHideCompletedTrue } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
+import TaskCodeFilterSelector from "./TaskCodeFilterSelector";
 
 import {
   faFilter,
@@ -13,14 +14,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
 
-import { fetchUsers } from "../../redux/userSlice"; 
-
+import { fetchUsers } from "../../redux/userSlice";
 
 import Swal from "sweetalert2";
 
 import { io } from "socket.io-client";
 
-const socket = io("https://sataskmanagementbackend.onrender.com"); 
+const socket = io("https://sataskmanagementbackend.onrender.com");
 const TaskList = ({
   onEdit,
   refreshTrigger,
@@ -38,6 +38,7 @@ const TaskList = ({
     status: "",
     code: "",
     department: "",
+     dueBefore: "", 
   });
   const [dueDateSortOrder, setDueDateSortOrder] = useState(null);
   const [remarks, setRemarks] = useState({});
@@ -51,7 +52,6 @@ const TaskList = ({
   const [uniqueUsers, setUniqueUsers] = useState([]);
   const [departmentsForAdmin, setDepartmentsForAdmin] = useState([]);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
-
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -371,7 +371,14 @@ const TaskList = ({
         (filters.status === "" || task.status === filters.status);
 
       const shouldHide = hideCompleted && task.status === "Completed";
-      return matchesFilter && !shouldHide;
+
+      // ✅ Due Date comparison
+    const dueDate = new Date(task.dueDate);
+    const selectedDate = filters.dueBefore ? new Date(filters.dueBefore) : null;
+    const matchesDueBefore = selectedDate ? dueDate <= selectedDate : true;
+
+      // return matchesFilter && !shouldHide;
+      return matchesFilter && !shouldHide && matchesDueBefore;
     })
     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
@@ -659,8 +666,9 @@ const TaskList = ({
     }
   };
 
-  const hideCompletedTasks = useSelector((state) => state.tasks.hideCompletedTasks);
-
+  const hideCompletedTasks = useSelector(
+    (state) => state.tasks.hideCompletedTasks
+  );
 
   const renderTaskRow = (task, index) => (
     <tr
@@ -1032,6 +1040,26 @@ const TaskList = ({
             </select>
           </div>
 
+          {/* Task Code */}
+          <div>
+            <label
+              htmlFor="taskCodeFilter"
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              Filter by Task Code
+            </label>
+            <TaskCodeFilterSelector
+              selectedCode={
+                filters.code
+                  ? { label: filters.code, value: filters.code }
+                  : null
+              }
+              setSelectedCode={(selectedOption) =>
+                handleFilterChange("code", selectedOption?.value || "")
+              }
+            />
+          </div>
+
           {/* Assignee */}
           {role === "admin" && (
             <div>
@@ -1083,6 +1111,23 @@ const TaskList = ({
               </select>
             </div>
           )}
+
+          <div>
+  <label
+    htmlFor="dueBeforeFilter"
+    className="block text-xs font-medium text-gray-700 mb-1"
+  >
+    Filter by Due Date (Before or On)
+  </label>
+  <input
+    type="date"
+    id="dueBeforeFilter"
+    value={filters.dueBefore}
+    onChange={(e) => handleFilterChange("dueBefore", e.target.value)}
+    className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  />
+</div>
+
         </div>
       </div>
 

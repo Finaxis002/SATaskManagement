@@ -55,8 +55,6 @@ const generateInvoiceNumber = () => {
   return id;
 };
 
-
-
 export default function InvoiceForm() {
   const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
@@ -164,9 +162,9 @@ export default function InvoiceForm() {
           _id: client._id,
           name: client.name,
           address: client.address || "",
-          GSTIN: client.GSTIN || "", 
-          mobile: client.mobile || "", 
-          emailId: client.emailId || "", 
+          GSTIN: client.GSTIN || "",
+          mobile: client.mobile || "",
+          emailId: client.emailId || "",
         });
       }
     } catch (error) {
@@ -200,7 +198,6 @@ export default function InvoiceForm() {
     return place === "mp" || place === "madhyapradesh";
   };
 
-
   const totalAmount = items.reduce(
     (sum, item) => sum + item.qty * item.rate,
     0
@@ -216,7 +213,6 @@ export default function InvoiceForm() {
   const sgstAmount = isLocalSupply() ? taxableValue * sgstRate : 0;
   const totalTax = igstAmount + cgstAmount + sgstAmount;
   const totalAmountWithTax = taxableValue + totalTax;
-
 
   // const handleDownloadPDF = () => {
   //   if (!invoiceRef.current) return;
@@ -275,24 +271,24 @@ export default function InvoiceForm() {
   };
 
   const saveInvoice = async () => {
-  try {
-    const invoiceData = {
-      invoiceNumber,
-      invoiceDate,
-      invoiceType,
-      selectedFirm,  // full firm info object
-      placeOfSupply,
-      customer,      // full customer object
-      items,         // array of items with description, qty, rate, gst
-      totalAmount: totalAmountWithTax, // total after taxes
-    };
-    await axios.post("http://localhost:5000/api/invoices", invoiceData); // your backend URL
-    alert("Invoice saved successfully!");
-  } catch (error) {
-    console.error("Failed to save invoice", error);
-    alert("Failed to save invoice");
-  }
-};
+    try {
+      const invoiceData = {
+        invoiceNumber,
+        invoiceDate,
+        invoiceType,
+        selectedFirm, // full firm info object
+        placeOfSupply,
+        customer, // full customer object
+        items, // array of items with description, qty, rate, gst
+        totalAmount: totalAmountWithTax, // total after taxes
+      };
+      await axios.post("http://localhost:5000/api/invoices", invoiceData); // your backend URL
+      alert("Invoice saved successfully!");
+    } catch (error) {
+      console.error("Failed to save invoice", error);
+      alert("Failed to save invoice");
+    }
+  };
 
   return (
     <div
@@ -351,8 +347,8 @@ export default function InvoiceForm() {
       </button>
 
       <button onClick={saveInvoice} style={{ marginTop: 20, marginLeft: 10 }}>
-  Save Invoice
-</button>
+        Save Invoice
+      </button>
 
       {/* Left form side */}
       <div
@@ -596,7 +592,6 @@ export default function InvoiceForm() {
               alignItems: "center",
             }}
           >
-            
             <div style={{ textAlign: "center" }}>
               <div
                 style={{
@@ -1260,86 +1255,125 @@ export default function InvoiceForm() {
                       </td>
                     </tr> */}
                     {/* Taxable Value */}
-<tr>
-  <td style={{
+                    <tr>
+                      <td
+                        style={{
                           borderBottom: "1px solid black",
                           padding: 6,
                           fontSize: 10,
                           textAlign: "right",
-                        }}>Taxable Value</td>
-  <td  style={{
+                        }}
+                      >
+                        Taxable Value
+                      </td>
+                      <td
+                        style={{
                           borderBottom: "1px solid black",
                           padding: 6,
                           fontSize: 10,
                           textAlign: "right",
-                        }}>₹{taxableValue.toFixed(2)}</td>
-</tr>
+                        }}
+                      >
+                        ₹{taxableValue.toFixed(2)}
+                      </td>
+                    </tr>
 
-{/* Conditional Taxes */}
-{isLocalSupply() ? (
-  <>
-    <tr>
-      <td  style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}>Add: CGST (9%)</td>
-      <td  style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}>₹{cgstAmount.toFixed(2)}</td>
-    </tr>
-    <tr>
-      <td  style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}>Add: SGST (9%)</td>
-      <td  style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}>₹{sgstAmount.toFixed(2)}</td>
-    </tr>
-  </>
-) : (
-  <tr>
-    <td  style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}>Add: IGST (18%)</td>
-    <td  style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}>₹{igstAmount.toFixed(2)}</td>
-  </tr>
-)}
+                    {/* Conditional Taxes */}
+                    {isLocalSupply() ? (
+                      <>
+                        <tr>
+                          <td
+                            style={{
+                              borderBottom: "1px solid black",
+                              padding: 6,
+                              fontSize: 10,
+                              textAlign: "right",
+                            }}
+                          >
+                            Add: CGST (9%)
+                          </td>
+                          <td
+                            style={{
+                              borderBottom: "1px solid black",
+                              padding: 6,
+                              fontSize: 10,
+                              textAlign: "right",
+                            }}
+                          >
+                            ₹{cgstAmount.toFixed(2)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style={{
+                              borderBottom: "1px solid black",
+                              padding: 6,
+                              fontSize: 10,
+                              textAlign: "right",
+                            }}
+                          >
+                            Add: SGST (9%)
+                          </td>
+                          <td
+                            style={{
+                              borderBottom: "1px solid black",
+                              padding: 6,
+                              fontSize: 10,
+                              textAlign: "right",
+                            }}
+                          >
+                            ₹{sgstAmount.toFixed(2)}
+                          </td>
+                        </tr>
+                      </>
+                    ) : (
+                      <tr>
+                        <td
+                          style={{
+                            borderBottom: "1px solid black",
+                            padding: 6,
+                            fontSize: 10,
+                            textAlign: "right",
+                          }}
+                        >
+                          Add: IGST (18%)
+                        </td>
+                        <td
+                          style={{
+                            borderBottom: "1px solid black",
+                            padding: 6,
+                            fontSize: 10,
+                            textAlign: "right",
+                          }}
+                        >
+                          ₹{igstAmount.toFixed(2)}
+                        </td>
+                      </tr>
+                    )}
 
-{/* Total Amount */}
-<tr>
-  <td  style={{
+                    {/* Total Amount */}
+                    <tr>
+                      <td
+                        style={{
                           borderBottom: "1px solid black",
                           padding: 6,
                           fontSize: 10,
                           textAlign: "right",
-                        }}>Total Amount</td>
-  <td  style={{
+                        }}
+                      >
+                        Total Amount
+                      </td>
+                      <td
+                        style={{
                           borderBottom: "1px solid black",
                           padding: 6,
                           fontSize: 10,
                           textAlign: "right",
-                        }}>₹{totalAmountWithTax.toFixed(2)}</td>
-</tr>
-
+                        }}
+                      >
+                        ₹{totalAmountWithTax.toFixed(2)}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </td>

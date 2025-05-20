@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-
 import { format, isToday, isTomorrow } from "date-fns";
+import TaskCodeFilterSelector from "../Components/Tasks/TaskCodeFilterSelector";
 
 import {
   addTaskToColumn,
@@ -51,6 +51,8 @@ const TaskBoard = () => {
 
   const [showAssigneeList, setShowAssigneeList] = useState(false);
   const [assignee, setAssignee] = useState(null);
+  const [selectedFilterCode, setSelectedFilterCode] = useState(null);
+
 
   const assignees = useSelector((state) => state.tasks.assignees);
 
@@ -344,6 +346,12 @@ const TaskBoard = () => {
             </button>
           )}
         </div>
+{/* <div className="mb-4 w-full max-w-sm">
+  <TaskCodeFilterSelector
+    selectedCode={selectedFilterCode}
+    setSelectedCode={setSelectedFilterCode}
+  />
+</div> */}
 
         {showPopup && (
           <div
@@ -442,6 +450,7 @@ const TaskBoard = () => {
               columnIndex={columnIndex}
             />
           ))}
+         
         </div>
       </div>
     </DndProvider>
