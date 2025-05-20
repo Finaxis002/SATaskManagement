@@ -19,6 +19,7 @@ import { fetchUsers } from "../../redux/userSlice";
 import Swal from "sweetalert2";
 
 import { io } from "socket.io-client";
+import FilterSection from "./FilterSection";
 
 const socket = io("https://sataskmanagementbackend.onrender.com");
 const TaskList = ({
@@ -38,7 +39,7 @@ const TaskList = ({
     status: "",
     code: "",
     department: "",
-     dueBefore: "", 
+    dueBefore: "",
   });
   const [dueDateSortOrder, setDueDateSortOrder] = useState(null);
   const [remarks, setRemarks] = useState({});
@@ -320,6 +321,10 @@ const TaskList = ({
     ...new Set(tasks.map((t) => t.assignedBy?.name).filter(Boolean)),
   ];
 
+  const uniqueStatuses = [
+    ...new Set(tasks.map((t) => t.status).filter(Boolean)),
+  ];
+
   const handleWorkDescSave = async (taskId) => {
     const workDescText = workDescs[taskId] || "";
 
@@ -373,9 +378,11 @@ const TaskList = ({
       const shouldHide = hideCompleted && task.status === "Completed";
 
       // ✅ Due Date comparison
-    const dueDate = new Date(task.dueDate);
-    const selectedDate = filters.dueBefore ? new Date(filters.dueBefore) : null;
-    const matchesDueBefore = selectedDate ? dueDate <= selectedDate : true;
+      const dueDate = new Date(task.dueDate);
+      const selectedDate = filters.dueBefore
+        ? new Date(filters.dueBefore)
+        : null;
+      const matchesDueBefore = selectedDate ? dueDate <= selectedDate : true;
 
       // return matchesFilter && !shouldHide;
       return matchesFilter && !shouldHide && matchesDueBefore;
@@ -988,11 +995,33 @@ const TaskList = ({
     // );
   }, [filters.department, tasks]);
 
+  const verticalScrollRef = useRef(null);
+  const horizontalScrollRef = useRef(null);
+
+  // Sync horizontal scroll of table with sticky scrollbar and vice versa
+  const syncScroll = (source) => {
+    if (
+      source === "vertical" &&
+      horizontalScrollRef.current &&
+      verticalScrollRef.current
+    ) {
+      horizontalScrollRef.current.scrollLeft =
+        verticalScrollRef.current.scrollLeft;
+    } else if (
+      source === "horizontal" &&
+      horizontalScrollRef.current &&
+      verticalScrollRef.current
+    ) {
+      verticalScrollRef.current.scrollLeft =
+        horizontalScrollRef.current.scrollLeft;
+    }
+  };
+
   return (
-    <div className="overflow-x-auto  relative">
-      <div className="mb-6">
+    <div className="relative" style={{ position: "relative" }}>
+      {/* <div className="mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
-          {/* Department */}
+          
           <div>
             <label
               htmlFor="departmentFilter"
@@ -1015,7 +1044,7 @@ const TaskList = ({
             </select>
           </div>
 
-          {/* Status */}
+          
           <div>
             <label
               htmlFor="statusFilter"
@@ -1040,7 +1069,7 @@ const TaskList = ({
             </select>
           </div>
 
-          {/* Task Code */}
+         
           <div>
             <label
               htmlFor="taskCodeFilter"
@@ -1060,7 +1089,7 @@ const TaskList = ({
             />
           </div>
 
-          {/* Assignee */}
+          
           {role === "admin" && (
             <div>
               <label
@@ -1085,7 +1114,7 @@ const TaskList = ({
             </div>
           )}
 
-          {/* Assigned By */}
+          
           {role === "admin" && (
             <div>
               <label
@@ -1113,26 +1142,47 @@ const TaskList = ({
           )}
 
           <div>
-  <label
-    htmlFor="dueBeforeFilter"
-    className="block text-xs font-medium text-gray-700 mb-1"
-  >
-    Filter by Due Date (Before or On)
-  </label>
-  <input
-    type="date"
-    id="dueBeforeFilter"
-    value={filters.dueBefore}
-    onChange={(e) => handleFilterChange("dueBefore", e.target.value)}
-    className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-  />
-</div>
-
+            <label
+              htmlFor="dueBeforeFilter"
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              Filter by Due Date (Before or On)
+            </label>
+            <input
+              type="date"
+              id="dueBeforeFilter"
+              value={filters.dueBefore}
+              onChange={(e) => handleFilterChange("dueBefore", e.target.value)}
+              className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
         </div>
-      </div>
+      </div> */}
 
-      <div className="overflow-y-auto" style={{ height: "calc(75vh - 60px)" }}>
-        <table className=" w-full table-auto border-collapse text-xs text-gray-800">
+      <FilterSection
+        filters={filters}
+        handleFilterChange={handleFilterChange}
+        departments={departments}
+        uniqueUsers={uniqueUsers}
+        uniqueAssignedBy={uniqueAssignedBy}
+        uniqueStatuses={uniqueStatuses}
+        role={role}
+      />
+
+      <div
+        ref={verticalScrollRef}
+        className="overflow-auto"
+        style={{
+          maxHeight: "calc(75vh - 120px)",
+          overflowX: "auto", 
+          position: "relative",
+        }}
+        onScroll={() => syncScroll("vertical")}
+      >
+        <table
+          className=" w-full table-auto border-collapse text-xs text-gray-800"
+          style={{ minWidth: "1100px" }}
+        >
           <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs sticky top-0 z-10">
             <tr className="text-left">
               <th className="py-3 px-4 min-w-[70px] font-semibold">S. No</th>

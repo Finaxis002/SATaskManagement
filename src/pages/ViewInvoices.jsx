@@ -406,24 +406,38 @@ export default function ViewInvoices() {
     element.style.overflow = "visible";
     element.style.width = "794px"; // A4 width in px at 96dpi
 
+    // const opt = {
+    //   margin: [10, 10, 10, 10], // 10 mm margins on all sides
+    //   filename: `${invoiceToView.invoiceNumber}.pdf`,
+    //   image: { type: "jpeg", quality: 0.98 },
+    //   html2canvas: {
+    //     scale: 3,
+    //     dpi: 300,
+    //     letterRendering: true,
+    //     useCORS: true,
+    //     scrollY: -window.scrollY,
+    //   },
+    //   jsPDF: {
+    //     unit: "mm",
+    //     format: "a4",
+    //     orientation: "portrait",
+    //   },
+    // };
     const opt = {
-      margin: [10, 10, 10, 10], // 10 mm margins on all sides
+      margin: 0,
       filename: `${invoiceToView.invoiceNumber}.pdf`,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
-        scale: 3,
-        dpi: 300,
-        letterRendering: true,
+        scale: 2,
         useCORS: true,
-         scrollY: -window.scrollY, 
+        scrollY: 0,
       },
       jsPDF: {
-        unit: "mm",
-        format: "a4",
+        unit: "px",
+        format: [794, 1123], // A4 portrait in px
         orientation: "portrait",
       },
     };
-
     html2pdf()
       .set(opt)
       .from(element)
@@ -477,15 +491,15 @@ export default function ViewInvoices() {
     return (
       <div
         style={{
-         width: "730px",   // slightly less than PDF printable width
-  margin: "0 auto", // center horizontally to avoid shifts
-  boxSizing: "border-box",
-  padding: 20,
-  border: "1px solid #000",
-  backgroundColor: "#fff",
-  fontFamily: "'Arial Black', Arial, sans-serif",
-  fontSize: 12,
-  color: "#000",
+          width: "730px", // slightly less than PDF printable width
+          margin: "0 auto", // center horizontally to avoid shifts
+          boxSizing: "border-box",
+          padding: 20,
+          border: "1px solid #000",
+          backgroundColor: "#fff",
+          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          fontSize: 12,
+          color: "#000",
         }}
       >
         {/* Blue top border */}
@@ -599,7 +613,7 @@ export default function ViewInvoices() {
                 style={{
                   border: "1px solid black",
                   padding: 6,
-                  fontWeight: "semi-Bold",
+                  fontWeight: "Bold",
                   width: "15%",
                 }}
               >
@@ -607,7 +621,7 @@ export default function ViewInvoices() {
               </td>
               <td
                 colSpan={2}
-                style={{ border: "1px solid black", padding: 6, width: "35%" }}
+                style={{ border: "1px solid black", padding: 6, width: "35%",fontWeight: "Bold", }}
               >
                 {invoice.customer.name}
               </td>
@@ -621,7 +635,7 @@ export default function ViewInvoices() {
               >
                 Name
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
                 {invoice.selectedFirm?.name || "Company Name"}
               </td>
             </tr>
@@ -636,7 +650,7 @@ export default function ViewInvoices() {
               >
                 Address
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
                 {invoice.customer.address}
               </td>
               <td
@@ -648,7 +662,7 @@ export default function ViewInvoices() {
               >
                 Address
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
                 {invoice.selectedFirm?.address || "Company Address"}
               </td>
             </tr>
@@ -663,7 +677,7 @@ export default function ViewInvoices() {
               >
                 GSTIN
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
                 {invoice.customer.GSTIN}
               </td>
               <td
@@ -675,7 +689,7 @@ export default function ViewInvoices() {
               >
                 Contact No.
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
                 {invoice.selectedFirm?.phone || "Phone Number"}
               </td>
             </tr>
@@ -690,7 +704,7 @@ export default function ViewInvoices() {
               >
                 Place of Supply
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
                 {invoice.placeOfSupply || "State"}
               </td>
               <td
@@ -708,19 +722,21 @@ export default function ViewInvoices() {
                     <tr>
                       <td
                         style={{
-                          border: "1px solid black",
                           padding: 6,
                           fontWeight: "bold",
                           width: "50%",
+                          borderRight: " 1px solid black",
+                          borderBottom: "1px solid black",
                         }}
                       >
                         Invoice No.
                       </td>
                       <td
                         style={{
-                          border: "1px solid black",
+                          fontWeight: "Bold",
                           padding: 6,
                           width: "50%",
+                          borderBottom: "1px solid black",
                         }}
                       >
                         {invoice.invoiceNumber}
@@ -729,14 +745,15 @@ export default function ViewInvoices() {
                     <tr>
                       <td
                         style={{
-                          border: "1px solid black",
                           padding: 6,
                           fontWeight: "bold",
+                          borderRight: "1px solid black",
                         }}
                       >
                         Invoice Date
                       </td>
-                      <td style={{ border: "1px solid black", padding: 6 }}>
+                      <td style={{ fontWeight: "Bold",
+                          padding: 6,}}>
                         {new Date(invoice.invoiceDate).toLocaleDateString()}
                       </td>
                     </tr>
@@ -930,9 +947,10 @@ export default function ViewInvoices() {
                           borderBottom: "1px solid black",
                           padding: 6,
                           fontSize: 10,
+                          fontWeight: "Bold",
                         }}
                       >
-                        Rupees Only
+                        {numberToWordsIndian(taxableValue)}
                       </td>
                     </tr>
                     <tr>
@@ -942,6 +960,7 @@ export default function ViewInvoices() {
                           padding: 6,
                           fontWeight: "light",
                           fontSize: 10,
+                          fontWeight: "Bold",
                         }}
                       >
                         Bank Details
@@ -1127,6 +1146,78 @@ export default function ViewInvoices() {
     );
   };
 
+  function numberToWordsIndian(num) {
+    const a = [
+      "",
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten",
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+    ];
+    const b = [
+      "",
+      "",
+      "Twenty",
+      "Thirty",
+      "Forty",
+      "Fifty",
+      "Sixty",
+      "Seventy",
+      "Eighty",
+      "Ninety",
+    ];
+
+    const numberToWords = (n) => {
+      if (n < 20) return a[n];
+      if (n < 100)
+        return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+      if (n < 1000)
+        return (
+          a[Math.floor(n / 100)] +
+          " Hundred" +
+          (n % 100 ? " and " + numberToWords(n % 100) : "")
+        );
+      if (n < 100000)
+        return (
+          numberToWords(Math.floor(n / 1000)) +
+          " Thousand" +
+          (n % 1000 ? " " + numberToWords(n % 1000) : "")
+        );
+      if (n < 10000000)
+        return (
+          numberToWords(Math.floor(n / 100000)) +
+          " Lakh" +
+          (n % 100000 ? " " + numberToWords(n % 100000) : "")
+        );
+      return (
+        numberToWords(Math.floor(n / 10000000)) +
+        " Crore" +
+        (n % 10000000 ? " " + numberToWords(n % 10000000) : "")
+      );
+    };
+
+    const [rupees, paise] = num.toFixed(2).split(".");
+    const rupeeWords = numberToWords(parseInt(rupees));
+    const paiseWords =
+      paise !== "00" ? ` and ${numberToWords(parseInt(paise))} Paise` : "";
+    return rupeeWords + paiseWords + " Rupees Only";
+  }
+
   return (
     <div style={{ padding: 20 }}>
       <h2>View Invoices</h2>
@@ -1142,11 +1233,13 @@ export default function ViewInvoices() {
       >
         <thead>
           <tr>
-            <th  style={{ textAlign: "left", padding: "8px" }}>Invoice Number</th>
-            <th  style={{ textAlign: "left", padding: "8px" }}>Invoice Date</th>
-            <th  style={{ textAlign: "left", padding: "8px" }}>Client Name</th>
-            <th  style={{ textAlign: "left", padding: "8px" }}>Total Amount</th>
-            <th  style={{ textAlign: "left", padding: "8px" }}>Action</th>
+            <th style={{ textAlign: "left", padding: "8px" }}>
+              Invoice Number
+            </th>
+            <th style={{ textAlign: "left", padding: "8px" }}>Invoice Date</th>
+            <th style={{ textAlign: "left", padding: "8px" }}>Client Name</th>
+            <th style={{ textAlign: "left", padding: "8px" }}>Total Amount</th>
+            <th style={{ textAlign: "left", padding: "8px" }}>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -1159,10 +1252,18 @@ export default function ViewInvoices() {
           )}
           {invoices.map((inv) => (
             <tr key={inv.invoiceNumber}>
-              <td style={{ textAlign: "left", padding: "8px" }}>{inv.invoiceNumber}</td>
-              <td style={{ textAlign: "left", padding: "8px" }}>{new Date(inv.invoiceDate).toLocaleDateString()}</td>
-              <td style={{ textAlign: "left", padding: "8px" }}>{inv.customer.name}</td>
-              <td style={{ textAlign: "left", padding: "8px" }}>₹{inv.totalAmount.toFixed(2)}</td>
+              <td style={{ textAlign: "left", padding: "8px" }}>
+                {inv.invoiceNumber}
+              </td>
+              <td style={{ textAlign: "left", padding: "8px" }}>
+                {new Date(inv.invoiceDate).toLocaleDateString()}
+              </td>
+              <td style={{ textAlign: "left", padding: "8px" }}>
+                {inv.customer.name}
+              </td>
+              <td style={{ textAlign: "left", padding: "8px" }}>
+                ₹{inv.totalAmount.toFixed(2)}
+              </td>
               <td>
                 <button onClick={() => downloadInvoice(inv)}>
                   Download PDF
@@ -1187,58 +1288,34 @@ export default function ViewInvoices() {
             justifyContent: "center",
             alignItems: "center",
             zIndex: 1000,
-            
           }}
         >
-          {/* <div style={{
-            backgroundColor: 'white',
-            padding: '20px',
-            maxWidth: '800px',
-            maxHeight: '90vh',
-            overflow: 'auto'
-          }} id="invoice-modal-content">
-            <InvoicePreview invoice={invoiceToView} />
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-              <button 
-                onClick={handleGeneratePDF}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#1a73e8',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Download PDF
-              </button>
-              <button 
-                onClick={() => setShowInvoiceModal(false)} 
-                style={{
-                  marginLeft: '10px',
-                  padding: '8px 16px',
-                  backgroundColor: '#f44336',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div> */}
+
           <div
             id="invoice-modal-content"
             style={{
-               backgroundColor: "white",
-    padding: "20px",
-    maxWidth: "800px",
-    maxHeight: "90vh",
-    overflowY: "scroll", 
+              backgroundColor: "white",
+              padding: "20px",
+              maxHeight: "90vh",
+              overflowY: "scroll",
+              width: "auto", // ✅ FIXED: No fixed maxWidth
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
           >
-            <div id="invoice-to-print">
+            <div
+              id="invoice-to-print"
+              style={{
+                width: "794px", // ✅ Strict A4 width
+                backgroundColor: "#fff",
+                padding: "20px",
+                boxSizing: "border-box",
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                fontSize: 12,
+                color: "#000",
+              }}
+            >
               <InvoicePreview invoice={invoiceToView} />
             </div>
 
@@ -1249,27 +1326,33 @@ export default function ViewInvoices() {
                 marginTop: "20px",
               }}
             >
-              <button onClick={handleGeneratePDF}
-              style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#1a73e8',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-                >Download PDF</button>
-              <button onClick={() => setShowInvoiceModal(false)}
+              <button
+                onClick={handleGeneratePDF}
                 style={{
-                  marginLeft: '10px',
-                  padding: '8px 16px',
-                  backgroundColor: '#f44336',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
+                  padding: "8px 16px",
+                  backgroundColor: "#1a73e8",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
                 }}
-                >Close</button>
+              >
+                Download PDF
+              </button>
+              <button
+                onClick={() => setShowInvoiceModal(false)}
+                style={{
+                  marginLeft: "10px",
+                  padding: "8px 16px",
+                  backgroundColor: "#f44336",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
