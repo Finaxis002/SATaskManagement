@@ -4,6 +4,7 @@ import TaskList from "../Components/Tasks/TaskList";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setHideCompletedTrue } from "../redux/taskSlice";
+import Swal from 'sweetalert2'
 
 
 const AllTasks = () => {
@@ -35,25 +36,40 @@ const dispatch = useDispatch();
     setShowForm(true);
   };
 
-const handleRemoveCompletedTasks = () => {
-  const existing = JSON.parse(
-    localStorage.getItem("hiddenCompletedTasks") || "[]"
-  );
+const handleRemoveCompletedTasks = async () => {
+  try {
+    const response = await fetch(
+      "https://sataskmanagementbackend.onrender.com/api/tasks/hide-completed",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error("Failed to remove completed tasks");
+    }
+    Swal.fire({
+      icon: "success",
+      title: "Completed Tasks Removed",
+      timer: 1500,
+      showConfirmButton: false,
+    });
 
-  const newHidden = tasks
-    .filter((task) => task.status === "Completed")
-    .map((task) => task._id);
+    // Toggle refreshTrigger to tell TaskList to refetch
+    setRefreshTrigger(prev => !prev);
 
-  const combined = [...new Set([...existing, ...newHidden])];
-
-  localStorage.setItem("hiddenCompletedTasks", JSON.stringify(combined));
-
-  // Update local UI
-  setTasks((prev) => prev.filter((task) => task.status !== "Completed"));
-
-  // ✅ Also update global Redux flag
-  dispatch(setHideCompletedTrue());
+  } catch (err) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: err.message || "Something went wrong",
+    });
+  }
 };
+
 
 
   return (
