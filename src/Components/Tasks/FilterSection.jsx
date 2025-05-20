@@ -1,30 +1,30 @@
 import Select from "react-select";
 import { FaCalendarAlt, FaFilter, FaTimes } from "react-icons/fa";
-import TaskCodeFilterSelector from './TaskCodeFilterSelector';
+import TaskCodeFilterSelector from "./TaskCodeFilterSelector";
 
 const customSelectStyles = {
   control: (provided) => ({
     ...provided,
-    minHeight: '30px',
-    fontSize: '0.8rem',
-    borderRadius: '0.375rem',
-    borderColor: '#d1d5db', // Tailwind gray-300
-    boxShadow: 'none',
-    '&:hover': { borderColor: '#6366f1' }, // Indigo-500
+    minHeight: "30px",
+    fontSize: "0.8rem",
+    borderRadius: "0.375rem",
+    borderColor: "#d1d5db", // Tailwind gray-300
+    boxShadow: "none",
+    "&:hover": { borderColor: "#6366f1" }, // Indigo-500
   }),
   menu: (provided) => ({
     ...provided,
-    fontSize: '0.85rem',
+    fontSize: "0.85rem",
   }),
-   menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
   placeholder: (provided) => ({
     ...provided,
-    color: '#6b7280', // Tailwind gray-500
-    fontSize: '0.85rem',
+    color: "#6b7280", // Tailwind gray-500
+    fontSize: "0.85rem",
   }),
   indicatorsContainer: (provided) => ({
     ...provided,
-    padding: '0 6px',
+    padding: "0 6px",
   }),
   dropdownIndicator: (provided) => ({
     ...provided,
@@ -53,58 +53,101 @@ const FilterSection = ({
   return (
     <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-200 mb-6 z-20">
       <div className="flex flex-wrap items-end gap-3">
-
         {/* Department */}
         <div className="flex flex-col flex-grow min-w-[180px] max-w-[220px]">
-          <label className="mb-1 text-xs font-semibold text-gray-700">Department</label>
+          <label className="mb-1 text-xs font-semibold text-gray-700">
+            Department
+          </label>
           <Select
-            options={[{ label: "All Departments", value: "" }, ...departments.map(d => ({ label: d.name, value: d.name }))]}
-            value={filters.department ? { label: filters.department, value: filters.department } : null}
-            onChange={(val) => handleFilterChange("department", val?.value || "")}
-            styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+            options={[
+              { label: "All Departments", value: "" },
+              ...departments.map((d) => ({ label: d.name, value: d.name })),
+            ]}
+            value={
+              filters.department
+                ? { label: filters.department, value: filters.department }
+                : null
+            }
+            onChange={(val) =>
+              handleFilterChange("department", val?.value || "")
+            }
+            styles={{
+              ...customSelectStyles,
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            }}
             menuPortalTarget={document.body}
             placeholder="Select Department"
             isClearable
             isSearchable={false}
-            
           />
         </div>
 
         {/* Status */}
         <div className="flex flex-col flex-grow min-w-[150px] max-w-[180px]">
-          <label className="mb-1 text-xs font-semibold text-gray-700">Status</label>
+          <label className="mb-1 text-xs font-semibold text-gray-700">
+            Status
+          </label>
           <Select
-  options={[{ label: "All Status", value: "" }, ...uniqueStatuses.map(s => ({ label: s, value: s }))]}
-  value={filters.status ? { label: filters.status, value: filters.status } : null}
-  onChange={(val) => handleFilterChange("status", val?.value || "")}
-  styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+            options={[
+              { label: "All Status", value: "" },
+              ...uniqueStatuses.map((s) => ({ label: s, value: s })),
+            ]}
+            value={
+              filters.status
+                ? { label: filters.status, value: filters.status }
+                : null
+            }
+            onChange={(val) => handleFilterChange("status", val?.value || "")}
+            styles={{
+              ...customSelectStyles,
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            }}
             menuPortalTarget={document.body}
-  placeholder="Select Status"
-  isClearable
-  isSearchable={false}
-/>
-
+            placeholder="Select Status"
+            isClearable
+            isSearchable={false}
+          />
         </div>
 
         {/* Task Code */}
         <div className="flex flex-col flex-grow min-w-[150px] max-w-[180px]">
-          <label className="mb-1 text-xs font-semibold text-gray-700">Task Code</label>
+          <label className="mb-1 text-xs font-semibold text-gray-700">
+            Task Code
+          </label>
           <TaskCodeFilterSelector
-            selectedCode={filters.code ? { label: filters.code, value: filters.code } : null}
-            setSelectedCode={(selectedOption) => handleFilterChange("code", selectedOption?.value || "")}
+            selectedCode={
+              filters.code ? { label: filters.code, value: filters.code } : null
+            }
+            setSelectedCode={(selectedOption) =>
+              handleFilterChange("code", selectedOption?.value || "")
+            }
           />
         </div>
 
         {/* Assignee */}
         {role === "admin" && (
           <div className="flex flex-col flex-grow min-w-[150px] max-w-[180px]">
-            <label className="mb-1 text-xs font-semibold text-gray-700">Assignee</label>
+            <label className="mb-1 text-xs font-semibold text-gray-700">
+              Assignee
+            </label>
             <Select
-              options={[{ label: "All Assignees", value: "" }, ...uniqueUsers.map(u => ({ label: u, value: u }))]}
-              value={filters.assignee ? { label: filters.assignee, value: filters.assignee } : null}
-              onChange={(val) => handleFilterChange("assignee", val?.value || "")}
-              styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-            menuPortalTarget={document.body}
+              options={[
+                { label: "All Assignees", value: "" },
+                ...uniqueUsers.map((u) => ({ label: u, value: u })),
+              ]}
+              value={
+                filters.assignee
+                  ? { label: filters.assignee, value: filters.assignee }
+                  : null
+              }
+              onChange={(val) =>
+                handleFilterChange("assignee", val?.value || "")
+              }
+              styles={{
+                ...customSelectStyles,
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+              menuPortalTarget={document.body}
               placeholder="Select Assignee"
               isClearable
               isSearchable={false}
@@ -115,13 +158,27 @@ const FilterSection = ({
         {/* Assigned By */}
         {role === "admin" && (
           <div className="flex flex-col flex-grow min-w-[150px] max-w-[180px]">
-            <label className="mb-1 text-xs font-semibold text-gray-700">Assigned By</label>
+            <label className="mb-1 text-xs font-semibold text-gray-700">
+              Assigned By
+            </label>
             <Select
-              options={[{ label: "All Assigners", value: "" }, ...uniqueAssignedBy.map(u => ({ label: u, value: u }))]}
-              value={filters.assignedBy ? { label: filters.assignedBy, value: filters.assignedBy } : null}
-              onChange={(val) => handleFilterChange("assignedBy", val?.value || "")}
-              styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-            menuPortalTarget={document.body}
+              options={[
+                { label: "All Assigners", value: "" },
+                ...uniqueAssignedBy.map((u) => ({ label: u, value: u })),
+              ]}
+              value={
+                filters.assignedBy
+                  ? { label: filters.assignedBy, value: filters.assignedBy }
+                  : null
+              }
+              onChange={(val) =>
+                handleFilterChange("assignedBy", val?.value || "")
+              }
+              styles={{
+                ...customSelectStyles,
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+              menuPortalTarget={document.body}
               placeholder="Select Assignor"
               isClearable
               isSearchable={false}
@@ -131,7 +188,10 @@ const FilterSection = ({
 
         {/* Due Date */}
         <div className="flex flex-col min-w-[160px] max-w-[200px]">
-          <label htmlFor="dueBefore" className="mb-1 text-xs font-semibold text-gray-700 flex items-center gap-1">
+          <label
+            htmlFor="dueBefore"
+            className="mb-1 text-xs font-semibold text-gray-700 flex items-center gap-1"
+          >
             <FaCalendarAlt className="text-indigo-500" />
             Due Date (Before or On)
           </label>
@@ -156,7 +216,6 @@ const FilterSection = ({
             <FaTimes />
           </button>
         </div>
-
       </div>
     </div>
   );
