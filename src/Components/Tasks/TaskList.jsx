@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { updateTaskStatus, setHideCompletedTrue } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
+import TaskCodeFilterSelector from "./TaskCodeFilterSelector";
 
 import {
   faFilter,
@@ -37,6 +38,7 @@ const TaskList = ({
     status: "",
     code: "",
     department: "",
+     dueBefore: "", 
   });
   const [dueDateSortOrder, setDueDateSortOrder] = useState(null);
   const [remarks, setRemarks] = useState({});
@@ -367,7 +369,15 @@ const TaskList = ({
 
       const shouldHide = hideCompleted && task.status === "Completed";
 
-      return matchesFilter && !shouldHide;
+
+      // ✅ Due Date comparison
+    const dueDate = new Date(task.dueDate);
+    const selectedDate = filters.dueBefore ? new Date(filters.dueBefore) : null;
+    const matchesDueBefore = selectedDate ? dueDate <= selectedDate : true;
+
+      // return matchesFilter && !shouldHide;
+      return matchesFilter && !shouldHide && matchesDueBefore;
+
     })
     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
@@ -1029,6 +1039,26 @@ const TaskList = ({
             </select>
           </div>
 
+          {/* Task Code */}
+          <div>
+            <label
+              htmlFor="taskCodeFilter"
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              Filter by Task Code
+            </label>
+            <TaskCodeFilterSelector
+              selectedCode={
+                filters.code
+                  ? { label: filters.code, value: filters.code }
+                  : null
+              }
+              setSelectedCode={(selectedOption) =>
+                handleFilterChange("code", selectedOption?.value || "")
+              }
+            />
+          </div>
+
           {/* Assignee */}
           {role === "admin" && (
             <div>
@@ -1080,6 +1110,23 @@ const TaskList = ({
               </select>
             </div>
           )}
+
+          <div>
+  <label
+    htmlFor="dueBeforeFilter"
+    className="block text-xs font-medium text-gray-700 mb-1"
+  >
+    Filter by Due Date (Before or On)
+  </label>
+  <input
+    type="date"
+    id="dueBeforeFilter"
+    value={filters.dueBefore}
+    onChange={(e) => handleFilterChange("dueBefore", e.target.value)}
+    className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  />
+</div>
+
         </div>
       </div>
 
