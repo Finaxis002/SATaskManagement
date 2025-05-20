@@ -112,36 +112,7 @@ export default function InvoiceForm() {
   }, []);
 
   // Handle client selection
-  // const handleClientChange = async (e) => {
-  //   const clientId = e.target.value;
-  //   if (!clientId) {
-  //     setCustomer({
-  //       _id: "",
-  //       name: "",
-  //       address: "",
-  //       GSTIN: "",
-  //       mobile: "",
-  //       emailId: "",
-  //     });
-  //     return;
-  //   }
-
-  //   try {
-  //     const client = clients.find((c) => c._id === clientId);
-  //     if (client) {
-  //       setCustomer({
-  //         _id: client._id,
-  //         name: client.name,
-  //         address: client.address || "",
-  //         GSTIN: client.GSTIN || "", // Using GSTIN instead of gstin
-  //         mobile: client.mobile || "", // Using mobile instead of phone
-  //         emailId: client.emailId || "", // Using emailId instead of email
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching client details:", error);
-  //   }
-  // };
+  
   const handleClientChange = async (selectedOption) => {
     if (!selectedOption) {
       setCustomer({
@@ -214,25 +185,7 @@ export default function InvoiceForm() {
   const totalTax = igstAmount + cgstAmount + sgstAmount;
   const totalAmountWithTax = taxableValue + totalTax;
 
-  // const handleDownloadPDF = () => {
-  //   if (!invoiceRef.current) return;
-  //   const element = invoiceRef.current;
-
-  //   const opt = {
-  //     margin: [10, 10, 10, 10], // uniform margin
-  //     filename: `${invoiceNumber}.pdf`,
-  //     image: { type: "jpeg", quality: 0.98 },
-  //     html2canvas: {
-  //       scale: 3,
-  //       dpi: 300,
-  //       letterRendering: true,
-  //       useCORS: true,
-  //     },
-  //     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-  //   };
-
-  //   html2pdf().set(opt).from(element).save();
-  // };
+  
   const handleDownloadPDF = () => {
     if (!invoiceRef.current) return;
     const element = invoiceRef.current;
@@ -276,19 +229,90 @@ export default function InvoiceForm() {
         invoiceNumber,
         invoiceDate,
         invoiceType,
-        selectedFirm, // full firm info object
+        selectedFirm, 
         placeOfSupply,
-        customer, // full customer object
-        items, // array of items with description, qty, rate, gst
-        totalAmount: totalAmountWithTax, // total after taxes
+        customer, 
+        items, 
+        totalAmount: totalAmountWithTax, 
       };
-      await axios.post("http://localhost:5000/api/invoices", invoiceData); // your backend URL
-      alert("Invoice saved successfully!");
+      await axios.post("https://sataskmanagementbackend.onrender.com/api/invoices", invoiceData);
     } catch (error) {
       console.error("Failed to save invoice", error);
       alert("Failed to save invoice");
     }
   };
+
+  function numberToWordsIndian(num) {
+    const a = [
+      "",
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten",
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+    ];
+    const b = [
+      "",
+      "",
+      "Twenty",
+      "Thirty",
+      "Forty",
+      "Fifty",
+      "Sixty",
+      "Seventy",
+      "Eighty",
+      "Ninety",
+    ];
+
+    const numberToWords = (n) => {
+      if (n < 20) return a[n];
+      if (n < 100)
+        return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+      if (n < 1000)
+        return (
+          a[Math.floor(n / 100)] +
+          " Hundred" +
+          (n % 100 ? " and " + numberToWords(n % 100) : "")
+        );
+      if (n < 100000)
+        return (
+          numberToWords(Math.floor(n / 1000)) +
+          " Thousand" +
+          (n % 1000 ? " " + numberToWords(n % 1000) : "")
+        );
+      if (n < 10000000)
+        return (
+          numberToWords(Math.floor(n / 100000)) +
+          " Lakh" +
+          (n % 100000 ? " " + numberToWords(n % 100000) : "")
+        );
+      return (
+        numberToWords(Math.floor(n / 10000000)) +
+        " Crore" +
+        (n % 10000000 ? " " + numberToWords(n % 10000000) : "")
+      );
+    };
+
+    const [rupees, paise] = num.toFixed(2).split(".");
+    const rupeeWords = numberToWords(parseInt(rupees));
+    const paiseWords =
+      paise !== "00" ? ` and ${numberToWords(parseInt(paise))} Paise` : "";
+    return rupeeWords + paiseWords + " Rupees Only";
+  }
 
   return (
     <div
@@ -302,54 +326,91 @@ export default function InvoiceForm() {
         background: "#f9f9f9",
       }}
     >
-      <button
-        onClick={handleDownloadPDF}
+      <div
         style={{
-          marginTop: 20,
-          padding: "12px 24px",
-          backgroundColor: "#1a73e8",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          fontSize: "16px",
-          fontWeight: "600",
-          cursor: "pointer",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "8px",
-          boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-          transition: "all 0.3s ease",
-          position: "relative",
-          overflow: "hidden",
-          ":hover": {
-            backgroundColor: "#0d5bba",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-            transform: "translateY(-2px)",
-          },
-          ":active": {
-            transform: "translateY(0)",
-          },
+          gap: "20px", // space between buttons
+          marginTop: 20,
+          justifyContent: "center", // center align horizontally (optional)
         }}
       >
-        <span style={{ fontSize: "20px" }}>📄</span>
-        <span>Generate PDF</span>
-        <span
+        <button
+          onClick={handleDownloadPDF}
           style={{
-            position: "absolute",
-            background: "rgba(255,255,255,0.2)",
-            borderRadius: "50%",
-            transform: "scale(0)",
-            animation: "ripple 0.6s linear",
-            pointerEvents: "none",
+            marginTop: 20,
+            padding: "12px 24px",
+            backgroundColor: "#1a73e8",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            fontSize: "16px",
+            fontWeight: "600",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+            transition: "all 0.3s ease",
+            position: "relative",
+            overflow: "hidden",
+            ":hover": {
+              backgroundColor: "#0d5bba",
+              boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+              transform: "translateY(-2px)",
+            },
+            ":active": {
+              transform: "translateY(0)",
+            },
           }}
-        ></span>
-      </button>
+        >
+          <span style={{ fontSize: "20px" }}>📄</span>
+          <span>Generate PDF</span>
+          <span
+            style={{
+              position: "absolute",
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: "50%",
+              transform: "scale(0)",
+              animation: "ripple 0.6s linear",
+              pointerEvents: "none",
+            }}
+          ></span>
+        </button>
 
-      <button onClick={saveInvoice} style={{ marginTop: 20, marginLeft: 10 }}>
-        Save Invoice
-      </button>
-
+        <button
+          onClick={saveInvoice}
+          style={{
+            marginTop: 20,
+            padding: "12px 24px",
+            backgroundColor: "#28a745",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            fontSize: "16px",
+            fontWeight: "600",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+            transition: "all 0.3s ease",
+            position: "relative",
+            overflow: "hidden",
+            ":hover": {
+              backgroundColor: "#0d5bba",
+              boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+              transform: "translateY(-2px)",
+            },
+            ":active": {
+              transform: "translateY(0)",
+            },
+          }}
+        >
+          Save Invoice
+        </button>
+      </div>
       {/* Left form side */}
       <div
         className="invoice-left scrollable-panel"
@@ -522,7 +583,7 @@ export default function InvoiceForm() {
           backgroundColor: "#fff",
           border: "1px solid #000",
           padding: 20,
-          fontFamily: "'Arial Black', Arial, sans-serif",
+          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
           fontSize: 12,
           color: "#000",
         }}
@@ -678,7 +739,7 @@ export default function InvoiceForm() {
                 style={{
                   border: "1px solid black",
                   padding: 6,
-                  fontWeight: "semi-Bold",
+                  fontWeight: "Bold",
                   width: "15%",
                 }}
               >
@@ -686,7 +747,12 @@ export default function InvoiceForm() {
               </td>
               <td
                 colSpan={2}
-                style={{ border: "1px solid black", padding: 6, width: "35%" }}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  width: "35%",
+                  fontWeight: "Bold",
+                }}
               >
                 {customer.name}
               </td>
@@ -700,7 +766,14 @@ export default function InvoiceForm() {
               >
                 Name
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {selectedFirm.name}
               </td>
             </tr>
@@ -714,7 +787,14 @@ export default function InvoiceForm() {
               >
                 Address
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {customer.address}
               </td>
               <td
@@ -726,7 +806,14 @@ export default function InvoiceForm() {
               >
                 Address
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {selectedFirm.address}
               </td>
             </tr>
@@ -740,7 +827,14 @@ export default function InvoiceForm() {
               >
                 GSTIN
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {customer.GSTIN}
               </td>
               <td
@@ -752,7 +846,14 @@ export default function InvoiceForm() {
               >
                 Contact No.
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {selectedFirm.phone}
               </td>
             </tr>
@@ -766,7 +867,14 @@ export default function InvoiceForm() {
               >
                 Place of Supply
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 }}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {placeOfSupply} {/* Now using the separate state */}
               </td>
               <td
@@ -788,19 +896,21 @@ export default function InvoiceForm() {
                     <tr>
                       <td
                         style={{
-                          border: "1px solid black",
                           padding: 6,
                           fontWeight: "bold",
                           width: "50%",
+                          borderRight: " 1px solid black",
+                          borderBottom: "1px solid black",
                         }}
                       >
                         Invoice No.
                       </td>
                       <td
                         style={{
-                          border: "1px solid black",
+                          fontWeight: "Bold",
                           padding: 6,
                           width: "50%",
+                          borderBottom: "1px solid black",
                         }}
                       >
                         {invoiceNumber}
@@ -809,14 +919,19 @@ export default function InvoiceForm() {
                     <tr>
                       <td
                         style={{
-                          border: "1px solid black",
                           padding: 6,
                           fontWeight: "bold",
+                          borderRight: "1px solid black",
                         }}
                       >
                         Invoice Date
                       </td>
-                      <td style={{ border: "1px solid black", padding: 6 }}>
+                      <td
+                        style={{
+                          fontWeight: "Bold",
+                          padding: 6,
+                        }}
+                      >
                         {invoiceDate}
                       </td>
                     </tr>
@@ -968,6 +1083,8 @@ export default function InvoiceForm() {
                 ₹{totalAmount.toFixed(2)}
               </td>
             </tr>
+ 
+
             {/* Add empty rows if needed to fix minimum height */}
             {/* {[...Array(3 - items.length > 0 ? 3 - items.length : 0)].map(
               (_, i) => (
@@ -983,99 +1100,17 @@ export default function InvoiceForm() {
                 </tr>
               )
             )} */}
-
-            {/* <tr>
-              <td colSpan={6} style={{ border: "none", padding: 6 }}>
-                
-              </td>
-            </tr> */}
-            {/* <table>
-              <table>
-                <tr>
-                  <td
-                    colSpan={3}
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      fontWeight: "bold",
-                      fontSize: 10,
-                    }}
-                  >
-                    Total Amount in Words
-                  </td>
-                </tr>
-                <tr>
-                  <td
-                    colSpan={3}
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      fontWeight: "bold",
-                      fontSize: 10,
-                      textAlign: "center",
-                    }}
-                  >
-                    
-                    Rupees Only
-                  </td>
-                </tr>
-              </table>
-
-              <table>
-                <tr>
-                  <td
-                    colSpan={3}
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      fontWeight: "bold",
-                      fontSize: 10,
-                    }}
-                  >
-                    Bank Details
-                  </td>
-                </tr>
-                <tr>
-                  <td
-                    colSpan={3}
-                    style={{ border: "1px solid black", padding: 6 }}
-                  >
-                    Bank Name: {selectedFirm.bank.name} <br />
-                    Account Number: {selectedFirm.bank.account} <br />
-                    IFSC Code: {selectedFirm.bank.ifsc}
-                  </td>
-                </tr>
-
-                <tr>
-                  <td colSpan={3} />
-                  <td
-                    colSpan={3}
-                    style={{ border: "1px solid black", padding: 6 }}
-                  >
-                    Taxable Value: ₹{totalAmount.toFixed(2)} <br />
-                    Add: IGST (18%): ₹0.00 <br />
-                    Add: CGST (9%): ₹0.00 <br />
-                    Add: SGST (9%): ₹0.00 <br />
-                    <strong>Total Amount: ₹{totalAmount.toFixed(2)}</strong>
-                  </td>
-                </tr>
-              </table>
-            </table> */}
-
-            {/* Add empty rows if needed to fix minimum height */}
-            {[...Array(3 - items.length > 0 ? 3 - items.length : 0)].map(
-              (_, i) => (
-                <tr key={`empty-${i}`}>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      height: 25,
-                    }}
-                    colSpan={6}
-                  />
-                </tr>
-              )
+            {items.length < 3 && (
+              <tr>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    height: 25,
+                  }}
+                  colSpan={6}
+                />
+              </tr>
             )}
 
             {/* Footer section */}
@@ -1107,9 +1142,10 @@ export default function InvoiceForm() {
                           borderBottom: "1px solid black",
                           padding: 6,
                           fontSize: 10,
+                          fontWeight: "Bold",
                         }}
                       >
-                        Rupees Only
+                        {numberToWordsIndian(taxableValue)}
                       </td>
                     </tr>
                     <tr>
@@ -1117,15 +1153,23 @@ export default function InvoiceForm() {
                         style={{
                           borderBottom: "1px solid black",
                           padding: 6,
-                          fontWeight: "light",
                           fontSize: 10,
+                          fontWeight: "Bold",
                         }}
                       >
                         Bank Details
                       </td>
                     </tr>
                     <tr>
-                      <td style={{ padding: 6, fontSize: 10 }}>
+                      <td
+                        className="normal-text "
+                        style={{
+                          padding: 6,
+                          fontSize: 10,
+                          fontWeight: "normal",
+                          fontStyle: "normal",
+                        }}
+                      >
                         Bank Name: {selectedFirm.bank.name} <br />
                         Account Number: {selectedFirm.bank.account} <br />
                         IFSC Code: {selectedFirm.bank.ifsc}

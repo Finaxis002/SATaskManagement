@@ -384,11 +384,11 @@
   text-align: center;
 }
 
-.invoice-table th {
+/* .invoice-table th {
   background-color: #007f8f;
   color: white;
   font-weight: 500;
-}
+} */
 
 .invoice-table tbody tr:hover {
   background-color: #f4f9f9;
@@ -426,4 +426,7 @@
   font-size: 14px;
   color: #555;
   margin: 2px 0;
+}
+.normal-text {
+  font-weight: normal !important;
 }
