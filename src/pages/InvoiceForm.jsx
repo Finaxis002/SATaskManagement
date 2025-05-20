@@ -236,6 +236,14 @@ export default function InvoiceForm() {
         totalAmount: totalAmountWithTax, 
       };
       await axios.post("https://sataskmanagementbackend.onrender.com/api/invoices", invoiceData);
+      // Display an alert once the invoice is saved successfully
+    Swal.fire({
+      icon: 'success',
+      title: 'Invoice Saved',
+      text: `Invoice ${invoiceNumber} has been successfully saved.`,
+      confirmButtonColor: "#3085d6",
+      confirmButtonText: 'Ok',
+    });
     } catch (error) {
       console.error("Failed to save invoice", error);
       alert("Failed to save invoice");

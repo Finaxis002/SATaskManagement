@@ -40,11 +40,10 @@ const TaskCodeFilterSelector = ({ selectedCode, setSelectedCode }) => {
       styles={{
         control: (base) => ({
           ...base,
-          minHeight: "36px",
-          fontSize: "0.75rem", // Tailwind text-xs
-          paddingLeft: "1rem", // Tailwind pl-4
-          paddingRight: "2.5rem", // Tailwind pr-10
+          minHeight: "30px",
+          fontSize: "0.75rem",  
           borderColor: "#d1d5db",
+          borderRadius: "0.375rem",
           boxShadow: "none",
           "&:hover": {
             borderColor: "#d1d5db",
