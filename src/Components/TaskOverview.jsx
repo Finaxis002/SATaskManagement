@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { format, isBefore, isToday, isTomorrow, parseISO } from "date-fns";
 import { useSelector } from "react-redux";
 import axios from "axios";
-
 const TaskOverview = () => {
   const [tasks, setTasks] = useState([]); // Store tasks in state
   const [activeTab, setActiveTab] = useState("today"); // Track active tab (today, tomorrow, etc.)
@@ -12,18 +11,6 @@ const TaskOverview = () => {
   const [completedTaskIds, setCompletedTaskIds] = useState(new Set());
   const [justCompleted, setJustCompleted] = useState(new Set());
 
-  const [hiddenCompletedTaskIds, setHiddenCompletedTaskIds] = useState(
-    new Set()
-  );
-
-  useEffect(() => {
-    const storedHidden = localStorage.getItem("hiddenCompletedTasks");
-    try {
-      setHiddenCompletedTaskIds(new Set(JSON.parse(storedHidden || "[]")));
-    } catch {
-      setHiddenCompletedTaskIds(new Set());
-    }
-  }, [tasks, activeTab]);
 
   // Fetch tasks from the API and categorize them
   useEffect(() => {
@@ -44,12 +31,18 @@ const TaskOverview = () => {
   const now = new Date();
 
   // Filter tasks based on user role (only show tasks assigned to the logged-in user if not an admin)
-  const filteredTasks = tasks.filter((task) => {
-    if (role === "admin") return true; // Admin sees all tasks
-    return task.assignees?.some(
-      (assignee) => assignee.email.toLowerCase() === userId?.toLowerCase()
-    );
-  });
+const filteredTasks = tasks.filter((task) => {
+  // Exclude hidden completed tasks no matter what
+  if (task.status === "Completed" && task.isHidden) return false;
+
+  if (role === "admin") return true; // Admin sees all non-hidden tasks
+
+  // Show tasks assigned to the user
+  return task.assignees?.some(
+    (assignee) => assignee.email.toLowerCase() === userId?.toLowerCase()
+  );
+});
+
 
   // Categorize tasks based on due date (Today, Tomorrow, Overdue, etc.)
   const categorizedTasks = {
@@ -166,6 +159,12 @@ const TaskOverview = () => {
     setJustCompleted(new Set());
   }, [activeTab]);
 
+
+const isHiddenCompletedTask = (task) =>
+  task.status === "Completed" && task.isHidden === true;
+
+
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
       <div className="flex justify-between items-center px-6 py-4 border-b ">
@@ -177,8 +176,8 @@ const TaskOverview = () => {
               const visibleCount = categorizedTasks[tab]?.filter(
                 (task) =>
                   !(
-                    task.status === "Completed" &&
-                    hiddenCompletedTaskIds.has(task._id)
+                  isHiddenCompletedTask(task)
+
                   )
               ).length;
 
@@ -205,8 +204,9 @@ const TaskOverview = () => {
         {getTasksByTab().filter(
           (task) =>
             !(
-              task.status === "Completed" &&
-              hiddenCompletedTaskIds.has(task._id)
+            isHiddenCompletedTask(task)
+
+
             )
         ).length === 0 ? (
           <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
@@ -215,8 +215,9 @@ const TaskOverview = () => {
             .filter(
               (task) =>
                 !(
-                  task.status === "Completed" &&
-                  hiddenCompletedTaskIds.has(task._id)
+                isHiddenCompletedTask(task)
+
+
                 )
             )
             .map((task) => (

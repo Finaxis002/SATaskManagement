@@ -119,13 +119,7 @@ const TaskList = ({
       );
       const data = await response.json();
 
-      const hiddenTaskIds = JSON.parse(
-        localStorage.getItem("hiddenCompletedTasks") || "[]"
-      );
-
-      const visibleTasks = data.filter(
-        (task) => !hiddenTaskIds.includes(task._id)
-      );
+      const visibleTasks = data.filter((task) => !task.isHidden);
 
       let filtered = [];
 
@@ -364,6 +358,9 @@ const TaskList = ({
 
   const filteredTasks = (tasksOverride || tasks)
     .filter((task) => {
+      // exclude hidden tasks
+      if (task.isHidden) return false;
+
       const matchesFilter =
         (filters.department === "" ||
           task.department.includes(filters.department)) &&
@@ -377,6 +374,7 @@ const TaskList = ({
 
       const shouldHide = hideCompleted && task.status === "Completed";
 
+
       // ✅ Due Date comparison
       const dueDate = new Date(task.dueDate);
       const selectedDate = filters.dueBefore
@@ -386,6 +384,7 @@ const TaskList = ({
 
       // return matchesFilter && !shouldHide;
       return matchesFilter && !shouldHide && matchesDueBefore;
+
     })
     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
