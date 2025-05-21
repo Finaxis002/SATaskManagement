@@ -113,7 +113,36 @@ export default function InvoiceForm() {
   }, []);
 
   // Handle client selection
-  
+
+  // const handleClientChange = async (selectedOption) => {
+  //   if (!selectedOption) {
+  //     setCustomer({
+  //       _id: "",
+  //       name: "",
+  //       address: "",
+  //       GSTIN: "",
+  //       mobile: "",
+  //       emailId: "",
+  //     });
+  //     return;
+  //   }
+  //   const clientId = selectedOption.value;
+  //   try {
+  //     const client = clients.find((c) => c._id === clientId);
+  //     if (client) {
+  //       setCustomer({
+  //         _id: client._id,
+  //         name: client.name,
+  //         address: client.address || "",
+  //         GSTIN: client.GSTIN || "",
+  //         mobile: client.mobile || "",
+  //         emailId: client.emailId || "",
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching client details:", error);
+  //   }
+  // };
   const handleClientChange = async (selectedOption) => {
     if (!selectedOption) {
       setCustomer({
@@ -124,23 +153,47 @@ export default function InvoiceForm() {
         mobile: "",
         emailId: "",
       });
+      setItems([]); // Clear items if no client is selected
       return;
     }
+
     const clientId = selectedOption.value;
+    const client = clients.find((c) => c._id === clientId);
+    if (!client) return;
+
+    // Set client details
+    setCustomer({
+      _id: client._id,
+      name: client.name,
+      address: client.address || "",
+      GSTIN: client.GSTIN || "",
+      mobile: client.mobile || "",
+      emailId: client.emailId || "",
+    });
+
     try {
-      const client = clients.find((c) => c._id === clientId);
-      if (client) {
-        setCustomer({
-          _id: client._id,
-          name: client.name,
-          address: client.address || "",
-          GSTIN: client.GSTIN || "",
-          mobile: client.mobile || "",
-          emailId: client.emailId || "",
-        });
-      }
+      // Fetch related tasks by client name
+      const response = await axios.get(
+        `https://sataskmanagementbackend.onrender.com/api/tasks/by-client-name/${encodeURIComponent(
+          client.name
+        )}`
+      );
+
+      const tasks = response.data || [];
+
+      // Convert tasks into invoice items
+      const taskItems = tasks.map((task) => ({
+        id: uuidv4(),
+        description: task.taskName || task.workDesc || "Task",
+        hsn: "9983", // default HSN for professional services
+        qty: 1,
+        rate: 1000, // You can customize rate logic based on task
+        gst: 0,
+      }));
+
+      setItems(taskItems.length ? taskItems : []);
     } catch (error) {
-      console.error("Error fetching client details:", error);
+      console.error("Failed to fetch tasks for client:", error);
     }
   };
 
@@ -153,6 +206,24 @@ export default function InvoiceForm() {
       const updated = [...prevItems];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
+    });
+  };
+
+  // delete item
+  const deleteItem = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to remove this task from the invoice?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+        Swal.fire("Deleted!", "The task has been removed.", "success");
+      }
     });
   };
 
@@ -186,11 +257,12 @@ export default function InvoiceForm() {
   const totalTax = igstAmount + cgstAmount + sgstAmount;
   const totalAmountWithTax = taxableValue + totalTax;
 
-  
   const handleDownloadPDF = () => {
     if (!invoiceRef.current) return;
     const element = invoiceRef.current;
-
+    // Temporarily remove scale before PDF generation
+    element.style.transform = "scale(1)";
+    element.style.transformOrigin = "top left";
     const opt = {
       margin: 0, // Changed from [10, 10, 10, 10] to 0 for full width
       filename: `${invoiceNumber}.pdf`,
@@ -216,7 +288,16 @@ export default function InvoiceForm() {
     // Add this to ensure proper scaling
     element.style.width = `${element.scrollWidth}px`;
 
-    html2pdf().set(opt).from(element).save();
+    // html2pdf().set(opt).from(element).save();
+    html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .then(() => {
+        // Restore scale after PDF is generated
+        element.style.transform = "scale(0.75)";
+        element.style.transformOrigin = "top left";
+      });
 
     // Reset the width after PDF generation if needed
     setTimeout(() => {
@@ -230,21 +311,24 @@ export default function InvoiceForm() {
         invoiceNumber,
         invoiceDate,
         invoiceType,
-        selectedFirm, 
+        selectedFirm,
         placeOfSupply,
-        customer, 
-        items, 
-        totalAmount: totalAmountWithTax, 
+        customer,
+        items,
+        totalAmount: totalAmountWithTax,
       };
-      await axios.post("https://sataskmanagementbackend.onrender.com/api/invoices", invoiceData);
+      await axios.post(
+        "https://sataskmanagementbackend.onrender.com/api/invoices",
+        invoiceData
+      );
       // Display an alert once the invoice is saved successfully
-    Swal.fire({
-      icon: 'success',
-      title: 'Invoice Saved',
-      text: `Invoice ${invoiceNumber} has been successfully saved.`,
-      confirmButtonColor: "#3085d6",
-      confirmButtonText: 'Ok',
-    });
+      Swal.fire({
+        icon: "success",
+        title: "Invoice Saved",
+        text: `Invoice ${invoiceNumber} has been successfully saved.`,
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "Ok",
+      });
     } catch (error) {
       console.error("Failed to save invoice", error);
       alert("Failed to save invoice");
@@ -335,97 +419,97 @@ export default function InvoiceForm() {
         background: "#f9f9f9",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          gap: "20px", // space between buttons
-          marginTop: 20,
-          justifyContent: "center", // center align horizontally (optional)
-        }}
-      >
-        <button
-          onClick={handleDownloadPDF}
-          style={{
-            marginTop: 20,
-            padding: "12px 24px",
-            backgroundColor: "#1a73e8",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            fontSize: "16px",
-            fontWeight: "600",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-            transition: "all 0.3s ease",
-            position: "relative",
-            overflow: "hidden",
-            ":hover": {
-              backgroundColor: "#0d5bba",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-              transform: "translateY(-2px)",
-            },
-            ":active": {
-              transform: "translateY(0)",
-            },
-          }}
-        >
-          <span style={{ fontSize: "20px" }}>📄</span>
-          <span>Generate PDF</span>
-          <span
-            style={{
-              position: "absolute",
-              background: "rgba(255,255,255,0.2)",
-              borderRadius: "50%",
-              transform: "scale(0)",
-              animation: "ripple 0.6s linear",
-              pointerEvents: "none",
-            }}
-          ></span>
-        </button>
-
-        <button
-          onClick={saveInvoice}
-          style={{
-            marginTop: 20,
-            padding: "12px 24px",
-            backgroundColor: "#28a745",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            fontSize: "16px",
-            fontWeight: "600",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-            transition: "all 0.3s ease",
-            position: "relative",
-            overflow: "hidden",
-            ":hover": {
-              backgroundColor: "#0d5bba",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-              transform: "translateY(-2px)",
-            },
-            ":active": {
-              transform: "translateY(0)",
-            },
-          }}
-        >
-          Save Invoice
-        </button>
-      </div>
       {/* Left form side */}
       <div
         className="invoice-left scrollable-panel"
-        style={{ flex: "1 1 400px", maxWidth: 400 }}
+        style={{ flex: "1 1 550px", maxWidth: 550 }}
       >
         {/* ... Your left side inputs and controls ... */}
+        <div
+          style={{
+            display: "flex",
+            gap: "20px", // space between buttons
+            marginTop: 20,
+            justifyContent: "center", // center align horizontally (optional)
+          }}
+        >
+          <button
+            onClick={handleDownloadPDF}
+            style={{
+              marginTop: 20,
+              padding: "12px 24px",
+              backgroundColor: "#1a73e8",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+              transition: "all 0.3s ease",
+              position: "relative",
+              overflow: "hidden",
+              ":hover": {
+                backgroundColor: "#0d5bba",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+                transform: "translateY(-2px)",
+              },
+              ":active": {
+                transform: "translateY(0)",
+              },
+            }}
+          >
+            <span style={{ fontSize: "20px" }}>📄</span>
+            <span>Generate PDF</span>
+            <span
+              style={{
+                position: "absolute",
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: "50%",
+                transform: "scale(0)",
+                animation: "ripple 0.6s linear",
+                pointerEvents: "none",
+              }}
+            ></span>
+          </button>
+
+          <button
+            onClick={saveInvoice}
+            style={{
+              marginTop: 20,
+              padding: "12px 24px",
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+              transition: "all 0.3s ease",
+              position: "relative",
+              overflow: "hidden",
+              ":hover": {
+                backgroundColor: "#0d5bba",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+                transform: "translateY(-2px)",
+              },
+              ":active": {
+                transform: "translateY(0)",
+              },
+            }}
+          >
+            Save Invoice
+          </button>
+        </div>
 
         <h2>Your Details</h2>
         <select
@@ -507,28 +591,7 @@ export default function InvoiceForm() {
             },
           })}
         />
-        {/* <textarea
-          placeholder="Address"
-          value={customer.address}
-          onChange={(e) =>
-            setCustomer({ ...customer, address: e.target.value })
-          }
-        />
-        <input
-          placeholder="GSTIN"
-          value={customer.gstin}
-          onChange={(e) => setCustomer({ ...customer, gstin: e.target.value })}
-        />
-        <input
-          placeholder="Phone"
-          value={customer.phone}
-          onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-        />
-        <input
-          placeholder="Email"
-          value={customer.email}
-          onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-        /> */}
+
         <input
           placeholder="Place of Supply"
           value={placeOfSupply}
@@ -536,15 +599,25 @@ export default function InvoiceForm() {
         />
 
         <h2>Items</h2>
-        {items.map((item, idx) => {
+        {/* {items.map((item, idx) => {
           const amount = (item.qty * item.rate).toFixed(2);
           return (
-            <div key={idx} style={{ marginBottom: 10 }}>
+            <div
+              key={idx}
+              style={{
+                marginBottom: 20,
+                padding: 10,
+                border: "1px solid #ccc",
+                borderRadius: 8,
+                backgroundColor: "#fdfdfd",
+              }}
+            >
               <label>Description</label>
               <input
                 value={item.description}
                 onChange={(e) => updateItem(idx, "description", e.target.value)}
                 placeholder="Description"
+                style={{ width: "100%", marginBottom: 10 }}
               />
               <label>Quantity</label>
               <input
@@ -564,28 +637,127 @@ export default function InvoiceForm() {
                 placeholder="Rate"
                 step="0.01"
               />
-              {/* <label style={{ marginTop: "1px" }}>GST %</label>
-              <input
-                type="number"
-                value={item.gst}
-                onChange={(e) => updateItem(idx, "gst", Number(e.target.value))}
-                placeholder="GST %"
-                step="0.01"
-                min={0}
-              /> */}
+
               <label style={{ marginTop: "1px" }}>Amount</label>
               <input readOnly value={`₹${amount}`} />
+              <button
+                type="button"
+                onClick={() => deleteItem(item.id)}
+                style={{
+                  marginTop: "5px",
+                  backgroundColor: "#dc3545",
+                  color: "#fff",
+                  border: "none",
+                  padding: "6px 12px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                ❌ Remove Task
+              </button>
             </div>
           );
-        })}
+        })} */}
+        {items.map((item, idx) => {
+  const amount = (item.qty * item.rate).toFixed(2);
+  return (
+    <div
+      key={idx}
+      style={{
+        marginBottom: 20,
+        padding: 10,
+        border: "1px solid #ccc",
+        borderRadius: 8,
+        backgroundColor: "#fdfdfd",
+      }}
+    >
+      <label>Description</label>
+      <input
+        value={item.description}
+        onChange={(e) => updateItem(idx, "description", e.target.value)}
+        placeholder="Description"
+        style={{ width: "100%", marginBottom: 10 }}
+      />
+
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          marginBottom: 10,
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <label>Qty</label>
+          <input
+            type="number"
+            value={item.qty}
+            onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
+            placeholder="Qty"
+            min={1}
+            style={{ width: "100%" }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label>Rate</label>
+          <input
+            type="number"
+            value={item.rate}
+            onChange={(e) => updateItem(idx, "rate", Number(e.target.value))}
+            placeholder="Rate"
+            step="0.01"
+            style={{ width: "100%" }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label>Amount</label>
+          <input
+            readOnly
+            value={`₹${amount}`}
+            style={{ width: "100%", backgroundColor: "#f1f1f1" }}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => deleteItem(item.id)}
+          style={{
+            marginTop: 22,
+            backgroundColor: "#dc3545",
+            color: "#fff",
+            border: "none",
+            padding: "8px 10px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
+          title="Delete Task"
+        >
+          🗑️
+        </button>
+      </div>
+    </div>
+  );
+})}
+
         <button onClick={addItem} className="mb-20">
           + Add Item
         </button>
       </div>
       {/* Right side invoice preview */}
       <div
-        className="invoice-right"
+        className="invoice-right screen-preview"
         ref={invoiceRef}
+        // style={{
+        //   flex: "1 1 800px",
+        //   maxWidth: 800,
+        //   backgroundColor: "#fff",
+        //   border: "1px solid #000",
+        //   padding: 20,
+        //   fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        //   fontSize: 12,
+        //   color: "#000",
+        // }}
         style={{
           flex: "1 1 800px",
           maxWidth: 800,
@@ -595,6 +767,8 @@ export default function InvoiceForm() {
           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
           fontSize: 12,
           color: "#000",
+          transform: "scale(0.75)", // ⬅️ visually shrink
+          transformOrigin: "top left", // ⬅️ anchor top-left
         }}
       >
         <div
@@ -1092,7 +1266,6 @@ export default function InvoiceForm() {
                 ₹{totalAmount.toFixed(2)}
               </td>
             </tr>
- 
 
             {/* Add empty rows if needed to fix minimum height */}
             {/* {[...Array(3 - items.length > 0 ? 3 - items.length : 0)].map(
