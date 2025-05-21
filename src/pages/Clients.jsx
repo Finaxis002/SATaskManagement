@@ -9,6 +9,7 @@ const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -21,6 +22,7 @@ const Clients = () => {
 
       const formattedClients = Array.isArray(data)
         ? data.map((client) => ({
+            id: client._id,
             name: client.name,
             contactPerson: client.contactPerson || "-",
             businessName: client.businessName || "-",
@@ -82,6 +84,11 @@ const Clients = () => {
     }
   };
 
+  const handleEditClient = (client) => {
+    setEditingClient(client); // Set client to edit
+    setShowClientModal(true); // Open modal
+  };
+
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold text-indigo-900 mb-5 text-center">
@@ -107,11 +114,15 @@ const Clients = () => {
         </div>
       ) : (
         <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-          <ClientList clients={clients} onDelete={handleDeleteClient} />
+          <ClientList
+            clients={clients}
+            onDelete={handleDeleteClient}
+            onEdit={handleEditClient}
+          />
         </div>
       )}
 
-      {showClientModal && (
+      {/* {showClientModal && (
         <CreateClientModal
           onClose={() => setShowClientModal(false)}
           onCreate={async (clientData) => {
@@ -138,6 +149,56 @@ const Clients = () => {
                 text: "Unable to create client. Please try again.",
               });
               console.error("Client creation failed", err);
+            }
+          }}
+        />
+      )} */}
+      {showClientModal && (
+        <CreateClientModal
+          client={editingClient} // Pass the client being edited or null
+          onClose={() => {
+            setShowClientModal(false);
+            setEditingClient(null); // Clear edit state on close
+          }}
+          onCreate={async (clientData) => {
+            try {
+              if (editingClient) {
+                // Edit mode - update existing client
+                await axios.put("https://sataskmanagementbackend.onrender.com/api/clients", {
+                  id: editingClient.id,
+                  ...clientData,
+                });
+                Swal.fire({
+                  icon: "success",
+                  title: "Client Updated",
+                  text: `"${clientData.name}" was updated successfully!`,
+                  timer: 2000,
+                  showConfirmButton: false,
+                });
+              } else {
+                // Create mode - add new client
+                await axios.post(
+                  "https://sataskmanagementbackend.onrender.com/api/clients",
+                  clientData
+                );
+                Swal.fire({
+                  icon: "success",
+                  title: "Client Created",
+                  text: `"${clientData.name}" was added successfully!`,
+                  timer: 2000,
+                  showConfirmButton: false,
+                });
+              }
+              fetchClients(); // Refresh the list
+              setShowClientModal(false);
+              setEditingClient(null);
+            } catch (err) {
+              Swal.fire({
+                icon: "error",
+                title: editingClient ? "Update Failed" : "Creation Failed",
+                text: "Unable to save client. Please try again.",
+              });
+              console.error("Client save failed", err);
             }
           }}
         />

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 
-const CreateClientModal = ({ onClose, onCreate }) => {
+const CreateClientModal = ({  client, onClose, onCreate }) => {
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
@@ -11,6 +11,33 @@ const CreateClientModal = ({ onClose, onCreate }) => {
     emailId: "",
     GSTIN: "",
   });
+
+   // Initialize form with client data when in edit mode
+  useEffect(() => {
+    if (client) {
+      setFormData({
+        name: client.name || "",
+        contactPerson: client.contactPerson || "",
+        businessName: client.businessName || "",
+        address: client.address || "",
+        mobile: client.mobile || "",
+        emailId: client.emailId || "",
+        GSTIN: client.GSTIN || "",
+      });
+    } else {
+      // Reset form when creating new client
+      setFormData({
+        name: "",
+        contactPerson: "",
+        businessName: "",
+        address: "",
+        mobile: "",
+        emailId: "",
+        GSTIN: "",
+      });
+    }
+  }, [client]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,7 +53,9 @@ const CreateClientModal = ({ onClose, onCreate }) => {
     <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg w-96">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">Create New Client</h3>
+         <h3 className="text-xl font-semibold">
+            {client ? "Update Client" : "Create New Client"}
+          </h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <FaTimes />
           </button>
@@ -61,7 +90,7 @@ const CreateClientModal = ({ onClose, onCreate }) => {
             onClick={handleSubmit}
             className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
           >
-            Create
+            {client ? "Update" : "Create"}
           </button>
         </div>
       </div>
