@@ -8,12 +8,14 @@ import {
   FaBell,
   FaClipboardList,
   FaClock,
-  FaSitemap,
   FaCheckCircle,
   FaCog,
   FaUber,
   FaDotCircle,
   FaBriefcase,
+  FaMoneyBill,
+  FaDochub,
+  FaGolfBall,
 } from "react-icons/fa";
 
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
@@ -117,7 +119,7 @@ const Sidebar = () => {
          <SidebarItem
           icon={
             <div className="relative">
-              <FaUber />
+              <FaGolfBall />
               {leaveAlert && (
                 <span className="absolute -top-2 -right-2 text-red-500 text-lg leave-alert-animation">
                   <FaDotCircle />
@@ -160,7 +162,7 @@ const Sidebar = () => {
 
         {role === "admin" && (
           <SidebarItem
-            icon={<FaCheckCircle />}
+            icon={<FaMoneyBill />}
             label="Invoice"
             to="/invoice"
           />
@@ -168,7 +170,7 @@ const Sidebar = () => {
 
         {role === "admin" && (
           <SidebarItem
-            icon={<FaCheckCircle />}
+            icon={<FaDochub />}
             label="View Invoice"
             to="/viewinvoices"
           />

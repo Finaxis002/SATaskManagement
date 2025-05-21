@@ -1,237 +1,8 @@
-// import React, { useEffect, useState, useRef } from "react";
-// import Select from "react-select";
-// import axios from "axios";
-// import html2pdf from "html2pdf.js";
-
-// export default function ViewInvoices() {
-//   const [clients, setClients] = useState([]);
-//   const [selectedClient, setSelectedClient] = useState(null);
-//   const [invoices, setInvoices] = useState([]);
-
-//   const [invoiceToDownload, setInvoiceToDownload] = useState(null);
-//   const pdfRef = useRef();
-
-//   useEffect(() => {
-//     axios
-//       .get("http://localhost:5000/api/clients/details")
-//       .then((res) => {
-//         console.log("Clients fetched:", res.data); // Log clients fetched
-//         setClients(res.data);
-//       })
-//       .catch(console.error);
-//   }, []);
-
-//   const clientOptions = clients.map((client) => ({
-//     value: client._id,
-//     label: client.name,
-//   }));
-
-//   useEffect(() => {
-//     if (!selectedClient) {
-//       setInvoices([]);
-//       return;
-//     }
-//     axios
-//       .get(
-//         `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
-//       )
-//       .then((res) => {
-//         console.log(
-//           `Invoices fetched for clientId=${selectedClient.value}:`,
-//           res.data
-//         ); // Log invoices fetched
-//         setInvoices(res.data);
-//       })
-//       .catch(console.error);
-//   }, [selectedClient]);
-
-// //   useEffect(() => {
-// //     if (!invoiceToDownload || !pdfRef.current) return;
-
-// //     console.log("Preparing to download invoice PDF for:", invoiceToDownload);
-
-// //     // Increase delay to 500ms or use requestIdleCallback
-// //     setTimeout(() => {
-// //       const opt = {
-// //         margin: 1,
-// //         filename: `${invoiceToDownload.invoiceNumber}.pdf`,
-// //         image: { type: "jpeg", quality: 0.98 },
-// //         html2canvas: { scale: 2 },
-// //         jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-// //       };
-
-// //       html2pdf()
-// //         .set(opt)
-// //         .from(pdfRef.current)
-// //         .save()
-// //         .then(() => {
-// //           setInvoiceToDownload(null);
-// //         });
-// //     }, 500);
-// //   }, [invoiceToDownload]);
-// useEffect(() => {
-//   if (!invoiceToDownload || !pdfRef.current) return;
-
-//   console.log("Preparing to download invoice PDF for:", invoiceToDownload);
-
-//   const element = pdfRef.current;
-
-//   // Temporarily position the element for rendering
-//   element.style.left = "0";
-
-//   const opt = {
-//     margin: 1,
-//     filename: `${invoiceToDownload.invoiceNumber}.pdf`,
-//     image: { type: "jpeg", quality: 0.98 },
-//     html2canvas: {
-//       scale: 2,
-//       logging: true, // Enable logging for debugging
-//       useCORS: true,
-//       windowWidth: 800 // Match your invoice width
-//     },
-//     jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-//   };
-
-//   // Generate PDF
-//   html2pdf()
-//     .set(opt)
-//     .from(element)
-//     .save()
-//     .then(() => {
-//       // Move element back off-screen
-//       element.style.left = "100vw";
-//       setInvoiceToDownload(null);
-//     })
-//     .catch(error => {
-//       console.error("PDF generation error:", error);
-//       element.style.left = "100vw";
-//       setInvoiceToDownload(null);
-//     });
-
-// }, [invoiceToDownload]);
-
-//   const downloadInvoice = (invoice) => {
-//     console.log("Download button clicked for invoice:", invoice);
-//     setInvoiceToDownload(invoice);
-//   };
-
-//   const InvoicePreview = ({ invoice }) => {
-//     if (!invoice) return null;
-
-//     return (
-//       <div
-//         ref={pdfRef}
-//         style={{
-//           width: "800px",
-//           padding: 20,
-//           fontFamily: "'Arial Black', Arial, sans-serif",
-//           fontSize: 12,
-//           color: "#000",
-//           backgroundColor: "#fff",
-//           border: "1px solid #000",
-//         //   position: "absolute",
-//         //   top: "-9999px",
-//         //   left: "-9999px",
-//         //   visibility: "hidden", // <-- changed from opacity: 0
-//         //   pointerEvents: "none",
-//         //   overflow: "visible",
-//         //   zIndex: -1,
-//         }}
-//       >
-//         <h1>Invoice: {invoice.invoiceNumber}</h1>
-//         <p>Date: {new Date(invoice.invoiceDate).toLocaleDateString()}</p>
-
-//         <h2>Client Details</h2>
-//         <p>Name: {invoice.customer.name}</p>
-//         <p>Address: {invoice.customer.address}</p>
-//         <p>GSTIN: {invoice.customer.GSTIN}</p>
-
-//         <h2>Items</h2>
-//         <table border="1" style={{ borderCollapse: "collapse", width: "100%" }}>
-//           <thead>
-//             <tr>
-//               <th>Description</th>
-//               <th>HSN</th>
-//               <th>Qty</th>
-//               <th>Rate</th>
-//               <th>Amount</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {invoice.items.map((item, idx) => (
-//               <tr key={idx}>
-//                 <td>{item.description}</td>
-//                 <td>{item.hsn || ""}</td>
-//                 <td>{item.qty}</td>
-//                 <td>₹{item.rate.toFixed(2)}</td>
-//                 <td>₹{(item.qty * item.rate).toFixed(2)}</td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-
-//         <h3>Total Amount: ₹{invoice.totalAmount.toFixed(2)}</h3>
-//       </div>
-//     );
-//   };
-
-//   return (
-//     <div style={{ padding: 20 }}>
-//       <h2>View Invoices</h2>
-//       <Select
-//         options={clientOptions}
-//         onChange={setSelectedClient}
-//         placeholder="Select client to filter invoices"
-//         isClearable
-//       />
-//       <table
-//         border="1"
-//         style={{ marginTop: 20, width: "100%", borderCollapse: "collapse" }}
-//       >
-//         <thead>
-//           <tr>
-//             <th>Invoice Number</th>
-//             <th>Invoice Date</th>
-//             <th>Client Name</th>
-//             <th>Total Amount</th>
-//             <th>Action</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {invoices.length === 0 && (
-//             <tr>
-//               <td colSpan="5" style={{ textAlign: "center" }}>
-//                 No invoices found
-//               </td>
-//             </tr>
-//           )}
-//           {invoices.map((inv) => (
-//             <tr key={inv.invoiceNumber}>
-//               <td>{inv.invoiceNumber}</td>
-//               <td>{new Date(inv.invoiceDate).toLocaleDateString()}</td>
-//               <td>{inv.customer.name}</td>
-//               <td>₹{inv.totalAmount.toFixed(2)}</td>
-//               <td>
-//                 <button onClick={() => downloadInvoice(inv)}>
-//                   Download PDF
-//                 </button>
-//               </td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-
-//       {/* Render invoice preview hidden for PDF */}
-//       <InvoicePreview invoice={invoiceToDownload} />
-//     </div>
-//   );
-// }
-
-///////////////////////////////////////
 import React, { useEffect, useState, useRef } from "react";
 import Select from "react-select";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
+import Swal from "sweetalert2";
 
 export default function ViewInvoices() {
   const [clients, setClients] = useState([]);
@@ -462,6 +233,34 @@ export default function ViewInvoices() {
       });
   };
 
+  // delete invoice
+  const handleDeleteInvoice = async (invoiceNumber) => {
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: `Do you want to delete invoice ${invoiceNumber}?`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, delete it!",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await axios.delete(
+        `https://sataskmanagementbackend.onrender.com/api/invoices/${invoiceNumber}`
+      );
+      setInvoices((prev) =>
+        prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
+      );
+      Swal.fire("Deleted!", "Invoice has been deleted.", "success");
+    } catch (error) {
+      console.error("Failed to delete invoice", error);
+      Swal.fire("Error", "Failed to delete invoice.", "error");
+    }
+  }
+};
+
   const InvoicePreview = ({ invoice }) => {
     if (!invoice) return null;
 
@@ -621,7 +420,12 @@ export default function ViewInvoices() {
               </td>
               <td
                 colSpan={2}
-                style={{ border: "1px solid black", padding: 6, width: "35%",fontWeight: "Bold", }}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  width: "35%",
+                  fontWeight: "Bold",
+                }}
               >
                 {invoice.customer.name}
               </td>
@@ -635,7 +439,14 @@ export default function ViewInvoices() {
               >
                 Name
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {invoice.selectedFirm?.name || "Company Name"}
               </td>
             </tr>
@@ -650,7 +461,14 @@ export default function ViewInvoices() {
               >
                 Address
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {invoice.customer.address}
               </td>
               <td
@@ -662,7 +480,14 @@ export default function ViewInvoices() {
               >
                 Address
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {invoice.selectedFirm?.address || "Company Address"}
               </td>
             </tr>
@@ -677,7 +502,14 @@ export default function ViewInvoices() {
               >
                 GSTIN
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {invoice.customer.GSTIN}
               </td>
               <td
@@ -689,7 +521,14 @@ export default function ViewInvoices() {
               >
                 Contact No.
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {invoice.selectedFirm?.phone || "Phone Number"}
               </td>
             </tr>
@@ -704,7 +543,14 @@ export default function ViewInvoices() {
               >
                 Place of Supply
               </td>
-              <td colSpan={2} style={{ border: "1px solid black", padding: 6 ,fontWeight: "Bold",}}>
+              <td
+                colSpan={2}
+                style={{
+                  border: "1px solid black",
+                  padding: 6,
+                  fontWeight: "Bold",
+                }}
+              >
                 {invoice.placeOfSupply || "State"}
               </td>
               <td
@@ -752,8 +598,7 @@ export default function ViewInvoices() {
                       >
                         Invoice Date
                       </td>
-                      <td style={{ fontWeight: "Bold",
-                          padding: 6,}}>
+                      <td style={{ fontWeight: "Bold", padding: 6 }}>
                         {new Date(invoice.invoiceDate).toLocaleDateString()}
                       </td>
                     </tr>
@@ -958,7 +803,7 @@ export default function ViewInvoices() {
                         style={{
                           borderBottom: "1px solid black",
                           padding: 6,
-                          fontWeight: "light",
+
                           fontSize: 10,
                           fontWeight: "Bold",
                         }}
@@ -1229,44 +1074,54 @@ export default function ViewInvoices() {
       />
       <table
         border="1"
-        style={{ marginTop: 20, width: "100%", borderCollapse: "collapse" }}
+        className="min-w-full border border-gray-200 rounded-lg overflow-hidden shadow-sm mt-6"
       >
-        <thead>
+        <thead className="bg-gray-100 text-gray-700 font-semibold">
           <tr>
-            <th style={{ textAlign: "left", padding: "8px" }}>
+            <th className="py-3 px-4 text-left border-b border-gray-300">
               Invoice Number
             </th>
-            <th style={{ textAlign: "left", padding: "8px" }}>Invoice Date</th>
-            <th style={{ textAlign: "left", padding: "8px" }}>Client Name</th>
-            <th style={{ textAlign: "left", padding: "8px" }}>Total Amount</th>
-            <th style={{ textAlign: "left", padding: "8px" }}>Action</th>
+            <th className="py-3 px-4 text-left border-b border-gray-300">Invoice Date</th>
+            <th className="py-3 px-4 text-left border-b border-gray-300">Client Name</th>
+            <th className="py-3 px-4 text-left border-b border-gray-300">Total Amount</th>
+            <th className="py-3 px-4 text-left border-b border-gray-300">Action</th>
           </tr>
         </thead>
         <tbody>
           {invoices.length === 0 && (
             <tr>
-              <td colSpan="5" style={{ textAlign: "center", padding: "8px" }}>
+              <td colSpan="5" className="py-6 text-center text-gray-500">
                 No invoices found
               </td>
             </tr>
           )}
           {invoices.map((inv) => (
-            <tr key={inv.invoiceNumber}>
-              <td style={{ textAlign: "left", padding: "8px" }}>
+            <tr key={inv.invoiceNumber}
+            className="bg-white hover:bg-gray-50 transition-colors duration-200"
+            >
+              <td className="py-3 px-4 border-b border-gray-200">
                 {inv.invoiceNumber}
               </td>
-              <td style={{ textAlign: "left", padding: "8px" }}>
+              <td className="py-3 px-4 border-b border-gray-200">
                 {new Date(inv.invoiceDate).toLocaleDateString()}
               </td>
-              <td style={{ textAlign: "left", padding: "8px" }}>
+              <td className="py-3 px-4 border-b border-gray-200">
                 {inv.customer.name}
               </td>
-              <td style={{ textAlign: "left", padding: "8px" }}>
+              <td className="py-3 px-4 border-b border-gray-200">
                 ₹{inv.totalAmount.toFixed(2)}
               </td>
               <td>
-                <button onClick={() => downloadInvoice(inv)}>
+                <button onClick={() => downloadInvoice(inv)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
+                  >
                   Download PDF
+                </button>
+                <button
+                  onClick={() => handleDeleteInvoice(inv.invoiceNumber)}
+                   className="bg-red-400 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium transition ml-10"
+                >
+                  🗑️
                 </button>
               </td>
             </tr>
@@ -1290,7 +1145,6 @@ export default function ViewInvoices() {
             zIndex: 1000,
           }}
         >
-
           <div
             id="invoice-modal-content"
             style={{

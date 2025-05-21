@@ -137,13 +137,13 @@
   border-radius: 8px;
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.1);
   padding: 1.5rem 2rem;
-  width: 48%;
+  width: 55%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-.invoice-right {
+/* .invoice-right {
   width: 600px;
   background: white;
   border-radius: 10px;
@@ -151,7 +151,7 @@
   padding: 20px;
   overflow-y: auto;
   max-height: 100%;
-}
+} */
 
 /* scrollbar styling (optional) */
 .invoice-left::-webkit-scrollbar, .invoice-right::-webkit-scrollbar {
@@ -167,7 +167,7 @@
 /* General label styling */
 .invoice-left label {
   display: block;
-  margin-top: 1rem;
+ 
   margin-bottom: 6px;
   font-weight: 600;
   color: #333;
@@ -306,7 +306,8 @@
 
 /* Right invoice preview */
 .invoice-right {
-  width: 52%;
+  width: 65%;
+  height: 100%;
   background: white;
   border-radius: 8px;
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
@@ -314,6 +315,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  height: 1000px;
 }
 
 .invoice-box {

@@ -9,7 +9,9 @@ const TaskCodeFilterSelector = ({ selectedCode, setSelectedCode }) => {
     const fetchTaskCodes = async () => {
       setLoading(true);
       try {
-        const res = await fetch("https://sataskmanagementbackend.onrender.com/api/task-codes");
+        const res = await fetch(
+          "https://sataskmanagementbackend.onrender.com/api/task-codes"
+        );
         const data = await res.json();
         const options = data.map((code) => ({
           label: code.name,
@@ -40,8 +42,9 @@ const TaskCodeFilterSelector = ({ selectedCode, setSelectedCode }) => {
       styles={{
         control: (base) => ({
           ...base,
+          height: 30,
           minHeight: "30px",
-          fontSize: "0.75rem",  
+          fontSize: "0.75rem",
           borderColor: "#d1d5db",
           borderRadius: "0.375rem",
           boxShadow: "none",
@@ -54,6 +57,10 @@ const TaskCodeFilterSelector = ({ selectedCode, setSelectedCode }) => {
           zIndex: 9999, // Make sure it goes above sticky headers
         }),
         menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+        valueContainer: (base) => ({
+          ...base,
+          height: 30,
+        }),
       }}
     />
   );
