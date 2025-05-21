@@ -60,8 +60,14 @@ export default function InvoiceForm() {
   const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
   const [invoiceNumber, setInvoiceNumber] = useState(generateInvoiceNumber());
-  const [invoiceDate, setInvoiceDate] = useState("2025-05-15");
-  const [placeOfSupply, setPlaceOfSupply] = useState("Gujarat"); // Add this line with your other states
+  const [invoiceDate, setInvoiceDate] = useState(() => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+});
+  const [placeOfSupply, setPlaceOfSupply] = useState("Gujarat"); 
   const [customer, setCustomer] = useState({
     __id: "",
     name: "",
@@ -84,7 +90,7 @@ export default function InvoiceForm() {
     {
       id: uuidv4(),
       description: "Project Report",
-      hsn: "9983",
+      hsn: "9971",
       qty: 1,
       rate: 1000,
       gst: 0,
@@ -185,7 +191,7 @@ export default function InvoiceForm() {
       const taskItems = tasks.map((task) => ({
         id: uuidv4(),
         description: task.taskName || task.workDesc || "Task",
-        hsn: "9983", // default HSN for professional services
+        hsn: "9971", // default HSN for professional services
         qty: 1,
         rate: 1000, // You can customize rate logic based on task
         gst: 0,
@@ -233,7 +239,7 @@ export default function InvoiceForm() {
   const addItem = () => {
     setItems([
       ...items,
-      { id: uuidv4(), description: "", hsn: "", qty: 1, rate: 0, gst: 0 },
+      { id: uuidv4(), description: "", hsn: "9971", qty: 1, rate: 0, gst: 0 },
     ]);
   };
   const isLocalSupply = () => {
@@ -1210,7 +1216,7 @@ export default function InvoiceForm() {
                       textAlign: "center",
                     }}
                   >
-                    {item.hsn || "9971"}
+                    9971
                   </td>
                   <td
                     style={{
@@ -1327,7 +1333,7 @@ export default function InvoiceForm() {
                           fontWeight: "Bold",
                         }}
                       >
-                        {numberToWordsIndian(taxableValue)}
+                        {numberToWordsIndian(totalAmountWithTax)}
                       </td>
                     </tr>
                     <tr>

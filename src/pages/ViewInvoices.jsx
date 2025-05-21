@@ -5,11 +5,13 @@ import html2pdf from "html2pdf.js";
 import Swal from "sweetalert2";
 
 export default function ViewInvoices() {
+  console.log("ViewInvoices component rendered");
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceToView, setInvoiceToView] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     axios
@@ -26,23 +28,129 @@ export default function ViewInvoices() {
     label: client.name,
   }));
 
+  // useEffect(() => {
+  //   if (!selectedClient) {
+  //     setInvoices([]);
+  //     return;
+  //   }
+  //   axios
+  //     .get(
+  //       `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
+  //     )
+  //     .then((res) => {
+  //       console.log(
+  //         `Invoices fetched for clientId=${selectedClient.value}:`,
+  //         res.data
+  //       );
+  //       setInvoices(res.data);
+  //     })
+  //     .catch(console.error);
+  // }, [selectedClient]);
+
+  // Fetch all invoices on mount
+
+  // Initial load - fetch both clients and all invoices
+  // In your initial fetch useEffect
   useEffect(() => {
+    const fetchInitialData = async () => {
+      setIsLoading(true);
+      try {
+        console.log("Fetching initial data...");
+
+        // Fetch clients
+        const clientsRes = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/clients/details"
+        );
+        console.log("Clients fetched:", clientsRes.data);
+        setClients(clientsRes.data);
+
+        // Fetch all invoices
+        const invoicesRes = await axios.get(
+          "https://sataskmanagementbackend.onrender.com/api/invoices"
+        );
+        console.log("All invoices fetched:", invoicesRes.data);
+
+        const sortedInvoices = [...(invoicesRes.data || [])].sort(
+          (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
+        );
+        console.log("Sorted invoices:", sortedInvoices);
+        setInvoices(sortedInvoices);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Fetch filtered invoices when client is selected
+  // useEffect(() => {
+  //    console.log("useEffect called. selectedClient:", selectedClient);
+  //   if (!selectedClient) return; // do nothing if no client
+
+  //   const fetchInvoicesByClient = async () => {
+  //     try {
+  //       console.log("Fetching invoices for client:", selectedClient);
+  //       const res = await axios.get(
+  //         `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
+  //       );
+  //       const filteredInvoices = res.data || [];
+  //       const sortedInvoices = [...filteredInvoices].sort(
+  //         (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
+  //       );
+  //       setInvoices(sortedInvoices);
+  //     } catch (error) {
+  //       console.error("Error fetching invoices for client:", error);
+  //       setInvoices([]);
+  //     }
+  //   };
+  //   fetchInvoicesByClient();
+  // }, [selectedClient]);
+
+  useEffect(() => {
+    console.log("Selected client changed:", selectedClient);
+
     if (!selectedClient) {
-      setInvoices([]);
+      // When no client is selected, fetch all invoices again
+      const fetchAllInvoices = async () => {
+        try {
+          console.log("Fetching all invoices...");
+          const res = await axios.get(
+            "https://sataskmanagementbackend.onrender.com/api/invoices"
+          );
+          const sortedInvoices = [...(res.data || [])].sort(
+            (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
+          );
+          setInvoices(sortedInvoices);
+        } catch (error) {
+          console.error("Error fetching all invoices:", error);
+          setInvoices([]);
+        }
+      };
+      fetchAllInvoices();
       return;
     }
-    axios
-      .get(
-        `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
-      )
-      .then((res) => {
-        console.log(
-          `Invoices fetched for clientId=${selectedClient.value}:`,
-          res.data
+
+    // Rest of your client filtering logic...
+    const fetchInvoicesByClient = async () => {
+      try {
+        console.log("Fetching invoices for client:", selectedClient);
+        const res = await axios.get(
+          `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
         );
-        setInvoices(res.data);
-      })
-      .catch(console.error);
+        const filteredInvoices = res.data || [];
+        const sortedInvoices = [...filteredInvoices].sort(
+          (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
+        );
+        setInvoices(sortedInvoices);
+      } catch (error) {
+        console.error("Error fetching invoices for client:", error);
+        setInvoices([]);
+      }
+    };
+    fetchInvoicesByClient();
   }, [selectedClient]);
 
   const downloadInvoice = (invoice) => {
@@ -235,31 +343,31 @@ export default function ViewInvoices() {
 
   // delete invoice
   const handleDeleteInvoice = async (invoiceNumber) => {
-  const result = await Swal.fire({
-    title: "Are you sure?",
-    text: `Do you want to delete invoice ${invoiceNumber}?`,
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#3085d6",
-    confirmButtonText: "Yes, delete it!",
-  });
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `Do you want to delete invoice ${invoiceNumber}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
 
-  if (result.isConfirmed) {
-    try {
-      await axios.delete(
-        `https://sataskmanagementbackend.onrender.com/api/invoices/${invoiceNumber}`
-      );
-      setInvoices((prev) =>
-        prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
-      );
-      Swal.fire("Deleted!", "Invoice has been deleted.", "success");
-    } catch (error) {
-      console.error("Failed to delete invoice", error);
-      Swal.fire("Error", "Failed to delete invoice.", "error");
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(
+          `https://sataskmanagementbackend.onrender.com/api/invoices/${invoiceNumber}`
+        );
+        setInvoices((prev) =>
+          prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
+        );
+        Swal.fire("Deleted!", "Invoice has been deleted.", "success");
+      } catch (error) {
+        console.error("Failed to delete invoice", error);
+        Swal.fire("Error", "Failed to delete invoice.", "error");
+      }
     }
-  }
-};
+  };
 
   const InvoicePreview = ({ invoice }) => {
     if (!invoice) return null;
@@ -1072,63 +1180,84 @@ export default function ViewInvoices() {
         placeholder="Select client to filter invoices"
         isClearable
       />
-      <table
-        border="1"
-        className="min-w-full border border-gray-200 rounded-lg overflow-hidden shadow-sm mt-6"
+      <div
+        style={{
+          maxHeight: "500px", // Adjust height as needed
+          overflowY: "auto",
+          marginTop:"10px"
+        }}
       >
-        <thead className="bg-gray-100 text-gray-700 font-semibold">
-          <tr>
-            <th className="py-3 px-4 text-left border-b border-gray-300">
-              Invoice Number
-            </th>
-            <th className="py-3 px-4 text-left border-b border-gray-300">Invoice Date</th>
-            <th className="py-3 px-4 text-left border-b border-gray-300">Client Name</th>
-            <th className="py-3 px-4 text-left border-b border-gray-300">Total Amount</th>
-            <th className="py-3 px-4 text-left border-b border-gray-300">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoices.length === 0 && (
-            <tr>
-              <td colSpan="5" className="py-6 text-center text-gray-500">
-                No invoices found
-              </td>
-            </tr>
-          )}
-          {invoices.map((inv) => (
-            <tr key={inv.invoiceNumber}
-            className="bg-white hover:bg-gray-50 transition-colors duration-200"
-            >
-              <td className="py-3 px-4 border-b border-gray-200">
-                {inv.invoiceNumber}
-              </td>
-              <td className="py-3 px-4 border-b border-gray-200">
-                {new Date(inv.invoiceDate).toLocaleDateString()}
-              </td>
-              <td className="py-3 px-4 border-b border-gray-200">
-                {inv.customer.name}
-              </td>
-              <td className="py-3 px-4 border-b border-gray-200">
-                ₹{inv.totalAmount.toFixed(2)}
-              </td>
-              <td>
-                <button onClick={() => downloadInvoice(inv)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
-                  >
-                  Download PDF
-                </button>
-                <button
-                  onClick={() => handleDeleteInvoice(inv.invoiceNumber)}
-                   className="bg-red-400 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium transition ml-10"
+        {isLoading ? (
+          <div>Loading invoices...</div>
+        ) : (
+          <table
+            border="1"
+            className="min-w-full border border-gray-200 rounded-lg overflow-hidden shadow-sm mt-6"
+          >
+            <thead className="bg-gray-100 text-gray-700 font-semibold">
+              <tr>
+                <th className="py-3 px-4 text-left border-b border-gray-300">
+                  Invoice Number
+                </th>
+                <th className="py-3 px-4 text-left border-b border-gray-300">
+                  Invoice Date
+                </th>
+                <th className="py-3 px-4 text-left border-b border-gray-300">
+                  Client Name
+                </th>
+                <th className="py-3 px-4 text-left border-b border-gray-300">
+                  Total Amount
+                </th>
+                <th className="py-3 px-4 text-left border-b border-gray-300">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="py-6 text-center text-gray-500">
+                    No invoices found
+                  </td>
+                </tr>
+              )}
+              {invoices.map((inv) => (
+                <tr
+                  key={inv.invoiceNumber}
+                  className="bg-white hover:bg-gray-50 transition-colors duration-200"
                 >
-                  🗑️
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
+                  <td className="py-3 px-4 border-b border-gray-200">
+                    {inv.invoiceNumber}
+                  </td>
+                  <td className="py-3 px-4 border-b border-gray-200">
+                    {new Date(inv.invoiceDate).toLocaleDateString()}
+                  </td>
+                  <td className="py-3 px-4 border-b border-gray-200">
+                    {inv.customer.name}
+                  </td>
+                  <td className="py-3 px-4 border-b border-gray-200">
+                    ₹{inv.totalAmount.toFixed(2)}
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => downloadInvoice(inv)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
+                    >
+                      Download PDF
+                    </button>
+                    <button
+                      onClick={() => handleDeleteInvoice(inv.invoiceNumber)}
+                      className="bg-red-400 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium transition ml-10"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
       {/* Modal for PDF preview and generation */}
       {showInvoiceModal && (
         <div
