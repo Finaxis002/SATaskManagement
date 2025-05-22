@@ -1317,7 +1317,7 @@ export default function InvoiceForm() {
                         style={{
                           borderBottom: "1px solid black",
                           padding: 6,
-                          fontWeight: "bold",
+                          fontWeight: "light",
                           fontSize: 10,
                         }}
                       >
@@ -1375,117 +1375,7 @@ export default function InvoiceForm() {
                   }}
                 >
                   <tbody>
-                    {/* <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontWeight: "bold",
-                          fontSize: 10,
-                          width: "70%",
-                        }}
-                      >
-                        Taxable Value
-                      </td>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                          width: "30%",
-                        }}
-                      >
-                        ₹{totalAmount.toFixed(2)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontWeight: "bold",
-                          fontSize: 10,
-                        }}
-                      >
-                        Add: IGST (18%)
-                      </td>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        ₹{(totalAmount * 0.18).toFixed(2)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontWeight: "bold",
-                          fontSize: 10,
-                        }}
-                      >
-                        Add: CGST (9%)
-                      </td>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        ₹{(totalAmount * 0.09).toFixed(2)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontWeight: "bold",
-                          fontSize: 10,
-                        }}
-                      >
-                        Add: SGST (9%)
-                      </td>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        ₹{(totalAmount * 0.09).toFixed(2)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: 6,
-                          fontWeight: "bold",
-                          fontSize: 10,
-                        }}
-                      >
-                        Total Amount
-                      </td>
-                      <td
-                        style={{
-                          padding: 6,
-                          fontSize: 10,
-                          fontWeight: "bold",
-                          textAlign: "right",
-                        }}
-                      >
-                        ₹{(totalAmount * 1.18).toFixed(2)}
-                      </td>
-                    </tr> */}
+       
                     {/* Taxable Value */}
                     <tr>
                       <td

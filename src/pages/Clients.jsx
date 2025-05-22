@@ -164,10 +164,13 @@ const Clients = () => {
             try {
               if (editingClient) {
                 // Edit mode - update existing client
-                await axios.put("https://sataskmanagementbackend.onrender.com/api/clients", {
-                  id: editingClient.id,
-                  ...clientData,
-                });
+                await axios.put(
+                  "https://sataskmanagementbackend.onrender.com/api/clients",
+                  {
+                    id: editingClient.id,
+                    ...clientData,
+                  }
+                );
                 Swal.fire({
                   icon: "success",
                   title: "Client Updated",
@@ -193,11 +196,22 @@ const Clients = () => {
               setShowClientModal(false);
               setEditingClient(null);
             } catch (err) {
-              Swal.fire({
-                icon: "error",
-                title: editingClient ? "Update Failed" : "Creation Failed",
-                text: "Unable to save client. Please try again.",
-              });
+              // Check if error is due to duplicate client name
+              if (err.response && err.response.status === 409) {
+                Swal.fire({
+                  icon: "warning",
+                  title: "Duplicate Client",
+                  text:
+                    err.response.data.message ||
+                    "Client with this name already exists.",
+                });
+              } else {
+                Swal.fire({
+                  icon: "error",
+                  title: editingClient ? "Update Failed" : "Creation Failed",
+                  text: "Unable to save client. Please try again.",
+                });
+              }
               console.error("Client save failed", err);
             }
           }}
