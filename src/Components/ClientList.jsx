@@ -40,6 +40,7 @@ const ClientList = ({ clients, onDelete, onEdit }) => {
             >
               <FaTrashAlt size={16} />
             </button>
+            
           </div>
         </div>
       ))}
