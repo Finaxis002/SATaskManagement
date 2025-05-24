@@ -6,7 +6,7 @@ import Select from "react-select";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
 import finaxisLogo from "../assets/Finaxis_logo.png";
-import shardaLogo from '../assets/Sharda_logo.png'
+import shardaLogo from "../assets/Sharda_logo.png";
 
 const firms = [
   {
@@ -101,7 +101,7 @@ export default function InvoiceForm() {
   const [toDate, setToDate] = useState("");
 
   const invoiceRef = useRef();
-const isSharda = selectedFirm.name === "Sharda Associates";
+  const isSharda = selectedFirm.name === "Sharda Associates";
 
   // Fetch clients on component mount
   useEffect(() => {
@@ -894,7 +894,6 @@ const isSharda = selectedFirm.name === "Sharda Associates";
             alignItems: "flex-start",
           }}
         >
-          
           <div
             style={{
               width: "100%",
@@ -927,32 +926,44 @@ const isSharda = selectedFirm.name === "Sharda Associates";
                   {selectedFirm.name === "Sharda Associates" ? (
                     // Sharda Associates Header
                     <>
-                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <img
-                        src={shardaLogo} // Replace with your actual logo path
-                        alt="Sharda Associates Logo"
-                        style={{ height: 80, marginBottom: 8 }}
-                      />
-                        <div style={{ display: "flex", flexDirection: "column" }}>
                       <div
                         style={{
-                          fontSize: 24,
-                          color: "#1A2B59",
-                          fontWeight: "bold",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
                         }}
                       >
-                        Sharda Associates
+                        <img
+                          src={shardaLogo} // Replace with your actual logo path
+                          alt="Sharda Associates Logo"
+                          style={{ height: 80, marginBottom: 8 }}
+                        />
+                        <div
+                          style={{ display: "flex", flexDirection: "column" }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 24,
+                              color: "#1A2B59",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Sharda Associates
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#555",
+                              marginBottom: 4,
+                            }}
+                          >
+                            Finance | Subsidies | Arbitration | Taxation
+                          </div>
+                          <div style={{ fontSize: 12, color: "#555" }}>
+                            Business Restructuring & All Commercial Solutions
+                          </div>
+                        </div>
                       </div>
-                      <div
-                        style={{ fontSize: 12, color: "#555", marginBottom: 4 }}
-                      >
-                        Finance | Subsidies | Arbitration | Taxation
-                      </div>
-                      <div style={{ fontSize: 12, color: "#555" }}>
-                        Business Restructuring & All Commercial Solutions
-                      </div>
-</div>
-</div>
                     </>
                   ) : selectedFirm.name === "Finaxis Business Consultancy" ? (
                     // Finaxis Header
@@ -1021,7 +1032,7 @@ const isSharda = selectedFirm.name === "Sharda Associates";
           }}
         >
           <thead>
-            <tr style={{ backgroundColor: "#eee" }}>
+            {/* <tr style={{ backgroundColor: "#eee" }}>
               <th
                 colSpan={3}
                 style={{
@@ -1032,7 +1043,7 @@ const isSharda = selectedFirm.name === "Sharda Associates";
                   textAlign: "center",
                 }}
               >
-                {/* GSTIN: {selectedFirm.gstin} */}
+                
                   {!isSharda && <>GSTIN: {selectedFirm.gstin}</>}
               </th>
               {!isSharda && (
@@ -1055,6 +1066,50 @@ const isSharda = selectedFirm.name === "Sharda Associates";
         style={{ display: "none" }}
       />
     )}
+            </tr> */}
+            <tr style={{ backgroundColor: "#eee" }}>
+              {!isSharda ? (
+                <>
+                  <th
+                    colSpan={3}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                      fontSize: 14,
+                      textAlign: "center",
+                    }}
+                  >
+                    GSTIN: {selectedFirm.gstin}
+                  </th>
+                  <th
+                    colSpan={3}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                      fontSize: 14,
+                      textAlign: "center",
+                    }}
+                  >
+                    {invoiceType}
+                  </th>
+                </>
+              ) : (
+                // For Sharda Associates: No GSTIN cell, invoiceType spans full width (6 columns)
+                <th
+                  colSpan={6}
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    fontWeight: "bold",
+                    fontSize: 14,
+                    textAlign: "center",
+                  }}
+                >
+                  {invoiceType}
+                </th>
+              )}
             </tr>
             <tr>
               <th
@@ -1165,7 +1220,8 @@ const isSharda = selectedFirm.name === "Sharda Associates";
                 {selectedFirm.address}
               </td>
             </tr>
-            <tr>
+
+            {/* <tr>
               <td
                 style={{
                   border: "1px solid black",
@@ -1175,6 +1231,8 @@ const isSharda = selectedFirm.name === "Sharda Associates";
               >
                 GSTIN
               </td>
+              
+
               <td
                 colSpan={2}
                 style={{
@@ -1205,7 +1263,89 @@ const isSharda = selectedFirm.name === "Sharda Associates";
               >
                 {selectedFirm.phone}
               </td>
-            </tr>
+            </tr> */}
+            {/* GSTIN conditional rendering */}
+            {!isSharda && (
+  <tr>
+    <td
+      style={{
+        border: "1px solid black",
+        padding: 6,
+        fontWeight: "bold",
+      }}
+    >
+      GSTIN
+    </td>
+    <td
+      colSpan={2}
+      style={{
+        border: "1px solid black",
+        padding: 6,
+        fontWeight: "Bold",
+      }}
+    >
+      {customer.GSTIN}
+    </td>
+
+    <td
+      style={{
+        border: "1px solid black",
+        padding: 6,
+        fontWeight: "bold",
+      }}
+    >
+      Contact No.
+    </td>
+    <td
+      colSpan={2}
+      style={{
+        border: "1px solid black",
+        padding: 6,
+        fontWeight: "Bold",
+      }}
+    >
+      {selectedFirm.phone}
+    </td>
+  </tr>
+)}
+
+{isSharda && (
+  <tr>
+    {/* Empty cells for client side (3 columns) */}
+    <td
+      colSpan={3}
+      style={{
+        border: "1px solid black",
+        padding: 6,
+      }}
+    >
+      {/* Intentionally blank */}
+    </td>
+
+    {/* Contact No. label and number on company side */}
+    <td
+      style={{
+        border: "1px solid black",
+        padding: 6,
+        fontWeight: "bold",
+      }}
+    >
+      Contact No.
+    </td>
+    <td
+      colSpan={2}
+      style={{
+        border: "1px solid black",
+        padding: 6,
+        fontWeight: "Bold",
+      }}
+    >
+      {selectedFirm.phone}
+    </td>
+  </tr>
+)}
+
+
             <tr>
               <td
                 style={{
@@ -1463,7 +1603,7 @@ const isSharda = selectedFirm.name === "Sharda Associates";
 
             {/* Footer section */}
             <tr>
-              <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
+              <td colSpan={isSharda ? 6 : 3} style={{ border: "1px solid black", padding: 0 }}>
                 <table
                   style={{
                     width: "100%",
@@ -1526,6 +1666,7 @@ const isSharda = selectedFirm.name === "Sharda Associates";
                   </tbody>
                 </table>
               </td>
+              {!isSharda && (
               <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
                 <table
                   style={{
@@ -1658,6 +1799,7 @@ const isSharda = selectedFirm.name === "Sharda Associates";
                   </tbody>
                 </table>
               </td>
+              )}
             </tr>
           </tbody>
         </table>
