@@ -5,6 +5,8 @@ import axios from "axios";
 import Select from "react-select";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
+import finaxisLogo from "../assets/Finaxis_logo.png";
+import shardaLogo from '../assets/Sharda_logo.png'
 
 const firms = [
   {
@@ -61,13 +63,13 @@ export default function InvoiceForm() {
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
   const [invoiceNumber, setInvoiceNumber] = useState(generateInvoiceNumber());
   const [invoiceDate, setInvoiceDate] = useState(() => {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-});
-  const [placeOfSupply, setPlaceOfSupply] = useState("Gujarat"); 
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  });
+  const [placeOfSupply, setPlaceOfSupply] = useState("Gujarat");
   const [customer, setCustomer] = useState({
     __id: "",
     name: "",
@@ -83,9 +85,7 @@ export default function InvoiceForm() {
       client.businessName ? ` (${client.businessName})` : ""
     }`,
   }));
-  // const [items, setItems] = useState([
-  //   { description: "Project Report", hsn: "9983", qty: 1, rate: 1000, gst: 0 },
-  // ]);
+
   const [items, setItems] = useState([
     {
       id: uuidv4(),
@@ -97,7 +97,11 @@ export default function InvoiceForm() {
     },
   ]);
 
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
   const invoiceRef = useRef();
+const isSharda = selectedFirm.name === "Sharda Associates";
 
   // Fetch clients on component mount
   useEffect(() => {
@@ -118,6 +122,64 @@ export default function InvoiceForm() {
     fetchClients();
   }, []);
 
+  const [selectedClientOption, setSelectedClientOption] = useState(null);
+
+  useEffect(() => {
+    if (!selectedClientOption) {
+      setCustomer({
+        _id: "",
+        name: "",
+        address: "",
+        GSTIN: "",
+        mobile: "",
+        emailId: "",
+      });
+      setItems([]);
+      return;
+    }
+
+    const fetchTasks = async () => {
+      const client = clients.find((c) => c._id === selectedClientOption.value);
+      if (!client) return;
+
+      setCustomer({
+        _id: client._id,
+        name: client.name,
+        address: client.address || "",
+        GSTIN: client.GSTIN || "",
+        mobile: client.mobile || "",
+        emailId: client.emailId || "",
+      });
+
+      try {
+        let url = `https://sataskmanagementbackend.onrender.com/api/tasks/by-client-name/${encodeURIComponent(
+          client.name
+        )}`;
+        const params = new URLSearchParams();
+        if (fromDate) params.append("fromDate", fromDate);
+        if (toDate) params.append("toDate", toDate);
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
+        const response = await axios.get(url);
+        const tasks = response.data || [];
+        const taskItems = tasks.map((task) => ({
+          id: uuidv4(),
+          description: task.taskName || task.workDesc || "Task",
+          hsn: "9971",
+          qty: 1,
+          rate: 1000,
+          gst: 0,
+        }));
+        setItems(taskItems.length ? taskItems : []);
+      } catch (error) {
+        console.error("Failed to fetch tasks:", error);
+      }
+    };
+
+    fetchTasks();
+  }, [selectedClientOption, fromDate, toDate]);
+
   // Handle client selection
 
   // const handleClientChange = async (selectedOption) => {
@@ -130,25 +192,50 @@ export default function InvoiceForm() {
   //       mobile: "",
   //       emailId: "",
   //     });
+  //     setItems([]); // Clear items if no client is selected
   //     return;
   //   }
+
   //   const clientId = selectedOption.value;
+  //   const client = clients.find((c) => c._id === clientId);
+  //   if (!client) return;
+
+  //   // Set client details
+  //   setCustomer({
+  //     _id: client._id,
+  //     name: client.name,
+  //     address: client.address || "",
+  //     GSTIN: client.GSTIN || "",
+  //     mobile: client.mobile || "",
+  //     emailId: client.emailId || "",
+  //   });
+
   //   try {
-  //     const client = clients.find((c) => c._id === clientId);
-  //     if (client) {
-  //       setCustomer({
-  //         _id: client._id,
-  //         name: client.name,
-  //         address: client.address || "",
-  //         GSTIN: client.GSTIN || "",
-  //         mobile: client.mobile || "",
-  //         emailId: client.emailId || "",
-  //       });
-  //     }
+  //     // Fetch related tasks by client name
+  //     const response = await axios.get(
+  //       `https://sataskmanagementbackend.onrender.com/api/tasks/by-client-name/${encodeURIComponent(
+  //         client.name
+  //       )}`
+  //     );
+
+  //     const tasks = response.data || [];
+
+  //     // Convert tasks into invoice items
+  //     const taskItems = tasks.map((task) => ({
+  //       id: uuidv4(),
+  //       description: task.taskName || task.workDesc || "Task",
+  //       hsn: "9971", // default HSN for professional services
+  //       qty: 1,
+  //       rate: 1000, // You can customize rate logic based on task
+  //       gst: 0,
+  //     }));
+
+  //     setItems(taskItems.length ? taskItems : []);
   //   } catch (error) {
-  //     console.error("Error fetching client details:", error);
+  //     console.error("Failed to fetch tasks for client:", error);
   //   }
   // };
+
   const handleClientChange = async (selectedOption) => {
     if (!selectedOption) {
       setCustomer({
@@ -167,7 +254,6 @@ export default function InvoiceForm() {
     const client = clients.find((c) => c._id === clientId);
     if (!client) return;
 
-    // Set client details
     setCustomer({
       _id: client._id,
       name: client.name,
@@ -178,22 +264,28 @@ export default function InvoiceForm() {
     });
 
     try {
-      // Fetch related tasks by client name
-      const response = await axios.get(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/by-client-name/${encodeURIComponent(
-          client.name
-        )}`
-      );
+      let url = `https://sataskmanagementbackend.onrender.com/api/tasks/by-client-name/${encodeURIComponent(
+        client.name
+      )}`;
 
+      // Add query params for date filtering only if dates are selected
+      const params = new URLSearchParams();
+      if (fromDate) params.append("fromDate", fromDate);
+      if (toDate) params.append("toDate", toDate);
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await axios.get(url);
       const tasks = response.data || [];
 
-      // Convert tasks into invoice items
       const taskItems = tasks.map((task) => ({
         id: uuidv4(),
         description: task.taskName || task.workDesc || "Task",
         hsn: "9971", // default HSN for professional services
         qty: 1,
-        rate: 1000, // You can customize rate logic based on task
+        rate: 1000,
         gst: 0,
       }));
 
@@ -233,9 +325,6 @@ export default function InvoiceForm() {
     });
   };
 
-  // const addItem = () => {
-  //   setItems([...items, { description: "", hsn: "", qty: 1, rate: 0, gst: 0 }]);
-  // };
   const addItem = () => {
     setItems([
       ...items,
@@ -324,7 +413,7 @@ export default function InvoiceForm() {
         totalAmount: totalAmountWithTax,
       };
       await axios.post(
-        "https://sataskmanagementbackend.onrender.com/api/invoices",
+        "https://sataskmanagementbackend.c.com/api/invoices",
         invoiceData
       );
       // Display an alert once the invoice is saved successfully
@@ -517,6 +606,22 @@ export default function InvoiceForm() {
           </button>
         </div>
 
+        <label>From Date</label>
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          max={toDate || undefined}
+        />
+
+        <label>To Date</label>
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          min={fromDate || undefined}
+        />
+
         <h2>Your Details</h2>
         <select
           value={selectedFirm.name}
@@ -575,7 +680,8 @@ export default function InvoiceForm() {
         <Select
           options={clientOptions}
           value={clientOptions.find((option) => option.value === customer._id)}
-          onChange={handleClientChange}
+          // onChange={handleClientChange}
+          onChange={(option) => setSelectedClientOption(option)}
           placeholder="Search or select client..."
           isClearable
           styles={{
@@ -665,86 +771,90 @@ export default function InvoiceForm() {
           );
         })} */}
         {items.map((item, idx) => {
-  const amount = (item.qty * item.rate).toFixed(2);
-  return (
-    <div
-      key={idx}
-      style={{
-        marginBottom: 20,
-        padding: 10,
-        border: "1px solid #ccc",
-        borderRadius: 8,
-        backgroundColor: "#fdfdfd",
-      }}
-    >
-      <label>Description</label>
-      <input
-        value={item.description}
-        onChange={(e) => updateItem(idx, "description", e.target.value)}
-        placeholder="Description"
-        style={{ width: "100%", marginBottom: 10 }}
-      />
+          const amount = (item.qty * item.rate).toFixed(2);
+          return (
+            <div
+              key={idx}
+              style={{
+                marginBottom: 20,
+                padding: 10,
+                border: "1px solid #ccc",
+                borderRadius: 8,
+                backgroundColor: "#fdfdfd",
+              }}
+            >
+              <label>Description</label>
+              <input
+                value={item.description}
+                onChange={(e) => updateItem(idx, "description", e.target.value)}
+                placeholder="Description"
+                style={{ width: "100%", marginBottom: 10 }}
+              />
 
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          alignItems: "center",
-          marginBottom: 10,
-        }}
-      >
-        <div style={{ flex: 1 }}>
-          <label>Qty</label>
-          <input
-            type="number"
-            value={item.qty}
-            onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
-            placeholder="Qty"
-            min={1}
-            style={{ width: "100%" }}
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <label>Rate</label>
-          <input
-            type="number"
-            value={item.rate}
-            onChange={(e) => updateItem(idx, "rate", Number(e.target.value))}
-            placeholder="Rate"
-            step="0.01"
-            style={{ width: "100%" }}
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <label>Amount</label>
-          <input
-            readOnly
-            value={`₹${amount}`}
-            style={{ width: "100%", backgroundColor: "#f1f1f1" }}
-          />
-        </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                  marginBottom: 10,
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <label>Qty</label>
+                  <input
+                    type="number"
+                    value={item.qty}
+                    onChange={(e) =>
+                      updateItem(idx, "qty", Number(e.target.value))
+                    }
+                    placeholder="Qty"
+                    min={1}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Rate</label>
+                  <input
+                    type="number"
+                    value={item.rate}
+                    onChange={(e) =>
+                      updateItem(idx, "rate", Number(e.target.value))
+                    }
+                    placeholder="Rate"
+                    step="0.01"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Amount</label>
+                  <input
+                    readOnly
+                    value={`₹${amount}`}
+                    style={{ width: "100%", backgroundColor: "#f1f1f1" }}
+                  />
+                </div>
 
-        <button
-          type="button"
-          onClick={() => deleteItem(item.id)}
-          style={{
-            marginTop: 22,
-            backgroundColor: "#dc3545",
-            color: "#fff",
-            border: "none",
-            padding: "8px 10px",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
-          title="Delete Task"
-        >
-          🗑️
-        </button>
-      </div>
-    </div>
-  );
-})}
+                <button
+                  type="button"
+                  onClick={() => deleteItem(item.id)}
+                  style={{
+                    marginTop: 22,
+                    backgroundColor: "#dc3545",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 10px",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                  }}
+                  title="Delete Task"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          );
+        })}
 
         <button onClick={addItem} className="mb-20">
           + Add Item
@@ -754,16 +864,6 @@ export default function InvoiceForm() {
       <div
         className="invoice-right screen-preview"
         ref={invoiceRef}
-        // style={{
-        //   flex: "1 1 800px",
-        //   maxWidth: 800,
-        //   backgroundColor: "#fff",
-        //   border: "1px solid #000",
-        //   padding: 20,
-        //   fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        //   fontSize: 12,
-        //   color: "#000",
-        // }}
         style={{
           flex: "1 1 800px",
           maxWidth: 800,
@@ -794,46 +894,7 @@ export default function InvoiceForm() {
             alignItems: "flex-start",
           }}
         >
-          {/* Logo space (left side) */}
-          {/* <div
-            style={{
-              width: 100,
-              height: 80,
-              border: "1px dashed #ccc",
-              marginRight: 20,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#999",
-              fontSize: 10,
-            }}
-          >
-           
-          </div> */}
-
-          {/* Company name (right side) */}
-
-          {/* <div style={{ textAlign: "center", marginLeft: "188px" }}>
-            <div
-                      style={{
-                        fontSize: 24,
-                        color: "#0E1D3E",
-                        lineHeight: 1,
-                        textAlign: "center",
-                      }}
-                    >
-                      FINAXIS
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        color: "#666",
-                        marginTop: 5,
-                      }}
-                    >
-                      Business Consultancy
-                    </div>
-          </div> */}
+          
           <div
             style={{
               width: "100%",
@@ -855,13 +916,102 @@ export default function InvoiceForm() {
                 }}
               >
                 {/* {selectedFirm.name.split(" ").join("\n")} */}
-                {selectedFirm.name}
+                {/* {selectedFirm.name} */}
+                <div
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    marginBottom: 15,
+                  }}
+                >
+                  {selectedFirm.name === "Sharda Associates" ? (
+                    // Sharda Associates Header
+                    <>
+                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <img
+                        src={shardaLogo} // Replace with your actual logo path
+                        alt="Sharda Associates Logo"
+                        style={{ height: 80, marginBottom: 8 }}
+                      />
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          color: "#1A2B59",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Sharda Associates
+                      </div>
+                      <div
+                        style={{ fontSize: 12, color: "#555", marginBottom: 4 }}
+                      >
+                        Finance | Subsidies | Arbitration | Taxation
+                      </div>
+                      <div style={{ fontSize: 12, color: "#555" }}>
+                        Business Restructuring & All Commercial Solutions
+                      </div>
+</div>
+</div>
+                    </>
+                  ) : selectedFirm.name === "Finaxis Business Consultancy" ? (
+                    // Finaxis Header
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                        }}
+                      >
+                        <img
+                          src={finaxisLogo} // Replace with your actual logo path
+                          alt="Finaxis Logo"
+                          style={{ height: 80, marginBottom: 8 }}
+                        />
+                        <div
+                          style={{ display: "flex", flexDirection: "column" }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 32,
+                              color: "#0C4F8C",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            FINAXIS
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 14,
+                              color: "#0C4F8C",
+                              marginBottom: 4,
+                            }}
+                          >
+                            Business Consultancy Pvt Ltd.
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    // Default Header (simple)
+                    <div
+                      style={{
+                        fontSize: 24,
+                        color: "#1A2B59",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {selectedFirm.name}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Container to mimic screenshot's invoice layout */}
+        {/*invoice layout */}
         <table
           style={{
             width: "100%",
@@ -882,8 +1032,10 @@ export default function InvoiceForm() {
                   textAlign: "center",
                 }}
               >
-                GSTIN: {selectedFirm.gstin}
+                {/* GSTIN: {selectedFirm.gstin} */}
+                  {!isSharda && <>GSTIN: {selectedFirm.gstin}</>}
               </th>
+              {!isSharda && (
               <th
                 colSpan={3}
                 style={{
@@ -896,6 +1048,13 @@ export default function InvoiceForm() {
               >
                 {invoiceType}
               </th>
+                )}
+                {isSharda && (
+      <th
+        colSpan={0}
+        style={{ display: "none" }}
+      />
+    )}
             </tr>
             <tr>
               <th
@@ -1026,6 +1185,7 @@ export default function InvoiceForm() {
               >
                 {customer.GSTIN}
               </td>
+
               <td
                 style={{
                   border: "1px solid black",
@@ -1375,7 +1535,6 @@ export default function InvoiceForm() {
                   }}
                 >
                   <tbody>
-       
                     {/* Taxable Value */}
                     <tr>
                       <td
