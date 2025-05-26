@@ -25,7 +25,8 @@ const ManageRequests = () => {
         <table className="min-w-full text-sm text-white">
           <thead>
             <tr className="bg-gray-700 text-left">
-              <th className="px-4 py-2">User ID</th>
+              {/* <th className="px-4 py-2">User ID</th> */}
+              <th className="px-4 py-2">User Name</th>
               <th className="px-4 py-2">Dates</th>
               <th className="px-4 py-2">Type</th>
               <th className="px-4 py-2">Status</th>
@@ -36,7 +37,8 @@ const ManageRequests = () => {
           <tbody>
             {leaves.map((leave) => (
               <tr key={leave._id} className="border-t border-gray-700">
-                <td className="px-4 py-2">{leave.userId}</td>
+                {/* <td className="px-4 py-2">{leave.userId}</td> */}
+                <td className="px-4 py-2">{leave.userName || leave.userId}</td>
                 <td className="px-4 py-2">
                   {new Date(leave.fromDate).toLocaleDateString()} -{" "}
                   {new Date(leave.toDate).toLocaleDateString()}
