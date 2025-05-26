@@ -3,6 +3,7 @@ import Select from "react-select";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
 import Swal from "sweetalert2";
+import InvoicePreview from "../Components/InvoicePreview";
 
 export default function ViewInvoices() {
   console.log("ViewInvoices component rendered");
@@ -369,735 +370,736 @@ export default function ViewInvoices() {
     }
   };
 
-  const InvoicePreview = ({ invoice }) => {
-    if (!invoice) return null;
+  // const InvoicePreview = ({ invoice }) => {
+  //   if (!invoice) return null;
 
-    // Calculate amounts like in InvoiceForm
-    const totalAmount = invoice.items.reduce(
-      (sum, item) => sum + item.qty * item.rate,
-      0
-    );
-    const taxableValue = totalAmount;
-    const igstRate = 0.18;
-    const cgstRate = 0.09;
-    const sgstRate = 0.09;
+  //   // Calculate amounts like in InvoiceForm
+  //   const totalAmount = invoice.items.reduce(
+  //     (sum, item) => sum + item.qty * item.rate,
+  //     0
+  //   );
+  //   const taxableValue = totalAmount;
+  //   const igstRate = 0.18;
+  //   const cgstRate = 0.09;
+  //   const sgstRate = 0.09;
 
-    const isLocalSupply = () => {
-      const place = (invoice.placeOfSupply || "")
-        .toLowerCase()
-        .replace(/\s+/g, "");
-      return place === "mp" || place === "madhyapradesh";
-    };
+  //   const isLocalSupply = () => {
+  //     const place = (invoice.placeOfSupply || "")
+  //       .toLowerCase()
+  //       .replace(/\s+/g, "");
+  //     return place === "mp" || place === "madhyapradesh";
+  //   };
 
-    const igstAmount = isLocalSupply() ? 0 : taxableValue * igstRate;
-    const cgstAmount = isLocalSupply() ? taxableValue * cgstRate : 0;
-    const sgstAmount = isLocalSupply() ? taxableValue * sgstRate : 0;
-    const totalTax = igstAmount + cgstAmount + sgstAmount;
-    const totalAmountWithTax = taxableValue + totalTax;
+  //   const igstAmount = isLocalSupply() ? 0 : taxableValue * igstRate;
+  //   const cgstAmount = isLocalSupply() ? taxableValue * cgstRate : 0;
+  //   const sgstAmount = isLocalSupply() ? taxableValue * sgstRate : 0;
+  //   const totalTax = igstAmount + cgstAmount + sgstAmount;
+  //   const totalAmountWithTax = taxableValue + totalTax;
 
-    return (
-      <div
-        style={{
-          width: "730px", // slightly less than PDF printable width
-          margin: "0 auto", // center horizontally to avoid shifts
-          boxSizing: "border-box",
-          padding: 20,
-          border: "1px solid #000",
-          backgroundColor: "#fff",
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-          fontSize: 12,
-          color: "#000",
-        }}
-      >
-        {/* Blue top border */}
-        <div
-          style={{
-            borderTop: "20px solid #82C8E5",
-            marginTop: "-20px",
-          }}
-        ></div>
+  //   return (
+  //     <div
+  //       style={{
+  //         width: "730px", // slightly less than PDF printable width
+  //         margin: "0 auto", // center horizontally to avoid shifts
+  //         boxSizing: "border-box",
+  //         padding: 20,
+  //         border: "1px solid #000",
+  //         backgroundColor: "#fff",
+  //         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+  //         fontSize: 12,
+  //         color: "#000",
+  //       }}
+  //     >
+  //       {/* Blue top border */}
+  //       <div
+  //         style={{
+  //           borderTop: "20px solid #82C8E5",
+  //           marginTop: "-20px",
+  //         }}
+  //       ></div>
 
-        {/* Company header */}
-        <div
-          style={{
-            paddingBottom: 10,
-            marginBottom: 15,
-            display: "flex",
-            alignItems: "flex-start",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: 24,
-                  color: "#1A2B59",
-                  lineHeight: 1.1,
-                  textAlign: "center",
-                  marginLeft: 0,
-                  marginRight: 0,
-                }}
-              >
-                {invoice.selectedFirm?.name || "Company Name"}
-              </div>
-            </div>
-          </div>
-        </div>
+  //       {/* Company header */}
+  //       <div
+  //         style={{
+  //           paddingBottom: 10,
+  //           marginBottom: 15,
+  //           display: "flex",
+  //           alignItems: "flex-start",
+  //         }}
+  //       >
+  //         <div
+  //           style={{
+  //             width: "100%",
+  //             display: "flex",
+  //             justifyContent: "center",
+  //             alignItems: "center",
+  //           }}
+  //         >
+  //           <div style={{ textAlign: "center" }}>
+  //             <div
+  //               style={{
+  //                 fontSize: 24,
+  //                 color: "#1A2B59",
+  //                 lineHeight: 1.1,
+  //                 textAlign: "center",
+  //                 marginLeft: 0,
+  //                 marginRight: 0,
+  //               }}
+  //             >
+  //               {invoice.selectedFirm?.name || "Company Name"}
+  //             </div>
+  //           </div>
+  //         </div>
+  //       </div>
 
-        {/* Main invoice table */}
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            border: "1px solid black",
-            tableLayout: "fixed",
-          }}
-        >
-          <thead>
-            <tr style={{ backgroundColor: "#eee" }}>
-              <th
-                colSpan={3}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                  fontSize: 14,
-                  textAlign: "center",
-                }}
-              >
-                GSTIN: {invoice.selectedFirm?.gstin || "GSTIN"}
-              </th>
-              <th
-                colSpan={3}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                  fontSize: 14,
-                  textAlign: "center",
-                }}
-              >
-                {invoice.invoiceType || "Tax Invoice"}
-              </th>
-            </tr>
+  //       {/* Main invoice table */}
+  //       <table
+  //         style={{
+  //           width: "100%",
+  //           borderCollapse: "collapse",
+  //           border: "1px solid black",
+  //           tableLayout: "fixed",
+  //         }}
+  //       >
+  //         <thead>
+  //           <tr style={{ backgroundColor: "#eee" }}>
+  //             <th
+  //               colSpan={3}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //                 fontSize: 14,
+  //                 textAlign: "center",
+  //               }}
+  //             >
+  //               GSTIN: {invoice.selectedFirm?.gstin || "GSTIN"}
+  //             </th>
+  //             <th
+  //               colSpan={3}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //                 fontSize: 14,
+  //                 textAlign: "center",
+  //               }}
+  //             >
+  //               {invoice.invoiceType || "Tax Invoice"}
+  //             </th>
+  //           </tr>
 
-            <tr>
-              <th
-                colSpan={3}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                  fontSize: 12,
-                  textAlign: "center",
-                }}
-              >
-                CLIENT DETAILS
-              </th>
-              <th
-                colSpan={3}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                  fontSize: 12,
-                  textAlign: "center",
-                }}
-              >
-                COMPANY DETAILS
-              </th>
-            </tr>
+  //           <tr>
+  //             <th
+  //               colSpan={3}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //                 fontSize: 12,
+  //                 textAlign: "center",
+  //               }}
+  //             >
+  //               CLIENT DETAILS
+  //             </th>
+  //             <th
+  //               colSpan={3}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //                 fontSize: 12,
+  //                 textAlign: "center",
+  //               }}
+  //             >
+  //               COMPANY DETAILS
+  //             </th>
+  //           </tr>
 
-            <tr>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                  width: "15%",
-                }}
-              >
-                Name
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  width: "35%",
-                  fontWeight: "Bold",
-                }}
-              >
-                {invoice.customer.name}
-              </td>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                  width: "15%",
-                }}
-              >
-                Name
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {invoice.selectedFirm?.name || "Company Name"}
-              </td>
-            </tr>
+  //           <tr>
+  //             <td
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "Bold",
+  //                 width: "15%",
+  //               }}
+  //             >
+  //               Name
+  //             </td>
+  //             <td
+  //               colSpan={2}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 width: "35%",
+  //                 fontWeight: "Bold",
+  //               }}
+  //             >
+  //               {invoice.customer.name}
+  //             </td>
+  //             <td
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //                 width: "15%",
+  //               }}
+  //             >
+  //               Name
+  //             </td>
+  //             <td
+  //               colSpan={2}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "Bold",
+  //               }}
+  //             >
+  //               {invoice.selectedFirm?.name || "Company Name"}
+  //             </td>
+  //           </tr>
 
-            <tr>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                Address
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {invoice.customer.address}
-              </td>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                Address
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {invoice.selectedFirm?.address || "Company Address"}
-              </td>
-            </tr>
+  //           <tr>
+  //             <td
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               Address
+  //             </td>
+  //             <td
+  //               colSpan={2}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "Bold",
+  //               }}
+  //             >
+  //               {invoice.customer.address}
+  //             </td>
+  //             <td
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               Address
+  //             </td>
+  //             <td
+  //               colSpan={2}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "Bold",
+  //               }}
+  //             >
+  //               {invoice.selectedFirm?.address || "Company Address"}
+  //             </td>
+  //           </tr>
 
-            <tr>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                GSTIN
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {invoice.customer.GSTIN}
-              </td>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                Contact No.
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {invoice.selectedFirm?.phone || "Phone Number"}
-              </td>
-            </tr>
+  //           <tr>
+  //             <td
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               GSTIN
+  //             </td>
+  //             <td
+  //               colSpan={2}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "Bold",
+  //               }}
+  //             >
+  //               {invoice.customer.GSTIN}
+  //             </td>
+  //             <td
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               Contact No.
+  //             </td>
+  //             <td
+  //               colSpan={2}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "Bold",
+  //               }}
+  //             >
+  //               {invoice.selectedFirm?.phone || "Phone Number"}
+  //             </td>
+  //           </tr>
 
-            <tr>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                Place of Supply
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {invoice.placeOfSupply || "State"}
-              </td>
-              <td
-                colSpan={3}
-                style={{ border: "1px solid black", padding: 0, width: "50%" }}
-              >
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "fixed",
-                  }}
-                >
-                  <tbody>
-                    <tr>
-                      <td
-                        style={{
-                          padding: 6,
-                          fontWeight: "bold",
-                          width: "50%",
-                          borderRight: " 1px solid black",
-                          borderBottom: "1px solid black",
-                        }}
-                      >
-                        Invoice No.
-                      </td>
-                      <td
-                        style={{
-                          fontWeight: "Bold",
-                          padding: 6,
-                          width: "50%",
-                          borderBottom: "1px solid black",
-                        }}
-                      >
-                        {invoice.invoiceNumber}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: 6,
-                          fontWeight: "bold",
-                          borderRight: "1px solid black",
-                        }}
-                      >
-                        Invoice Date
-                      </td>
-                      <td style={{ fontWeight: "Bold", padding: 6 }}>
-                        {new Date(invoice.invoiceDate).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
-          </thead>
+  //           <tr>
+  //             <td
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               Place of Supply
+  //             </td>
+  //             <td
+  //               colSpan={2}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "Bold",
+  //               }}
+  //             >
+  //               {invoice.placeOfSupply || "State"}
+  //             </td>
+  //             <td
+  //               colSpan={3}
+  //               style={{ border: "1px solid black", padding: 0, width: "50%" }}
+  //             >
+  //               <table
+  //                 style={{
+  //                   width: "100%",
+  //                   borderCollapse: "collapse",
+  //                   tableLayout: "fixed",
+  //                 }}
+  //               >
+  //                 <tbody>
+  //                   <tr>
+  //                     <td
+  //                       style={{
+  //                         padding: 6,
+  //                         fontWeight: "bold",
+  //                         width: "50%",
+  //                         borderRight: " 1px solid black",
+  //                         borderBottom: "1px solid black",
+  //                       }}
+  //                     >
+  //                       Invoice No.
+  //                     </td>
+  //                     <td
+  //                       style={{
+  //                         fontWeight: "Bold",
+  //                         padding: 6,
+  //                         width: "50%",
+  //                         borderBottom: "1px solid black",
+  //                       }}
+  //                     >
+  //                       {invoice.invoiceNumber}
+  //                     </td>
+  //                   </tr>
+  //                   <tr>
+  //                     <td
+  //                       style={{
+  //                         padding: 6,
+  //                         fontWeight: "bold",
+  //                         borderRight: "1px solid black",
+  //                       }}
+  //                     >
+  //                       Invoice Date
+  //                     </td>
+  //                     <td style={{ fontWeight: "Bold", padding: 6 }}>
+  //                       {new Date(invoice.invoiceDate).toLocaleDateString()}
+  //                     </td>
+  //                   </tr>
+  //                 </tbody>
+  //               </table>
+  //             </td>
+  //           </tr>
+  //         </thead>
 
-          <tbody>
-            <tr>
-              <th
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  width: "5%",
-                  fontWeight: "bold",
-                }}
-              >
-                Sr. No.
-              </th>
-              <th
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  width: "50%",
-                  fontWeight: "bold",
-                  textAlign: "left",
-                }}
-              >
-                Description of Services
-              </th>
-              <th
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  width: "15%",
-                  fontWeight: "bold",
-                }}
-              >
-                SAC CODE
-              </th>
-              <th
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  width: "10%",
-                  fontWeight: "bold",
-                }}
-              >
-                Unit(s)
-              </th>
-              <th
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  width: "10%",
-                  fontWeight: "bold",
-                }}
-              >
-                Rate
-              </th>
-              <th
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  width: "10%",
-                  fontWeight: "bold",
-                }}
-              >
-                Amount
-              </th>
-            </tr>
+  //         <tbody>
+  //           <tr>
+  //             <th
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 width: "5%",
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               Sr. No.
+  //             </th>
+  //             <th
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 width: "50%",
+  //                 fontWeight: "bold",
+  //                 textAlign: "left",
+  //               }}
+  //             >
+  //               Description of Services
+  //             </th>
+  //             <th
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 width: "15%",
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               SAC CODE
+  //             </th>
+  //             <th
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 width: "10%",
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               Unit(s)
+  //             </th>
+  //             <th
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 width: "10%",
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               Rate
+  //             </th>
+  //             <th
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 width: "10%",
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               Amount
+  //             </th>
+  //           </tr>
 
-            {invoice.items.map((item, idx) => {
-              const amount = item.qty * item.rate;
-              return (
-                <tr key={idx}>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      textAlign: "center",
-                    }}
-                  >
-                    {idx + 1}
-                  </td>
-                  <td style={{ border: "1px solid black", padding: 6 }}>
-                    {item.description}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      textAlign: "center",
-                    }}
-                  >
-                    {item.hsn || "9971"}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      textAlign: "center",
-                    }}
-                  >
-                    {item.qty}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      textAlign: "right",
-                    }}
-                  >
-                    ₹{item.rate.toFixed(2)}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      textAlign: "right",
-                    }}
-                  >
-                    ₹{amount.toFixed(2)}
-                  </td>
-                </tr>
-              );
-            })}
+  //           {invoice.items.map((item, idx) => {
+  //             const amount = item.qty * item.rate;
+  //             return (
+  //               <tr key={idx}>
+  //                 <td
+  //                   style={{
+  //                     border: "1px solid black",
+  //                     padding: 6,
+  //                     textAlign: "center",
+  //                   }}
+  //                 >
+  //                   {idx + 1}
+  //                 </td>
+  //                 <td style={{ border: "1px solid black", padding: 6 }}>
+  //                   {item.description}
+  //                 </td>
+  //                 <td
+  //                   style={{
+  //                     border: "1px solid black",
+  //                     padding: 6,
+  //                     textAlign: "center",
+  //                   }}
+  //                 >
+  //                   {item.hsn || "9971"}
+  //                 </td>
+  //                 <td
+  //                   style={{
+  //                     border: "1px solid black",
+  //                     padding: 6,
+  //                     textAlign: "center",
+  //                   }}
+  //                 >
+  //                   {item.qty}
+  //                 </td>
+  //                 <td
+  //                   style={{
+  //                     border: "1px solid black",
+  //                     padding: 6,
+  //                     textAlign: "right",
+  //                   }}
+  //                 >
+  //                   ₹{item.rate.toFixed(2)}
+  //                 </td>
+  //                 <td
+  //                   style={{
+  //                     border: "1px solid black",
+  //                     padding: 6,
+  //                     textAlign: "right",
+  //                   }}
+  //                 >
+  //                   ₹{amount.toFixed(2)}
+  //                 </td>
+  //               </tr>
+  //             );
+  //           })}
 
-            {/* Empty rows if needed */}
-            {[...Array(Math.max(0, 3 - invoice.items.length))].map((_, i) => (
-              <tr key={`empty-${i}`}>
-                <td
-                  style={{ border: "1px solid black", padding: 6, height: 25 }}
-                  colSpan={6}
-                />
-              </tr>
-            ))}
+  //           {/* Empty rows if needed */}
+  //           {[...Array(Math.max(0, 3 - invoice.items.length))].map((_, i) => (
+  //             <tr key={`empty-${i}`}>
+  //               <td
+  //                 style={{ border: "1px solid black", padding: 6, height: 25 }}
+  //                 colSpan={6}
+  //               />
+  //             </tr>
+  //           ))}
 
-            <tr>
-              <td
-                colSpan={5}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                  textAlign: "right",
-                }}
-              >
-                Total in Rupees
-              </td>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  textAlign: "right",
-                  fontWeight: "bold",
-                }}
-              >
-                ₹{totalAmount.toFixed(2)}
-              </td>
-            </tr>
+  //           <tr>
+  //             <td
+  //               colSpan={5}
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 fontWeight: "bold",
+  //                 textAlign: "right",
+  //               }}
+  //             >
+  //               Total in Rupees
+  //             </td>
+  //             <td
+  //               style={{
+  //                 border: "1px solid black",
+  //                 padding: 6,
+  //                 textAlign: "right",
+  //                 fontWeight: "bold",
+  //               }}
+  //             >
+  //               ₹{totalAmount.toFixed(2)}
+  //             </td>
+  //           </tr>
 
-            {/* Footer section */}
-            <tr>
-              <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "fixed",
-                  }}
-                >
-                  <tbody>
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontWeight: "bold",
-                          fontSize: 10,
-                        }}
-                      >
-                        Total Amount in Words
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          fontWeight: "Bold",
-                        }}
-                      >
-                        {numberToWordsIndian(taxableValue)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
+  //           {/* Footer section */}
+  //           <tr>
+  //             <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
+  //               <table
+  //                 style={{
+  //                   width: "100%",
+  //                   borderCollapse: "collapse",
+  //                   tableLayout: "fixed",
+  //                 }}
+  //               >
+  //                 <tbody>
+  //                   <tr>
+  //                     <td
+  //                       style={{
+  //                         borderBottom: "1px solid black",
+  //                         padding: 6,
+  //                         fontWeight: "bold",
+  //                         fontSize: 10,
+  //                       }}
+  //                     >
+  //                       Total Amount in Words
+  //                     </td>
+  //                   </tr>
+  //                   <tr>
+  //                     <td
+  //                       style={{
+  //                         borderBottom: "1px solid black",
+  //                         padding: 6,
+  //                         fontSize: 10,
+  //                         fontWeight: "Bold",
+  //                       }}
+  //                     >
+  //                       {numberToWordsIndian(taxableValue)}
+  //                     </td>
+  //                   </tr>
+  //                   <tr>
+  //                     <td
+  //                       style={{
+  //                         borderBottom: "1px solid black",
+  //                         padding: 6,
 
-                          fontSize: 10,
-                          fontWeight: "Bold",
-                        }}
-                      >
-                        Bank Details
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 6, fontSize: 10 }}>
-                        Bank Name:{" "}
-                        {invoice.selectedFirm?.bank?.name || "Bank Name"} <br />
-                        Account Number:{" "}
-                        {invoice.selectedFirm?.bank?.account ||
-                          "Account Number"}{" "}
-                        <br />
-                        IFSC Code:{" "}
-                        {invoice.selectedFirm?.bank?.ifsc || "IFSC Code"}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
+  //                         fontSize: 10,
+  //                         fontWeight: "Bold",
+  //                       }}
+  //                     >
+  //                       Bank Details
+  //                     </td>
+  //                   </tr>
+  //                   <tr>
+  //                     <td style={{ padding: 6, fontSize: 10 }}>
+  //                       Bank Name:{" "}
+  //                       {invoice.selectedFirm?.bank?.name || "Bank Name"} <br />
+  //                       Account Number:{" "}
+  //                       {invoice.selectedFirm?.bank?.account ||
+  //                         "Account Number"}{" "}
+  //                       <br />
+  //                       IFSC Code:{" "}
+  //                       {invoice.selectedFirm?.bank?.ifsc || "IFSC Code"}
+  //                     </td>
+  //                   </tr>
+  //                 </tbody>
+  //               </table>
+  //             </td>
 
-              <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "fixed",
-                  }}
-                >
-                  <tbody>
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        Taxable Value
-                      </td>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        ₹{taxableValue.toFixed(2)}
-                      </td>
-                    </tr>
+  //             <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
+  //               <table
+  //                 style={{
+  //                   width: "100%",
+  //                   borderCollapse: "collapse",
+  //                   tableLayout: "fixed",
+  //                 }}
+  //               >
+  //                 <tbody>
+  //                   <tr>
+  //                     <td
+  //                       style={{
+  //                         borderBottom: "1px solid black",
+  //                         padding: 6,
+  //                         fontSize: 10,
+  //                         textAlign: "right",
+  //                       }}
+  //                     >
+  //                       Taxable Value
+  //                     </td>
+  //                     <td
+  //                       style={{
+  //                         borderBottom: "1px solid black",
+  //                         padding: 6,
+  //                         fontSize: 10,
+  //                         textAlign: "right",
+  //                       }}
+  //                     >
+  //                       ₹{taxableValue.toFixed(2)}
+  //                     </td>
+  //                   </tr>
 
-                    {isLocalSupply() ? (
-                      <>
-                        <tr>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            Add: CGST (9%)
-                          </td>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            ₹{cgstAmount.toFixed(2)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            Add: SGST (9%)
-                          </td>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            ₹{sgstAmount.toFixed(2)}
-                          </td>
-                        </tr>
-                      </>
-                    ) : (
-                      <tr>
-                        <td
-                          style={{
-                            borderBottom: "1px solid black",
-                            padding: 6,
-                            fontSize: 10,
-                            textAlign: "right",
-                          }}
-                        >
-                          Add: IGST (18%)
-                        </td>
-                        <td
-                          style={{
-                            borderBottom: "1px solid black",
-                            padding: 6,
-                            fontSize: 10,
-                            textAlign: "right",
-                          }}
-                        >
-                          ₹{igstAmount.toFixed(2)}
-                        </td>
-                      </tr>
-                    )}
+  //                   {isLocalSupply() ? (
+  //                     <>
+  //                       <tr>
+  //                         <td
+  //                           style={{
+  //                             borderBottom: "1px solid black",
+  //                             padding: 6,
+  //                             fontSize: 10,
+  //                             textAlign: "right",
+  //                           }}
+  //                         >
+  //                           Add: CGST (9%)
+  //                         </td>
+  //                         <td
+  //                           style={{
+  //                             borderBottom: "1px solid black",
+  //                             padding: 6,
+  //                             fontSize: 10,
+  //                             textAlign: "right",
+  //                           }}
+  //                         >
+  //                           ₹{cgstAmount.toFixed(2)}
+  //                         </td>
+  //                       </tr>
+  //                       <tr>
+  //                         <td
+  //                           style={{
+  //                             borderBottom: "1px solid black",
+  //                             padding: 6,
+  //                             fontSize: 10,
+  //                             textAlign: "right",
+  //                           }}
+  //                         >
+  //                           Add: SGST (9%)
+  //                         </td>
+  //                         <td
+  //                           style={{
+  //                             borderBottom: "1px solid black",
+  //                             padding: 6,
+  //                             fontSize: 10,
+  //                             textAlign: "right",
+  //                           }}
+  //                         >
+  //                           ₹{sgstAmount.toFixed(2)}
+  //                         </td>
+  //                       </tr>
+  //                     </>
+  //                   ) : (
+  //                     <tr>
+  //                       <td
+  //                         style={{
+  //                           borderBottom: "1px solid black",
+  //                           padding: 6,
+  //                           fontSize: 10,
+  //                           textAlign: "right",
+  //                         }}
+  //                       >
+  //                         Add: IGST (18%)
+  //                       </td>
+  //                       <td
+  //                         style={{
+  //                           borderBottom: "1px solid black",
+  //                           padding: 6,
+  //                           fontSize: 10,
+  //                           textAlign: "right",
+  //                         }}
+  //                       >
+  //                         ₹{igstAmount.toFixed(2)}
+  //                       </td>
+  //                     </tr>
+  //                   )}
 
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        Total Amount
-                      </td>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        ₹{totalAmountWithTax.toFixed(2)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+  //                   <tr>
+  //                     <td
+  //                       style={{
+  //                         borderBottom: "1px solid black",
+  //                         padding: 6,
+  //                         fontSize: 10,
+  //                         textAlign: "right",
+  //                       }}
+  //                     >
+  //                       Total Amount
+  //                     </td>
+  //                     <td
+  //                       style={{
+  //                         borderBottom: "1px solid black",
+  //                         padding: 6,
+  //                         fontSize: 10,
+  //                         textAlign: "right",
+  //                       }}
+  //                     >
+  //                       ₹{totalAmountWithTax.toFixed(2)}
+  //                     </td>
+  //                   </tr>
+  //                 </tbody>
+  //               </table>
+  //             </td>
+  //           </tr>
+  //         </tbody>
+  //       </table>
 
-        <p
-          style={{
-            fontSize: 10,
-            marginTop: 10,
-            fontStyle: "italic",
-            textAlign: "center",
-          }}
-        >
-          This is a system generated invoice and does not require any signature.
-        </p>
+  //       <p
+  //         style={{
+  //           fontSize: 10,
+  //           marginTop: 10,
+  //           fontStyle: "italic",
+  //           textAlign: "center",
+  //         }}
+  //       >
+  //         This is a system generated invoice and does not require any signature.
+  //       </p>
 
-        <div
-          style={{
-            borderTop: "20px solid #82C8E5",
-            marginTop: 20,
-            paddingTop: 10,
-          }}
-        ></div>
+  //       <div
+  //         style={{
+  //           borderTop: "20px solid #82C8E5",
+  //           marginTop: 20,
+  //           paddingTop: 10,
+  //         }}
+  //       ></div>
 
-        <div
-          style={{
-            borderTop: "20px solid #000",
-            marginTop: -10,
-            paddingTop: 0,
-            textAlign: "center",
-          }}
-        ></div>
-      </div>
-    );
-  };
+  //       <div
+  //         style={{
+  //           borderTop: "20px solid #000",
+  //           marginTop: -10,
+  //           paddingTop: 0,
+  //           textAlign: "center",
+  //         }}
+  //       ></div>
+  //     </div>
+
+  //   );
+  // };
 
   function numberToWordsIndian(num) {
     const a = [
@@ -1184,7 +1186,7 @@ export default function ViewInvoices() {
         style={{
           maxHeight: "500px", // Adjust height as needed
           overflowY: "auto",
-          marginTop:"10px"
+          marginTop: "10px",
         }}
       >
         {isLoading ? (
@@ -1259,7 +1261,7 @@ export default function ViewInvoices() {
         )}
       </div>
       {/* Modal for PDF preview and generation */}
-      {showInvoiceModal && (
+      {showInvoiceModal && invoiceToView && (
         <div
           style={{
             position: "fixed",
@@ -1299,7 +1301,16 @@ export default function ViewInvoices() {
                 color: "#000",
               }}
             >
-              <InvoicePreview invoice={invoiceToView} />
+              {/* <InvoicePreview invoice={invoiceToView} /> */}
+              <InvoicePreview
+                selectedFirm={invoiceToView.selectedFirm}
+                invoiceType={invoiceToView.invoiceType}
+                invoiceNumber={invoiceToView.invoiceNumber}
+                invoiceDate={invoiceToView.invoiceDate}
+                placeOfSupply={invoiceToView.placeOfSupply}
+                customer={invoiceToView.customer}
+                items={invoiceToView.items}
+              />
             </div>
 
             <div

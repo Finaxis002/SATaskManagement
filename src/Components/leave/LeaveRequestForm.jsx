@@ -5,6 +5,8 @@ import "react-date-range/dist/theme/default.css";
 import axios from "axios";
 
 const LeaveRequestForm = () => {
+   
+  const userName = localStorage.getItem("name");
   const [range, setRange] = useState([
     {
       startDate: new Date(),
@@ -60,11 +62,13 @@ const handleSubmit = async () => {
 
   try {
     const payload = {
+      userId, // Include user ID
+      userName,
       fromDate: range[0].startDate,
       toDate: range[0].endDate,
       leaveType,
       comments,
-      userId, // Include user ID
+      
     };
 
     await axios.post("https://sataskmanagementbackend.onrender.com/api/leave", payload);

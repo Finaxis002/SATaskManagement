@@ -7,6 +7,9 @@ import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
 import finaxisLogo from "../assets/Finaxis_logo.png";
 import shardaLogo from "../assets/Sharda_logo.png";
+import footerImageFinaxis from "../assets/LetterheadBottomFinaxis.jpg";
+import headerImageFinaxis from "../assets/LetterheadTopFinaxis.png";
+import finaxisHeader from "../assets/finaxis_header.png";
 
 const firms = [
   {
@@ -16,7 +19,12 @@ const firms = [
     address: "Vidhya Nagar, Bhopal",
     email: "finaxis@gmail.com",
     phone: "25666566",
-    bank: { name: "HDFC", account: "45555415656", ifsc: "HDFC4555" },
+    bank: {
+      name: "HDFC",
+      accountName: "Anugrah Sharda",
+      account: "45555415656",
+      ifsc: "HDFC4555",
+    },
   },
   {
     name: "Sharda Associates",
@@ -25,7 +33,12 @@ const firms = [
     address: "Indrapuri, Bhopal",
     email: "sharda@gmail.com",
     phone: "7894561230",
-    bank: { name: "SBI", account: "1234567890", ifsc: "SBIN0001234" },
+    bank: {
+      name: "SBI",
+      accountName: " Anunay Sharda",
+      account: "1234567890",
+      ifsc: "SBIN0001234",
+    },
   },
   {
     name: "Kailash Real Estate",
@@ -181,60 +194,6 @@ export default function InvoiceForm() {
   }, [selectedClientOption, fromDate, toDate]);
 
   // Handle client selection
-
-  // const handleClientChange = async (selectedOption) => {
-  //   if (!selectedOption) {
-  //     setCustomer({
-  //       _id: "",
-  //       name: "",
-  //       address: "",
-  //       GSTIN: "",
-  //       mobile: "",
-  //       emailId: "",
-  //     });
-  //     setItems([]); // Clear items if no client is selected
-  //     return;
-  //   }
-
-  //   const clientId = selectedOption.value;
-  //   const client = clients.find((c) => c._id === clientId);
-  //   if (!client) return;
-
-  //   // Set client details
-  //   setCustomer({
-  //     _id: client._id,
-  //     name: client.name,
-  //     address: client.address || "",
-  //     GSTIN: client.GSTIN || "",
-  //     mobile: client.mobile || "",
-  //     emailId: client.emailId || "",
-  //   });
-
-  //   try {
-  //     // Fetch related tasks by client name
-  //     const response = await axios.get(
-  //       `https://sataskmanagementbackend.onrender.com/api/tasks/by-client-name/${encodeURIComponent(
-  //         client.name
-  //       )}`
-  //     );
-
-  //     const tasks = response.data || [];
-
-  //     // Convert tasks into invoice items
-  //     const taskItems = tasks.map((task) => ({
-  //       id: uuidv4(),
-  //       description: task.taskName || task.workDesc || "Task",
-  //       hsn: "9971", // default HSN for professional services
-  //       qty: 1,
-  //       rate: 1000, // You can customize rate logic based on task
-  //       gst: 0,
-  //     }));
-
-  //     setItems(taskItems.length ? taskItems : []);
-  //   } catch (error) {
-  //     console.error("Failed to fetch tasks for client:", error);
-  //   }
-  // };
 
   const handleClientChange = async (selectedOption) => {
     if (!selectedOption) {
@@ -413,7 +372,7 @@ export default function InvoiceForm() {
         totalAmount: totalAmountWithTax,
       };
       await axios.post(
-        "https://sataskmanagementbackend.c.com/api/invoices",
+        "https://sataskmanagementbackend.onrender.com/api/invoices",
         invoiceData
       );
       // Display an alert once the invoice is saved successfully
@@ -869,23 +828,66 @@ export default function InvoiceForm() {
           maxWidth: 800,
           backgroundColor: "#fff",
           border: "1px solid #000",
-          padding: 20,
+          padding: "0 20px 0px 20px",
           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
           fontSize: 12,
           color: "#000",
           transform: "scale(0.75)", // ⬅️ visually shrink
           transformOrigin: "top left", // ⬅️ anchor top-left
+          position: "relative",
         }}
       >
+        {isSharda ? (
+<img
+          src={shardaLogo}
+          alt="Watermark"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: "400px",
+            height: "auto",
+            opacity: 0.1,
+            transform: "translate(-50%, -50%) ",
+            pointerEvents: "none",
+            userSelect: "none",
+            zIndex: 0,
+          }}
+        />
+        ) : (
+          <img
+          src={finaxisLogo}
+          alt="Watermark"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: "400px",
+            height: "auto",
+            opacity: 0.1,
+            transform: "translate(-50%, -50%) ",
+            pointerEvents: "none",
+            userSelect: "none",
+            zIndex: 0,
+          }}
+        />
+        )}
+        {/* Watermark */}
+        
         <div
           style={{
-            borderTop: "20px solid #82C8E5",
             marginTop: "-20px",
             marginLeft: -20,
             marginRight: -20,
             marginBottom: 5,
           }}
-        ></div>
+        >
+          <img
+            src={headerImageFinaxis}
+            alt="Invoice header"
+            style={{ width: "100%", display: "block", height: "auto" }}
+          />
+        </div>
         <div
           style={{
             paddingBottom: 10,
@@ -980,7 +982,7 @@ export default function InvoiceForm() {
                           alt="Finaxis Logo"
                           style={{ height: 80, marginBottom: 8 }}
                         />
-                        <div
+                        {/* <div
                           style={{ display: "flex", flexDirection: "column" }}
                         >
                           <div
@@ -1001,7 +1003,12 @@ export default function InvoiceForm() {
                           >
                             Business Consultancy Pvt Ltd.
                           </div>
-                        </div>
+                        </div> */}
+                        <img
+                          src={finaxisHeader} // Replace with your actual header image path
+                          alt="finaxis business consultancy header"
+                          style={{ height: 80, marginBottom: 8 }}
+                        />
                       </div>
                     </>
                   ) : (
@@ -1032,41 +1039,6 @@ export default function InvoiceForm() {
           }}
         >
           <thead>
-            {/* <tr style={{ backgroundColor: "#eee" }}>
-              <th
-                colSpan={3}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                  fontSize: 14,
-                  textAlign: "center",
-                }}
-              >
-                
-                  {!isSharda && <>GSTIN: {selectedFirm.gstin}</>}
-              </th>
-              {!isSharda && (
-              <th
-                colSpan={3}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                  fontSize: 14,
-                  textAlign: "center",
-                }}
-              >
-                {invoiceType}
-              </th>
-                )}
-                {isSharda && (
-      <th
-        colSpan={0}
-        style={{ display: "none" }}
-      />
-    )}
-            </tr> */}
             <tr style={{ backgroundColor: "#eee" }}>
               {!isSharda ? (
                 <>
@@ -1180,255 +1152,418 @@ export default function InvoiceForm() {
                 {selectedFirm.name}
               </td>
             </tr>
-            <tr>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                Address
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {customer.address}
-              </td>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                Address
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {selectedFirm.address}
-              </td>
-            </tr>
 
-            {/* <tr>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                GSTIN
-              </td>
-              
+            {isSharda ? (
+              <>
+                <tr>
+                  <td
+                    rowSpan={3}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Address
+                  </td>
+                  <td
+                    rowSpan={3}
+                    colSpan={2}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {customer.address}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Address
+                  </td>
+                  <td
+                    colSpan={2}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {selectedFirm.address}
+                  </td>
+                </tr>
+                <tr>
+                  {/* <td
+                    colSpan={3}
+                    style={{ border: "1px solid black", padding: 6 }}
+                  >
+                    
+                  </td> */}
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Contact No.
+                  </td>
+                  <td
+                    colSpan={2}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {selectedFirm.phone}
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    colSpan={3}
+                    style={{ padding: 0, border: "1px solid black" }}
+                  >
+                    <table
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        tableLayout: "fixed",
+                      }}
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style={{
+                              padding: 6,
+                              fontWeight: "bold",
+                              width: "50%",
+                              borderRight: "1px solid black",
+                              borderBottom: "1px solid black",
+                            }}
+                          >
+                            Invoice No.
+                          </td>
+                          <td
+                            style={{
+                              fontWeight: "bold",
+                              padding: 6,
+                              width: "50%",
+                              borderBottom: "1px solid black",
+                            }}
+                          >
+                            {invoiceNumber}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style={{
+                              padding: 6,
+                              fontWeight: "bold",
+                              borderRight: "1px solid black",
+                            }}
+                          >
+                            Invoice Date
+                          </td>
+                          <td
+                            style={{
+                              fontWeight: "bold",
+                              padding: 6,
+                            }}
+                          >
+                            {invoiceDate}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </>
+            ) : (
+              <>
+                <tr>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Address
+                  </td>
 
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {customer.GSTIN}
-              </td>
+                  <td
+                    colSpan={2}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "Bold",
+                    }}
+                  >
+                    {customer.address}
+                  </td>
 
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                Contact No.
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {selectedFirm.phone}
-              </td>
-            </tr> */}
-            {/* GSTIN conditional rendering */}
-            {!isSharda && (
-  <tr>
-    <td
-      style={{
-        border: "1px solid black",
-        padding: 6,
-        fontWeight: "bold",
-      }}
-    >
-      GSTIN
-    </td>
-    <td
-      colSpan={2}
-      style={{
-        border: "1px solid black",
-        padding: 6,
-        fontWeight: "Bold",
-      }}
-    >
-      {customer.GSTIN}
-    </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Address
+                  </td>
 
-    <td
-      style={{
-        border: "1px solid black",
-        padding: 6,
-        fontWeight: "bold",
-      }}
-    >
-      Contact No.
-    </td>
-    <td
-      colSpan={2}
-      style={{
-        border: "1px solid black",
-        padding: 6,
-        fontWeight: "Bold",
-      }}
-    >
-      {selectedFirm.phone}
-    </td>
-  </tr>
-)}
+                  <td
+                    colSpan={2}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "Bold",
+                    }}
+                  >
+                    {selectedFirm.address}
+                  </td>
+                </tr>
 
-{isSharda && (
-  <tr>
-    {/* Empty cells for client side (3 columns) */}
-    <td
-      colSpan={3}
-      style={{
-        border: "1px solid black",
-        padding: 6,
-      }}
-    >
-      {/* Intentionally blank */}
-    </td>
+                {/* GSTIN conditional rendering */}
+                {!isSharda && (
+                  <tr>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      GSTIN
+                    </td>
+                    <td
+                      colSpan={2}
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "Bold",
+                      }}
+                    >
+                      {customer.GSTIN}
+                    </td>
 
-    {/* Contact No. label and number on company side */}
-    <td
-      style={{
-        border: "1px solid black",
-        padding: 6,
-        fontWeight: "bold",
-      }}
-    >
-      Contact No.
-    </td>
-    <td
-      colSpan={2}
-      style={{
-        border: "1px solid black",
-        padding: 6,
-        fontWeight: "Bold",
-      }}
-    >
-      {selectedFirm.phone}
-    </td>
-  </tr>
-)}
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Contact No.
+                    </td>
+                    <td
+                      colSpan={2}
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "Bold",
+                      }}
+                    >
+                      {selectedFirm.phone}
+                    </td>
+                  </tr>
+                )}
 
+                {isSharda && (
+                  <tr>
+                    {/* Empty cells for client side (3 columns) */}
+                    <td
+                      colSpan={3}
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                      }}
+                    >
+                      {/* Intentionally blank */}
+                    </td>
 
-            <tr>
-              <td
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                Place of Supply
-              </td>
-              <td
-                colSpan={2}
-                style={{
-                  border: "1px solid black",
-                  padding: 6,
-                  fontWeight: "Bold",
-                }}
-              >
-                {placeOfSupply} {/* Now using the separate state */}
-              </td>
-              <td
-                colSpan={3}
-                style={{
-                  border: "1px solid black",
-                  padding: 0,
-                  width: "50%", // Add this to ensure proper width
-                }}
-              >
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "fixed",
-                  }}
-                >
-                  <tbody>
-                    <tr>
-                      <td
+                    {/* Contact No. label and number on company side */}
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Contact No.
+                    </td>
+                    <td
+                      colSpan={2}
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "Bold",
+                      }}
+                    >
+                      {selectedFirm.phone}
+                    </td>
+                  </tr>
+                )}
+
+                {!isSharda ? (
+                  <tr>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Place of Supply
+                    </td>
+                    <td
+                      colSpan={2}
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "Bold",
+                      }}
+                    >
+                      {placeOfSupply} {/* Now using the separate state */}
+                    </td>
+
+                    <td
+                      colSpan={3}
+                      style={{
+                        border: "1px solid black",
+                        padding: 0,
+                        width: "50%", // Add this to ensure proper width
+                      }}
+                    >
+                      <table
                         style={{
-                          padding: 6,
-                          fontWeight: "bold",
-                          width: "50%",
-                          borderRight: " 1px solid black",
-                          borderBottom: "1px solid black",
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          tableLayout: "fixed",
                         }}
                       >
-                        Invoice No.
-                      </td>
-                      <td
+                        <tbody>
+                          <tr>
+                            <td
+                              style={{
+                                padding: 6,
+                                fontWeight: "bold",
+                                width: "50%",
+                                borderRight: " 1px solid black",
+                                borderBottom: "1px solid black",
+                              }}
+                            >
+                              Invoice No.
+                            </td>
+                            <td
+                              style={{
+                                fontWeight: "Bold",
+                                padding: 6,
+                                width: "50%",
+                                borderBottom: "1px solid black",
+                              }}
+                            >
+                              {invoiceNumber}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td
+                              style={{
+                                padding: 6,
+                                fontWeight: "bold",
+                                borderRight: "1px solid black",
+                              }}
+                            >
+                              Invoice Date
+                            </td>
+                            <td
+                              style={{
+                                fontWeight: "Bold",
+                                padding: 6,
+                              }}
+                            >
+                              {invoiceDate}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      style={{
+                        border: "1px solid black",
+                        padding: 0,
+                        width: "50%", // Add this to ensure proper width
+                      }}
+                    >
+                      <table
                         style={{
-                          fontWeight: "Bold",
-                          padding: 6,
-                          width: "50%",
-                          borderBottom: "1px solid black",
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          tableLayout: "fixed",
                         }}
                       >
-                        {invoiceNumber}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: 6,
-                          fontWeight: "bold",
-                          borderRight: "1px solid black",
-                        }}
-                      >
-                        Invoice Date
-                      </td>
-                      <td
-                        style={{
-                          fontWeight: "Bold",
-                          padding: 6,
-                        }}
-                      >
-                        {invoiceDate}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
+                        <tbody>
+                          <tr>
+                            <td
+                              style={{
+                                padding: 6,
+                                fontWeight: "bold",
+                                width: "50%",
+                                borderRight: " 1px solid black",
+                                borderBottom: "1px solid black",
+                              }}
+                            >
+                              Invoice No.
+                            </td>
+                            <td
+                              style={{
+                                fontWeight: "Bold",
+                                padding: 6,
+                                width: "50%",
+                                borderBottom: "1px solid black",
+                              }}
+                            >
+                              {invoiceNumber}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td
+                              style={{
+                                padding: 6,
+                                fontWeight: "bold",
+                                borderRight: "1px solid black",
+                              }}
+                            >
+                              Invoice Date
+                            </td>
+                            <td
+                              style={{
+                                fontWeight: "Bold",
+                                padding: 6,
+                              }}
+                            >
+                              {invoiceDate}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                )}
+              </>
+            )}
           </thead>
+
           <tbody>
             <tr>
               <th
@@ -1603,7 +1738,10 @@ export default function InvoiceForm() {
 
             {/* Footer section */}
             <tr>
-              <td colSpan={isSharda ? 6 : 3} style={{ border: "1px solid black", padding: 0 }}>
+              <td
+                colSpan={isSharda ? 6 : 3}
+                style={{ border: "1px solid black", padding: 0 }}
+              >
                 <table
                   style={{
                     width: "100%",
@@ -1619,6 +1757,7 @@ export default function InvoiceForm() {
                           padding: 6,
                           fontWeight: "light",
                           fontSize: 10,
+                          textAlign: "center",
                         }}
                       >
                         Total Amount in Words
@@ -1631,6 +1770,7 @@ export default function InvoiceForm() {
                           padding: 6,
                           fontSize: 10,
                           fontWeight: "Bold",
+                          textAlign: "center",
                         }}
                       >
                         {numberToWordsIndian(totalAmountWithTax)}
@@ -1643,6 +1783,7 @@ export default function InvoiceForm() {
                           padding: 6,
                           fontSize: 10,
                           fontWeight: "Bold",
+                          textAlign: "center",
                         }}
                       >
                         Bank Details
@@ -1659,96 +1800,48 @@ export default function InvoiceForm() {
                         }}
                       >
                         Bank Name: {selectedFirm.bank.name} <br />
+                        Account Name :{selectedFirm.bank.accountName} <br />
                         Account Number: {selectedFirm.bank.account} <br />
                         IFSC Code: {selectedFirm.bank.ifsc}
                       </td>
                     </tr>
+                    {isSharda && (
+                      <tr>
+                        <td
+                          className="normal-text "
+                          style={{
+                            padding: 6,
+                            fontSize: 10,
+                            fontWeight: "normal",
+                            fontStyle: "normal",
+                          }}
+                        >
+                          <strong>
+                            Online Wallets - Paytm, Google Pay & Phone Pay
+                          </strong>
+                          <br />
+                          Name : Anunay Sharda <br />
+                          Mobile Number : 7869777747
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </td>
               {!isSharda && (
-              <td colSpan={3} style={{ border: "1px solid black", padding: 0 }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "fixed",
-                  }}
+                <td
+                  colSpan={3}
+                  style={{ border: "1px solid black", padding: 0 }}
                 >
-                  <tbody>
-                    {/* Taxable Value */}
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        Taxable Value
-                      </td>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        ₹{taxableValue.toFixed(2)}
-                      </td>
-                    </tr>
-
-                    {/* Conditional Taxes */}
-                    {isLocalSupply() ? (
-                      <>
-                        <tr>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            Add: CGST (9%)
-                          </td>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            ₹{cgstAmount.toFixed(2)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            Add: SGST (9%)
-                          </td>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            ₹{sgstAmount.toFixed(2)}
-                          </td>
-                        </tr>
-                      </>
-                    ) : (
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      tableLayout: "fixed",
+                    }}
+                  >
+                    <tbody>
+                      {/* Taxable Value */}
                       <tr>
                         <td
                           style={{
@@ -1758,7 +1851,7 @@ export default function InvoiceForm() {
                             textAlign: "right",
                           }}
                         >
-                          Add: IGST (18%)
+                          Taxable Value
                         </td>
                         <td
                           style={{
@@ -1768,37 +1861,109 @@ export default function InvoiceForm() {
                             textAlign: "right",
                           }}
                         >
-                          ₹{igstAmount.toFixed(2)}
+                          ₹{taxableValue.toFixed(2)}
                         </td>
                       </tr>
-                    )}
 
-                    {/* Total Amount */}
-                    <tr>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        Total Amount
-                      </td>
-                      <td
-                        style={{
-                          borderBottom: "1px solid black",
-                          padding: 6,
-                          fontSize: 10,
-                          textAlign: "right",
-                        }}
-                      >
-                        ₹{totalAmountWithTax.toFixed(2)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
+                      {/* Conditional Taxes */}
+                      {isLocalSupply() ? (
+                        <>
+                          <tr>
+                            <td
+                              style={{
+                                borderBottom: "1px solid black",
+                                padding: 6,
+                                fontSize: 10,
+                                textAlign: "right",
+                              }}
+                            >
+                              Add: CGST (9%)
+                            </td>
+                            <td
+                              style={{
+                                borderBottom: "1px solid black",
+                                padding: 6,
+                                fontSize: 10,
+                                textAlign: "right",
+                              }}
+                            >
+                              ₹{cgstAmount.toFixed(2)}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td
+                              style={{
+                                borderBottom: "1px solid black",
+                                padding: 6,
+                                fontSize: 10,
+                                textAlign: "right",
+                              }}
+                            >
+                              Add: SGST (9%)
+                            </td>
+                            <td
+                              style={{
+                                borderBottom: "1px solid black",
+                                padding: 6,
+                                fontSize: 10,
+                                textAlign: "right",
+                              }}
+                            >
+                              ₹{sgstAmount.toFixed(2)}
+                            </td>
+                          </tr>
+                        </>
+                      ) : (
+                        <tr>
+                          <td
+                            style={{
+                              borderBottom: "1px solid black",
+                              padding: 6,
+                              fontSize: 10,
+                              textAlign: "right",
+                            }}
+                          >
+                            Add: IGST (18%)
+                          </td>
+                          <td
+                            style={{
+                              borderBottom: "1px solid black",
+                              padding: 6,
+                              fontSize: 10,
+                              textAlign: "right",
+                            }}
+                          >
+                            ₹{igstAmount.toFixed(2)}
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* Total Amount */}
+                      <tr>
+                        <td
+                          style={{
+                            borderBottom: "1px solid black",
+                            padding: 6,
+                            fontSize: 10,
+                            textAlign: "right",
+                          }}
+                        >
+                          Total Amount
+                        </td>
+                        <td
+                          style={{
+                            borderBottom: "1px solid black",
+                            padding: 6,
+                            fontSize: 10,
+                            textAlign: "right",
+                          }}
+                        >
+                          ₹{totalAmountWithTax.toFixed(2)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
               )}
             </tr>
           </tbody>
@@ -1814,7 +1979,7 @@ export default function InvoiceForm() {
         >
           This is a system generated invoice and does not require any signature.
         </p>
-        <div
+        {/* <div
           style={{
             borderTop: "20px solid #82C8E5",
             marginTop: 20,
@@ -1832,7 +1997,16 @@ export default function InvoiceForm() {
             marginLeft: -20,
             marginRight: -20,
           }}
-        ></div>
+        ></div> */}
+        <div
+          style={{ marginLeft: "-20px", marginRight: "-20px", marginTop: 20 }}
+        >
+          <img
+            src={footerImageFinaxis}
+            alt="Invoice Footer"
+            style={{ width: "100%", display: "block", height: "auto" }}
+          />
+        </div>
       </div>
     </div>
   );
