@@ -6,10 +6,13 @@ import Select from "react-select";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
 import finaxisLogo from "../assets/Finaxis_logo.png";
-import shardaLogo from "../assets/Sharda_logo.png";
+import shardaLogo from "../assets/ShardaLogo.png";
 import footerImageFinaxis from "../assets/LetterheadBottomFinaxis.jpg";
 import headerImageFinaxis from "../assets/LetterheadTopFinaxis.png";
 import finaxisHeader from "../assets/finaxis_header.png";
+import shardaHeader from "../assets/ShardaHeader.png";
+import headerImageSharda from "../assets/ShardaTop.png";
+import footerImageSharda from "../assets/ShardaBottom.png";
 
 const firms = [
   {
@@ -838,42 +841,42 @@ export default function InvoiceForm() {
         }}
       >
         {isSharda ? (
-<img
-          src={shardaLogo}
-          alt="Watermark"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: "400px",
-            height: "auto",
-            opacity: 0.1,
-            transform: "translate(-50%, -50%) ",
-            pointerEvents: "none",
-            userSelect: "none",
-            zIndex: 0,
-          }}
-        />
+          <img
+            src={shardaLogo}
+            alt="Watermark"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "400px",
+              height: "auto",
+              opacity: 0.1,
+              transform: "translate(-50%, -50%) ",
+              pointerEvents: "none",
+              userSelect: "none",
+              zIndex: 0,
+            }}
+          />
         ) : (
           <img
-          src={finaxisLogo}
-          alt="Watermark"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: "400px",
-            height: "auto",
-            opacity: 0.1,
-            transform: "translate(-50%, -50%) ",
-            pointerEvents: "none",
-            userSelect: "none",
-            zIndex: 0,
-          }}
-        />
+            src={finaxisLogo}
+            alt="Watermark"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "400px",
+              height: "auto",
+              opacity: 0.1,
+              transform: "translate(-50%, -50%) ",
+              pointerEvents: "none",
+              userSelect: "none",
+              zIndex: 0,
+            }}
+          />
         )}
         {/* Watermark */}
-        
+
         <div
           style={{
             marginTop: "-20px",
@@ -882,11 +885,19 @@ export default function InvoiceForm() {
             marginBottom: 5,
           }}
         >
-          <img
-            src={headerImageFinaxis}
-            alt="Invoice header"
-            style={{ width: "100%", display: "block", height: "auto" }}
-          />
+          {isSharda ? (
+            <img
+              src={headerImageSharda}
+              alt="Invoice header"
+              style={{ width: "100%", display: "block", height: "auto" }}
+            />
+          ) : (
+            <img
+              src={headerImageFinaxis}
+              alt="Invoice header"
+              style={{ width: "100%", display: "block", height: "auto" }}
+            />
+          )}
         </div>
         <div
           style={{
@@ -936,35 +947,16 @@ export default function InvoiceForm() {
                         }}
                       >
                         <img
-                          src={shardaLogo} // Replace with your actual logo path
+                          src={shardaLogo} 
                           alt="Sharda Associates Logo"
-                          style={{ height: 80, marginBottom: 8 }}
+                          style={{ height: 92}}
                         />
-                        <div
-                          style={{ display: "flex", flexDirection: "column" }}
-                        >
-                          <div
-                            style={{
-                              fontSize: 24,
-                              color: "#1A2B59",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            Sharda Associates
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: "#555",
-                              marginBottom: 4,
-                            }}
-                          >
-                            Finance | Subsidies | Arbitration | Taxation
-                          </div>
-                          <div style={{ fontSize: 12, color: "#555" }}>
-                            Business Restructuring & All Commercial Solutions
-                          </div>
-                        </div>
+
+                        <img
+                          src={shardaHeader}
+                          alt="finaxis business consultancy header"
+                          style={{ height: 75, marginBottom: 8 }}
+                        />
                       </div>
                     </>
                   ) : selectedFirm.name === "Finaxis Business Consultancy" ? (
@@ -978,34 +970,13 @@ export default function InvoiceForm() {
                         }}
                       >
                         <img
-                          src={finaxisLogo} // Replace with your actual logo path
+                          src={finaxisLogo}
                           alt="Finaxis Logo"
                           style={{ height: 80, marginBottom: 8 }}
                         />
-                        {/* <div
-                          style={{ display: "flex", flexDirection: "column" }}
-                        >
-                          <div
-                            style={{
-                              fontSize: 32,
-                              color: "#0C4F8C",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            FINAXIS
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 14,
-                              color: "#0C4F8C",
-                              marginBottom: 4,
-                            }}
-                          >
-                            Business Consultancy Pvt Ltd.
-                          </div>
-                        </div> */}
+
                         <img
-                          src={finaxisHeader} // Replace with your actual header image path
+                          src={finaxisHeader}
                           alt="finaxis business consultancy header"
                           style={{ height: 80, marginBottom: 8 }}
                         />
@@ -1036,8 +1007,17 @@ export default function InvoiceForm() {
             borderCollapse: "collapse",
             border: "1px solid black",
             tableLayout: "fixed",
+            height: "100%",
           }}
         >
+          <colgroup>
+            <col style={{ width: "10%" }} />
+            <col />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "10%" }} />
+            <col />
+            <col style={{ width: "15%" }} />
+          </colgroup>
           <thead>
             <tr style={{ backgroundColor: "#eee" }}>
               {!isSharda ? (
@@ -1092,6 +1072,7 @@ export default function InvoiceForm() {
                   fontWeight: "bold",
                   fontSize: 12,
                   textAlign: "center",
+                  width: "50%",
                 }}
               >
                 CLIENT DETAILS
@@ -1104,6 +1085,7 @@ export default function InvoiceForm() {
                   fontWeight: "bold",
                   fontSize: 12,
                   textAlign: "center",
+                  width: "50%",
                 }}
               >
                 COMPANY DETAILS
@@ -1116,6 +1098,7 @@ export default function InvoiceForm() {
                   padding: 6,
                   fontWeight: "Bold",
                   width: "15%",
+                  minWidth: "120px",
                 }}
               >
                 Name
@@ -1198,12 +1181,6 @@ export default function InvoiceForm() {
                   </td>
                 </tr>
                 <tr>
-                  {/* <td
-                    colSpan={3}
-                    style={{ border: "1px solid black", padding: 6 }}
-                  >
-                    
-                  </td> */}
                   <td
                     style={{
                       border: "1px solid black",
@@ -1330,7 +1307,6 @@ export default function InvoiceForm() {
                   </td>
                 </tr>
 
-                {/* GSTIN conditional rendering */}
                 {!isSharda && (
                   <tr>
                     <td
@@ -1377,18 +1353,14 @@ export default function InvoiceForm() {
 
                 {isSharda && (
                   <tr>
-                    {/* Empty cells for client side (3 columns) */}
                     <td
                       colSpan={3}
                       style={{
                         border: "1px solid black",
                         padding: 6,
                       }}
-                    >
-                      {/* Intentionally blank */}
-                    </td>
+                    ></td>
 
-                    {/* Contact No. label and number on company side */}
                     <td
                       style={{
                         border: "1px solid black",
@@ -1430,7 +1402,7 @@ export default function InvoiceForm() {
                         fontWeight: "Bold",
                       }}
                     >
-                      {placeOfSupply} {/* Now using the separate state */}
+                      {placeOfSupply}
                     </td>
 
                     <td
@@ -1570,7 +1542,7 @@ export default function InvoiceForm() {
                 style={{
                   border: "1px solid black",
                   padding: 6,
-                  width: "5%",
+                  width: "6%",
                   fontWeight: "bold",
                 }}
               >
@@ -1684,6 +1656,62 @@ export default function InvoiceForm() {
               );
             })}
 
+            {/* Fill empty rows if less than 6 items */}
+            {Array.from({ length: Math.max(0, 8 - items.length) }).map(
+              (_, idx) => (
+                <tr key={`empty-${idx}`} style={{ border: "none" }}>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      height: 30,
+                      textAlign: "center",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td style={{ border: "1px solid black", padding: 6 }}>
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "right",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "right",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                </tr>
+              )
+            )}
             <tr>
               <td
                 colSpan={5}
@@ -1708,21 +1736,6 @@ export default function InvoiceForm() {
               </td>
             </tr>
 
-            {/* Add empty rows if needed to fix minimum height */}
-            {/* {[...Array(3 - items.length > 0 ? 3 - items.length : 0)].map(
-              (_, i) => (
-                <tr key={`empty-${i}`}>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      padding: 6,
-                      height: 25,
-                    }}
-                    colSpan={6}
-                  />
-                </tr>
-              )
-            )} */}
             {items.length < 3 && (
               <tr>
                 <td
@@ -1736,7 +1749,6 @@ export default function InvoiceForm() {
               </tr>
             )}
 
-            {/* Footer section */}
             <tr>
               <td
                 colSpan={isSharda ? 6 : 3}
@@ -1841,7 +1853,6 @@ export default function InvoiceForm() {
                     }}
                   >
                     <tbody>
-                      {/* Taxable Value */}
                       <tr>
                         <td
                           style={{
@@ -1865,7 +1876,6 @@ export default function InvoiceForm() {
                         </td>
                       </tr>
 
-                      {/* Conditional Taxes */}
                       {isLocalSupply() ? (
                         <>
                           <tr>
@@ -1938,7 +1948,6 @@ export default function InvoiceForm() {
                         </tr>
                       )}
 
-                      {/* Total Amount */}
                       <tr>
                         <td
                           style={{
@@ -2001,11 +2010,20 @@ export default function InvoiceForm() {
         <div
           style={{ marginLeft: "-20px", marginRight: "-20px", marginTop: 20 }}
         >
-          <img
+          {isSharda ? (
+            <img
+            src={footerImageSharda}
+            alt="Invoice Footer"
+            style={{ width: "100%", display: "block", height: "auto" }}
+          />
+          ) : (
+            <img
             src={footerImageFinaxis}
             alt="Invoice Footer"
             style={{ width: "100%", display: "block", height: "auto" }}
           />
+          )}
+          
         </div>
       </div>
     </div>
