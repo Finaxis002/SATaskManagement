@@ -1,9 +1,12 @@
 import React from "react";
 import finaxisLogo from "../assets/Finaxis_logo.png";
-import shardaLogo from "../assets/Sharda_logo.png";
+import shardaLogo from "../assets/ShardaLogo.png";
 import footerImageFinaxis from "../assets/LetterheadBottomFinaxis.jpg";
 import headerImageFinaxis from "../assets/LetterheadTopFinaxis.png";
 import finaxisHeader from "../assets/finaxis_header.png";
+import shardaHeader from "../assets/ShardaHeader.png";
+import headerImageSharda from "../assets/ShardaTop.png";
+import footerImageSharda from "../assets/ShardaBottom.png";
 
 export default function InvoicePreview({
   selectedFirm,
@@ -24,7 +27,10 @@ export default function InvoicePreview({
     return place === "mp" || place === "madhyapradesh";
   };
 
-  const totalAmount = items.reduce((sum, item) => sum + item.qty * item.rate, 0);
+  const totalAmount = items.reduce(
+    (sum, item) => sum + item.qty * item.rate,
+    0
+  );
   const taxableValue = totalAmount;
   const igstRate = 0.18;
   const cgstRate = 0.09;
@@ -38,28 +44,71 @@ export default function InvoicePreview({
 
   function numberToWordsIndian(num) {
     const a = [
-      "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight",
-      "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen",
-      "Sixteen", "Seventeen", "Eighteen", "Nineteen",
+      "",
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten",
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
     ];
     const b = [
-      "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy",
-      "Eighty", "Ninety",
+      "",
+      "",
+      "Twenty",
+      "Thirty",
+      "Forty",
+      "Fifty",
+      "Sixty",
+      "Seventy",
+      "Eighty",
+      "Ninety",
     ];
     const numberToWords = (n) => {
       if (n < 20) return a[n];
-      if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+      if (n < 100)
+        return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
       if (n < 1000)
-        return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " and " + numberToWords(n % 100) : "");
+        return (
+          a[Math.floor(n / 100)] +
+          " Hundred" +
+          (n % 100 ? " and " + numberToWords(n % 100) : "")
+        );
       if (n < 100000)
-        return numberToWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + numberToWords(n % 1000) : "");
+        return (
+          numberToWords(Math.floor(n / 1000)) +
+          " Thousand" +
+          (n % 1000 ? " " + numberToWords(n % 1000) : "")
+        );
       if (n < 10000000)
-        return numberToWords(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + numberToWords(n % 100000) : "");
-      return numberToWords(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + numberToWords(n % 10000000) : "");
+        return (
+          numberToWords(Math.floor(n / 100000)) +
+          " Lakh" +
+          (n % 100000 ? " " + numberToWords(n % 100000) : "")
+        );
+      return (
+        numberToWords(Math.floor(n / 10000000)) +
+        " Crore" +
+        (n % 10000000 ? " " + numberToWords(n % 10000000) : "")
+      );
     };
     const [rupees, paise] = num.toFixed(2).split(".");
     const rupeeWords = numberToWords(parseInt(rupees));
-    const paiseWords = paise !== "00" ? ` and ${numberToWords(parseInt(paise))} Paise` : "";
+    const paiseWords =
+      paise !== "00" ? ` and ${numberToWords(parseInt(paise))} Paise` : "";
     return rupeeWords + paiseWords + " Rupees Only";
   }
 
@@ -123,11 +172,19 @@ export default function InvoicePreview({
           marginBottom: 5,
         }}
       >
-        <img
-          src={headerImageFinaxis}
-          alt="Invoice header"
-          style={{ width: "100%", display: "block", height: "auto" }}
-        />
+        {isSharda ? (
+          <img
+            src={headerImageSharda}
+            alt="Invoice header"
+            style={{ width: "100%", display: "block", height: "auto" }}
+          />
+        ) : (
+          <img
+            src={headerImageFinaxis}
+            alt="Invoice header"
+            style={{ width: "100%", display: "block", height: "auto" }}
+          />
+        )}
       </div>
 
       {/* Company Header */}
@@ -151,30 +208,20 @@ export default function InvoicePreview({
             }}
           >
             {selectedFirm.name === "Sharda Associates" ? (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: 12 }}
-              >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <img
                   src={shardaLogo}
                   alt="Sharda Associates Logo"
                   style={{ height: 80, marginBottom: 8 }}
                 />
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div style={{ fontSize: 24, color: "#1A2B59", fontWeight: "bold" }}>
-                    Sharda Associates
-                  </div>
-                  <div style={{ fontSize: 12, color: "#555", marginBottom: 4 }}>
-                    Finance | Subsidies | Arbitration | Taxation
-                  </div>
-                  <div style={{ fontSize: 12, color: "#555" }}>
-                    Business Restructuring & All Commercial Solutions
-                  </div>
-                </div>
+                <img
+                  src={shardaHeader}
+                  alt="finaxis business consultancy header"
+                  style={{ height: 75, marginBottom: 8 }}
+                />
               </div>
             ) : selectedFirm.name === "Finaxis Business Consultancy" ? (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: 12 }}
-              >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <img
                   src={finaxisLogo}
                   alt="Finaxis Logo"
@@ -206,6 +253,14 @@ export default function InvoicePreview({
           tableLayout: "fixed",
         }}
       >
+        <colgroup>
+          <col style={{ width: "10%" }} />
+          <col />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "10%" }} />
+          <col />
+          <col style={{ width: "15%" }} />
+        </colgroup>
         <thead>
           <tr style={{ backgroundColor: "#eee" }}>
             {!isSharda ? (
@@ -534,7 +589,10 @@ export default function InvoicePreview({
 
               {isSharda && (
                 <tr>
-                  <td colSpan={3} style={{ border: "1px solid black", padding: 6 }}>
+                  <td
+                    colSpan={3}
+                    style={{ border: "1px solid black", padding: 6 }}
+                  >
                     {/* Empty left cells */}
                   </td>
 
@@ -547,7 +605,14 @@ export default function InvoicePreview({
                   >
                     Contact No.
                   </td>
-                  <td colSpan={2} style={{ border: "1px solid black", padding: 6, fontWeight: "bold" }}>
+                  <td
+                    colSpan={2}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
                     {selectedFirm.phone}
                   </td>
                 </tr>
@@ -564,13 +629,24 @@ export default function InvoicePreview({
                   >
                     Place of Supply
                   </td>
-                  <td colSpan={2} style={{ border: "1px solid black", padding: 6, fontWeight: "bold" }}>
+                  <td
+                    colSpan={2}
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      fontWeight: "bold",
+                    }}
+                  >
                     {placeOfSupply}
                   </td>
 
                   <td
                     colSpan={3}
-                    style={{ border: "1px solid black", padding: 0, width: "50%" }}
+                    style={{
+                      border: "1px solid black",
+                      padding: 0,
+                      width: "50%",
+                    }}
                   >
                     <table
                       style={{
@@ -625,7 +701,11 @@ export default function InvoicePreview({
                 <tr>
                   <td
                     colSpan={3}
-                    style={{ border: "1px solid black", padding: 0, width: "50%" }}
+                    style={{
+                      border: "1px solid black",
+                      padding: 0,
+                      width: "50%",
+                    }}
                   >
                     <table
                       style={{
@@ -802,6 +882,62 @@ export default function InvoicePreview({
             );
           })}
 
+          {/* Fill empty rows if less than 6 items */}
+          {Array.from({ length: Math.max(0, 8 - items.length) }).map(
+            (_, idx) => (
+              <tr key={`empty-${idx}`} style={{ border: "none" }}>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    height: 30,
+                    textAlign: "center",
+                  }}
+                >
+                  &nbsp;
+                </td>
+                <td style={{ border: "1px solid black", padding: 6 }}>
+                  &nbsp;
+                </td>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    textAlign: "center",
+                  }}
+                >
+                  &nbsp;
+                </td>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    textAlign: "center",
+                  }}
+                >
+                  &nbsp;
+                </td>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    textAlign: "right",
+                  }}
+                >
+                  &nbsp;
+                </td>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    textAlign: "right",
+                  }}
+                >
+                  &nbsp;
+                </td>
+              </tr>
+            )
+          )}
           {/* Empty rows to fix minimum height */}
           {items.length < 3 && (
             <tr>
@@ -1054,11 +1190,19 @@ export default function InvoicePreview({
 
       {/* Footer Image */}
       <div style={{ marginLeft: "-20px", marginRight: "-20px", marginTop: 20 }}>
-        <img
-          src={footerImageFinaxis}
-          alt="Invoice Footer"
-          style={{ width: "100%", display: "block", height: "auto" }}
-        />
+        {isSharda ? (
+          <img
+            src={footerImageSharda}
+            alt="Invoice Footer"
+            style={{ width: "100%", display: "block", height: "auto" }}
+          />
+        ) : (
+          <img
+            src={footerImageFinaxis}
+            alt="Invoice Footer"
+            style={{ width: "100%", display: "block", height: "auto" }}
+          />
+        )}
       </div>
     </div>
   );
