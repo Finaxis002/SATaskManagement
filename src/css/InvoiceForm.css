@@ -431,3 +431,62 @@
 .normal-text {
   font-weight: normal !important;
 }
+.page {
+  page-break-after: always;
+  margin: 40px 20px; /* vertical margin for spacing */
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+.page:last-child {
+  page-break-after: auto;
+}
+.invoice-page-container {
+  width: 800px;
+  padding: 0;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.invoice-page-container * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.pdf-wrapper {
+  page-break-before: auto !important;
+  page-break-after: always !important;
+  page-break-inside: avoid !important;
+  margin: 0 !important;
+ 
+}
+
+.pdf-wrapper * {
+  page-break-inside: avoid !important;
+  margin: 0 !important;
+ 
+  box-sizing: border-box;
+}
+
+.pdf-wrapper:last-child {
+  page-break-after: auto;
+}
+
+.invoice-header, .invoice-page-container > :first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+@media print {
+  .invoice-page-container {
+    width: 800px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    page-break-after: avoid !important;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+  }
+}
+
