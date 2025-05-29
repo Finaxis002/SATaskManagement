@@ -8,10 +8,10 @@ import Swal from "sweetalert2";
 import finaxisLogo from "../assets/Finaxis_logo.png";
 import shardaLogo from "../assets/ShardaLogo.png";
 import footerImageFinaxis from "../assets/LetterheadBottomFinaxis.jpg";
-import headerImageFinaxis from "../assets/LetterheadTopFinaxis.png";
+import headerImageFinaxis from "../assets/headerImgFinaxis1.png";
 import finaxisHeader from "../assets/finaxis_header.png";
 import shardaHeader from "../assets/ShardaHeader.png";
-import headerImageSharda from "../assets/ShardaTop.png";
+import headerImageSharda from "../assets/headerImgSharda.png";
 import footerImageSharda from "../assets/ShardaBottom.png";
 const ITEMS_PER_PAGE = 8;
 const firms = [
@@ -74,7 +74,6 @@ const generateInvoiceNumber = () => {
   return id;
 };
 
-
 export default function InvoiceForm() {
   const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
@@ -87,7 +86,7 @@ export default function InvoiceForm() {
     return `${yyyy}-${mm}-${dd}`;
   });
   const [placeOfSupply, setPlaceOfSupply] = useState("Gujarat");
-const isLocalSupply = () => {
+  const isLocalSupply = () => {
     const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
     return place === "mp" || place === "madhyapradesh";
   };
@@ -123,6 +122,9 @@ const isLocalSupply = () => {
 
   const invoiceRef = useRef();
   const isSharda = selectedFirm.name === "Sharda Associates";
+
+  const  offsetPage1 = 0;
+  const offsetPage2 = ITEMS_PER_PAGE;
 
   // Fetch clients on component mount
   useEffect(() => {
@@ -298,7 +300,6 @@ const isLocalSupply = () => {
       { id: uuidv4(), description: "", hsn: "9971", qty: 1, rate: 0, gst: 0 },
     ]);
   };
-  
 
   const totalAmount = items.reduce(
     (sum, item) => sum + item.qty * item.rate,
@@ -371,8 +372,7 @@ const isLocalSupply = () => {
   //     element.style.width = "";
   //   }, 1000);
   // };
-  
-  
+
   // const handleDownloadPDF = () => {
   //   if (!invoiceRef.current) return;
   //   const element = invoiceRef.current;
@@ -409,12 +409,13 @@ const isLocalSupply = () => {
   //     });
   // };
 
-   const handleDownloadPDF = () => {
+  const handleDownloadPDF = () => {
     if (!invoiceRef.current) return;
     const element = invoiceRef.current;
     // Temporarily remove scale before PDF generation
-    element.style.transform = "none";  // Remove scale(0.75)
-  element.style.width = "800px";   
+    element.style.transform = "scale(1)";
+    element.style.transformOrigin = "top left";
+    element.style.width = `${element.scrollWidth}px`;
 
     // Make sure element is attached to DOM and visible
     if (!document.body.contains(element)) {
@@ -440,7 +441,7 @@ const isLocalSupply = () => {
         format: "a4",
         orientation: "portrait",
       },
-       pagebreak: { mode: "css" }
+      pagebreak: { mode: "css" },
     };
 
     // Add this to ensure proper scaling
@@ -455,7 +456,8 @@ const isLocalSupply = () => {
         // Restore scale after PDF is generated
 
         element.style.transform = "scale(0.75)";
-      element.style.width = "";
+        element.style.transformOrigin = "top left";
+        element.style.width = "";
       });
 
     // Reset the width after PDF generation if needed
@@ -463,7 +465,7 @@ const isLocalSupply = () => {
       element.style.width = "";
     }, 1000);
   };
-  
+
   const saveInvoice = async () => {
     try {
       const invoiceData = {
@@ -2050,22 +2052,25 @@ const isLocalSupply = () => {
         className="invoice-right screen-preview"
         ref={invoiceRef}
         style={{
-          flex: "1 1 800px",
-          maxWidth: 800,
+          // flex: "1 1 800px",
+          // maxWidth: 800,
           backgroundColor: "#fff",
-          border: "1px solid #000",
-          borderRight: "1px solid black",
-          padding: "0 20px 0px 20px",
+          // border: "1px solid #000",
+          // borderRight: "1px solid black",
+          // padding: "0 20px 0px 20px",
           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
           fontSize: 12,
           color: "#000",
           transform: "scale(0.75)", // visually shrink
           transformOrigin: "top left",
           position: "relative",
+          width: "210mm",
         }}
       >
         <InvoicePage
+        pageNumber={1}
           itemsOnPage={page1Items}
+          offset={offsetPage1}
           isLastPage={page2Items.length === 0}
           customer={customer}
           selectedFirm={selectedFirm}
@@ -2084,7 +2089,9 @@ const isLocalSupply = () => {
         />
         {page2Items.length > 0 && (
           <InvoicePage
+           pageNumber={2}
             itemsOnPage={page2Items}
+            offset={offsetPage2}
             isLastPage={true}
             customer={customer}
             selectedFirm={selectedFirm}
@@ -2108,7 +2115,9 @@ const isLocalSupply = () => {
 }
 
 function InvoicePage({
+  pageNumber,
   itemsOnPage,
+  offset,
   isLastPage,
   customer,
   selectedFirm,
@@ -2125,207 +2134,228 @@ function InvoicePage({
   sgstAmount,
   numberToWordsIndian,
 }) {
-  
-const isLocalSupply = () => {
+  const isLocalSupply = () => {
     const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
     return place === "mp" || place === "madhyapradesh";
   };
-  return (
-    <div  className="pdf-wrapper">
-    <div
-      className="invoice-page-container"
-      style={{
-        
-        width: "800px",
-        margin: "0 auto 40px auto",
-        position: "relative",
-        background: "#fff",
-      }}
-    >
-      {/* Watermark */}
-      {isSharda ? (
-        <img
-          src={shardaLogo}
-          alt="Watermark"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: "400px",
-            height: "auto",
-            opacity: 0.1,
-            transform: "translate(-50%, -50%) ",
-            pointerEvents: "none",
-            userSelect: "none",
-            zIndex: 0,
-          }}
-        />
-      ) : (
-        <img
-          src={finaxisLogo}
-          alt="Watermark"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: "400px",
-            height: "auto",
-            opacity: 0.1,
-            transform: "translate(-50%, -50%) ",
-            pointerEvents: "none",
-            userSelect: "none",
-            zIndex: 0,
-          }}
-        />
-      )}
 
+  // const headerStyle = {
+  //   width: "100%",
+  //   display: "block",
+  //   height: pageNumber === 1 ? "auto" : "20px",  // shrink on 2nd page
+  //   marginBottom: pageNumber === 1 ? "20px" : "5px",
+  //   marginTop: pageNumber === 1 ? "0px" : "0px",
+  // };
+  const headerStyle = pageNumber === 1
+  ? { width: "100%", display: "block", height: "auto", marginBottom: 20 }
+  : { width: "100%", display: "block", height: 'auto', marginTop:-30 }
+
+  const footerStyle = pageNumber === 1
+  ? { width: "100%", display: "block", height: "auto" , marginTop: 35  }
+  : { width: "100%", display: "block", height: 'auto', marginTop: 18 }
+
+  return (
+    <div className="pdf-wrapper">
       {/* Header */}
       <div
         style={{
-          marginTop: "-20px",
-          marginLeft: -20,
-          marginRight: -20,
-          marginBottom: 5,
+          margin: 0,
+          padding: 0,
         }}
       >
         {isSharda ? (
           <img
+            className="header-image"
             src={headerImageSharda}
             alt="Invoice header"
-            style={{ width: "100%", display: "block", height: "auto" }}
+            // style={{ width: "100%", display: "block", height: "auto" }}
+            style={headerStyle}
           />
         ) : (
           <img
+            className="header-image"
             src={headerImageFinaxis}
             alt="Invoice header"
-            style={{ width: "100%", display: "block", height: "auto" }}
+            // style={{ width: "100%", display: "block", height: "auto" }}
+            style={headerStyle}
           />
         )}
       </div>
-
-      {/* Insert your existing client/company details table header here */}
-      {/* For brevity, reuse your existing header code block here */}
-      {/* You can move your existing header JSX here as well */}
+      {/* invoice-container */}
       <div
+        className="invoice-page-container invoice-content"
         style={{
-          paddingBottom: 10,
-          marginBottom: 15,
-          display: "flex",
-          alignItems: "flex-start",
+          position: "relative",
         }}
       >
+        {/* Watermark */}
+        {isSharda ? (
+          <img
+            src={shardaLogo}
+            alt="Watermark"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "400px",
+              height: "auto",
+              opacity: 0.1,
+              transform: "translate(-50%, -50%) ",
+              pointerEvents: "none",
+              userSelect: "none",
+              zIndex: 0,
+            }}
+          />
+        ) : (
+          <img
+            src={finaxisLogo}
+            alt="Watermark"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "400px",
+              height: "auto",
+              opacity: 0.1,
+              transform: "translate(-50%, -50%) ",
+              pointerEvents: "none",
+              userSelect: "none",
+              zIndex: 0,
+            }}
+          />
+        )}
+
+        {/* Insert your existing client/company details table header here */}
+        {/* For brevity, reuse your existing header code block here */}
+        {/* You can move your existing header JSX here as well */}
         <div
           style={{
-            width: "100%",
+            paddingBottom: 10,
+            marginBottom: 15,
             display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            alignItems: "flex-start",
           }}
         >
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{
-                fontSize: 24,
-                color: "#1A2B59",
-                lineHeight: 1.1,
-                textAlign: "center",
-                fontWeight: "",
-                marginLeft: 0,
-                marginRight: 0,
-              }}
-            >
-              {/* {selectedFirm.name.split(" ").join("\n")} */}
-              {/* {selectedFirm.name} */}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ textAlign: "center" }}>
               <div
                 style={{
-                  width: "100%",
+                  fontSize: 24,
+                  color: "#1A2B59",
+                  lineHeight: 1.1,
                   textAlign: "center",
-                  marginBottom: 15,
+                  fontWeight: "",
+                  marginLeft: 0,
+                  marginRight: 0,
                 }}
               >
-                {selectedFirm.name === "Sharda Associates" ? (
-                  // Sharda Associates Header
-                  <>
+                {/* {selectedFirm.name.split(" ").join("\n")} */}
+                {/* {selectedFirm.name} */}
+                <div
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    marginBottom: 15,
+                  }}
+                >
+                  {selectedFirm.name === "Sharda Associates" ? (
+                    // Sharda Associates Header
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                        }}
+                      >
+                        <img
+                          src={shardaLogo}
+                          alt="Sharda Associates Logo"
+                          style={{ height: 92 }}
+                        />
+
+                        <img
+                          src={shardaHeader}
+                          alt="finaxis business consultancy header"
+                          style={{ height: 75, marginBottom: 8 }}
+                        />
+                      </div>
+                    </>
+                  ) : selectedFirm.name === "Finaxis Business Consultancy" ? (
+                    // Finaxis Header
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                        }}
+                      >
+                        <img
+                          src={finaxisLogo}
+                          alt="Finaxis Logo"
+                          style={{ height: 80, marginBottom: 8 }}
+                        />
+
+                        <img
+                          src={finaxisHeader}
+                          alt="finaxis business consultancy header"
+                          style={{ height: 80, marginBottom: 8 }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    // Default Header (simple)
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
+                        fontSize: 24,
+                        color: "#1A2B59",
+                        fontWeight: "bold",
                       }}
                     >
-                      <img
-                        src={shardaLogo}
-                        alt="Sharda Associates Logo"
-                        style={{ height: 92 }}
-                      />
-
-                      <img
-                        src={shardaHeader}
-                        alt="finaxis business consultancy header"
-                        style={{ height: 75, marginBottom: 8 }}
-                      />
+                      {selectedFirm.name}
                     </div>
-                  </>
-                ) : selectedFirm.name === "Finaxis Business Consultancy" ? (
-                  // Finaxis Header
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      }}
-                    >
-                      <img
-                        src={finaxisLogo}
-                        alt="Finaxis Logo"
-                        style={{ height: 80, marginBottom: 8 }}
-                      />
-
-                      <img
-                        src={finaxisHeader}
-                        alt="finaxis business consultancy header"
-                        style={{ height: 80, marginBottom: 8 }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  // Default Header (simple)
-                  <div
-                    style={{
-                      fontSize: 24,
-                      color: "#1A2B59",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {selectedFirm.name}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      {/* Item Table */}
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          border: "1px solid black",
-          tableLayout: "fixed",
-          height: "100%",
-        }}
-      >
-        <colgroup>
-          <col style={{ width: "10%" }} />
-          <col />
-          <col style={{ width: "10%" }} />
-          <col style={{ width: "10%" }} />
-          <col />
-          <col style={{ width: "15%" }} />
-        </colgroup>
-        <thead>
-           <tr style={{ backgroundColor: "#eee" }}>
+        {/* Item Table */}
+        <div
+          style={{
+            width: "100%",
+            overflowX: "auto",
+            height: "800px",
+            padding: "0 20px 0px 20px",
+          }}
+        >
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              border: "1px solid black",
+              tableLayout: "fixed",
+              height: "100%",
+            }}
+          >
+            <colgroup>
+              <col style={{ width: "10%" }} />
+              <col />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "10%" }} />
+              <col />
+              <col style={{ width: "15%" }} />
+            </colgroup>
+            <thead>
+              <tr style={{ backgroundColor: "#eee" }}>
                 {!isSharda ? (
                   <>
                     <th
@@ -2354,7 +2384,6 @@ const isLocalSupply = () => {
                     </th>
                   </>
                 ) : (
-                  
                   <th
                     colSpan={6}
                     style={{
@@ -2840,10 +2869,10 @@ const isLocalSupply = () => {
                   )}
                 </>
               )}
-        </thead>
+            </thead>
 
-        <tbody>
-                <tr>
+            <tbody>
+              <tr>
                 <th
                   style={{
                     border: "1px solid black",
@@ -2906,415 +2935,430 @@ const isLocalSupply = () => {
                   Amount
                 </th>
               </tr>
-          {itemsOnPage.map((item, idx) => {
-            const amount = item.qty * item.rate;
-            return (
-              <tr key={idx}>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "center",
-                  }}
-                >
-                  {idx + 1 + (isLastPage ? 0 : 0)} {/* adjust if needed */}
-                </td>
-                <td style={{ border: "1px solid black", padding: 6 }}>
-                  {item.description}
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "center",
-                  }}
-                >
-                  9971
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "center",
-                  }}
-                >
-                  {item.qty}
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "right",
-                  }}
-                >
-                  ₹{item.rate.toFixed(2)}
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "right",
-                  }}
-                >
-                  ₹{amount.toFixed(2)}
-                </td>
-              </tr>
-            );
-          })}
-
-          {/* On first page, if more pages exist, add "To be continued..." */}
-          {!isLastPage && (
-            <tr>
-              <td
-                colSpan={6}
-                style={{
-                  textAlign: "center",
-                  fontWeight: "bold",
-                  padding: 10,
-                }}
-              >
-                To be continued...
-              </td>
-            </tr>
-          )}
-
-          {/* On last page, fill empty rows to make 8 rows */}
-          {isLastPage &&
-            Array.from({
-              length: Math.max(0, ITEMS_PER_PAGE - itemsOnPage.length),
-            }).map((_, idx) => (
-              <tr key={`empty-${idx}`} style={{ border: "none" }}>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    height: 30,
-                    textAlign: "center",
-                  }}
-                >
-                  &nbsp;
-                </td>
-                <td style={{ border: "1px solid black", padding: 6 }}>
-                  &nbsp;
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "center",
-                  }}
-                >
-                  &nbsp;
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "center",
-                  }}
-                >
-                  &nbsp;
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "right",
-                  }}
-                >
-                  &nbsp;
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "right",
-                  }}
-                >
-                  &nbsp;
-                </td>
-              </tr>
-            ))}
-
-          {/* Totals and bank details only on last page */}
-          {isLastPage && (
-            <>
-              <tr>
-                <td
-                  colSpan={5}
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    fontWeight: "bold",
-                    textAlign: "right",
-                  }}
-                >
-                  Total in Rupees
-                </td>
-                <td
-                  style={{
-                    border: "1px solid black",
-                    padding: 6,
-                    textAlign: "right",
-                    fontWeight: "bold",
-                  }}
-                >
-                  ₹{totalAmount.toFixed(2)}
-                </td>
-              </tr>
-
-              {/* Other totals and bank details */}
-              {/* Use your existing JSX for totals and bank details here */}
-
-              <tr>
-                <td
-                  colSpan={isSharda ? 6 : 3}
-                  style={{ border: "1px solid black", padding: 0 }}
-                >
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      tableLayout: "fixed",
-                    }}
-                  >
-                    <tbody>
-                      <tr>
-                        <td
-                          style={{
-                            borderBottom: "1px solid black",
-                            padding: 6,
-                            fontWeight: "light",
-                            fontSize: 10,
-                            textAlign: "center",
-                          }}
-                        >
-                          Total Amount in Words
-                        </td>
-                      </tr>
-                      <tr>
-                        <td
-                          style={{
-                            borderBottom: "1px solid black",
-                            padding: 6,
-                            fontSize: 10,
-                            fontWeight: "Bold",
-                            textAlign: "center",
-                          }}
-                        >
-                          {numberToWordsIndian(totalAmountWithTax)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td
-                          style={{
-                            borderBottom: "1px solid black",
-                            padding: 6,
-                            fontSize: 10,
-                            fontWeight: "Bold",
-                            textAlign: "center",
-                          }}
-                        >
-                          Bank Details
-                        </td>
-                      </tr>
-                      <tr>
-                        <td
-                          className="normal-text "
-                          style={{
-                            padding: "20px 6px 20px 6px",
-                            fontSize: 10,
-                            fontWeight: "normal",
-                            fontStyle: "normal",
-                          }}
-                        >
-                          Bank Name: {selectedFirm.bank.name} <br />
-                          Account Name :{selectedFirm.bank.accountName} <br />
-                          Account Number: {selectedFirm.bank.account} <br />
-                          IFSC Code: {selectedFirm.bank.ifsc}
-                        </td>
-                      </tr>
-                      {isSharda && (
-                        <tr>
-                          <td
-                            className="normal-text "
-                            style={{
-                              padding: 6,
-                              fontSize: 10,
-                              fontWeight: "normal",
-                              fontStyle: "normal",
-                            }}
-                          >
-                            <strong>
-                              Online Wallets - Paytm, Google Pay & Phone Pay
-                            </strong>
-                            <br />
-                            Name : Anunay Sharda <br />
-                            Mobile Number : 7869777747
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </td>
-                {!isSharda && (
-                  <td
-                    colSpan={3}
-                    style={{ border: "1px solid black", padding: 0 }}
-                  >
-                    <table
+              {itemsOnPage.map((item, idx) => {
+                const amount = item.qty * item.rate;
+                return (
+                  <tr key={idx}>
+                    <td
                       style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        tableLayout: "fixed",
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "center",
                       }}
                     >
-                      <tbody>
-                        <tr>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            Taxable Value
-                          </td>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            ₹{taxableValue.toFixed(2)}
-                          </td>
-                        </tr>
+                      {/* {idx + 1 + (isLastPage ? 0 : 0)} adjust if needed */}
+                      {offset + idx + 1}
+                    </td>
+                    <td style={{ border: "1px solid black", padding: 6 }}>
+                      {item.description}
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "center",
+                      }}
+                    >
+                      9971
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "center",
+                      }}
+                    >
+                      {item.qty}
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "right",
+                      }}
+                    >
+                      ₹{item.rate.toFixed(2)}
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "right",
+                      }}
+                    >
+                      ₹{amount.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
 
-                        {isLocalSupply() ? (
-                          <>
-                            <tr>
-                              <td
-                                style={{
-                                  borderBottom: "1px solid black",
-                                  padding: 6,
-                                  fontSize: 10,
-                                  textAlign: "right",
-                                }}
-                              >
-                                Add: CGST (9%)
-                              </td>
-                              <td
-                                style={{
-                                  borderBottom: "1px solid black",
-                                  padding: 6,
-                                  fontSize: 10,
-                                  textAlign: "right",
-                                }}
-                              >
-                                ₹{cgstAmount.toFixed(2)}
-                              </td>
-                            </tr>
-                            <tr>
-                              <td
-                                style={{
-                                  borderBottom: "1px solid black",
-                                  padding: 6,
-                                  fontSize: 10,
-                                  textAlign: "right",
-                                }}
-                              >
-                                Add: SGST (9%)
-                              </td>
-                              <td
-                                style={{
-                                  borderBottom: "1px solid black",
-                                  padding: 6,
-                                  fontSize: 10,
-                                  textAlign: "right",
-                                }}
-                              >
-                                ₹{sgstAmount.toFixed(2)}
-                              </td>
-                            </tr>
-                          </>
-                        ) : (
+              {/* On first page, if more pages exist, add "To be continued..." */}
+              {!isLastPage && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    style={{
+                      textAlign: "center",
+                      fontWeight: "bold",
+                      padding: 10,
+                    }}
+                  >
+                    To be continued...
+                  </td>
+                </tr>
+              )}
+
+              {/* On last page, fill empty rows to make 8 rows */}
+              {isLastPage &&
+                Array.from({
+                  length: Math.max(0, ITEMS_PER_PAGE - itemsOnPage.length),
+                }).map((_, idx) => (
+                  <tr key={`empty-${idx}`} style={{ border: "none" }}>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        height: 30,
+                        textAlign: "center",
+                      }}
+                    >
+                      &nbsp;
+                    </td>
+                    <td style={{ border: "1px solid black", padding: 6 }}>
+                      &nbsp;
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "center",
+                      }}
+                    >
+                      &nbsp;
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "center",
+                      }}
+                    >
+                      &nbsp;
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "right",
+                      }}
+                    >
+                      &nbsp;
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "right",
+                      }}
+                    >
+                      &nbsp;
+                    </td>
+                  </tr>
+                ))}
+
+              {/* Totals and bank details only on last page */}
+              {isLastPage && (
+                <>
+                  <tr>
+                    <td
+                      colSpan={5}
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        fontWeight: "bold",
+                        textAlign: "right",
+                      }}
+                    >
+                      Total in Rupees
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "right",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      ₹{totalAmount.toFixed(2)}
+                    </td>
+                  </tr>
+
+                  {/* Other totals and bank details */}
+                  {/* Use your existing JSX for totals and bank details here */}
+
+                  <tr>
+                    <td
+                      colSpan={isSharda ? 6 : 3}
+                      style={{ border: "1px solid black", padding: 0 }}
+                    >
+                      <table
+                        style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          tableLayout: "fixed",
+                        }}
+                      >
+                        <tbody>
+                          <tr>
+                            <td
+                              style={{
+                                borderBottom: "1px solid black",
+                                padding: 6,
+                                fontWeight: "light",
+                                fontSize: 10,
+                                textAlign: "center",
+                              }}
+                            >
+                              Total Amount in Words
+                            </td>
+                          </tr>
                           <tr>
                             <td
                               style={{
                                 borderBottom: "1px solid black",
                                 padding: 6,
                                 fontSize: 10,
-                                textAlign: "right",
+                                fontWeight: "Bold",
+                                textAlign: "center",
                               }}
                             >
-                              Add: IGST (18%)
+                              {numberToWordsIndian(totalAmountWithTax)}
                             </td>
+                          </tr>
+                          <tr>
                             <td
                               style={{
                                 borderBottom: "1px solid black",
                                 padding: 6,
                                 fontSize: 10,
-                                textAlign: "right",
+                                fontWeight: "Bold",
+                                textAlign: "center",
                               }}
                             >
-                              ₹{igstAmount.toFixed(2)}
+                              Bank Details
                             </td>
                           </tr>
-                        )}
+                          <tr>
+                            <td
+                              className="normal-text "
+                              style={{
+                                padding: "20px 6px 20px 6px",
+                                fontSize: 10,
+                                fontWeight: "normal",
+                                fontStyle: "normal",
+                              }}
+                            >
+                              Bank Name: {selectedFirm.bank.name} <br />
+                              Account Name :{selectedFirm.bank.accountName}{" "}
+                              <br />
+                              Account Number: {selectedFirm.bank.account} <br />
+                              IFSC Code: {selectedFirm.bank.ifsc}
+                            </td>
+                          </tr>
+                          {isSharda && (
+                            <tr>
+                              <td
+                                className="normal-text "
+                                style={{
+                                  padding: 6,
+                                  fontSize: 10,
+                                  fontWeight: "normal",
+                                  fontStyle: "normal",
+                                }}
+                              >
+                                <strong>
+                                  Online Wallets - Paytm, Google Pay & Phone Pay
+                                </strong>
+                                <br />
+                                Name : Anunay Sharda <br />
+                                Mobile Number : 7869777747
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </td>
+                    {!isSharda && (
+                      <td
+                        colSpan={3}
+                        style={{ border: "1px solid black", padding: 0 }}
+                      >
+                        <table
+                          style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            tableLayout: "fixed",
+                          }}
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style={{
+                                  borderBottom: "1px solid black",
+                                  padding: 6,
+                                  fontSize: 10,
+                                  textAlign: "right",
+                                }}
+                              >
+                                Taxable Value
+                              </td>
+                              <td
+                                style={{
+                                  borderBottom: "1px solid black",
+                                  padding: 6,
+                                  fontSize: 10,
+                                  textAlign: "right",
+                                }}
+                              >
+                                ₹{taxableValue.toFixed(2)}
+                              </td>
+                            </tr>
 
-                        <tr>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            Total Amount
-                          </td>
-                          <td
-                            style={{
-                              borderBottom: "1px solid black",
-                              padding: 6,
-                              fontSize: 10,
-                              textAlign: "right",
-                            }}
-                          >
-                            ₹{totalAmountWithTax.toFixed(2)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </td>
-                )}
-              </tr>
-              
-            </>
-          )}
-        </tbody>
-      </table>
+                            {isLocalSupply() ? (
+                              <>
+                                <tr>
+                                  <td
+                                    style={{
+                                      borderBottom: "1px solid black",
+                                      padding: 6,
+                                      fontSize: 10,
+                                      textAlign: "right",
+                                    }}
+                                  >
+                                    Add: CGST (9%)
+                                  </td>
+                                  <td
+                                    style={{
+                                      borderBottom: "1px solid black",
+                                      padding: 6,
+                                      fontSize: 10,
+                                      textAlign: "right",
+                                    }}
+                                  >
+                                    ₹{cgstAmount.toFixed(2)}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    style={{
+                                      borderBottom: "1px solid black",
+                                      padding: 6,
+                                      fontSize: 10,
+                                      textAlign: "right",
+                                    }}
+                                  >
+                                    Add: SGST (9%)
+                                  </td>
+                                  <td
+                                    style={{
+                                      borderBottom: "1px solid black",
+                                      padding: 6,
+                                      fontSize: 10,
+                                      textAlign: "right",
+                                    }}
+                                  >
+                                    ₹{sgstAmount.toFixed(2)}
+                                  </td>
+                                </tr>
+                              </>
+                            ) : (
+                              <tr>
+                                <td
+                                  style={{
+                                    borderBottom: "1px solid black",
+                                    padding: 6,
+                                    fontSize: 10,
+                                    textAlign: "right",
+                                  }}
+                                >
+                                  Add: IGST (18%)
+                                </td>
+                                <td
+                                  style={{
+                                    borderBottom: "1px solid black",
+                                    padding: 6,
+                                    fontSize: 10,
+                                    textAlign: "right",
+                                  }}
+                                >
+                                  ₹{igstAmount.toFixed(2)}
+                                </td>
+                              </tr>
+                            )}
 
+                            <tr>
+                              <td
+                                style={{
+                                  borderBottom: "1px solid black",
+                                  padding: 6,
+                                  fontSize: 10,
+                                  textAlign: "right",
+                                }}
+                              >
+                                Total Amount
+                              </td>
+                              <td
+                                style={{
+                                  borderBottom: "1px solid black",
+                                  padding: 6,
+                                  fontSize: 10,
+                                  textAlign: "right",
+                                }}
+                              >
+                                ₹{totalAmountWithTax.toFixed(2)}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    )}
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+          
+        </div>
+        <p
+            style={{
+              fontSize: 10,
+              marginTop: 10,
+              fontStyle: "italic",
+              textAlign: "center",
+            }}
+          >
+            This is a system generated invoice and does not require any
+            signature.
+          </p>
+      </div>
       {/* Footer */}
-      <div style={{ marginLeft: "-20px", marginRight: "-20px", marginTop: 20 }}>
+      <div style={{ marginLeft: "-20px", marginRight: "-20px"}}>
         {isSharda ? (
           <img
+            className="footer-image"
             src={footerImageSharda}
             alt="Invoice Footer"
-            style={{ width: "100%", display: "block", height: "auto" }}
+            style={footerStyle}
           />
         ) : (
           <img
+            className="footer-image"
             src={footerImageFinaxis}
             alt="Invoice Footer"
-            style={{ width: "100%", display: "block", height: "auto" }}
+            style={footerStyle}
           />
         )}
       </div>
-    </div>
     </div>
   );
 }
