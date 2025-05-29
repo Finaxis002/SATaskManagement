@@ -309,9 +309,9 @@
   width: 65%;
   height: 100%;
   background: white;
-  border-radius: 8px;
+ 
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
-  padding: 1.5rem 2rem;
+  /* padding: 1.5rem 2rem; */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -433,19 +433,19 @@
 }
 .page {
   page-break-after: always;
-  margin: 40px 20px; /* vertical margin for spacing */
+  /* margin: 40px 20px;  */
   padding: 0 10px;
   box-sizing: border-box;
 }
 .page:last-child {
   page-break-after: auto;
 }
-.invoice-page-container {
+/* .invoice-page-container {
   width: 800px;
   padding: 0;
   margin: 0 auto;
   box-sizing: border-box;
-}
+} */
 
 .invoice-page-container * {
   margin: 0;
@@ -463,8 +463,6 @@
 
 .pdf-wrapper * {
   page-break-inside: avoid !important;
-  margin: 0 !important;
- 
   box-sizing: border-box;
 }
 
@@ -478,7 +476,7 @@
 }
 
 @media print {
-  .invoice-page-container {
+  /* .invoice-page-container {
     width: 800px !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -487,6 +485,63 @@
   body {
     margin: 0;
     padding: 0;
+  } */
+   @page {
+    size: A4;
+    margin: 0;
+    padding: 0;
   }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 210mm;
+    height: 297mm;
+  }
+
+  .pdf-wrapper {
+    position: relative;
+    width: 210mm;
+    height: 297mm;
+    box-sizing: border-box;
+    page-break-after: always;
+    overflow: hidden;
+     margin: 0 !important;
+  }
+
+  .pdf-wrapper:last-child {
+    page-break-after: auto;
+  }
+
+  .header-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+      /* height: 120px; 
+       object-fit: cover;      
+  object-position: top;  */
+  }
+
+  .footer-image {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+      height: 80px;
+  }
+
+  /* .invoice-content {
+    position: absolute;
+    top: 120px; 
+    bottom: 80px; 
+    left: 10mm;
+    right: 10mm;
+    overflow: hidden;
+    box-sizing: border-box;
+     margin: 0 !important; 
+    padding: 0 !important;
+  } */
 }
 
