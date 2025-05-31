@@ -13,6 +13,9 @@ export default function ViewInvoices() {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceToView, setInvoiceToView] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [filteredInvoices, setFilteredInvoices] = useState([]);
 
   useEffect(() => {
     axios
@@ -154,121 +157,31 @@ export default function ViewInvoices() {
     fetchInvoicesByClient();
   }, [selectedClient]);
 
+  useEffect(() => {
+    if (!fromDate && !toDate) {
+      setFilteredInvoices(invoices);
+      return;
+    }
+
+    const from = fromDate ? new Date(fromDate) : null;
+    const to = toDate ? new Date(toDate) : null;
+
+    const filtered = invoices.filter((invoice) => {
+      const invDate = new Date(invoice.invoiceDate);
+      if (from && invDate < from) return false;
+      if (to && invDate > to) return false;
+      return true;
+    });
+
+    setFilteredInvoices(filtered);
+  }, [fromDate, toDate, invoices]);
+
   const downloadInvoice = (invoice) => {
     console.log("Download button clicked for invoice:", invoice);
     setInvoiceToView(invoice);
     setShowInvoiceModal(true);
   };
 
-  //   const handleGeneratePDF = () => {
-  //   const element = document.getElementById('invoice-modal-content');
-  //   if (!element) return;
-
-  //   // Save original styles to restore later
-  //   const originalHeight = element.style.height;
-  //   const originalMaxHeight = element.style.maxHeight;
-  //   const originalOverflow = element.style.overflow;
-
-  //   // Expand element fully for capture
-  //   element.style.height = 'auto';
-  //   element.style.maxHeight = 'none';
-  //   element.style.overflow = 'visible';
-
-  //   const opt = {
-  //     margin: 0,
-  //     filename: `${invoiceToView.invoiceNumber}.pdf`,
-  //     image: { type: "jpeg", quality: 0.98 },
-  //     html2canvas: {
-  //       scale: 3,
-  //       dpi: 300,
-  //       letterRendering: true,
-  //       useCORS: true,
-  //       // Remove width / windowWidth settings so it can detect automatically
-  //     },
-  //     jsPDF: {
-  //       unit: "mm",
-  //       format: "a4",
-  //       orientation: "portrait"
-  //     }
-  //   };
-
-  //   html2pdf()
-  //     .set(opt)
-  //     .from(element)
-  //     .save()
-  //     .then(() => {
-  //       setShowInvoiceModal(false);
-
-  //       // Restore original styles
-  //       element.style.height = originalHeight;
-  //       element.style.maxHeight = originalMaxHeight;
-  //       element.style.overflow = originalOverflow;
-  //     })
-  //     .catch(error => {
-  //       console.error("PDF generation error:", error);
-  //       // Restore styles even if error
-  //       element.style.height = originalHeight;
-  //       element.style.maxHeight = originalMaxHeight;
-  //       element.style.overflow = originalOverflow;
-  //     });
-  // };
-
-  // const handleGeneratePDF = () => {
-  //   const element = document.getElementById('invoice-to-print');
-  //   if (!element) return;
-
-  //   // Save original styles
-  //   const originalHeight = element.style.height;
-  //   const originalMaxHeight = element.style.maxHeight;
-  //   const originalOverflow = element.style.overflow;
-  //   const originalWidth = element.style.width;
-
-  //   // Expand fully for capture
-  //   element.style.height = 'auto';
-  //   element.style.maxHeight = 'none';
-  //   element.style.overflow = 'visible';
-  //   element.style.width = '794px'; // A4 width in px at 96dpi
-
-  //   const opt = {
-  //     margin: [10, 10, 10, 10], // 10 mm margins on all sides
-  //     filename: `${invoiceToView.invoiceNumber}.pdf`,
-  //     image: { type: "jpeg", quality: 0.98 },
-  //     html2canvas: {
-  //       scale: 3,
-  //       dpi: 300,
-  //       letterRendering: true,
-  //       useCORS: true,
-  //     },
-  //     jsPDF: {
-  //       unit: "mm",
-  //       format: "a4",
-  //       orientation: "portrait",
-  //     },
-  //   };
-
-  //   html2pdf()
-  //     .set(opt)
-  //     .from(element)
-  //     .save()
-  //     .then(() => {
-  //       setShowInvoiceModal(false);
-
-  //       // Restore styles
-  //       element.style.height = originalHeight;
-  //       element.style.maxHeight = originalMaxHeight;
-  //       element.style.overflow = originalOverflow;
-  //       element.style.width = originalWidth;
-  //     })
-  //     .catch(error => {
-  //       console.error("PDF generation error:", error);
-
-  //       // Restore styles even if error
-  //       element.style.height = originalHeight;
-  //       element.style.maxHeight = originalMaxHeight;
-  //       element.style.overflow = originalOverflow;
-  //       element.style.width = originalWidth;
-  //     });
-  // };
 
   const handleGeneratePDF = () => {
     const element = document.getElementById("invoice-to-print");
@@ -1182,6 +1095,33 @@ export default function ViewInvoices() {
         placeholder="Select client to filter invoices"
         isClearable
       />
+
+      <div className="flex flex-wrap items-center gap-6 mt-4 mb-6">
+        <div className="flex flex-col">
+          <label className="text-sm font-medium text-gray-700 mb-1">
+            From Date
+          </label>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="text-sm font-medium text-gray-700 mb-1">
+            To Date
+          </label>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          />
+        </div>
+      </div>
+
       <div
         style={{
           maxHeight: "500px", // Adjust height as needed
@@ -1216,14 +1156,14 @@ export default function ViewInvoices() {
               </tr>
             </thead>
             <tbody>
-              {invoices.length === 0 && (
+              {filteredInvoices.length === 0 && (
                 <tr>
                   <td colSpan="5" className="py-6 text-center text-gray-500">
                     No invoices found
                   </td>
                 </tr>
               )}
-              {invoices.map((inv) => (
+              {filteredInvoices.map((inv) => (
                 <tr
                   key={inv.invoiceNumber}
                   className="bg-white hover:bg-gray-50 transition-colors duration-200"
@@ -1299,6 +1239,7 @@ export default function ViewInvoices() {
                 fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                 fontSize: 12,
                 color: "#000",
+                
               }}
             >
               {/* <InvoicePreview invoice={invoiceToView} /> */}
