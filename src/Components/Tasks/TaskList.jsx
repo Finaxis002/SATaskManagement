@@ -6,10 +6,7 @@ import { fetchDepartments } from "../../redux/departmentSlice";
 import TaskCodeFilterSelector from "./TaskCodeFilterSelector";
 
 import {
-  faFilter,
   faPen,
-  faTrash,
-  faCalendar,
   faCopy,
 } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
@@ -986,13 +983,13 @@ const TaskList = ({
     </tr>
   );
 
-  useEffect(() => {
-    // console.log("Current department filter:", filters.department);
-    // console.log(
-    //   "Task departments:",
-    //   tasks.map((t) => t.department || t.taskCategory)
-    // );
-  }, [filters.department, tasks]);
+  // useEffect(() => {
+  //   // console.log("Current department filter:", filters.department);
+  //   // console.log(
+  //   //   "Task departments:",
+  //   //   tasks.map((t) => t.department || t.taskCategory)
+  //   // );
+  // }, [filters.department, tasks]);
 
   const verticalScrollRef = useRef(null);
   const horizontalScrollRef = useRef(null);
@@ -1018,146 +1015,7 @@ const TaskList = ({
 
   return (
     <div className="relative" style={{ position: "relative" }}>
-      {/* <div className="mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
-          
-          <div>
-            <label
-              htmlFor="departmentFilter"
-              className="block text-xs font-medium text-gray-700 mb-1"
-            >
-              Filter by Department
-            </label>
-            <select
-              id="departmentFilter"
-              value={filters.department}
-              onChange={(e) => handleFilterChange("department", e.target.value)}
-              className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept._id} value={dept.name}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          
-          <div>
-            <label
-              htmlFor="statusFilter"
-              className="block text-xs font-medium text-gray-700 mb-1"
-            >
-              Filter by Status
-            </label>
-            <select
-              id="statusFilter"
-              value={filters.status}
-              onChange={(e) => handleFilterChange("status", e.target.value)}
-              className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">All Status</option>
-              {Array.from(new Set(tasks.map((t) => t.status)))
-                .filter(Boolean)
-                .map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-         
-          <div>
-            <label
-              htmlFor="taskCodeFilter"
-              className="block text-xs font-medium text-gray-700 mb-1"
-            >
-              Filter by Task Code
-            </label>
-            <TaskCodeFilterSelector
-              selectedCode={
-                filters.code
-                  ? { label: filters.code, value: filters.code }
-                  : null
-              }
-              setSelectedCode={(selectedOption) =>
-                handleFilterChange("code", selectedOption?.value || "")
-              }
-            />
-          </div>
-
-          
-          {role === "admin" && (
-            <div>
-              <label
-                htmlFor="assigneeFilter"
-                className="block text-xs font-medium text-gray-700 mb-1"
-              >
-                Filter by Assignee
-              </label>
-              <select
-                id="assigneeFilter"
-                value={filters.assignee}
-                onChange={(e) => handleFilterChange("assignee", e.target.value)}
-                className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">All Assignees</option>
-                {uniqueUsers.map((user) => (
-                  <option key={user} value={user}>
-                    {user}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          
-          {role === "admin" && (
-            <div>
-              <label
-                htmlFor="assignedByFilter"
-                className="block text-xs font-medium text-gray-700 mb-1"
-              >
-                Filter by Assigned By
-              </label>
-              <select
-                id="assignedByFilter"
-                value={filters.assignedBy}
-                onChange={(e) =>
-                  handleFilterChange("assignedBy", e.target.value)
-                }
-                className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">All Assigners</option>
-                {uniqueAssignedBy.map((user) => (
-                  <option key={user} value={user}>
-                    {user}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label
-              htmlFor="dueBeforeFilter"
-              className="block text-xs font-medium text-gray-700 mb-1"
-            >
-              Filter by Due Date (Before or On)
-            </label>
-            <input
-              type="date"
-              id="dueBeforeFilter"
-              value={filters.dueBefore}
-              onChange={(e) => handleFilterChange("dueBefore", e.target.value)}
-              className="w-full pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        </div>
-      </div> */}
-
+      
       <FilterSection
         filters={filters}
         handleFilterChange={handleFilterChange}
