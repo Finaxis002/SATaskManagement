@@ -9,10 +9,9 @@ const Completed = () => {
   const [tasks, setTasks] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
 
-
   const [selectedCode, setSelectedCode] = useState("");
-const codeOptions = useSelector((state) => state.taskCodes.list); // ✅ Use Redux data
- const clientOptions = useSelector((state) => state.clients.list);
+  const codeOptions = useSelector((state) => state.taskCodes.list); // ✅ Use Redux data
+  const clientOptions = useSelector((state) => state.clients.list);
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -35,93 +34,88 @@ const codeOptions = useSelector((state) => state.taskCodes.list); // ✅ Use Red
     fetchTasks();
   }, []);
 
+  useEffect(() => {
+    dispatch(fetchClients());
+  }, [dispatch]);
 
   useEffect(() => {
-  dispatch(fetchClients());
-}, [dispatch]);
+    dispatch(fetchTaskCodes());
+  }, [dispatch]);
 
+  const codeLoading = useSelector((state) => state.taskCodes.loading);
+  const codeError = useSelector((state) => state.taskCodes.error);
 
+  const completedTasks = tasks.filter((task) => {
+    const clientMatch =
+      selectedClient === "" || task.clientName === selectedClient;
 
+    const codeMatch = selectedCode === "" || task.code === selectedCode;
 
-
-useEffect(() => {
-  dispatch(fetchTaskCodes());
-}, [dispatch]);
-
-const codeLoading = useSelector((state) => state.taskCodes.loading);
-const codeError = useSelector((state) => state.taskCodes.error);
-
-const completedTasks = tasks.filter((task) => {
-  const clientMatch =
-    selectedClient === "" || task.clientName === selectedClient;
-
-  const codeMatch =
-    selectedCode === "" || task.code === selectedCode;
-
-  return task.status === "Completed" && clientMatch && codeMatch;
-});
+    return task.status === "Completed" && clientMatch && codeMatch;
+  });
 
   return (
     <div className="p-6 h-[90vh] w-[180vh]  overflow-auto">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:gap-4">
-       {/* Filter by Client */}
-<div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-  <label
-    htmlFor="client-filter"
-    className="text-sm font-medium text-gray-700"
-  >
-    Filter by Client:
-  </label>
-  <Select
-    id="client-filter"
-    options={[
-      { value: "", label: "All Clients" },
-      ...clientOptions.map((client) => ({
-        value: client,
-        label: client,
-      })),
-    ]}
-    value={
-      selectedClient
-        ? { value: selectedClient, label: selectedClient }
-        : { value: "", label: "All Clients" }
-    }
-    onChange={(selectedOption) => setSelectedClient(selectedOption.value)}
-    className="w-full sm:w-64 text-sm"
-    isSearchable
-    placeholder="Select client..."
-  />
-</div>
+        {/* Filter by Client */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+          <label
+            htmlFor="client-filter"
+            className="text-sm font-medium text-gray-700"
+          >
+            Filter by Client:
+          </label>
+          <Select
+            id="client-filter"
+            options={[
+              { value: "", label: "All Clients" },
+              ...clientOptions.map((client) => ({
+                value: client.name, // ✅ Use client name as value
+                label: client.name, // ✅ Display name in dropdown
+              })),
+            ]}
+            value={
+              selectedClient
+                ? { value: selectedClient, label: selectedClient }
+                : { value: "", label: "All Clients" }
+            }
+            onChange={(selectedOption) =>
+              setSelectedClient(selectedOption.value)
+            }
+            className="w-full sm:w-64 text-sm"
+            isSearchable
+            placeholder="Select client..."
+          />
+        </div>
 
-{/* Filter by Code */}
-<div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-  <label
-    htmlFor="code-filter"
-    className="text-sm font-medium text-gray-700"
-  >
-    Filter by Code:
-  </label>
-  <Select
-    id="code-filter"
-    options={[
-      { value: "", label: "All Codes" },
-      ...codeOptions.map((code) => ({
-        value: code,
-        label: code,
-      })),
-    ]}
-    value={
-      selectedCode
-        ? { value: selectedCode, label: selectedCode }
-        : { value: "", label: "All Codes" }
-    }
-    onChange={(selectedOption) => setSelectedCode(selectedOption.value)}
-    className="w-full sm:w-64 text-sm"
-    isSearchable
-    placeholder="Select code..."
-  />
-</div>
-
+        {/* Filter by Code */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+          <label
+            htmlFor="code-filter"
+            className="text-sm font-medium text-gray-700"
+          >
+            Filter by Code:
+          </label>
+          <Select
+            id="code-filter"
+            options={[
+              { value: "", label: "All Codes" },
+              ...codeOptions.map((code) => ({
+                value: code,
+                label: code,
+              })),
+            ]}
+            value={
+              selectedCode
+                ? { value: selectedCode, label: selectedCode }
+                : { value: "", label: "All Codes" }
+            }
+            onChange={(selectedOption) => setSelectedCode(selectedOption.value)}
+            className="w-full sm:w-64 text-sm"
+            isSearchable
+            placeholder="Select code..."
+          />
+        </div>
       </div>
 
       <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">

@@ -92,18 +92,7 @@ const TaskList = ({
     }
   }, [users]);
 
-  // Fetch departments from API
-  // const fetchDepartments = async () => {
-  //   try {
-  //     const response = await fetch(
-  //       "https://sataskmanagementbackend.onrender.com/api/departments"
-  //     );
-  //     const data = await response.json();
-  //     setDepartments(data); // Store fetched departments
-  //   } catch (err) {
-  //     console.error("Failed to fetch departments:", err);
-  //   }
-  // };
+  
 
   useEffect(() => {
     fetchDepartments();
@@ -982,14 +971,6 @@ const TaskList = ({
       )}
     </tr>
   );
-
-  // useEffect(() => {
-  //   // console.log("Current department filter:", filters.department);
-  //   // console.log(
-  //   //   "Task departments:",
-  //   //   tasks.map((t) => t.department || t.taskCategory)
-  //   // );
-  // }, [filters.department, tasks]);
 
   const verticalScrollRef = useRef(null);
   const horizontalScrollRef = useRef(null);

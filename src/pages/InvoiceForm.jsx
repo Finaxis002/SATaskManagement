@@ -112,6 +112,7 @@ export default function InvoiceForm() {
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+const [imagesReady, setImagesReady] = useState(false);
 
   const invoiceRef = useRef();
   const isSharda = selectedFirm.name === "Sharda Associates";
@@ -403,6 +404,11 @@ export default function InvoiceForm() {
   // };
 
   const handleDownloadPDF = () => {
+//  console.log("Download clicked. imagesReady =", imagesReady);
+//   if (!imagesReady) {
+//     console.warn("Images not ready yet. Skipping download.");
+//     return;
+//   }
     if (!invoiceRef.current) return;
     const element = invoiceRef.current;
     // Temporarily remove scale before PDF generation
@@ -456,7 +462,7 @@ export default function InvoiceForm() {
     // Reset the width after PDF generation if needed
     setTimeout(() => {
       element.style.width = "";
-    }, 1000);
+    }, 500);
   };
 
   const saveInvoice = async () => {
@@ -592,6 +598,7 @@ export default function InvoiceForm() {
         >
           <button
             onClick={handleDownloadPDF}
+            
             style={{
               marginTop: 20,
               padding: "12px 24px",
@@ -2079,6 +2086,7 @@ export default function InvoiceForm() {
           cgstAmount={cgstAmount}
           sgstAmount={sgstAmount}
           numberToWordsIndian={numberToWordsIndian}
+          onImagesLoaded={() => setImagesReady(true)}
         />
         {page2Items.length > 0 && (
           <InvoicePage
@@ -2100,6 +2108,7 @@ export default function InvoiceForm() {
             cgstAmount={cgstAmount}
             sgstAmount={sgstAmount}
             numberToWordsIndian={numberToWordsIndian}
+            onImagesLoaded={() => setImagesReady(true)}
           />
         )}
       </div>

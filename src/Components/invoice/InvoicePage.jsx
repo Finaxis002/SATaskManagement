@@ -898,7 +898,7 @@ export default function InvoicePage({
                       padding: 10,
                     }}
                   >
-                    To be continued...
+                    Continue on next page...
                   </td>
                 </tr>
               )}
