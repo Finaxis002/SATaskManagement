@@ -19,17 +19,21 @@ const Departments = () => {
   const [newClientName, setNewClientName] = useState("");
   const [showClientModal, setShowClientModal] = useState(false);
   const [clientOptions, setClientOptions] = useState([]);
-const [role, setRole] = useState("");
+  const [role, setRole] = useState("");
+  const [editCodeId, setEditCodeId] = useState(null);
+  const [editCodeName, setEditCodeName] = useState("");
+  const [editingDept, setEditingDept] = useState(null); // department name being edited
+  const [editableUsersMap, setEditableUsersMap] = useState({}); // { [dept]: [users] }
 
-useEffect(() => {
-  const storedRole = localStorage.getItem("role");
-  if (storedRole) {
-    setRole(storedRole);
-    if (storedRole !== "admin") {
-      setView("client"); // Default to client view for users
+  useEffect(() => {
+    const storedRole = localStorage.getItem("role");
+    if (storedRole) {
+      setRole(storedRole);
+      if (storedRole !== "admin") {
+        setView("client"); // Default to client view for users
+      }
     }
-  }
-}, []);
+  }, []);
   // Fetch departments overview with users and tasks
   const fetchDepartmentsData = async () => {
     try {
@@ -367,389 +371,352 @@ useEffect(() => {
     }
   };
 
+  const handleEditCode = (code) => {
+    setEditCodeId(code._id);
+    // Remove serial number prefix while editing
+    const parts = code.name.split(" ");
+    const nameWithoutSerial = parts.slice(1).join(" ");
+    setEditCodeName(nameWithoutSerial);
+  };
+
+  const handleUpdateCode = async (id) => {
+    try {
+      const res = await axios.put(
+        `https://sataskmanagementbackend.onrender.com/api/task-codes/${id}`,
+        {
+          name: editCodeName,
+        }
+      );
+      if (res.status === 200) {
+        // Update state
+        const updated = res.data;
+        setTaskCodes((prev) =>
+          prev.map((code) => (code._id === id ? updated : code))
+        );
+        setEditCodeId(null);
+        setEditCodeName("");
+      }
+    } catch (err) {
+      console.error("Error updating code", err);
+    }
+  };
+
+  const handleEditDepartment = (deptName, users) => {
+    setEditingDept(deptName);
+    setEditableUsersMap((prev) => ({
+      ...prev,
+      [deptName]: users.map((user) => ({ ...user })),
+    }));
+  };
+
+  const handleSaveEditedUsers = async () => {
+    if (!editingDept || !editableUsersMap[editingDept]) return;
+    try {
+      await Promise.all(
+        editableUsersMap[editingDept].map((user) =>
+          axios.put(`/api/employees/${user._id}`, {
+            name: user.name,
+            position: user.position,
+            role: user.role,
+            department: user.department,
+          })
+        )
+      );
+      setEditingDept(null);
+      await fetchDepartmentsAgain();
+    } catch (err) {
+      console.error("Failed to save changes:", err);
+    }
+  };
+
+  const handleRemoveUser = async (userId) => {
+    try {
+      await axios.delete(
+        `https://sataskmanagementbackend.onrender.com/api/employees/${userId}`
+      );
+      setEditableUsers((prev) => prev.filter((u) => u._id !== userId));
+    } catch (err) {
+      console.error("Failed to remove user:", err);
+    }
+  };
+
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      
-       <h1 className="text-3xl font-bold text-center text-indigo-900 mb-5">
-      {view === "department"
-        ? "Departments Overview"
-        : view === "code"
-        ? "Code Overview"
-        : view === "client"
-        ? "Client Overview"
-        : "Reports Overview"}
-    </h1>
+      <h1 className="text-3xl font-bold text-center text-indigo-900 mb-5">
+        {view === "department"
+          ? "Departments Overview"
+          : view === "code"
+          ? "Code Overview"
+          : view === "client"
+          ? "Client Overview"
+          : "Reports Overview"}
+      </h1>
 
       {/* 🔘 View Switch Buttons */}
-      {/* <div className="flex justify-center gap-4 mb-6">
-        <button
-          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-            view === "department"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-          }`}
-          onClick={() => setView("department")}
-        >
-          Department Overview
-        </button>
+      <div className="flex justify-center gap-4 mb-6">
+        {role === "admin" && (
+          <button
+            className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
+              view === "department"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
+            }`}
+            onClick={() => setView("department")}
+          >
+            Department Overview
+          </button>
+        )}
 
-        <button
-          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-            view === "code"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-          }`}
-          onClick={() => setView("code")}
-        >
-          Code Overview
-        </button>
+        {role === "admin" && (
+          <button
+            className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
+              view === "code"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
+            }`}
+            onClick={() => setView("code")}
+          >
+            Code Overview
+          </button>
+        )}
 
-        <button
-          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-            view === "client"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-          }`}
-          onClick={() => setView("client")}
-        >
-          Client Overview
-        </button>
-        <button
-          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-            view === "report"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-          }`}
-          onClick={() => setView("report")}
-        >
-          Report Generation
-        </button>
-      </div> */}
+        {role === "admin" && (
+          <button
+            className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
+              view === "report"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
+            }`}
+            onClick={() => setView("report")}
+          >
+            Report Generation
+          </button>
+        )}
+      </div>
 
-      {/* Action Buttons */}
-      {/* <div className="flex justify-end mb-2">
-        {view === "department" ? (
+      {/* 🔘 Action Buttons */}
+      <div className="flex justify-end mb-2">
+        {view === "department" && role === "admin" && (
           <button
             onClick={handleCreateDepartment}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
           >
             <FaPlus /> Add Department
           </button>
-        ) : view === "code" ? (
+        )}
+
+        {view === "code" && role === "admin" && (
           <button
             onClick={handleCreateCode}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
           >
             <FaPlus /> Add Code
           </button>
-        ) : view === "client" ? (
-          <button
-            onClick={() => setShowClientModal(true)}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-          >
-            <FaPlus /> Add Client
-          </button>
-        ) : null}
-      </div> */}
+        )}
+      </div>
 
-      {/* ✅ View Content */}
-      {/* {loading ? (
+      {/* 🔁 View Content */}
+      {loading ? (
         <div className="flex justify-center items-center h-64">
           <p className="text-center text-gray-500">Loading data...</p>
         </div>
-      ) :
-       view === "department" ? (
-        Object.keys(departmentMap).length === 0 ? (
-          <div className="flex justify-center items-center h-60">
-            <p className="text-center text-gray-500 text-lg">
-              No departments or data found.
-            </p>
-          </div>
-        ) : (
-          // === Department Overview ===
-          <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-            {Object.entries(departmentMap).map(([dept, { users }]) => (
-              <div
-                key={dept}
-                className="bg-white rounded-lg shadow-md border border-gray-200 p-6 relative"
-              >
-               
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <FaUsers className="text-indigo-600 text-2xl" />
-                    <h2 className="text-2xl font-semibold text-indigo-800">
-                      {dept}
-                    </h2>
-                    <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full">
-                      {users.length} user{users.length !== 1 && "s"}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteDepartment(dept)}
-                    className="text-red-500 hover:text-red-700 transition-colors"
-                    title="Delete Department"
+      ) : (
+        <>
+          {view === "department" &&
+            role === "admin" &&
+            (Object.keys(departmentMap).length === 0 ? (
+              <div className="flex justify-center items-center h-60">
+                <p className="text-center text-gray-500 text-lg">
+                  No departments or data found.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
+                {Object.entries(departmentMap).map(([dept, { users }]) => (
+                  <div
+                    key={dept}
+                    className="bg-white rounded-lg shadow-md border border-gray-200 p-6 relative"
                   >
-                    <FaTrashAlt size={18} />
-                  </button>
-                </div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <FaUsers className="text-indigo-600 text-2xl" />
+                        <h2 className="text-2xl font-semibold text-indigo-800">
+                          {dept}
+                        </h2>
+                        <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full">
+                          {users.length} user{users.length !== 1 && "s"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleEditDepartment(dept, users)}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          ✏️ Edit Users
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDepartment(dept)}
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                          title="Delete Department"
+                        >
+                          <FaTrashAlt size={18} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                      {/* {users.map((user) => (
+                        <div
+                          key={user._id}
+                          className="bg-gray-50 border border-gray-200 p-4 rounded-md hover:shadow transition"
+                        >
+                          <div className="font-medium text-gray-900">
+                            {user.name}
+                          </div>
+                        </div>
+                      ))} */}
+                      {editingDept === dept && editableUsersMap[dept] && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                          {editableUsersMap[dept].map((user, index) => (
+                            <div
+                              key={user._id}
+                              className="flex items-center justify-between bg-white border border-gray-200 rounded-lg shadow-sm p-4 hover:shadow-md transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
+                                  {user.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .slice(0, 2)}
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-gray-900">
+                                    {user.name}
+                                  </p>
+                                  <p className="text-sm text-gray-600 capitalize">
+                                    {user.position}
+                                  </p>
+                                </div>
+                              </div>
 
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 text-sm text-gray-700">
-                  {users.map((user) => (
+                              <div className="flex gap-2">
+                                <select
+                                  value={user.role}
+                                  onChange={(e) => {
+                                    const updated = [...editableUsersMap[dept]];
+                                    updated[index].role = e.target.value;
+                                    setEditableUsersMap((prev) => ({
+                                      ...prev,
+                                      [dept]: updated,
+                                    }));
+                                  }}
+                                  className="text-sm border-gray-300 rounded px-2 py-1"
+                                >
+                                  <option value="user">User</option>
+                                  <option value="manager">Manager</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                                <button
+                                  onClick={() => {
+                                    const filtered = editableUsersMap[
+                                      dept
+                                    ].filter((u) => u._id !== user._id);
+                                    setEditableUsersMap((prev) => ({
+                                      ...prev,
+                                      [dept]: filtered,
+                                    }));
+                                  }}
+                                  className="text-red-500 hover:text-red-700"
+                                  title="Remove"
+                                >
+                                  ❌
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+          {view === "code" &&
+            role === "admin" &&
+            (taskCodes.length === 0 ? (
+              <div className="flex justify-center items-center h-64">
+                <p className="text-center text-gray-500">No codes found.</p>
+              </div>
+            ) : (
+              <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {taskCodes.map((codeObj) => (
                     <div
-                      key={user._id}
-                      className="bg-gray-50 border border-gray-200 p-4 rounded-md hover:shadow transition"
+                      key={codeObj._id}
+                      className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
                     >
-                      <div className="font-medium text-gray-900">
-                        {user.name}
+                      {editCodeId === codeObj._id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editCodeName}
+                            onChange={(e) => setEditCodeName(e.target.value)}
+                            className="border px-2 py-1 text-sm rounded"
+                          />
+                          <button
+                            onClick={() => handleUpdateCode(codeObj._id)}
+                            className="text-green-600 hover:text-green-800"
+                            title="Save"
+                          >
+                            ✅
+                          </button>
+                          <button
+                            onClick={() => setEditCodeId(null)}
+                            className="text-gray-500 hover:text-gray-700"
+                            title="Cancel"
+                          >
+                            ❌
+                          </button>
+                        </div>
+                      ) : (
+                        <h3 className="text-lg font-semibold text-indigo-800">
+                          {codeObj.name}
+                        </h3>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditCode(codeObj)}
+                          className="text-blue-500 hover:text-blue-700"
+                          title="Edit Code"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCode(codeObj._id)}
+                          className="text-red-500 hover:text-red-700"
+                          title="Delete Code"
+                        >
+                          <FaTrashAlt size={16} />
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             ))}
-          </div>
-        )
-      ) : view === "code" ? (
-        // === Code Overview ===
-        taskCodes.length === 0 ? (
-          <div className="flex justify-center items-center h-64">
-            <p className="text-center text-gray-500">No codes found.</p>
-          </div>
-        ) : (
-          <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {taskCodes.map((codeObj) => (
-                <div
-                  key={codeObj._id}
-                  className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
-                >
-                  <h3 className="text-lg font-semibold text-indigo-800">
-                    {codeObj.name}
-                  </h3>
-                  <button
-                    onClick={() => handleDeleteCode(codeObj._id)}
-                    className="text-red-500 hover:text-red-700 transition-colors"
-                    title="Delete Code"
-                  >
-                    <FaTrashAlt size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      ) : view === "client" ? ( */}
-       
-        {/* // clients.length === 0 ? (
-        //   <div className="flex justify-center items-center h-64">
-        //     <p className="text-center text-gray-500">No clients found.</p>
-        //   </div>
-        // ) : (
-        //   <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-        //     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        //       {clients.map((clientName, index) => ( */}
-                 
-        {/* //           <div key={`${clientName}-${index}`}
-        //           className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
-        //         > */}
-        {/* //           <h3 className="text-lg font-semibold text-indigo-800">
-        //             {clientName || "Unnamed Client"}
-        //           </h3>
-        //           <button */}
-        {/* //             onClick={() => handleDeleteClient(clientName)}
-        //             className="text-red-500 hover:text-red-700 transition-colors"
-        //             title="Delete Client"
-        //           >
-        //             <FaTrashAlt size={16} />
-        //           </button> */}
-        {/* //         </div> */}
-        {/* //       ))} */}
-        {/* //     </div> */}
-        {/* //   </div> */}
-        {/* // )
-      //   <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-      //     <ClientList clients={clients} onDelete={handleDeleteClient} />
-      //   </div>
-      // ) : view === "report" ? (
-      //   <ReportGeneration />
-      // ) : null} */}
 
-  {/* 🔘 View Switch Buttons */}
-    <div className="flex justify-center gap-4 mb-6">
-      {role === "admin" && (
-        <button
-          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-            view === "department"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-          }`}
-          onClick={() => setView("department")}
-        >
-          Department Overview
-        </button>
-      )}
-
-      {role === "admin" && (
-        <button
-          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-            view === "code"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-          }`}
-          onClick={() => setView("code")}
-        >
-          Code Overview
-        </button>
-      )}
-
-      {/* <button
-        className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-          view === "client"
-            ? "bg-indigo-600 text-white"
-            : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-        }`}
-        onClick={() => setView("client")}
-      >
-        Client Overview
-      </button> */}
-
-      {role === "admin" && (
-        <button
-          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-            view === "report"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-          }`}
-          onClick={() => setView("report")}
-        >
-          Report Generation
-        </button>
-      )}
-    </div>
-
-    {/* 🔘 Action Buttons */}
-    <div className="flex justify-end mb-2">
-      {view === "department" && role === "admin" && (
-        <button
-          onClick={handleCreateDepartment}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-        >
-          <FaPlus /> Add Department
-        </button>
-      )}
-
-      {view === "code" && role === "admin" && (
-        <button
-          onClick={handleCreateCode}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-        >
-          <FaPlus /> Add Code
-        </button>
-      )}
-
-      {/* {view === "client" &&  (
-        <button
-          onClick={() => setShowClientModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-        >
-          <FaPlus /> Add Client
-        </button>
-      )} */}
-    </div>
-
-    {/* 🔁 View Content */}
-    {loading ? (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-center text-gray-500">Loading data...</p>
-      </div>
-    ) : (
-      <>
-        {view === "department" && role === "admin" && (
-          Object.keys(departmentMap).length === 0 ? (
-            <div className="flex justify-center items-center h-60">
-              <p className="text-center text-gray-500 text-lg">
-                No departments or data found.
-              </p>
-            </div>
-          ) : (
+          {view === "client" && (
             <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-              {Object.entries(departmentMap).map(([dept, { users }]) => (
-                <div
-                  key={dept}
-                  className="bg-white rounded-lg shadow-md border border-gray-200 p-6 relative"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <FaUsers className="text-indigo-600 text-2xl" />
-                      <h2 className="text-2xl font-semibold text-indigo-800">{dept}</h2>
-                      <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full">
-                        {users.length} user{users.length !== 1 && "s"}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteDepartment(dept)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
-                      title="Delete Department"
-                    >
-                      <FaTrashAlt size={18} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 text-sm text-gray-700">
-                    {users.map((user) => (
-                      <div
-                        key={user._id}
-                        className="bg-gray-50 border border-gray-200 p-4 rounded-md hover:shadow transition"
-                      >
-                        <div className="font-medium text-gray-900">{user.name}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <ClientList clients={clients} onDelete={handleDeleteClient} />
             </div>
-          )
-        )}
+          )}
 
-        {view === "code" && role === "admin" && (
-          taskCodes.length === 0 ? (
-            <div className="flex justify-center items-center h-64">
-              <p className="text-center text-gray-500">No codes found.</p>
-            </div>
-          ) : (
-            <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {taskCodes.map((codeObj) => (
-                  <div
-                    key={codeObj._id}
-                    className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
-                  >
-                    <h3 className="text-lg font-semibold text-indigo-800">{codeObj.name}</h3>
-                    <button
-                      onClick={() => handleDeleteCode(codeObj._id)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
-                      title="Delete Code"
-                    >
-                      <FaTrashAlt size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        )}
-
-        {view === "client" && (
-          <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-            <ClientList clients={clients} onDelete={handleDeleteClient} />
-          </div>
-        )}
-
-        {view === "report" && role === "admin" && <ReportGeneration />}
-      </>
-    )}
+          {view === "report" && role === "admin" && <ReportGeneration />}
+        </>
+      )}
 
       {/* Department Creation Modal */}
       {showDeptModal && (
@@ -829,103 +796,37 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Client Creation Modal */}
-      {/* {showClientModal && (
-        <div className="fixed inset-0  bg-opacity-50 flex h-50 justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Create New Client</h3>
-              <button
-                onClick={() => setShowClientModal(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <input
-              type="text"
-              value={newClientName}
-              onChange={(e) => setNewClientName(e.target.value)}
-              placeholder="Enter client name"
-              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowClientModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  if (!newClientName.trim()) return;
-                  try {
-                    await axios.post(
-                      `https://sataskmanagementbackend.onrender.com/api/clients`,
-                      {
-                        name: newClientName,
-                      }
-                    );
-
-                    Swal.fire({
-                      icon: "success",
-                      title: "Client Created",
-                      text: `"${newClientName}" was added successfully!`,
-                      timer: 2000,
-                      showConfirmButton: false,
-                    });
-
-                    fetchClients();
-                    setNewClientName("");
-                    setShowClientModal(false);
-                  } catch (err) {
-                    Swal.fire({
-                      icon: "error",
-                      title: "Creation Failed",
-                      text: "Unable to create client. Please try again.",
-                    });
-
-                    console.error("Client creation failed", err);
-                  }
-                }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )} */}
       {showClientModal && (
-  <CreateClientModal
-    onClose={() => setShowClientModal(false)}
-    onCreate={async (clientData) => {
-      try {
-        await axios.post("https://sataskmanagementbackend.onrender.com/api/clients", clientData);
+        <CreateClientModal
+          onClose={() => setShowClientModal(false)}
+          onCreate={async (clientData) => {
+            try {
+              await axios.post(
+                "https://sataskmanagementbackend.onrender.com/api/clients",
+                clientData
+              );
 
-        Swal.fire({
-          icon: "success",
-          title: "Client Created",
-          text: `"${clientData.name}" was added successfully!`,
-          timer: 2000,
-          showConfirmButton: false,
-        });
+              Swal.fire({
+                icon: "success",
+                title: "Client Created",
+                text: `"${clientData.name}" was added successfully!`,
+                timer: 2000,
+                showConfirmButton: false,
+              });
 
-        fetchClients();
-        setShowClientModal(false);
-      } catch (err) {
-        Swal.fire({
-          icon: "error",
-          title: "Creation Failed",
-          text: "Unable to create client. Please try again.",
-        });
-        console.error("Client creation failed", err);
-      }
-    }}
-  />
-)}
-
+              fetchClients();
+              setShowClientModal(false);
+            } catch (err) {
+              Swal.fire({
+                icon: "error",
+                title: "Creation Failed",
+                text: "Unable to create client. Please try again.",
+              });
+              console.error("Client creation failed", err);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
