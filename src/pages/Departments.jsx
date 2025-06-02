@@ -439,10 +439,16 @@ const Departments = () => {
       console.error("Failed to remove user:", err);
     }
   };
+  const [activeTab, setActiveTab] = useState("department");
+const tabs = [
+    { key: "department", label: "Department Overview" },
+    { key: "code", label: "Code Overview" },
+    { key: "report", label: "Report Generation" },
+  ];
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold text-center text-indigo-900 mb-5">
+      {/* <h1 className="text-3xl font-bold text-center text-indigo-900 mb-5">
         {view === "department"
           ? "Departments Overview"
           : view === "code"
@@ -450,10 +456,10 @@ const Departments = () => {
           : view === "client"
           ? "Client Overview"
           : "Reports Overview"}
-      </h1>
+      </h1> */}
 
       {/* 🔘 View Switch Buttons */}
-      <div className="flex justify-center gap-4 mb-6">
+      {/* <div className="flex justify-center gap-4 mb-6">
         {role === "admin" && (
           <button
             className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -492,11 +498,33 @@ const Departments = () => {
             Report Generation
           </button>
         )}
-      </div>
+      </div> */}
+
+      <h1 className="text-4xl font-bold text-gray-900 mb-2">Application Settings</h1>
+        <p className="text-base text-gray-500 mb-8">
+          Configure and manage TaskFlow to suit your needs.
+        </p>
+
+        {/* Tab Buttons */}
+        <div className="flex gap-2 border border-gray-200 rounded-md overflow-hidden mb-6 w-fit">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+             onClick={() => setActiveTab(tab.key)}
+              className={`px-6 py-2 text-sm font-medium transition-all ${
+                activeTab === tab.key
+                  ? "bg-white text-indigo-600 border-b-2 border-indigo-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
       {/* 🔘 Action Buttons */}
       <div className="flex justify-end mb-2">
-        {view === "department" && role === "admin" && (
+        {activeTab === "department" && role === "admin" && (
           <button
             onClick={handleCreateDepartment}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
@@ -505,7 +533,7 @@ const Departments = () => {
           </button>
         )}
 
-        {view === "code" && role === "admin" && (
+        {activeTab === "code" && role === "admin" && (
           <button
             onClick={handleCreateCode}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
@@ -522,7 +550,7 @@ const Departments = () => {
         </div>
       ) : (
         <>
-          {view === "department" &&
+          {activeTab === "department" &&
             role === "admin" &&
             (Object.keys(departmentMap).length === 0 ? (
               <div className="flex justify-center items-center h-60">
@@ -552,7 +580,7 @@ const Departments = () => {
                           onClick={() => handleEditDepartment(dept, users)}
                           className="text-blue-600 hover:text-blue-800 text-sm"
                         >
-                          ✏️ Edit Users
+                          ✏️ Edit 
                         </button>
                         <button
                           type="button"
@@ -564,7 +592,7 @@ const Departments = () => {
                         </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                    <div className="flex flex-col gap-4">
                       {/* {users.map((user) => (
                         <div
                           key={user._id}
@@ -576,47 +604,25 @@ const Departments = () => {
                         </div>
                       ))} */}
                       {editingDept === dept && editableUsersMap[dept] && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                          {editableUsersMap[dept].map((user, index) => (
-                            <div
-                              key={user._id}
-                              className="flex items-center justify-between bg-white border border-gray-200 rounded-lg shadow-sm p-4 hover:shadow-md transition-all"
+                        <>
+                          {/* Close Button */}
+                          <div className="flex justify-end mb-4">
+                            <button
+                              onClick={() => setEditingDept(null)}
+                              className="inline-flex items-center gap-2 text-sm px-4 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 transition shadow-sm"
                             >
-                              <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
-                                  {user.name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .slice(0, 2)}
-                                </div>
-                                <div>
-                                  <p className="font-semibold text-gray-900">
-                                    {user.name}
-                                  </p>
-                                  <p className="text-sm text-gray-600 capitalize">
-                                    {user.position}
-                                  </p>
-                                </div>
-                              </div>
+                              ✖ Close Edit Mode
+                            </button>
+                          </div>
 
-                              <div className="flex gap-2">
-                                <select
-                                  value={user.role}
-                                  onChange={(e) => {
-                                    const updated = [...editableUsersMap[dept]];
-                                    updated[index].role = e.target.value;
-                                    setEditableUsersMap((prev) => ({
-                                      ...prev,
-                                      [dept]: updated,
-                                    }));
-                                  }}
-                                  className="text-sm border-gray-300 rounded px-2 py-1"
-                                >
-                                  <option value="user">User</option>
-                                  <option value="manager">Manager</option>
-                                  <option value="admin">Admin</option>
-                                </select>
+                          {/* User Cards Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {editableUsersMap[dept].map((user, index) => (
+                              <div
+                                key={user._id}
+                                className="relative bg-white rounded-xl border border-gray-200 shadow-md p-4 hover:shadow-lg transition-all flex flex-col items-center text-center"
+                              >
+                                {/* Remove Button */}
                                 <button
                                   onClick={() => {
                                     const filtered = editableUsersMap[
@@ -627,15 +633,59 @@ const Departments = () => {
                                       [dept]: filtered,
                                     }));
                                   }}
-                                  className="text-red-500 hover:text-red-700"
-                                  title="Remove"
+                                  className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm"
+                                  title="Remove user"
                                 >
-                                  ❌
+                                  ✖
                                 </button>
+
+                                {/* Avatar */}
+                                <div className="h-14 w-14 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-md mb-2 shadow-sm">
+                                  {user.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .slice(0, 2)}
+                                </div>
+
+                                {/* Name + Position */}
+                                <div className="mb-2">
+                                  <h3 className="text-base font-semibold text-gray-800">
+                                    {user.name}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">
+                                    {user.position}
+                                  </p>
+                                </div>
+
+                                {/* Role Dropdown */}
+                                <div className="w-full mt-2">
+                                  <label className="block text-xs text-gray-500 mb-1">
+                                    Role
+                                  </label>
+                                  <select
+                                    value={user.role}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...editableUsersMap[dept],
+                                      ];
+                                      updated[index].role = e.target.value;
+                                      setEditableUsersMap((prev) => ({
+                                        ...prev,
+                                        [dept]: updated,
+                                      }));
+                                    }}
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                  >
+                                    <option value="user">User</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="admin">Admin</option>
+                                  </select>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -643,7 +693,7 @@ const Departments = () => {
               </div>
             ))}
 
-          {view === "code" &&
+          {activeTab === "code" &&
             role === "admin" &&
             (taskCodes.length === 0 ? (
               <div className="flex justify-center items-center h-64">
@@ -708,13 +758,13 @@ const Departments = () => {
               </div>
             ))}
 
-          {view === "client" && (
+          {/* {activeTab === "client" && (
             <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
               <ClientList clients={clients} onDelete={handleDeleteClient} />
             </div>
-          )}
+          )} */}
 
-          {view === "report" && role === "admin" && <ReportGeneration />}
+          {activeTab === "report" && role === "admin" && <ReportGeneration />}
         </>
       )}
 

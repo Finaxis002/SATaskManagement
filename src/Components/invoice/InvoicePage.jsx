@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import finaxisLogo from "../../assets/Finaxis_logo.png";
 import shardaLogo from "../../assets/ShardaLogo.png";
 import footerImageFinaxis from "../../assets/LetterheadBottomFinaxis.jpg";
@@ -27,18 +28,34 @@ export default function InvoicePage({
   sgstAmount,
   numberToWordsIndian,
 }) {
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+useEffect(() => {
+  let loaded = 0;
+  const totalImages = 2;
+
+  const handleImageLoad = () => {
+    loaded++;
+    if (loaded === totalImages) {
+      setImagesLoaded(true);
+    }
+  };
+
+  const headerImg = new Image();
+  const footerImg = new Image();
+
+  headerImg.src = isSharda ? headerImageSharda : headerImageFinaxis;
+  footerImg.src = isSharda ? footerImageSharda : footerImageFinaxis;
+
+  headerImg.onload = handleImageLoad;
+  footerImg.onload = handleImageLoad;
+}, [isSharda]);
+
   const isLocalSupply = () => {
     const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
     return place === "mp" || place === "madhyapradesh";
   };
 
-  // const headerStyle = {
-  //   width: "100%",
-  //   display: "block",
-  //   height: pageNumber === 1 ? "auto" : "20px",  // shrink on 2nd page
-  //   marginBottom: pageNumber === 1 ? "20px" : "5px",
-  //   marginTop: pageNumber === 1 ? "0px" : "0px",
-  // };
+  
   const headerStyle = pageNumber === 1
   ? { width: "100%", display: "block", height: "auto", marginBottom: 20 }
   : { width: "100%", display: "block", height: 'auto', marginTop:-30 }
@@ -60,6 +77,7 @@ export default function InvoicePage({
       >
         {isSharda ? (
           <img
+          id="header-img"
             className="header-image"
             src={headerImageSharda}
             alt="Invoice header"
@@ -68,6 +86,7 @@ export default function InvoicePage({
           />
         ) : (
           <img
+          id="header-img"
             className="header-image"
             src={headerImageFinaxis}
             alt="Invoice header"
@@ -898,7 +917,7 @@ export default function InvoicePage({
                       padding: 10,
                     }}
                   >
-                    To be continued...
+                    Continue on next page...
                   </td>
                 </tr>
               )}
@@ -1240,6 +1259,7 @@ export default function InvoicePage({
       <div style={{ marginLeft: "-20px", marginRight: "-20px"}}>
         {isSharda ? (
           <img
+          id="footer-img"
             className="footer-image"
             src={footerImageSharda}
             alt="Invoice Footer"
@@ -1247,6 +1267,7 @@ export default function InvoicePage({
           />
         ) : (
           <img
+          id="footer-img"
             className="footer-image"
             src={footerImageFinaxis}
             alt="Invoice Footer"

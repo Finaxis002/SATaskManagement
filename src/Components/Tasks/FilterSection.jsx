@@ -78,7 +78,7 @@ const FilterSection = ({
             menuPortalTarget={document.body}
             placeholder="Select Department"
             isClearable
-            isSearchable={false}
+            isSearchable
           />
         </div>
 
@@ -105,7 +105,7 @@ const FilterSection = ({
             menuPortalTarget={document.body}
             placeholder="Select Status"
             isClearable
-            isSearchable={false}
+            isSearchable
           />
         </div>
 
@@ -150,7 +150,7 @@ const FilterSection = ({
               menuPortalTarget={document.body}
               placeholder="Select Assignee"
               isClearable
-              isSearchable={false}
+              isSearchable
             />
           </div>
         )}
@@ -181,7 +181,7 @@ const FilterSection = ({
               menuPortalTarget={document.body}
               placeholder="Select Assignor"
               isClearable
-              isSearchable={false}
+              isSearchable
             />
           </div>
         )}
