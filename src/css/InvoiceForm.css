@@ -432,20 +432,11 @@
   font-weight: normal !important;
 }
 .page {
-  page-break-after: always;
-  /* margin: 40px 20px;  */
+  /* page-break-after: always; */
   padding: 0 10px;
   box-sizing: border-box;
 }
-.page:last-child {
-  page-break-after: auto;
-}
-/* .invoice-page-container {
-  width: 800px;
-  padding: 0;
-  margin: 0 auto;
-  box-sizing: border-box;
-} */
+
 
 .invoice-page-container * {
   margin: 0;
@@ -453,12 +444,32 @@
   box-sizing: border-box;
 }
 
-.pdf-wrapper {
+/* .pdf-wrapper {
   page-break-before: auto !important;
   page-break-after: always !important;
   page-break-inside: avoid !important;
   margin: 0 !important;
  
+} */
+ .pdf-wrapper {
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  overflow: hidden;
+  margin: 0 !important;
+
+  /* ✅ Page breaking rules */
+  /* page-break-after: always;
+  page-break-inside: avoid;
+  break-inside: avoid; */
+
+  /* ✅ Diagnostic color to check visibility */
+  background-color: red;
+}
+
+.pdf-wrapper:last-child {
+  page-break-after: auto;
+  background-color: blue;
 }
 
 .pdf-wrapper * {
@@ -466,9 +477,9 @@
   box-sizing: border-box;
 }
 
-.pdf-wrapper:last-child {
+/* .pdf-wrapper:last-child {
   page-break-after: auto;
-}
+} */
 
 .invoice-header, .invoice-page-container > :first-child {
   margin-top: 0 !important;
@@ -496,32 +507,37 @@
     margin: 0;
     padding: 0;
     width: 210mm;
-    height: 297mm;
+    min-height: 297mm;
   }
 
-  .pdf-wrapper {
+  /* .pdf-wrapper {
     position: relative;
     width: 210mm;
-    height: 297mm;
+     min-height: 297mm;
     box-sizing: border-box;
-    page-break-after: always;
+   
     overflow: hidden;
      margin: 0 !important;
+      page-break-after: always;
+    page-break-inside: avoid;
+    break-inside: avoid;
+      background-color: red;
   }
 
   .pdf-wrapper:last-child {
     page-break-after: auto;
-  }
-
+    background-color: blue;
+  } */
+/* .pdf-wrapper:not(:last-child) {
+    page-break-after: always;
+} */
   .header-image {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 80px;
-      /* height: 120px; 
-       object-fit: cover;      
-  object-position: top;  */
+      
   }
 
   .footer-image {
