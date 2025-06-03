@@ -6,6 +6,7 @@ import finaxisHeader from "../../assets/finaxis_header.png";
 import shardaHeader from "../../assets/ShardaHeader.png";
 import headerImageSharda from "../../assets/headerImgSharda.png";
 import footerImageSharda from "../../assets/ShardaBottom.png";
+import "../../css/InvoiceForm.css";
 
 export default function InvoicePage({
   pageNumber,
@@ -44,13 +45,28 @@ export default function InvoicePage({
   : { width: "100%", display: "block", height: 'auto', marginTop:-30 }
 
   const footerStyle = pageNumber === 1
-  ? { width: "100%", display: "block", height: "auto" , marginTop: 35  }
-  : { width: "100%", display: "block", height: 'auto', marginTop: 18 }
+  ? { width: "100%", display: "block", height: "auto" , marginTop:25}
+  : { width: "100%", display: "block", height: 'auto', marginTop: 10}
 
   const ITEMS_PER_PAGE = 8;
   
+
   return (
-    <div className="pdf-wrapper">
+    <div className="pdf-wrapper"
+    style={{
+    width: "794px",
+    height: "1122px",
+    margin: "0 auto",
+    background: "#fff",
+    position: "relative",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    pageBreakInside: "avoid",
+    breakInside: "avoid"
+  }}>
       {/* Header */}
       <div
         style={{
@@ -120,9 +136,7 @@ export default function InvoicePage({
           />
         )}
 
-        {/* Insert your existing client/company details table header here */}
-        {/* For brevity, reuse your existing header code block here */}
-        {/* You can move your existing header JSX here as well */}
+       
         <div
           style={{
             paddingBottom: 10,
@@ -228,9 +242,10 @@ export default function InvoicePage({
           style={{
             width: "100%",
             overflowX: "auto",
-            height: "800px",
-            padding: "0 20px 0px 20px",
+            // height: "800px",
+             padding: "0 20px 0px 20px",
           }}
+          
         >
           <table
             style={{
@@ -238,7 +253,7 @@ export default function InvoicePage({
               borderCollapse: "collapse",
               border: "1px solid black",
               tableLayout: "fixed",
-              height: "100%",
+               height: "100%",
             }}
           >
             <colgroup>
