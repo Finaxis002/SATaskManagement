@@ -42,7 +42,7 @@ export default function InvoicePage({
   // };
   const headerStyle = pageNumber === 1
   ? { width: "100%", display: "block", height: "auto", marginBottom: 20 }
-  : { width: "100%", display: "block", height: 'auto', marginTop:-30 }
+  : { width: "100%", display: "block", height: 'auto' }
 
   const footerStyle = pageNumber === 1
   ? { width: "100%", display: "block", height: "auto" , marginTop:25}
