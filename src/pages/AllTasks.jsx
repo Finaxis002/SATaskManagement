@@ -87,7 +87,8 @@ const handleRemoveCompletedTasks = async () => {
             {role === "admin" && (
               <button
                 onClick={handleRemoveCompletedTasks} // ✅ This saves to localStorage and updates UI
-                className="bg-red-100 text-sm hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-full shadow"
+                className="bg-[#fbd9d9] hover:bg-[#f1c7c7] text-sm  text-red-700 font-semibold px-4 py-2 rounded-full shadow"
+               
               >
                 Remove Completed
               </button>

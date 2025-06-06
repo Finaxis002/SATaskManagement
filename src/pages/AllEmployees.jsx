@@ -13,7 +13,6 @@ import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
 import { showAlert } from "../utils/alert"; // Import the showAlert function
 import Swal from "sweetalert2";
 
-
 const AllEmployees = () => {
   const dispatch = useDispatch();
   const { list: users, loading, error } = useSelector((state) => state.users);
@@ -54,10 +53,10 @@ const AllEmployees = () => {
         confirmButton: "custom-alert-button",
       },
     });
-  
+
     if (result.isConfirmed) {
       dispatch(deleteUser(id));
-  
+
       Swal.fire({
         title: "Deleted!",
         text: "User has been deleted.",
@@ -70,7 +69,7 @@ const AllEmployees = () => {
       });
     }
   };
-  
+
   const handleResetPassword = async (id, name) => {
     const newPassword = window.prompt(`Enter new password for ${name}:`);
 
@@ -83,7 +82,9 @@ const AllEmployees = () => {
       const result = await resetPassword(id, newPassword); // Directly call the function
       showAlert("Password reset successfully.");
     } catch (error) {
-      showAlert(`Failed to reset password: ${error.message || "Unknown error"}`);
+      showAlert(
+        `Failed to reset password: ${error.message || "Unknown error"}`
+      );
     }
   };
 
@@ -91,7 +92,7 @@ const AllEmployees = () => {
   const handleUpdate = async () => {
     console.log("Data being sent:", {
       ...updatedUserData,
-      department: department // Explicitly show the department data
+      department: department, // Explicitly show the department data
     });
     try {
       const updatedEmployee = await updateUser(
@@ -108,9 +109,9 @@ const AllEmployees = () => {
   };
 
   useEffect(() => {
-    setUpdatedUserData(prev => ({
+    setUpdatedUserData((prev) => ({
       ...prev,
-      department: department
+      department: department,
     }));
   }, [department]);
 
@@ -124,7 +125,9 @@ const AllEmployees = () => {
       role: user.role,
       userId: user.userId,
     });
-    setDepartment(Array.isArray(user.department) ? user.department : [user.department]); // Initialize department state
+    setDepartment(
+      Array.isArray(user.department) ? user.department : [user.department]
+    ); // Initialize department state
     setShowEditModal(true);
   };
 
@@ -154,14 +157,17 @@ const AllEmployees = () => {
         className="absolute top-0 left-0 w-full h-full object-cover opacity-10 z-0"
       />
       <div className="relative z-10 bg-white max-w-7xl mx-auto rounded-xl shadow-xl p-8">
-        <h2 className="text-3xl font-semibold text-center text-gray-800 mb-8">
+        <h2
+          className="text-3xl font-semibold text-center text-gray-800 mb-8"
+          style={{ fontFamily: "Poppins, sans-serif" }}
+        >
           Users Directory
         </h2>
 
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse bg-white text-sm shadow-sm rounded-md">
             <thead>
-              <tr className="bg-gray-100 text-gray-700 text-left">
+              <tr className="bg-gray-300 text-black text-left font-semibold">
                 <th className="px-5 py-3 border-b font-medium">Emp ID</th>
                 <th className="px-5 py-3 border-b font-medium">Name</th>
                 <th className="px-5 py-3 border-b font-medium">Email</th>
@@ -174,8 +180,14 @@ const AllEmployees = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user._id} className="hover:bg-gray-50 transition">
+              {users.map((user, index) => (
+                <tr
+                  key={user._id}
+                  className={`${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-100"
+                  }  transition duration-300`}
+                   style={{ fontFamily: "Roboto, sans-serif" }}
+                >
                   <td className="px-5 py-3 border-b text-gray-700">
                     {user.userId}
                   </td>
@@ -208,21 +220,21 @@ const AllEmployees = () => {
                     <div className="flex justify-center gap-3">
                       <button
                         onClick={() => handleEdit(user)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-md shadow-sm transition"
+                        className=" text-black flex items-center gap-2 px-4 py-2 bg-[#d2d5f1] hover:bg-blue-600  text-xs rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105"
                       >
                         <FaEdit className="text-xs" /> Edit
                       </button>
                       <button
                         onClick={() => handleResetPassword(user._id, user.name)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-md shadow-sm transition"
+                        className="flex items-center gap-2 px-4 py-2 bg-[#f7f7a2] hover:bg-yellow-600 text-black text-xs rounded-md shadow-md transition ease-in-out transform hover:scale-105"
                       >
                         <FaSyncAlt className="text-xs" /> Reset
                       </button>
                       <button
                         onClick={() => handleDelete(user._id)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md shadow-sm transition"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-[#f5a8a8] hover:bg-red-700 text-black text-xs rounded-md shadow-sm transition ease-in-out transform hover:scale-105"
                       >
-                        <FaTrash className="text-xs" /> 
+                        <FaTrash className="text-xs" />
                       </button>
                     </div>
                   </td>
@@ -245,145 +257,142 @@ const AllEmployees = () => {
 
       {/* Modal for editing employee */}
       {showEditModal && (
-
         <div className="fixed inset-0 flex justify-center items-center bg-[oklch(0.28 0.03 256.85 / 0.5)] bg-opacity-70 z-20 ">
-            <div className="bg-white bg-opacity-80 p-10 rounded-lg shadow-xl backdrop-blur-md">
-              <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">
-                Edit Employee
-              </h3>
+          <div className="bg-white bg-opacity-80 p-10 rounded-lg shadow-xl backdrop-blur-md">
+            <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">
+              Edit Employee
+            </h3>
 
-              <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  {/* Name */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="name"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={updatedUserData.name}
-                      onChange={handleChange}
-                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-
-
-                  {/* Email */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={updatedUserData.email}
-                      onChange={handleChange}
-                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-
-                  {/* Position */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="position"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Position
-                    </label>
-                    <input
-                      type="text"
-                      id="position"
-                      name="position"
-                      value={updatedUserData.position}
-                      onChange={handleChange}
-                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-
-                  {/* Department */}
-                  <div className="mb-4 w-[18rem]">
-                    <label
-                      htmlFor="department"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Department
-                    </label>
-                    <DepartmentSelector
-                      selectedDepartments={department}
-                      setSelectedDepartments={setDepartment}
-                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-
-                  {/* Role */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="role"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Role
-                    </label>
-                    <select
-                      name="role"
-                      id="role"
-                      value={updatedUserData.role}
-                      onChange={handleChange}
-                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                      <option value="manager">Manager</option>
-                    </select>
-                  </div>
-
-                  {/* User ID */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="userId"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      User ID
-                    </label>
-                    <input
-                      type="text"
-                      id="userId"
-                      name="userId"
-                      value={updatedUserData.userId}
-                      onChange={handleChange}
-                      className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                {/* Name */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={updatedUserData.name}
+                    onChange={handleChange}
+                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
                 </div>
 
-                <div className="flex justify-between mt-6">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-300"
+                {/* Email */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    onClick={handleUpdate}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-300"
-                  >
-                    Update
-                  </button>
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={updatedUserData.email}
+                    onChange={handleChange}
+                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
                 </div>
-              </form>
-            </div>
+
+                {/* Position */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="position"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Position
+                  </label>
+                  <input
+                    type="text"
+                    id="position"
+                    name="position"
+                    value={updatedUserData.position}
+                    onChange={handleChange}
+                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                {/* Department */}
+                <div className="mb-4 w-[18rem]">
+                  <label
+                    htmlFor="department"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Department
+                  </label>
+                  <DepartmentSelector
+                    selectedDepartments={department}
+                    setSelectedDepartments={setDepartment}
+                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                {/* Role */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="role"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Role
+                  </label>
+                  <select
+                    name="role"
+                    id="role"
+                    value={updatedUserData.role}
+                    onChange={handleChange}
+                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="manager">Manager</option>
+                  </select>
+                </div>
+
+                {/* User ID */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="userId"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    User ID
+                  </label>
+                  <input
+                    type="text"
+                    id="userId"
+                    name="userId"
+                    value={updatedUserData.userId}
+                    onChange={handleChange}
+                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between mt-6">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleUpdate}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-300"
+                >
+                  Update
+                </button>
+              </div>
+            </form>
           </div>
-      
+        </div>
       )}
     </div>
   );

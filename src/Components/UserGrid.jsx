@@ -16,7 +16,7 @@ const UserCard = ({ user, index }) => {
   const [hover, setHover] = useState(false);
   const [hoverPosition, setHoverPosition] = useState("center");
 
-  const colorPalette = ["#CD95EA", "#FC979A"];
+  const colorPalette = ["#e9d6f3", "#f5c1c2"];
   const assignedColor = colorPalette[index % colorPalette.length];
 
   const handleMouseEnter = (e) => {
@@ -116,19 +116,10 @@ const UserGrid = () => {
   }, []);
 
   return (
-    <div className="w-full mx-auto bg-white rounded-xl p-6 shadow-md">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">People</h2>
+    <div className="w-full mx-auto bg-white rounded-xl shadow-md p-2">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4 p-2"
+      style={{ fontFamily: "Poppins, sans-serif" }}>People</h2>
       <div className="flex flex-wrap">
-        {/* Invite button */}
-        {/* <div
-          className="flex flex-col items-center justify-center m-2 cursor-pointer text-gray-600"
-          onClick={() => setShowModal(true)}
-        >
-          <div className="h-14 w-14 flex items-center justify-center border-2 border-dashed border-gray-400 rounded-full">
-            <span className="text-2xl font-semibold">+</span>
-          </div>
-          <div className="text-xs mt-1">Invite</div>
-        </div> */}
 
         {/* All users */}
         {users.map((user, index) => (

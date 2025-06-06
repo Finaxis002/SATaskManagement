@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import 'animate.css';
 
+html, body {
+  height: 100%;
+  overflow: hidden; /* prevents double scroll */
+}
+
 main{
     background-color: #fff !important;
 }

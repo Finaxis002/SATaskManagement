@@ -200,7 +200,7 @@ const FilterSection = ({
             id="dueBefore"
             value={filters.dueBefore}
             onChange={(e) => handleFilterChange("dueBefore", e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full h-[30px] text-[0.8rem] rounded-md border border-gray-300 px-2 shadow-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 

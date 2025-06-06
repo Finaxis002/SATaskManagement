@@ -168,9 +168,11 @@ const isHiddenCompletedTask = (task) =>
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
       <div className="flex justify-between items-center px-6 py-4 border-b ">
-        <h2 className="text-xl font-semibold text-gray-900">My Tasks</h2>
+        <h2 className="text-xl font-semibold text-gray-900"
+        style={{ fontFamily: "Poppins, sans-serif" }}
+        >My Tasks</h2>
 
-        <div className="flex gap-6 text-sm">
+        <div className="flex gap-6 text-sm" style={{ fontFamily: "Poppins, sans-serif" }}>
           {["today", "tomorrow", "upcoming", "overdue", "completed"].map(
             (tab) => {
               const visibleCount = categorizedTasks[tab]?.filter(
@@ -187,12 +189,15 @@ const isHiddenCompletedTask = (task) =>
                   onClick={() => setActiveTab(tab)}
                   className={`pb-2 capitalize border-b-2 transition-all duration-300 ${
                     activeTab === tab
-                      ? "border-indigo-600 text-indigo-600 font-semibold"
+                      ? "border-indigo-600 text-black font-semibold"
                       : "border-transparent text-gray-600 hover:text-indigo-600"
                   }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  {visibleCount > 0 ? ` (${visibleCount})` : ""}
+                  {/* {visibleCount > 0 ? ` ${ visibleCount}` : ""} */}
+                  {visibleCount > 0 && (
+    <span className="ml-1 text-sm font-bold text-indigo-600">{visibleCount}</span>
+  )}
                 </button>
               );
             }
@@ -205,8 +210,6 @@ const isHiddenCompletedTask = (task) =>
           (task) =>
             !(
             isHiddenCompletedTask(task)
-
-
             )
         ).length === 0 ? (
           <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
@@ -216,8 +219,6 @@ const isHiddenCompletedTask = (task) =>
               (task) =>
                 !(
                 isHiddenCompletedTask(task)
-
-
                 )
             )
             .map((task) => (
@@ -237,11 +238,12 @@ const isHiddenCompletedTask = (task) =>
                   />
 
                   <span
-                    className={`text-gray-800 text-lg ${
+                    className={`text-gray-800 text-lg  ${
                       task.status === "Completed" || justCompleted.has(task._id)
                         ? "line-through text-gray-400"
                         : ""
                     }`}
+                   style={{ fontFamily: "Roboto, sans-serif" }}
                   >
                     {task.taskName}
                   </span>
