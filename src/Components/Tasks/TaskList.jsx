@@ -3,13 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { updateTaskStatus, setHideCompletedTrue } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
-import TaskCodeFilterSelector from "./TaskCodeFilterSelector";
+import StatusDropdownPortal from "../StatusDropdownPortal";
 
-import {
-  faPen,
-  faCopy,
-} from "@fortawesome/free-solid-svg-icons";
-import { FaTrashAlt, FaPen, FaCalendar } from "react-icons/fa";
+import { faPen, faCopy } from "@fortawesome/free-solid-svg-icons";
+import { FaTrashAlt,FaExclamationCircle } from "react-icons/fa";
 
 import { fetchUsers } from "../../redux/userSlice";
 
@@ -50,6 +47,7 @@ const TaskList = ({
   const [uniqueUsers, setUniqueUsers] = useState([]);
   const [departmentsForAdmin, setDepartmentsForAdmin] = useState([]);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -91,8 +89,6 @@ const TaskList = ({
       setUniqueUsers([...new Set(names)]);
     }
   }, [users]);
-
-  
 
   useEffect(() => {
     fetchDepartments();
@@ -360,7 +356,6 @@ const TaskList = ({
 
       const shouldHide = hideCompleted && task.status === "Completed";
 
-
       // ✅ Due Date comparison
       const dueDate = new Date(task.dueDate);
       const selectedDate = filters.dueBefore
@@ -370,7 +365,6 @@ const TaskList = ({
 
       // return matchesFilter && !shouldHide;
       return matchesFilter && !shouldHide && matchesDueBefore;
-
     })
     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
@@ -666,22 +660,35 @@ const TaskList = ({
     <tr
       key={task._id}
       id={`task-${task._id}`}
-      className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200 
-    ${
-      new Date(task.dueDate) < new Date() &&
-      task.status !== "Completed" &&
-      task.status !== "Obsolete"
-        ? "bg-orange-100 hover:bg-orange-200" // 🔴 Overdue tasks
-        : ""
-    }
-  `}
+  //     className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200        
+  //   ${
+  //     new Date(task.dueDate) < new Date() &&
+  //     task.status !== "Completed" &&
+  //     task.status !== "Obsolete"
+  //       ? "bg-orange-100 hover:bg-orange-200"
+  //       : ""
+  //   }
+  // `}
+      className={`transition duration-300 ease-in-out cursor-pointer border-b border-gray-200 
+  ${index % 2 === 0 ? "bg-white hover:bg-gray-50" : "bg-gray-100 hover:bg-gray-200"}`}
+
+  style={{ maxHeight: "200px", overflowY: "auto" }}
     >
       {/* 1. S. No */}
       <td className="py-3 px-4 font-medium">{index + 1}</td>
 
       {/* 2. Task Name (with pencil icon for edit) */}
       <td className="py-3 px-6 relative flex items-center gap-2">
-        <span className="text-xs">{task.taskName}</span>
+        <span className="text-xs">{task.taskName}
+        {new Date(task.dueDate) < new Date() &&
+      task.status !== "Completed" &&
+      task.status !== "Obsolete" && (
+        <FaExclamationCircle
+          className="text-red-500"
+          title="Overdue Task"
+        />
+      )}
+      </span>
         <FontAwesomeIcon
           icon={faPen}
           className="cursor-pointer text-blue-500 hover:text-blue-700"
@@ -802,54 +809,66 @@ const TaskList = ({
 
       {/* 6. Status (with click to change dropdown) */}
       <td className="py-3 px-6 text-center relative">
-        {editingStatus === task._id ? (
-          <div
-            ref={dropdownRef}
-            className="flex flex-col w-[20vh] justify-between bg-white absolute shadow-lg rounded-lg z-50"
-          >
-            {["To Do", "In Progress", "Completed", "Obsolete"].map(
-              (statusOption) => (
-                <span
-                  key={statusOption}
-                  className={`py-2 px-4 text-center rounded-md text-xs font-semibold cursor-pointer mb-1 ${
-                    statusOption === "Completed"
-                      ? "bg-green-200 text-green-600"
-                      : statusOption === "In Progress"
-                      ? "bg-yellow-200 text-yellow-600"
-                      : statusOption === "To Do"
-                      ? "bg-blue-200 text-blue-600"
-                      : statusOption === "Obsolete"
-                      ? "bg-purple-200 text-purple-600"
-                      : "bg-red-200 text-red-600"
-                  }`}
-                  onClick={() => {
-                    setNewStatus(statusOption);
-                    handleStatusChange(task._id, statusOption);
-                    setEditingStatus(null);
-                  }}
-                >
-                  {statusOption}
-                </span>
-              )
-            )}
-          </div>
-        ) : (
-          <span
-            className={`py-1 px-3 rounded-full text-xs font-semibold ${
-              task.status === "Completed"
-                ? "bg-green-200 text-green-600"
-                : task.status === "In Progress"
-                ? "bg-yellow-200 text-yellow-600"
-                : task.status === "To Do"
-                ? "bg-blue-200 text-blue-600"
-                : task.status === "Obsolete"
-                ? "bg-purple-200 text-purple-600"
-                : "bg-red-200 text-red-600"
-            }`}
-            onClick={() => setEditingStatus(task._id)}
-          >
-            {task.status}
-          </span>
+        <span
+          className={`bg-blue-100 text-blue-700 border border-blue-300 rounded-md px-2 py-0.5 shadow-sm text-[11px] ${
+            task.status === "Completed"
+              ? "bg-green-200 text-green-600"
+              : task.status === "In Progress"
+              ? "bg-yellow-200 text-yellow-600"
+              : task.status === "To Do"
+              ? "bg-blue-200 text-blue-600"
+              : task.status === "Obsolete"
+              ? "bg-purple-200 text-purple-600"
+              : "bg-red-200 text-red-600"
+          }`}
+          onClick={(e) => {
+            const rect = e.target.getBoundingClientRect();
+            setDropdownPosition({
+              top: rect.top + window.scrollY + 30, // Adjust +30 for dropdown spacing
+              left: rect.left + window.scrollX,
+            });
+            setEditingStatus(task._id);
+          }}
+        >
+          {task.status}
+        </span>
+
+        {editingStatus === task._id && (
+          <StatusDropdownPortal>
+            <div
+              ref={dropdownRef}
+              className="absolute bg-white shadow-lg rounded-md w-40 border"
+              style={{
+                position: "absolute",
+                top: dropdownPosition.top,
+                left: dropdownPosition.left,
+                zIndex: 9999,
+              }}
+            >
+              {["To Do", "In Progress", "Completed", "Obsolete"].map(
+                (statusOption) => (
+                  <div
+                    key={statusOption}
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 ${
+                      statusOption === "Completed"
+                        ? "text-green-600"
+                        : statusOption === "In Progress"
+                        ? "text-yellow-600"
+                        : statusOption === "To Do"
+                        ? "text-blue-600"
+                        : "text-purple-600"
+                    }`}
+                    onClick={() => {
+                      handleStatusChange(task._id, statusOption);
+                      setEditingStatus(null);
+                    }}
+                  >
+                    {statusOption}
+                  </div>
+                )
+              )}
+            </div>
+          </StatusDropdownPortal>
         )}
       </td>
 
@@ -996,7 +1015,6 @@ const TaskList = ({
 
   return (
     <div className="relative" style={{ position: "relative" }}>
-      
       <FilterSection
         filters={filters}
         handleFilterChange={handleFilterChange}
@@ -1012,7 +1030,7 @@ const TaskList = ({
         className="overflow-auto"
         style={{
           maxHeight: "calc(75vh - 120px)",
-          overflowX: "auto", 
+          overflowX: "auto",
           position: "relative",
         }}
         onScroll={() => syncScroll("vertical")}
@@ -1021,7 +1039,7 @@ const TaskList = ({
           className=" w-full table-auto border-collapse text-xs text-gray-800"
           style={{ minWidth: "1100px" }}
         >
-          <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs sticky top-0 z-10">
+          <thead className="bg-gradient-to-r from-gray-300 to-gray-300 text-black text-xs sticky top-0 z-10">
             <tr className="text-left">
               <th className="py-3 px-4 min-w-[70px] font-semibold">S. No</th>
               <th className="py-3 px-6 min-w-[180px] font-semibold">
@@ -1072,7 +1090,7 @@ const TaskList = ({
             {highPriorityTasks.length === 0 &&
             mediumPriorityTasks.length === 0 &&
             lowPriorityTasks.length === 0 ? (
-              <tr>
+              <tr className="even:bg-gray-50 odd:bg-white">
                 <td colSpan="13" className="text-center py-6 text-gray-500">
                   🚫 No tasks Assigned Yet.
                 </td>

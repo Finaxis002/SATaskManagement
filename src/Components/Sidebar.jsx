@@ -20,7 +20,7 @@ import {
 
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
-import InvoiceForm from "../pages/InvoiceForm";
+import icon from '/icon.png';
 
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
@@ -60,9 +60,19 @@ const Sidebar = () => {
   // console.log("🔢 Notification count state:", notificationCount);
 
   return (
-    <div className="bg-[#1e1f21] text-white pt-[10vh] h-screen flex flex-col justify-between border-r border-gray-700">
+    <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700">
+      {/* Logo at the top */}
+      <div className="flex justify-center pt-2">
+        <NavLink to="/">
+          <img
+            src={icon}
+            alt="Logo"
+            className="w-16 h-16 object-contain rounded-4xl"
+          />
+        </NavLink>
+      </div>
       {/* Main Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="flex-1 overflow-y-auto px-3 py-4 pt-2">
         {/* Core nav */}
         <SidebarItem icon={<FaHome />} label="Home" to="/" />
         {role === "admin" && (
