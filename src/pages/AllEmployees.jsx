@@ -220,21 +220,21 @@ const AllEmployees = () => {
                     <div className="flex justify-center gap-3">
                       <button
                         onClick={() => handleEdit(user)}
-                        className=" text-black flex items-center gap-2 px-4 py-2 bg-[#d2d5f1] hover:bg-blue-600  text-xs rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105"
+                        className="  flex items-center gap-2 px-4 py-2  hover:bg-[#d2d5f1]  text-xs rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105"
                       >
-                        <FaEdit className="text-xs" /> Edit
+                        <FaEdit className="text-xs text-blue-500" /> 
                       </button>
                       <button
                         onClick={() => handleResetPassword(user._id, user.name)}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#f7f7a2] hover:bg-yellow-600 text-black text-xs rounded-md shadow-md transition ease-in-out transform hover:scale-105"
+                        className="flex items-center gap-2 px-4 py-2  hover:bg-[#f7f7a2]  text-xs rounded-md shadow-md transition ease-in-out transform hover:scale-105"
                       >
-                        <FaSyncAlt className="text-xs" /> Reset
+                        <FaSyncAlt className="text-xs text-yellow-500" />
                       </button>
                       <button
                         onClick={() => handleDelete(user._id)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-[#f5a8a8] hover:bg-red-700 text-black text-xs rounded-md shadow-sm transition ease-in-out transform hover:scale-105"
+                        className="flex items-center gap-2 px-3 py-1.5  hover:bg-[#f5a8a8] rounded-md shadow-sm transition ease-in-out transform hover:scale-105"
                       >
-                        <FaTrash className="text-xs" />
+                        <FaTrash className="text-xs text-red-500" />
                       </button>
                     </div>
                   </td>

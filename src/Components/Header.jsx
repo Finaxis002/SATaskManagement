@@ -149,12 +149,12 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="bg-[#1e1f21] w-full text-white px-4 py-2 flex items-center justify-between border-b border-gray-700">
+    <header className="bg-[#ffffff] w-full text-white px-4 py-2 flex items-center justify-between ">
       {/* Search Bar */}
-      <div className="flex-1 flex justify-center">
-        <div className="relative w-full max-w-2xl">
+      <div className="flex-1 flex justify-end-safe">
+        <div className="relative w-full max-w-xl">
           {/* Search Icon */}
-          <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+          <span className="absolute inset-y-0 left-3 flex items-center text-gray-200">
             <FaSearch />
           </span>
 
@@ -165,7 +165,7 @@ const Header = () => {
             onChange={handleSearchChange}
             placeholder="Search..."
             id="global-search-input"
-            className="w-full pl-10 pr-10 py-2 rounded-full bg-[#3a3b3c] text-sm placeholder-gray-400 text-white focus:outline-none"
+            className="w-full pl-10 pr-10 py-2 rounded-full bg-[#e5e7e9de] text-sm placeholder-gray-400 text-black focus:outline-none"
           />
 
           {/* Right-side controls (clear button and match count) */}

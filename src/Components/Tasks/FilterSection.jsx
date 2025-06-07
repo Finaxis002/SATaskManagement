@@ -208,7 +208,7 @@ const FilterSection = ({
         <div className="flex items-center justify-center min-w-[110px]">
           <button
             onClick={clearFilters}
-            className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs font-semibold shadow-md transition"
+            className="flex items-center gap-1 bg-[#b1afaf] hover:bg-[#fcfbfb]  px-3 py-1 rounded-md text-xs font-semibold shadow-md transition text-black"
             title="Clear All Filters"
           >
             <FaFilter />

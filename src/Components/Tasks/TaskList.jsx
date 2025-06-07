@@ -4,14 +4,10 @@ import { updateTaskStatus, setHideCompletedTrue } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
 import StatusDropdownPortal from "../StatusDropdownPortal";
-
 import { faPen, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaExclamationCircle } from "react-icons/fa";
-
 import { fetchUsers } from "../../redux/userSlice";
-
 import Swal from "sweetalert2";
-
 import { io } from "socket.io-client";
 import FilterSection from "./FilterSection";
 
