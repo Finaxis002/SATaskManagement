@@ -194,7 +194,7 @@ const Sidebar = () => {
     //   </div>
     // </div>
     // <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] hover:w-[250px] transition-all duration-300">
-    <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] overflow-x-hidden">
+    <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] ">
       {/* Logo at the top */}
       <div className="flex justify-center pt-2">
         <NavLink to="/">

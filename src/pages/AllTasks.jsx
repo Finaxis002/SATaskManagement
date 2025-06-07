@@ -3,7 +3,6 @@ import TaskFormModal from "../Components/Tasks/TaskFormModal";
 import TaskList from "../Components/Tasks/TaskList";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { setHideCompletedTrue } from "../redux/taskSlice";
 import Swal from 'sweetalert2'
 
 
@@ -98,7 +97,7 @@ const handleRemoveCompletedTasks = async () => {
             )}
           </div>
         </div>
-
+ 
         <TaskList
           refreshTrigger={refreshTrigger}
           onEdit={handleEdit}
