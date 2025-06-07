@@ -16,7 +16,7 @@ const UserCard = ({ user, index }) => {
   const [hover, setHover] = useState(false);
   const [hoverPosition, setHoverPosition] = useState("center");
 
-  const colorPalette = ["#e9d6f3", "#f5c1c2"];
+  const colorPalette = ["#018f95", "#2184A3", "#2D566C"];
   const assignedColor = colorPalette[index % colorPalette.length];
 
   const handleMouseEnter = (e) => {
@@ -42,7 +42,7 @@ const UserCard = ({ user, index }) => {
     >
       {/* Avatar Circle */}
       <div
-        className="rounded-full h-14 w-14 flex items-center justify-center text-black font-bold text-lg shadow-md"
+        className="rounded-full h-14 w-14 flex items-center justify-center text-white font-bold text-lg shadow-md"
         style={{ backgroundColor: assignedColor }}
       >
         {generateInitials(user.name).toUpperCase()}

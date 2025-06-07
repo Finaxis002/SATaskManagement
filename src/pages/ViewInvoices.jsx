@@ -4,7 +4,7 @@ import axios from "axios";
 import html2pdf from "html2pdf.js";
 import Swal from "sweetalert2";
 import InvoicePreview from "../Components/InvoicePreview";
-
+import { FaTrash } from "react-icons/fa";
 export default function ViewInvoices() {
   console.log("ViewInvoices component rendered");
   const [clients, setClients] = useState([]);
@@ -1189,9 +1189,9 @@ export default function ViewInvoices() {
                     </button>
                     <button
                       onClick={() => handleDeleteInvoice(inv.invoiceNumber)}
-                      className="bg-red-400 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium transition ml-10"
+                      className=" bg-[#f5a8a8] hover:bg-red-600 text-black px-3 py-1 rounded-md text-sm font-medium transition ml-10"
                     >
-                      🗑️
+                      <FaTrash className="text-xs" />
                     </button>
                   </td>
                 </tr>

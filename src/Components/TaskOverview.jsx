@@ -11,7 +11,6 @@ const TaskOverview = () => {
   const [completedTaskIds, setCompletedTaskIds] = useState(new Set());
   const [justCompleted, setJustCompleted] = useState(new Set());
 
-
   // Fetch tasks from the API and categorize them
   useEffect(() => {
     const fetchTasks = async () => {
@@ -31,18 +30,17 @@ const TaskOverview = () => {
   const now = new Date();
 
   // Filter tasks based on user role (only show tasks assigned to the logged-in user if not an admin)
-const filteredTasks = tasks.filter((task) => {
-  // Exclude hidden completed tasks no matter what
-  if (task.status === "Completed" && task.isHidden) return false;
+  const filteredTasks = tasks.filter((task) => {
+    // Exclude hidden completed tasks no matter what
+    if (task.status === "Completed" && task.isHidden) return false;
 
-  if (role === "admin") return true; // Admin sees all non-hidden tasks
+    if (role === "admin") return true; // Admin sees all non-hidden tasks
 
-  // Show tasks assigned to the user
-  return task.assignees?.some(
-    (assignee) => assignee.email.toLowerCase() === userId?.toLowerCase()
-  );
-});
-
+    // Show tasks assigned to the user
+    return task.assignees?.some(
+      (assignee) => assignee.email.toLowerCase() === userId?.toLowerCase()
+    );
+  });
 
   // Categorize tasks based on due date (Today, Tomorrow, Overdue, etc.)
   const categorizedTasks = {
@@ -159,28 +157,27 @@ const filteredTasks = tasks.filter((task) => {
     setJustCompleted(new Set());
   }, [activeTab]);
 
-
-const isHiddenCompletedTask = (task) =>
-  task.status === "Completed" && task.isHidden === true;
-
-
+  const isHiddenCompletedTask = (task) =>
+    task.status === "Completed" && task.isHidden === true;
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
       <div className="flex justify-between items-center px-6 py-4 border-b ">
-        <h2 className="text-xl font-semibold text-gray-900"
-        style={{ fontFamily: "Poppins, sans-serif" }}
-        >My Tasks</h2>
+        <h2
+          className="text-xl font-semibold text-gray-900"
+          style={{ fontFamily: "Poppins, sans-serif" }}
+        >
+          My Tasks
+        </h2>
 
-        <div className="flex gap-6 text-sm" style={{ fontFamily: "Poppins, sans-serif" }}>
+        <div
+          className="flex gap-6 text-sm"
+          style={{ fontFamily: "Poppins, sans-serif" }}
+        >
           {["today", "tomorrow", "upcoming", "overdue", "completed"].map(
             (tab) => {
               const visibleCount = categorizedTasks[tab]?.filter(
-                (task) =>
-                  !(
-                  isHiddenCompletedTask(task)
-
-                  )
+                (task) => !isHiddenCompletedTask(task)
               ).length;
 
               return (
@@ -196,8 +193,10 @@ const isHiddenCompletedTask = (task) =>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                   {/* {visibleCount > 0 ? ` ${ visibleCount}` : ""} */}
                   {visibleCount > 0 && (
-    <span className="ml-1 text-sm font-bold text-indigo-600">{visibleCount}</span>
-  )}
+                    <span className="ml-1 text-sm font-bold text-indigo-600">
+                      {visibleCount}
+                    </span>
+                  )}
                 </button>
               );
             }
@@ -206,21 +205,12 @@ const isHiddenCompletedTask = (task) =>
       </div>
 
       <div className="divide-y">
-        {getTasksByTab().filter(
-          (task) =>
-            !(
-            isHiddenCompletedTask(task)
-            )
-        ).length === 0 ? (
+        {getTasksByTab().filter((task) => !isHiddenCompletedTask(task))
+          .length === 0 ? (
           <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
         ) : (
           getTasksByTab()
-            .filter(
-              (task) =>
-                !(
-                isHiddenCompletedTask(task)
-                )
-            )
+            .filter((task) => !isHiddenCompletedTask(task))
             .map((task) => (
               <div
                 key={task._id}
@@ -243,7 +233,7 @@ const isHiddenCompletedTask = (task) =>
                         ? "line-through text-gray-400"
                         : ""
                     }`}
-                   style={{ fontFamily: "Roboto, sans-serif" }}
+                    style={{ fontFamily: "Roboto, sans-serif" }}
                   >
                     {task.taskName}
                   </span>

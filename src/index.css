@@ -138,6 +138,30 @@ main{
   animation: pulse-grow 1s infinite;
 }
 
+/* Add this to your Tailwind CSS file */
+.scrollbar-custom {
+  @apply overflow-x-auto overflow-y-auto;
+  scrollbar-width: thin;
+  scrollbar-color: #6B7280 #F3F4F6; /* Thumb color and track color */
+}
+
+::-webkit-scrollbar {
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #6B7280; /* Thumb color */
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #4B5563; /* Hover state for thumb */
+}
+
+::-webkit-scrollbar-track {
+  background-color: #F3F4F6; /* Track color */
+  border-radius: 9999px; /* Round corners for the track */
+}
 
 
 @media print {

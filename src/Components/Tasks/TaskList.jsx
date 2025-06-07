@@ -6,7 +6,7 @@ import { fetchDepartments } from "../../redux/departmentSlice";
 import StatusDropdownPortal from "../StatusDropdownPortal";
 
 import { faPen, faCopy } from "@fortawesome/free-solid-svg-icons";
-import { FaTrashAlt,FaExclamationCircle } from "react-icons/fa";
+import { FaTrashAlt, FaExclamationCircle } from "react-icons/fa";
 
 import { fetchUsers } from "../../redux/userSlice";
 
@@ -660,35 +660,39 @@ const TaskList = ({
     <tr
       key={task._id}
       id={`task-${task._id}`}
-  //     className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200        
-  //   ${
-  //     new Date(task.dueDate) < new Date() &&
-  //     task.status !== "Completed" &&
-  //     task.status !== "Obsolete"
-  //       ? "bg-orange-100 hover:bg-orange-200"
-  //       : ""
-  //   }
-  // `}
+      //     className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200
+      //   ${
+      //     new Date(task.dueDate) < new Date() &&
+      //     task.status !== "Completed" &&
+      //     task.status !== "Obsolete"
+      //       ? "bg-orange-100 hover:bg-orange-200"
+      //       : ""
+      //   }
+      // `}
       className={`transition duration-300 ease-in-out cursor-pointer border-b border-gray-200 
-  ${index % 2 === 0 ? "bg-white hover:bg-gray-50" : "bg-gray-100 hover:bg-gray-200"}`}
-
-  style={{ maxHeight: "200px", overflowY: "auto" }}
+  ${
+    index % 2 === 0
+      ? "bg-white hover:bg-gray-50"
+      : "bg-gray-100 hover:bg-gray-200"
+  }`}
+      style={{ maxHeight: "200px", overflowY: "auto" }}
     >
       {/* 1. S. No */}
       <td className="py-3 px-4 font-medium">{index + 1}</td>
 
       {/* 2. Task Name (with pencil icon for edit) */}
       <td className="py-3 px-6 relative flex items-center gap-2">
-        <span className="text-xs">{task.taskName}
-        {new Date(task.dueDate) < new Date() &&
-      task.status !== "Completed" &&
-      task.status !== "Obsolete" && (
-        <FaExclamationCircle
-          className="text-red-500"
-          title="Overdue Task"
-        />
-      )}
-      </span>
+        <span className="text-xs">
+          {task.taskName}
+          {new Date(task.dueDate) < new Date() &&
+            task.status !== "Completed" &&
+            task.status !== "Obsolete" && (
+              <FaExclamationCircle
+                className="text-red-500"
+                title="Overdue Task"
+              />
+            )}
+        </span>
         <FontAwesomeIcon
           icon={faPen}
           className="cursor-pointer text-blue-500 hover:text-blue-700"
@@ -1027,17 +1031,23 @@ const TaskList = ({
 
       <div
         ref={verticalScrollRef}
-        className="overflow-auto"
+        // className="overflow-auto"
+        // style={{
+        //   maxHeight: "calc(75vh - 120px)",
+        //   overflowX: "auto",
+        //   position: "relative",
+        // }}
+        className="overflow-x-auto overflow-y-auto"
         style={{
           maxHeight: "calc(75vh - 120px)",
-          overflowX: "auto",
           position: "relative",
         }}
         onScroll={() => syncScroll("vertical")}
       >
         <table
-          className=" w-full table-auto border-collapse text-xs text-gray-800"
-          style={{ minWidth: "1100px" }}
+          // className=" w-full min-w-full table-auto border-collapse text-xs text-gray-800"
+          // style={{ minWidth: "1100px" }}
+          className="min-w-[1100px] table-auto border-collapse text-xs text-gray-800"
         >
           <thead className="bg-gradient-to-r from-gray-300 to-gray-300 text-black text-xs sticky top-0 z-10">
             <tr className="text-left">
@@ -1142,6 +1152,7 @@ const TaskList = ({
           </tbody>
         </table>
       </div>
+      
     </div>
   );
 };
