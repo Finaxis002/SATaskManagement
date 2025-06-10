@@ -3,8 +3,8 @@ import axios from "axios";
 import { FaTrashAlt, FaUsers, FaPlus, FaTimes } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ReportGeneration from "../Components/ReportGeneration";
-import ClientList from "../Components/ClientList";
-import CreateClientModal from "../Components/CreateClientModal";
+import ClientList from "../Components/client/ClientList";
+import CreateClientModal from "../Components/client/CreateClientModal";
 
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});

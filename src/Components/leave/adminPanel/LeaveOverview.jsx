@@ -113,7 +113,16 @@ const LeaveOverview = () => {
                 <td className="px-4 py-2">
                   {new Date(leave.toDate).toLocaleDateString()}
                 </td>
-                <td className="px-4 py-2">{leave.leaveType}</td>
+                <td className="px-4 py-2">{leave.leaveType}
+                 {(leave.fromTime || leave.toTime) && (
+              <div className="text-xs text-gray-400 mt-1">
+                <span className="font-medium">Timing: </span>
+                {leave.fromTime ? leave.fromTime : "--:--"}{" "}
+                <span className="mx-1">→</span>
+                {leave.toTime ? leave.toTime : "--:--"}
+              </div>
+            )}
+            </td>
                 <td className="px-4 py-2">
                   <span
                     className={`px-2 py-1 rounded text-sm ${

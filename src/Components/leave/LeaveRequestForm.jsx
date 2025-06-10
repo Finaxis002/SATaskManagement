@@ -5,7 +5,6 @@ import "react-date-range/dist/theme/default.css";
 import axios from "axios";
 
 const LeaveRequestForm = () => {
-   
   const userName = localStorage.getItem("name");
   const [range, setRange] = useState([
     {
@@ -17,6 +16,8 @@ const LeaveRequestForm = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [leaveType, setLeaveType] = useState("Sick Leave");
   const [comments, setComments] = useState("");
+  const [fromTime, setFromTime] = useState("");
+  const [toTime, setToTime] = useState("");
 
   const calendarRef = useRef(null);
 
@@ -31,10 +32,7 @@ const LeaveRequestForm = () => {
   // Close calendar on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        calendarRef.current &&
-        !calendarRef.current.contains(event.target)
-      ) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
         setShowCalendar(false);
       }
     };
@@ -42,42 +40,38 @@ const LeaveRequestForm = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-//   const handleSubmit = async () => {
-//     try {
-//       const payload = {
-//         fromDate: range[0].startDate,
-//         toDate: range[0].endDate,
-//         leaveType,
-//         comments,
-//       };
-//       await axios.post("http://localhost:5000/api/leave", payload);
-//       alert("Leave submitted successfully!");
-//       setComments("");
-//     } catch (error) {
-//       alert("Error submitting leave request.");
-//     }
-//   };
-const handleSubmit = async () => {
-  const userId = localStorage.getItem("userId");
+  const handleSubmit = async () => {
+    const userId = localStorage.getItem("userId");
 
-  try {
-    const payload = {
-      userId, // Include user ID
-      userName,
-      fromDate: range[0].startDate,
-      toDate: range[0].endDate,
-      leaveType,
-      comments,
-      
-    };
+    try {
+      const payload = {
+        userId, // Include user ID
+        userName,
+        fromDate: range[0].startDate,
+        toDate: range[0].endDate,
+        leaveType,
+        comments,
+        fromTime,
+        toTime,
+      };
 
-    await axios.post("https://sataskmanagementbackend.onrender.com/api/leave", payload);
-    alert("Leave submitted successfully!");
-    setComments("");
-  } catch (error) {
-    alert("Error submitting leave request.");
-  }
-};
+      await axios.post(
+        "https://sataskmanagementbackend.onrender.com/api/leave",
+        payload
+      );
+
+      // Set alert in localStorage for new leave request
+    localStorage.setItem("showLeaveAlert", "true");
+
+    // Trigger 'storage' event to update sidebar alert in real-time
+    const event = new Event("storage");
+    window.dispatchEvent(event);
+      alert("Leave submitted successfully!");
+      setComments("");
+    } catch (error) {
+      alert("Error submitting leave request.");
+    }
+  };
 
   return (
     <div className="bg-gray-800 rounded-xl p-6 shadow-md relative">
@@ -95,10 +89,7 @@ const handleSubmit = async () => {
       />
 
       {showCalendar && (
-        <div
-          ref={calendarRef}
-          className="absolute z-50 mt-[-1rem] mb-4"
-        >
+        <div ref={calendarRef} className="absolute z-50 mt-[-1rem] mb-4">
           <DateRange
             editableDateInputs={true}
             onChange={(item) => setRange([item.selection])}
@@ -118,8 +109,33 @@ const handleSubmit = async () => {
         <option>Sick Leave</option>
         <option>Casual Leave</option>
         <option>Earned Leave</option>
+        <option>Half Day Leave</option>
       </select>
-
+      {/* leave timing for half day leave */}
+      <div className="flex gap-2 mb-4">
+        <div>
+          <label className="block text-sm">
+            From Time <span className="text-gray-400">(Optional)</span>
+          </label>
+          <input
+            type="time"
+            value={fromTime}
+            onChange={(e) => setFromTime(e.target.value)}
+            className="form-input"
+          />
+        </div>
+        <div>
+          <label className="block text-sm">
+            To Time <span className="text-gray-400">(Optional)</span>
+          </label>
+          <input
+            type="time"
+            value={toTime}
+            onChange={(e) => setToTime(e.target.value)}
+            className="form-input"
+          />
+        </div>
+      </div>
       <label className="block text-sm mb-1">Comments (Optional)</label>
       <textarea
         value={comments}
