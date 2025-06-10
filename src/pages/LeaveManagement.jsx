@@ -6,6 +6,7 @@ import LeaveOverview from "../Components/leave/adminPanel/LeaveOverview";
 
 const LeaveManagement = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [leaveAlert, setLeaveAlert] = useState('false')
 
   const formatDate = (date) =>
   new Date(date).toLocaleDateString("en-IN", {
