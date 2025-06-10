@@ -16,7 +16,7 @@ const LeaveManagement = () => {
   
 if (Notification.permission !== "granted") {
   Notification.requestPermission().then((perm) => {
-    console.log("🔔 Notification permission:", perm);
+    console.log("🔔 Notification permission notification permission:", perm);
   });
 }
 
