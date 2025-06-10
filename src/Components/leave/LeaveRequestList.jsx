@@ -11,6 +11,7 @@ const LeaveRequestList = () => {
         const response = await axios.get(
           `https://sataskmanagementbackend.onrender.com/api/leave?userId=${userId}`
         );
+        console.log("Fetched leaves:", response.data);
         setLeaves(response.data);
       } catch (error) {
         console.error("Failed to fetch leaves", error);
@@ -19,6 +20,8 @@ const LeaveRequestList = () => {
 
     fetchLeaves();
   }, [userId]);
+
+  
 
   return (
     <div className="bg-gray-800 rounded-xl p-6 shadow-md max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
@@ -34,6 +37,15 @@ const LeaveRequestList = () => {
               {new Date(leave.fromDate).toLocaleDateString()} →{" "}
               {new Date(leave.toDate).toLocaleDateString()}
             </div>
+            {/* SHOW TIME IF PRESENT */}
+            {(leave.fromTime || leave.toTime) && (
+              <div className="text-xs text-gray-400 mt-1">
+                <span className="font-medium">Timing: </span>
+                {leave.fromTime ? leave.fromTime : "--:--"}{" "}
+                <span className="mx-1">→</span>
+                {leave.toTime ? leave.toTime : "--:--"}
+              </div>
+            )}
           </div>
           <span
             className={`text-sm font-semibold px-2 py-1 rounded-md ${

@@ -21,40 +21,74 @@ if (Notification.permission !== "granted") {
 }
 
 
-useEffect(() => {
+ useEffect(() => {
   const email = localStorage.getItem("userId");
   const name = localStorage.getItem("name");
 
   if (email && name) {
-    socket.emit("register", email, name); // ✅ Critical!
-    console.log("📡 Admin registered on socket:", email);
+    socket.emit("register", email, name);
   }
 
-  // Now listen to leave notifications
-  socket.on("new-leave", (data) => {
-    
-
-    console.log("📩 New leave request received:", data);
-
+  const handleNewLeave = (data) => {
+    console.log("New leave request received:", data);
     const role = localStorage.getItem("role");
-    if (role === "admin" && Notification.permission === "granted") {
-      new Notification("📩 New Leave Request", {
-        body: `${data.userId} applied for ${data.leaveType} leave\n${formatDate(data.fromDate)} → ${formatDate(data.toDate)}`,
-      });
 
+    if (role === "admin") {
+      if (Notification.permission === "granted") {
+        new Notification("📩 New Leave Request", {
+          body: `${data.userId} applied for ${data.leaveType} leave\n${formatDate(data.fromDate)} → ${formatDate(data.toDate)}`,
+        });
+      }
+      
+      // Use both localStorage and state to ensure reliability
       localStorage.setItem("showLeaveAlert", "true");
+      // Force state update by using a timestamp
+      const event = new StorageEvent("storage", {
+        key: "showLeaveAlert",
+        newValue: "true"
+      });
+      window.dispatchEvent(event);
     }
-  });
+  };
+
+  socket.on("new-leave", handleNewLeave);
 
   return () => {
-    socket.off("new-leave");
+    socket.off("new-leave", handleNewLeave);
   };
 }, []);
 
-useEffect(() => {
-  localStorage.setItem("showLeaveAlert", "false");
-}, []);
+ useEffect(() => {
+  if (activeTab === "requests") {
+    localStorage.setItem("showLeaveAlert", "false");
+    setLeaveAlert(false);
+    // Emit custom event if localStorage isn't enough
+    const event = new CustomEvent("leaveAlertUpdate");
+    window.dispatchEvent(event);
+  }
+}, [activeTab]);
 
+useEffect(() => {
+  if (!socket) return;
+
+  const handleNewLeave = (data) => {
+    console.log('New leave request received:', data);
+    // Update your UI state here
+    setNewLeaveRequests(prev => [...prev, data]);
+    // Show notification
+    if (Notification.permission === 'granted') {
+      new Notification('New Leave Request', {
+        body: `${data.userId} requested ${data.leaveType} leave`
+      });
+    }
+  };
+
+  socket.on('new-leave', handleNewLeave);
+
+  return () => {
+    socket.off('new-leave', handleNewLeave);
+  };
+}, [socket]);
 
 
   return (

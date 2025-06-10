@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaThLarge, FaTable } from "react-icons/fa";
 import Swal from "sweetalert2";
-import ClientList from "../Components/ClientList";
-import CreateClientModal from "../Components/CreateClientModal";
+import ClientList from "../Components/client/ClientList";
+import CreateClientModal from "../Components/client/CreateClientModal";
+import ClientTableView from "../Components/client/ClientTableView";
+
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [viewMode, setViewMode] = useState("card"); 
+
 
   const fetchClients = async () => {
     setLoading(true);
@@ -96,6 +100,22 @@ const Clients = () => {
       </h1>
 
       <div className="flex justify-end mb-4">
+        <div className="flex gap-2">
+    <button
+      onClick={() => setViewMode("card")}
+      className={`p-2 rounded ${viewMode === "card" ? "bg-indigo-200" : "bg-gray-200"}`}
+      title="Card View"
+    >
+      <FaThLarge size={18} />
+    </button>
+    <button
+      onClick={() => setViewMode("table")}
+      className={`p-2 rounded ${viewMode === "table" ? "bg-indigo-200" : "bg-gray-200"}`}
+      title="Table View"
+    >
+      <FaTable size={18} />
+    </button>
+  </div>
         <button
           onClick={() => setShowClientModal(true)}
           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
@@ -114,45 +134,22 @@ const Clients = () => {
         </div>
       ) : (
         <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-          <ClientList
+          {viewMode === "card" ? (<ClientList
             clients={clients}
             onDelete={handleDeleteClient}
             onEdit={handleEditClient}
           />
+          ):(
+            <ClientTableView
+    clients={clients}
+    onEdit={handleEditClient}
+    onDelete={handleDeleteClient}
+  />
+          )}
         </div>
       )}
 
-      {/* {showClientModal && (
-        <CreateClientModal
-          onClose={() => setShowClientModal(false)}
-          onCreate={async (clientData) => {
-            try {
-              await axios.post(
-                "https://sataskmanagementbackend.onrender.com/api/clients",
-                clientData
-              );
-
-              Swal.fire({
-                icon: "success",
-                title: "Client Created",
-                text: `"${clientData.name}" was added successfully!`,
-                timer: 2000,
-                showConfirmButton: false,
-              });
-
-              fetchClients();
-              setShowClientModal(false);
-            } catch (err) {
-              Swal.fire({
-                icon: "error",
-                title: "Creation Failed",
-                text: "Unable to create client. Please try again.",
-              });
-              console.error("Client creation failed", err);
-            }
-          }}
-        />
-      )} */}
+      
       {showClientModal && (
         <CreateClientModal
           client={editingClient} // Pass the client being edited or null
