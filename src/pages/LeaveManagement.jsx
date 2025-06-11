@@ -21,16 +21,15 @@ if (Notification.permission !== "granted") {
   });
 }
 
+useEffect(() => {
+    const email = localStorage.getItem("userId");
+    const name = localStorage.getItem("name");
 
- useEffect(() => {
-  const email = localStorage.getItem("userId");
-  const name = localStorage.getItem("name");
+    if (email && name) {
+      socket.emit("register", email, name);
+    }
 
-  if (email && name) {
-    socket.emit("register", email, name);
-  }
-
-  const handleNewLeave = (data) => {
+   const handleNewLeave = (data) => {
     console.log("New leave request received:", data);
     const role = localStorage.getItem("role");
 
@@ -40,62 +39,82 @@ if (Notification.permission !== "granted") {
           body: `${data.userId} applied for ${data.leaveType} leave\n${formatDate(data.fromDate)} → ${formatDate(data.toDate)}`,
         });
       }
-      
-      // Use both localStorage and state to ensure reliability
-      localStorage.setItem("showLeaveAlert", "true");
-      // Force state update by using a timestamp
+
+      // Only show the alert if this is a new leave request
+      const lastLeaveTimestamp = localStorage.getItem("lastLeaveTimestamp");
+      const currentTimestamp = new Date().getTime().toString();
+
+      if (lastLeaveTimestamp !== currentTimestamp) {
+        setLeaveAlert(true);
+        localStorage.setItem("showLeaveAlert", "true");
+        localStorage.setItem("lastLeaveTimestamp", currentTimestamp);
+      }
+
+      // Dispatch event to update other parts of the app (sidebar)
       const event = new StorageEvent("storage", {
         key: "showLeaveAlert",
-        newValue: "true"
+        newValue: "true",
       });
       window.dispatchEvent(event);
     }
   };
 
-  socket.on("new-leave", handleNewLeave);
 
-  return () => {
-    socket.off("new-leave", handleNewLeave);
-  };
-}, []);
+    socket.on("new-leave", handleNewLeave);
 
- useEffect(() => {
-  if (activeTab === "requests") {
-    localStorage.setItem("showLeaveAlert", "false");
-    setLeaveAlert(false);
-    // Emit custom event if localStorage isn't enough
-    const event = new CustomEvent("leaveAlertUpdate");
-    window.dispatchEvent(event);
-  }
-}, [activeTab]);
+    return () => {
+      socket.off("new-leave", handleNewLeave);
+    };
+  }, []);
 
 useEffect(() => {
-  if (!socket) return;
+    const updateLeaveAlert = () => {
+      const leaveAlertFlag = localStorage.getItem("showLeaveAlert");
+      setLeaveAlert(leaveAlertFlag === "true");
+    };
 
-  const handleNewLeave = (data) => {
-    console.log('New leave request received:', data);
-    // Update your UI state here
-    setNewLeaveRequests(prev => [...prev, data]);
-    // Show notification
-    if (Notification.permission === 'granted') {
-      new Notification('New Leave Request', {
-        body: `${data.userId} requested ${data.leaveType} leave`
-      });
+    // Initial load to update the leave alert state
+    updateLeaveAlert();
+
+    // Handle changes in localStorage (e.g., when alert is reset)
+    const handleStorageChange = (e) => {
+      if (e.key === "showLeaveAlert") {
+        setLeaveAlert(e.newValue === "true");
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("leaveAlertUpdate", updateLeaveAlert);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("leaveAlertUpdate", updateLeaveAlert);
+    };
+  }, []);
+
+   const resetLeaveAlert = () => {
+    localStorage.setItem("showLeaveAlert", "false");
+    setLeaveAlert(false);
+  };
+
+ useEffect(() => {
+    if (activeTab === "requests") {
+      resetLeaveAlert(); // Reset the leave alert when switching to the "Manage Requests" tab
+      // Emit custom event if localStorage isn't enough
+      const event = new CustomEvent("leaveAlertUpdate");
+      window.dispatchEvent(event);
     }
-  };
-
-  socket.on('new-leave', handleNewLeave);
-
-  return () => {
-    socket.off('new-leave', handleNewLeave);
-  };
-}, [socket]);
-
+  }, [activeTab]);
 
   return (
     <div className="p-6 text-white min-h-screen bg-gray-900">
       <h1 className="text-3xl font-bold mb-4">Leave Management (Admin)</h1>
-
+{/* Leave Alert Notification */}
+      {leaveAlert && (
+        <div className="bg-yellow-600 text-white p-3 rounded mb-4">
+          You have a new leave request!
+        </div>
+      )}
       {/* TAB NAVIGATION */}
       <div className="flex space-x-4 mb-6">
         <button
