@@ -3,6 +3,10 @@ import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import axios from "axios";
+import TimePicker from "react-time-picker";
+import "react-time-picker/dist/TimePicker.css";
+import "react-clock/dist/Clock.css";
+
 
 const LeaveRequestForm = () => {
   const userName = localStorage.getItem("name");
@@ -61,11 +65,11 @@ const LeaveRequestForm = () => {
       );
 
       // Set alert in localStorage for new leave request
-    localStorage.setItem("showLeaveAlert", "true");
+      localStorage.setItem("showLeaveAlert", "true");
 
-    // Trigger 'storage' event to update sidebar alert in real-time
-    const event = new Event("storage");
-    window.dispatchEvent(event);
+      // Trigger 'storage' event to update sidebar alert in real-time
+      const event = new Event("storage");
+      window.dispatchEvent(event);
       alert("Leave submitted successfully!");
       setComments("");
     } catch (error) {
@@ -112,30 +116,71 @@ const LeaveRequestForm = () => {
         <option>Half Day Leave</option>
       </select>
       {/* leave timing for half day leave */}
-      <div className="flex gap-2 mb-4">
-        <div>
-          <label className="block text-sm">
-            From Time <span className="text-gray-400">(Optional)</span>
-          </label>
-          <input
-            type="time"
-            value={fromTime}
-            onChange={(e) => setFromTime(e.target.value)}
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label className="block text-sm">
-            To Time <span className="text-gray-400">(Optional)</span>
-          </label>
-          <input
-            type="time"
-            value={toTime}
-            onChange={(e) => setToTime(e.target.value)}
-            className="form-input"
-          />
+      <div className="mb-4">
+        <label className="block text-sm mb-1 font-medium text-gray-300">
+          Leave Timing{" "}
+          <span className="text-gray-400">(Optional, for Half Day)</span>
+        </label>
+        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-700/60 rounded-lg border border-gray-600 shadow-sm">
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-gray-300 mb-1">
+              From Time
+            </label>
+            <TimePicker
+              onChange={setFromTime}
+              value={fromTime}
+              clearIcon={null}
+              clockIcon={
+                <svg
+                  className="w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              }
+              className="w-full [&_input]:bg-gray-800 [&_input]:border-none [&_input]:text-white [&_input]:rounded-md [&_input]:py-2 [&_input]:px-10 [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_button]:text-gray-400"
+              format="HH:mm"
+              disableClock={false}
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-gray-300 mb-1">
+              To Time
+            </label>
+            <TimePicker
+              onChange={setToTime}
+              value={toTime}
+              clearIcon={null}
+              clockIcon={
+                <svg
+                  className="w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              }
+              className="w-full [&>div]:w-full"
+              format="HH:mm"
+              disableClock={false}
+            />
+          </div>
         </div>
       </div>
+
       <label className="block text-sm mb-1">Comments (Optional)</label>
       <textarea
         value={comments}
