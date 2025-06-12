@@ -216,11 +216,18 @@ const Sidebar = () => {
           />
         )}
 
-        {role === "admin" && (
+        {/* {role === "admin" && (
           <SidebarItem
             icon={<FaDochub className="text-xl" />}
             label="View Invoice"
             to="/viewinvoices"
+          />
+        )} */}
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaDochub className="text-xl" />}
+            label="View Invoice"
+            to="/viewinvoicewithotp"
           />
         )}
       </div>

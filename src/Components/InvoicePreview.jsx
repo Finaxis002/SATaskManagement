@@ -203,7 +203,7 @@ export default function InvoicePreview({
   };
 
   const totalAmount = items.reduce(
-    (sum, item) => sum + item.qty * item.rate,
+    (sum, item) => sum + Number(item.qty) * Number(item.rate),
     0
   );
   const taxableValue = totalAmount;
@@ -1042,7 +1042,7 @@ export default function InvoicePreview({
                     textAlign: "right",
                   }}
                 >
-                  ₹{item.rate.toFixed(2)}
+                  ₹{Number(item.rate).toFixed(2)}
                 </td>
                 <td
                   style={{
