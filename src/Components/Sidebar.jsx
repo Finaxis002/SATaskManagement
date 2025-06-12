@@ -20,7 +20,6 @@ import {
 
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
-import useLeaveSocket from '../hook/useLeaveSocket';
 import icon from "/icon.png";
 
 const Sidebar = () => {
@@ -29,8 +28,6 @@ const Sidebar = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
   const [leaveAlert, setLeaveAlert] = useState(false);
-  const [adminLeaveAlert, setAdminLeaveAlert] = useState(false);
-  // const role = localStorage.getItem("role");
 
   useEffect(() => {
   const updateLeaveAlert = () => {
@@ -77,7 +74,7 @@ const Sidebar = () => {
 
   useNotificationSocket(setNotificationCount);
   // console.log("🔢 Notification count state:", notificationCount);
- useLeaveSocket(setLeaveAlert);
+
   return (
     // <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] hover:w-[250px] transition-all duration-300">
     <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] ">
