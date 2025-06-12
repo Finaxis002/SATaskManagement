@@ -163,6 +163,56 @@ main{
   border-radius: 9999px; /* Round corners for the track */
 }
 
+/* react clock style in leave request form  */
+.react-clock {
+  background: #232a39 !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 6px 24px 0 rgba(20,20,30,0.10);
+  border: 1px solid #374151;
+  padding: 1rem !important;
+}
+.react-clock__face {
+  background: #232a39 !important;
+}
+.react-clock__mark__body {
+  background: #6b7280 !important;
+}
+.react-clock__hand__body {
+  background: #3b82f6 !important;
+}
+.react-clock__center {
+  background: #3b82f6 !important;
+}
+.react-clock__number {
+  color: #fff !important;
+  font-weight: bold;
+}
+/* Remove the default white popup box around the clock */
+.react-time-picker__clock {
+  /* This is the popup wrapper */
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 11px !important;
+  width: fit-content !important;
+  height: fit-content !important;
+  /* Optional: center clock */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.react-clock {
+  border-radius: 11px !important;
+  background: #232a39 !important;
+  /* Remove box-shadow if needed */
+  box-shadow: none !important;
+  /* These two lines ensure the clock itself is not clipped */
+  width: 180px !important;
+  height: 180px !important;
+  margin: 0 !important;
+}
+
 
 @media print {
   body * {
