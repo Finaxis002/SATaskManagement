@@ -19,6 +19,7 @@ import LeaveManagement from "./pages/LeaveManagement"; // Adjust the path as per
 import InvoiceForm from "./pages/InvoiceForm";
 import Clients from "./pages/Clients";
 import ViewInvoices from "./pages/ViewInvoices";
+import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
 
 const App = () => {
   return (
@@ -188,12 +189,22 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/viewinvoices"
           element={
             <ProtectedRoute>
               <MainLayout>
                 <ViewInvoices />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        /> */}
+        <Route
+          path="/viewinvoicewithotp"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ViewInvoiceWithOTP />
               </MainLayout>
             </ProtectedRoute>
           }

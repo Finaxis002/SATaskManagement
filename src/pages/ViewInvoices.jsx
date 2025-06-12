@@ -19,7 +19,7 @@ export default function ViewInvoices() {
 
   useEffect(() => {
     axios
-      .get("https://sataskmanagementbackend.onrender.com/api/clients/details")
+      .get("http://localhost:5000/api/clients/details")
       .then((res) => {
         console.log("Clients fetched:", res.data);
         setClients(res.data);
@@ -39,7 +39,7 @@ export default function ViewInvoices() {
   //   }
   //   axios
   //     .get(
-  //       `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
+  //       `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
   //     )
   //     .then((res) => {
   //       console.log(
@@ -63,14 +63,14 @@ export default function ViewInvoices() {
 
         // Fetch clients
         const clientsRes = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/clients/details"
+          "http://localhost:5000/api/clients/details"
         );
         console.log("Clients fetched:", clientsRes.data);
         setClients(clientsRes.data);
 
         // Fetch all invoices
         const invoicesRes = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/invoices"
+          "http://localhost:5000/api/invoices"
         );
         console.log("All invoices fetched:", invoicesRes.data);
 
@@ -98,7 +98,7 @@ export default function ViewInvoices() {
   //     try {
   //       console.log("Fetching invoices for client:", selectedClient);
   //       const res = await axios.get(
-  //         `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
+  //         `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
   //       );
   //       const filteredInvoices = res.data || [];
   //       const sortedInvoices = [...filteredInvoices].sort(
@@ -122,7 +122,7 @@ export default function ViewInvoices() {
         try {
           console.log("Fetching all invoices...");
           const res = await axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/invoices"
+            "http://localhost:5000/api/invoices"
           );
           const sortedInvoices = [...(res.data || [])].sort(
             (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
@@ -142,7 +142,7 @@ export default function ViewInvoices() {
       try {
         console.log("Fetching invoices for client:", selectedClient);
         const res = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
+          `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
         );
         const filteredInvoices = res.data || [];
         const sortedInvoices = [...filteredInvoices].sort(
@@ -270,7 +270,7 @@ export default function ViewInvoices() {
     if (result.isConfirmed) {
       try {
         await axios.delete(
-          `https://sataskmanagementbackend.onrender.com/api/invoices/${invoiceNumber}`
+          `http://localhost:5000/api/invoices/${invoiceNumber}`
         );
         setInvoices((prev) =>
           prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
@@ -1178,7 +1178,7 @@ export default function ViewInvoices() {
                     {inv.customer.name}
                   </td>
                   <td className="py-3 px-4 border-b border-gray-200">
-                    ₹{inv.totalAmount.toFixed(2)}
+                    ₹{Number(inv.totalAmount).toFixed(2)}
                   </td>
                   <td>
                     <button
