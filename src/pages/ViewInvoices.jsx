@@ -19,7 +19,7 @@ export default function ViewInvoices() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/clients/details")
+      .get("https://sataskmanagementbackend.onrender.com/api/clients/details")
       .then((res) => {
         console.log("Clients fetched:", res.data);
         setClients(res.data);
@@ -63,14 +63,14 @@ export default function ViewInvoices() {
 
         // Fetch clients
         const clientsRes = await axios.get(
-          "http://localhost:5000/api/clients/details"
+          "https://sataskmanagementbackend.onrender.com/api/clients/details"
         );
         console.log("Clients fetched:", clientsRes.data);
         setClients(clientsRes.data);
 
         // Fetch all invoices
         const invoicesRes = await axios.get(
-          "http://localhost:5000/api/invoices"
+          "https://sataskmanagementbackend.onrender.com/api/invoices"
         );
         console.log("All invoices fetched:", invoicesRes.data);
 
@@ -122,7 +122,7 @@ export default function ViewInvoices() {
         try {
           console.log("Fetching all invoices...");
           const res = await axios.get(
-            "http://localhost:5000/api/invoices"
+            "https://sataskmanagementbackend.onrender.com/api/invoices"
           );
           const sortedInvoices = [...(res.data || [])].sort(
             (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
@@ -142,7 +142,7 @@ export default function ViewInvoices() {
       try {
         console.log("Fetching invoices for client:", selectedClient);
         const res = await axios.get(
-          `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
+          `https://sataskmanagementbackend.onrender.com/api/invoices?clientId=${selectedClient.value}`
         );
         const filteredInvoices = res.data || [];
         const sortedInvoices = [...filteredInvoices].sort(
@@ -270,7 +270,7 @@ export default function ViewInvoices() {
     if (result.isConfirmed) {
       try {
         await axios.delete(
-          `http://localhost:5000/api/invoices/${invoiceNumber}`
+          `https://sataskmanagementbackend.onrender.com/api/invoices/${invoiceNumber}`
         );
         setInvoices((prev) =>
           prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
