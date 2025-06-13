@@ -14,7 +14,7 @@ export default function ViewInvoiceWithOTP() {
     setLoading(true);
     setErrMsg("");
     try {
-      await axios.post("http://localhost:5000/api/send-otp-view-invoice", { email: "finaxis.ai@gmail.com" });
+      await axios.post("https://sataskmanagementbackend.onrender.com/api/send-otp-view-invoice", { email: "caanunaysharda@gmail.com" });
       setOtpSent(true);
     } catch (err) {
       setErrMsg("Failed to send OTP.");
@@ -27,7 +27,7 @@ export default function ViewInvoiceWithOTP() {
     setLoading(true);
     setErrMsg("");
     try {
-      const res = await axios.post("http://localhost:5000/api/verify-otp-view-invoice", { otp: enteredOtp });
+      const res = await axios.post("https://sataskmanagementbackend.onrender.com/api/verify-otp-view-invoice", { otp: enteredOtp });
       if (res.data.success) {
         setOtpVerified(true);
       } else {
@@ -39,10 +39,7 @@ export default function ViewInvoiceWithOTP() {
     setLoading(false);
   };
 
-  // Send OTP automatically when user lands here
-  React.useEffect(() => {
-    sendOtp();
-  }, []);
+  
 
   if (!otpVerified) {
     return (
