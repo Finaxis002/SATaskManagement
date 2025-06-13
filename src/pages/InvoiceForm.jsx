@@ -385,7 +385,7 @@ const [imagesReady, setImagesReady] = useState(false);
         totalAmount: totalAmountWithTax,
       };
       await axios.post(
-        "http://localhost:5000/api/invoices",
+        "https://sataskmanagementbackend.onrender.com/api/invoices",
         invoiceData
       );
       // Display an alert once the invoice is saved successfully
