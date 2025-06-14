@@ -38,7 +38,7 @@ const dispatch = useDispatch();
 const handleRemoveCompletedTasks = async () => {
   try {
     const response = await fetch(
-      "https://sataskmanagementbackend.onrender.com/api/tasks/hide-completed",
+      "https://taskbe.sharda.co.in/api/tasks/hide-completed",
       {
         method: "PUT",
         headers: {

@@ -19,7 +19,7 @@ const Clients = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/clients"
+        "https://taskbe.sharda.co.in/api/clients"
       );
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
@@ -65,7 +65,7 @@ const Clients = () => {
 
     try {
       await axios.delete(
-        "https://sataskmanagementbackend.onrender.com/api/clients",
+        "https://taskbe.sharda.co.in/api/clients",
         {
           data: { name: clientName },
         }
@@ -162,7 +162,7 @@ const Clients = () => {
               if (editingClient) {
                 // Edit mode - update existing client
                 await axios.put(
-                  "https://sataskmanagementbackend.onrender.com/api/clients",
+                  "https://taskbe.sharda.co.in/api/clients",
                   {
                     id: editingClient.id,
                     ...clientData,
@@ -178,7 +178,7 @@ const Clients = () => {
               } else {
                 // Create mode - add new client
                 await axios.post(
-                  "https://sataskmanagementbackend.onrender.com/api/clients",
+                  "https://taskbe.sharda.co.in/api/clients",
                   clientData
                 );
                 Swal.fire({

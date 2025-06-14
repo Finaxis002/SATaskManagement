@@ -9,7 +9,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get("https://sataskmanagementbackend.onrender.com/api/tasks");
+        const res = await axios.get("https://taskbe.sharda.co.in/api/tasks");
         setTasks(res.data);
       } catch (err) {
         console.error("Failed to fetch tasks", err);

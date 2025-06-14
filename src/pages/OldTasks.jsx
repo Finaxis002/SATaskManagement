@@ -15,7 +15,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 
 import { io } from "socket.io-client";
 
-const socket = io("https://sataskmanagementbackend.onrender.com", {
+const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
@@ -44,7 +44,7 @@ const TaskBoard = () => {
 
   // Fetch tasks initially from the backend
   useEffect(() => {
-    fetch("https://sataskmanagementbackend.onrender.com/api/tasks")
+    fetch("https://taskbe.sharda.co.in/api/tasks")
       .then((res) => res.json())
       .then((data) => setTasks(data))
       .catch((error) => console.error("Error fetching tasks:", error));
@@ -117,7 +117,7 @@ const TaskBoard = () => {
 
         // 🔔 Send notification
         await fetch(
-          "https://sataskmanagementbackend.onrender.com/api/notifications",
+          "https://taskbe.sharda.co.in/api/notifications",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

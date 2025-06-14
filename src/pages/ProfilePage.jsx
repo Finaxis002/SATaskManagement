@@ -27,7 +27,7 @@ const ProfilePage = () => {
     const fetchUser = async () => {
       try {
         const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/employees",
+          "https://taskbe.sharda.co.in/api/employees",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -81,7 +81,7 @@ const ProfilePage = () => {
 
   try {
     const response = await axios.post(
-      `https://sataskmanagementbackend.onrender.com/api/employees/reset-password/admin`,
+      `https://taskbe.sharda.co.in/api/employees/reset-password/admin`,
       {
         newPassword: passwordForm.newPassword,
       },

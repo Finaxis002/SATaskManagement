@@ -6,7 +6,7 @@ import { MdUpdate } from "react-icons/md";
 import { BsFillCircleFill } from "react-icons/bs";
 
 
-const socket = io("https://sataskmanagementbackend.onrender.com", {
+const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
@@ -292,7 +292,7 @@ const Notifications = () => {
     async (id) => {
       try {
         await axios.patch(
-          `https://sataskmanagementbackend.onrender.com/api/notifications/${id}`,
+          `https://taskbe.sharda.co.in/api/notifications/${id}`,
           { read: true }
         );
 
@@ -323,7 +323,7 @@ const Notifications = () => {
 
       if (userRole === "admin") {
         response = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/notifications?page=${page}&limit=${limit}`
+          `https://taskbe.sharda.co.in/api/notifications?page=${page}&limit=${limit}`
         );
       } else {
         const emailToFetch = localStorage.getItem("userId");
@@ -333,7 +333,7 @@ const Notifications = () => {
         }
 
         response = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/notifications/${emailToFetch}?page=${page}&limit=${limit}`
+          `https://taskbe.sharda.co.in/api/notifications/${emailToFetch}?page=${page}&limit=${limit}`
         );
       }
 
@@ -483,7 +483,7 @@ const Notifications = () => {
       await Promise.all(
         unreadNotifications.map((notif) =>
           axios.patch(
-            `https://sataskmanagementbackend.onrender.com/api/notifications/${notif._id}`,
+            `https://taskbe.sharda.co.in/api/notifications/${notif._id}`,
             { read: true }
           )
         )
@@ -508,7 +508,7 @@ const Notifications = () => {
       await Promise.all(
         selectedNotifications.map((id) =>
           axios.patch(
-            `https://sataskmanagementbackend.onrender.com/api/notifications/${id}`,
+            `https://taskbe.sharda.co.in/api/notifications/${id}`,
             { read: true }
           )
         )

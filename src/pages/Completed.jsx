@@ -22,7 +22,7 @@ const Completed = () => {
     const fetchTasks = async () => {
       try {
         const response = await fetch(
-          "https://sataskmanagementbackend.onrender.com/api/tasks"
+          "https://taskbe.sharda.co.in/api/tasks"
         );
         const data = await response.json();
         setTasks(data);
