@@ -1,4 +1,4 @@
-name: Deploy Task Management Frontend to VPS
+name: Deploy Task Management React App to VPS
 
 on:
   push:
@@ -10,37 +10,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # Step 1: Checkout code from GitHub
+      - uses: actions/checkout@v2
 
-      # Step 2: Set up SSH key to access the VPS
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.5.3
+      # Step 2: Set up Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          node-version: '18'
 
-      # Step 3: Add the VPS's SSH host key to known hosts
-      - name: Add SSH Host Key to Known Hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
 
-      # Step 4: Sync build files to VPS
-      - name: Sync build files to VPS
-        run: |
-          ssh -o StrictHostKeyChecking=no -T root@${{ secrets.SERVER_IP }} << 'EOF'
-            cd /home/TaskManagementApp  # Change to your app directory
-            git pull origin main  # Pull the latest code
-            npm install  # Install dependencies
-            npm run build  # Build the React app
-            rsync -avz --delete ./build/* root@${{ secrets.SERVER_IP }}:/var/www/tasks.sharda.co.in
-          EOF
+      # Step 4: Build the React app
+      - name: Build project
+        run: npm run build
 
-      # Step 5: Reload Nginx to apply the new build
-      - name: Reload Nginx to apply new build
-        run: |
-          ssh -o StrictHostKeyChecking=no -T root@${{ secrets.SERVER_IP }} << 'EOF'
-            sudo nginx -t  # Test the Nginx configuration
-            sudo systemctl reload nginx  # Reload Nginx to apply the changes
-          EOF
+      # Step 5: Deploy via SSH using ssh-deploy action
+      - name: Deploy via SSH
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SERVER_IP }}
+          REMOTE_USER: root
+          TARGET: /var/www/tasks.sharda.co.in  # Path for Task Management app
+          SOURCE: build/
+          SCRIPT_AFTER: |
+            chown -R www-data:www-data /var/www/tasks.sharda.co.in
+            chmod -R 755 /var/www/tasks.sharda.co.in
+            sudo systemctl restart nginx  # Restart nginx to reflect changes
