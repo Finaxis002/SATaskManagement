@@ -126,7 +126,7 @@ const [imagesReady, setImagesReady] = useState(false);
       try {
         console.log("Fetching clients..."); // Debug log
         const response = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/clients/details"
+          "https://taskbe.sharda.co.in/api/clients/details"
         );
         console.log("Clients fetched:", response.data); // Debug log
         setClients(response.data);
@@ -169,7 +169,7 @@ const [imagesReady, setImagesReady] = useState(false);
       });
 
       try {
-        let url = `https://sataskmanagementbackend.onrender.com/api/tasks/by-client-name/${encodeURIComponent(
+        let url = `https://taskbe.sharda.co.in/api/tasks/by-client-name/${encodeURIComponent(
           client.name
         )}`;
         const params = new URLSearchParams();
@@ -227,7 +227,7 @@ const [imagesReady, setImagesReady] = useState(false);
     });
 
     try {
-      let url = `https://sataskmanagementbackend.onrender.com/api/tasks/by-client-name/${encodeURIComponent(
+      let url = `https://taskbe.sharda.co.in/api/tasks/by-client-name/${encodeURIComponent(
         client.name
       )}`;
 
@@ -385,7 +385,7 @@ const [imagesReady, setImagesReady] = useState(false);
         totalAmount: totalAmountWithTax,
       };
       await axios.post(
-        "https://sataskmanagementbackend.onrender.com/api/invoices",
+        "https://taskbe.sharda.co.in/api/invoices",
         invoiceData
       );
       // Display an alert once the invoice is saved successfully

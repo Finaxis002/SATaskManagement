@@ -6,7 +6,7 @@ const CalendarPage = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
-    fetch("https://sataskmanagementbackend.onrender.com/api/tasks")
+    fetch("https://taskbe.sharda.co.in/api/tasks")
       .then((res) => res.json())
       .then((data) => {
         const userEmail = localStorage.getItem("userId");

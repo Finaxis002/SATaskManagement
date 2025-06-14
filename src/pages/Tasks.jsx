@@ -23,7 +23,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 
 import { io } from "socket.io-client";
 
-const socket = io("https://sataskmanagementbackend.onrender.com", {
+const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
@@ -124,7 +124,7 @@ const TaskBoard = () => {
       // Send notification to the assigned employee
 
       const notificationResponse = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/notifications",
+        "https://taskbe.sharda.co.in/api/notifications",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

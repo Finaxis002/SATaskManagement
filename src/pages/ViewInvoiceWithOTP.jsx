@@ -14,7 +14,7 @@ export default function ViewInvoiceWithOTP() {
     setLoading(true);
     setErrMsg("");
     try {
-      await axios.post("https://sataskmanagementbackend.onrender.com/api/send-otp-view-invoice", { email: "caanunaysharda@gmail.com" });
+      await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice", { email: "caanunaysharda@gmail.com" });
       setOtpSent(true);
     } catch (err) {
       setErrMsg("Failed to send OTP.");
@@ -27,7 +27,7 @@ export default function ViewInvoiceWithOTP() {
     setLoading(true);
     setErrMsg("");
     try {
-      const res = await axios.post("https://sataskmanagementbackend.onrender.com/api/verify-otp-view-invoice", { otp: enteredOtp });
+      const res = await axios.post("https://taskbe.sharda.co.in/api/verify-otp-view-invoice", { otp: enteredOtp });
       if (res.data.success) {
         setOtpVerified(true);
       } else {
