@@ -9,7 +9,7 @@ const LeaveDashboardCards = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await axios.get("https://sataskmanagementbackend.onrender.com/api/leave");
+      const { data } = await axios.get("https://taskbe.sharda.co.in/api/leave");
       setTotal(data.length);
       setPending(data.filter((l) => l.status === "Pending").length);
       setApproved(data.filter((l) => l.status === "Approved").length);

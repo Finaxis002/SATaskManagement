@@ -16,7 +16,7 @@ const DepartmentSelector = ({ selectedDepartments, setSelectedDepartments }) => 
   useEffect(() => {
     const loadDepartments = async () => {
       try {
-        const res = await fetch("https://sataskmanagementbackend.onrender.com/api/departments");
+        const res = await fetch("https://taskbe.sharda.co.in/api/departments");
         const data = await res.json();
         setAllDepartments(data.map((dept) => dept.name));
       } catch (err) {
@@ -38,7 +38,7 @@ const DepartmentSelector = ({ selectedDepartments, setSelectedDepartments }) => 
 
 //     for (let dept of newDepartments) {
 //       try {
-//         await fetch("https://sataskmanagementbackend.onrender.com/api/departments", {
+//         await fetch("https://taskbe.sharda.co.in/api/departments", {
 //           method: "POST",
 //           headers: { "Content-Type": "application/json" },
 //           body: JSON.stringify({ name: dept }),
@@ -66,7 +66,7 @@ const handleDepartmentChange = async (selectedOptions, actionMeta) => {
       
       try {
         // Add the new department to the database
-        await fetch("https://sataskmanagementbackend.onrender.com/api/departments", {
+        await fetch("https://taskbe.sharda.co.in/api/departments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: newDepartment }),

@@ -9,7 +9,7 @@ const TaskCodeSelector = ({ selectedCode, setSelectedCode }) => {
 
 
   // useEffect(() => {
-  //   fetch("https://sataskmanagementbackend.onrender.com/api/task-codes")
+  //   fetch("https://taskbe.sharda.co.in/api/task-codes")
   //     .then((res) => res.json())
   //     .then((data) => {
   //       const options = data.map((code) => ({
@@ -33,7 +33,7 @@ const TaskCodeSelector = ({ selectedCode, setSelectedCode }) => {
   //   if (actionMeta.action === "create-option") {
   //     try {
   //       const res = await fetch(
-  //         "https://sataskmanagementbackend.onrender.com/api/task-codes",
+  //         "https://taskbe.sharda.co.in/api/task-codes",
   //         {
   //           method: "POST",
   //           headers: { "Content-Type": "application/json" },
@@ -52,7 +52,7 @@ const TaskCodeSelector = ({ selectedCode, setSelectedCode }) => {
   //   }
   // };
 useEffect(() => {
-    fetch('https://sataskmanagementbackend.onrender.com/api/task-codes')
+    fetch('https://taskbe.sharda.co.in/api/task-codes')
       .then(r => {
         if (!r.ok) throw new Error(r.statusText);
         return r.json();

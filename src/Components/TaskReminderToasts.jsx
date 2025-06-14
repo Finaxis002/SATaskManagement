@@ -87,7 +87,7 @@ const TaskReminderToasts = () => {
     console.log("Initializing socket and audio...");
 
     // Correct socket connection inside component
-    socketRef.current = io("https://sataskmanagementbackend.onrender.com", {
+    socketRef.current = io("https://taskbe.sharda.co.in", {
       transports: ["websocket"],
     });
 

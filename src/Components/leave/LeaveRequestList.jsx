@@ -9,7 +9,7 @@ const LeaveRequestList = () => {
     const fetchLeaves = async () => {
       try {
         const response = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/leave?userId=${userId}`
+          `https://taskbe.sharda.co.in/api/leave?userId=${userId}`
         );
         console.log("Fetched leaves:", response.data);
         setLeaves(response.data);

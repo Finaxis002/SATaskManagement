@@ -22,7 +22,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import { io } from "socket.io-client";
-const socket = io("https://sataskmanagementbackend.onrender.com"); // Or your backend URL
+const socket = io("https://taskbe.sharda.co.in"); // Or your backend URL
 
 const ReportGeneration = ({
   onEdit,
@@ -104,7 +104,7 @@ const ReportGeneration = ({
   const fetchTasksFromAPI = async () => {
     try {
       const response = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/tasks"
+        "https://taskbe.sharda.co.in/api/tasks"
       );
       const data = await response.json();
 
@@ -217,7 +217,7 @@ const ReportGeneration = ({
 
     try {
       const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: {
@@ -271,7 +271,7 @@ const ReportGeneration = ({
 
     try {
       const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: {
