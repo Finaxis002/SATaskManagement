@@ -11,7 +11,7 @@ import Swal from "sweetalert2";
 import { io } from "socket.io-client";
 import FilterSection from "./FilterSection";
 
-const socket = io("https://sataskmanagementbackend.onrender.com");
+const socket = io("https://taskbe.sharda.co.in");
 const TaskList = ({
   onEdit,
   refreshTrigger,
@@ -93,7 +93,7 @@ const TaskList = ({
   const fetchTasksFromAPI = async () => {
     try {
       const response = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/tasks"
+        "https://taskbe.sharda.co.in/api/tasks"
       );
       const data = await response.json();
 
@@ -200,7 +200,7 @@ const TaskList = ({
 
     try {
       const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: {
@@ -243,7 +243,7 @@ const TaskList = ({
 
     try {
       const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: {
@@ -307,7 +307,7 @@ const TaskList = ({
 
     try {
       const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: {
@@ -382,7 +382,7 @@ const TaskList = ({
       };
 
       await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${task._id}`,
+        `https://taskbe.sharda.co.in/api/tasks/${task._id}`,
         {
           method: "PUT",
           headers: {
@@ -410,7 +410,7 @@ const TaskList = ({
       setTasks((prevTasks) => prevTasks.filter((t) => t._id !== taskId));
 
       const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "DELETE",
         }
@@ -573,7 +573,7 @@ const TaskList = ({
 
       // API call to create the new task
       const response = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/tasks",
+        "https://taskbe.sharda.co.in/api/tasks",
         {
           method: "POST",
           headers: {

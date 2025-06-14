@@ -22,7 +22,7 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { io } from "socket.io-client";
 
-const socket = io("https://sataskmanagementbackend.onrender.com", {
+const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
@@ -55,7 +55,7 @@ const TaskBoard = () => {
 
   // Fetch tasks initially from the backend
   useEffect(() => {
-    fetch("https://sataskmanagementbackend.onrender.com/api/tasks")
+    fetch("https://taskbe.sharda.co.in/api/tasks")
       .then((res) => res.json())
       .then((data) => setTasks(data))
       .catch((error) => console.error("Error fetching tasks:", error));
@@ -110,7 +110,7 @@ const TaskBoard = () => {
     try {
       // Create task via task API
       const taskResponse = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/tasks",
+        "https://taskbe.sharda.co.in/api/tasks",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -138,7 +138,7 @@ const TaskBoard = () => {
       // Send notification to the assigned employee
 
       const notificationResponse = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/notifications",
+        "https://taskbe.sharda.co.in/api/notifications",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -5,12 +5,12 @@ const ManageRequests = () => {
   const [leaves, setLeaves] = useState([]);
 
   const fetchLeaves = async () => {
-    const { data } = await axios.get("https://sataskmanagementbackend.onrender.com/api/leave");
+    const { data } = await axios.get("https://taskbe.sharda.co.in/api/leave");
     setLeaves(data);
   };
 
   const handleStatus = async (id, newStatus) => {
-    await axios.put(`https://sataskmanagementbackend.onrender.com/api/leave/${id}`, { status: newStatus });
+    await axios.put(`https://taskbe.sharda.co.in/api/leave/${id}`, { status: newStatus });
     fetchLeaves();
   };
 

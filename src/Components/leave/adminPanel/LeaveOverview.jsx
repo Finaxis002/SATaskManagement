@@ -12,7 +12,7 @@ const LeaveOverview = () => {
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
-        const { data } = await axios.get("https://sataskmanagementbackend.onrender.com/api/leave");
+        const { data } = await axios.get("https://taskbe.sharda.co.in/api/leave");
         setLeaves(data);
 
         // Unique months from leaves
