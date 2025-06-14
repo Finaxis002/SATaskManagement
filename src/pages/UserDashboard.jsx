@@ -35,7 +35,7 @@ const UserDashboard = () => {
   return (
     <div className="mt-10 bg-white rounded-lg shadow-md overflow-hidden">
       <div className="flex justify-between items-center px-6 py-4 border-b">
-        <h2 className="text-lg font-semibold">My Tasks......</h2>
+        <h2 className="text-lg font-semibold">My Tasks</h2>
         <div className="flex gap-6 text-sm">
           {["upcoming", "overdue", "completed"].map(tab => (
             <button
