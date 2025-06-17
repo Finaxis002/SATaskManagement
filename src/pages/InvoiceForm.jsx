@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import html2pdf from "html2pdf.js";
 import "../css/InvoiceForm.css";
-import axios from "axios";
+import axios from '../utils/secureAxios';
 import Select from "react-select";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
@@ -80,7 +80,7 @@ export default function InvoiceForm() {
 
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/invoices/preview-serial",
+        "/invoices/preview-serial",
         {
           params: {
             firm: selectedFirm.name,
@@ -104,7 +104,7 @@ export default function InvoiceForm() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/invoices/finalize-serial",
+        "/invoices/finalize-serial",
         {
           firm: selectedFirm.name,
           type: invoiceType,
@@ -176,7 +176,7 @@ export default function InvoiceForm() {
       try {
         console.log("Fetching clients..."); // Debug log
         const response = await axios.get(
-          "https://taskbe.sharda.co.in/api/clients/details"
+          "/clients/details"
         );
         console.log("Clients fetched:", response.data); // Debug log
         setClients(response.data);
@@ -219,7 +219,7 @@ export default function InvoiceForm() {
       });
 
       try {
-        let url = `https://taskbe.sharda.co.in/api/tasks/by-client-name/${encodeURIComponent(
+        let url = `/tasks/by-client-name/${encodeURIComponent(
           client.name
         )}`;
         const params = new URLSearchParams();
@@ -283,7 +283,7 @@ export default function InvoiceForm() {
     });
 
     try {
-      let url = `https://taskbe.sharda.co.in/api/tasks/by-client-name/${encodeURIComponent(
+      let url = `/tasks/by-client-name/${encodeURIComponent(
         client.name
       )}`;
 
@@ -445,7 +445,7 @@ export default function InvoiceForm() {
         items,
         totalAmount: totalAmountWithTax,
       };
-      await axios.post("https://taskbe.sharda.co.in/api/invoices", invoiceData);
+      await axios.post("/invoices", invoiceData);
       // Display an alert once the invoice is saved successfully
       Swal.fire({
         icon: "success",
