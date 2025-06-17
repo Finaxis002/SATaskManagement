@@ -1,3 +1,14 @@
+@font-face {
+  font-family: 'Glacial Indifference';
+  src: url('../assets/font/GlacialIndifference-Regular.otf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+.invoice-page-container *,
+.pdf-wrapper * {
+  font-family: 'Glacial Indifference', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
 .invoice-page {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f5f5f5;
