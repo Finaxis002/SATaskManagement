@@ -97,7 +97,13 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     const fetchClients = async () => {
       try {
         const res = await fetch(
-          "https://taskbe.sharda.co.in/api/clients"
+
+          "https://taskbe.sharda.co.in/api/clients", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }
+
         );
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
