@@ -13,3 +13,4 @@ If you are developing a production application, we recommend using TypeScript an
 
 
 Invoice Page is rendered in Invoice Form for pdf generation 
+Invoice Preview is rendered in view invoice for viewing invoices 
