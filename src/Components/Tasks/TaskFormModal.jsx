@@ -9,7 +9,7 @@ import { io } from "socket.io-client";
 import { showAlert } from "../../utils/alert";
 
 
-const socket = io("https://sataskmanagementbackend.onrender.com", {
+const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
@@ -97,7 +97,11 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     const fetchClients = async () => {
       try {
         const res = await fetch(
-          "https://sataskmanagementbackend.onrender.com/api/clients"
+          "https://taskbe.sharda.co.in/api/clients", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }
         );
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
@@ -182,8 +186,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     try {
       setIsSubmitting(true);
       const url = initialData
-        ? `https://sataskmanagementbackend.onrender.com/api/tasks/${initialData._id}`
-        : "https://sataskmanagementbackend.onrender.com/api/tasks";
+        ? `https://taskbe.sharda.co.in/api/tasks/${initialData._id}`
+        : "https://taskbe.sharda.co.in/api/tasks";
 
       const response = await fetch(url, {
         method: initialData ? "PUT" : "POST",
