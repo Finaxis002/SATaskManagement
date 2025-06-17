@@ -16,7 +16,7 @@ const TaskOverview = () => {
     const fetchTasks = async () => {
       try {
         const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/tasks"
+          "https://taskbe.sharda.co.in/api/tasks"
         );
         setTasks(res.data); // Store fetched tasks in state
       } catch (err) {
@@ -121,7 +121,7 @@ const TaskOverview = () => {
 
     try {
       const response = await fetch(
-        `https://sataskmanagementbackend.onrender.com/api/tasks/${taskId}`,
+        `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: {

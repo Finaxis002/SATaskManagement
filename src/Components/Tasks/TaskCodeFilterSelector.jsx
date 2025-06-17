@@ -10,7 +10,7 @@ const TaskCodeFilterSelector = ({ selectedCode, setSelectedCode }) => {
       setLoading(true);
       try {
         const res = await fetch(
-          "https://sataskmanagementbackend.onrender.com/api/task-codes"
+          "https://taskbe.sharda.co.in/api/task-codes"
         );
         const data = await res.json();
         const options = data.map((code) => ({

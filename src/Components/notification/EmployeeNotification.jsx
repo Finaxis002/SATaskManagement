@@ -67,7 +67,7 @@ const EmployeeNotifications = ({setNotificationCount}) => {
   //   const email = localStorage.getItem("userId");
 
   //   if (email) {
-  //     fetch(`https://sataskmanagementbackend.onrender.com/api/notifications/${email}`) // Backend route for fetching notifications
+  //     fetch(`https://taskbe.sharda.co.in/api/notifications/${email}`) // Backend route for fetching notifications
   //       .then((response) => response.json())
   //       .then((data) => {
   //         // setNotifications((prev) => [...prev, ...data]); // Merge with real-time notifications
@@ -93,7 +93,7 @@ const EmployeeNotifications = ({setNotificationCount}) => {
     const email = localStorage.getItem("userId");
   
     if (email) {
-      fetch(`https://sataskmanagementbackend.onrender.com/api/notifications/${email}`) // Backend route for fetching notifications
+      fetch(`https://taskbe.sharda.co.in/api/notifications/${email}`) // Backend route for fetching notifications
         .then((response) => response.json())
         .then((data) => {
           // Add 'type: 'employee'' to each notification in the fetched data

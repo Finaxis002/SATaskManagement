@@ -6,7 +6,7 @@ export const fetchTaskCodes = createAsyncThunk(
   "taskCodes/fetchTaskCodes",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://sataskmanagementbackend.onrender.com/api/task-codes");
+      const res = await fetch("https://taskbe.sharda.co.in/api/task-codes");
       if (!res.ok) throw new Error("Failed to fetch task codes");
       const data = await res.json();
       const uniqueCodes = [...new Set(data.map((code) => code.name))];
