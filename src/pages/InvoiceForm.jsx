@@ -58,19 +58,69 @@ const firms = [
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
-const generateInvoiceNumber = () => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let id = "FN";
-  for (let i = 0; i < 6; i++) {
-    id += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return id;
-};
+// const generateInvoiceNumber = () => {
+//   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+//   let id = "FN";
+//   for (let i = 0; i < 6; i++) {
+//     id += chars.charAt(Math.floor(Math.random() * chars.length));
+//   }
+//   return id;
+// };
 
 export default function InvoiceForm() {
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
-  const [invoiceNumber, setInvoiceNumber] = useState(generateInvoiceNumber());
+  const [isFinalized, setIsFinalized] = useState(false);
+
+  // Preview invoice number - does not change DB
+  const previewInvoiceNumber = async () => {
+    const year = new Date().getFullYear().toString().slice(-2);
+    const month = String(new Date().getMonth() + 1).padStart(2, "0");
+
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/invoices/preview-serial",
+        {
+          params: {
+            firm: selectedFirm.name,
+            type: invoiceType,
+            year,
+            month,
+          },
+        }
+      );
+      setInvoiceNumber(res.data.invoiceNumber);
+    } catch (error) {
+      console.error("Error previewing invoice number", error);
+    }
+  };
+
+  // Finalize invoice number - increments DB (call only when saving)
+  const finalizeInvoiceNumber = async () => {
+    if (isFinalized && invoiceNumber) return invoiceNumber;
+    const year = new Date().getFullYear().toString().slice(-2);
+    const month = String(new Date().getMonth() + 1).padStart(2, "0");
+
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/invoices/finalize-serial",
+        {
+          firm: selectedFirm.name,
+          type: invoiceType,
+          year,
+          month,
+        }
+      );
+      setInvoiceNumber(res.data.invoiceNumber);
+      setIsFinalized(true);
+      return res.data.invoiceNumber;
+    } catch (error) {
+      console.error("Error finalizing invoice number", error);
+      throw error;
+    }
+  };
+
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -112,12 +162,12 @@ export default function InvoiceForm() {
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-const [imagesReady, setImagesReady] = useState(false);
+  const [imagesReady, setImagesReady] = useState(false);
 
   const invoiceRef = useRef();
   const isSharda = selectedFirm.name === "Sharda Associates";
 
-  const  offsetPage1 = 0;
+  const offsetPage1 = 0;
   const offsetPage2 = ITEMS_PER_PAGE;
 
   // Fetch clients on component mount
@@ -197,6 +247,12 @@ const [imagesReady, setImagesReady] = useState(false);
     fetchTasks();
   }, [selectedClientOption, fromDate, toDate]);
 
+  useEffect(() => {
+    if (selectedFirm && invoiceType) {
+      previewInvoiceNumber();
+    }
+  }, [selectedFirm, invoiceType]);
+
   // Handle client selection
 
   const handleClientChange = async (selectedOption) => {
@@ -258,9 +314,9 @@ const [imagesReady, setImagesReady] = useState(false);
     }
   };
 
-  useEffect(() => {
-    setInvoiceNumber(generateInvoiceNumber());
-  }, [selectedFirm]);
+  // useEffect(() => {
+  //   setInvoiceNumber(generateInvoiceNumber());
+  // }, [selectedFirm]);
 
   const updateItem = (index, field, value) => {
     setItems((prevItems) => {
@@ -311,71 +367,76 @@ const [imagesReady, setImagesReady] = useState(false);
   const totalTax = igstAmount + cgstAmount + sgstAmount;
   const totalAmountWithTax = taxableValue + totalTax;
 
- 
+  const handleDownloadPDF = async () => {
+    try {
+      const finalNo = await finalizeInvoiceNumber(); // if you want locking
+      setInvoiceNumber(finalNo);
+      if (!invoiceRef.current) return;
+      const element = invoiceRef.current;
+      // Temporarily remove scale before PDF generation
+      element.style.transform = "scale(1)";
+      element.style.transformOrigin = "top left";
+      element.style.width = `${element.scrollWidth}px`;
 
-  const handleDownloadPDF = () => {
+      // Make sure element is attached to DOM and visible
+      if (!document.body.contains(element)) {
+        document.body.appendChild(element);
+      }
+      // Add CSS for page margins
 
-    if (!invoiceRef.current) return;
-    const element = invoiceRef.current;
-    // Temporarily remove scale before PDF generation
-    element.style.transform = "scale(1)";
-    element.style.transformOrigin = "top left";
-    element.style.width = `${element.scrollWidth}px`;
+      const opt = {
+        margin: 0,
+        padding: 0,
+        filename: `${invoiceNumber}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          dpi: 300,
+          letterRendering: true,
+          useCORS: true,
+          width: element.scrollWidth, // Explicitly set width
+          windowWidth: element.scrollWidth, // Match window width
+        },
+        jsPDF: {
+          unit: "px",
+          // format: "a4",
+          orientation: "portrait",
+          format: [794, 1122],
+        },
+        pagebreak: { mode: "css" },
+      };
 
-    // Make sure element is attached to DOM and visible
-    if (!document.body.contains(element)) {
-      document.body.appendChild(element);
-    }
-    // Add CSS for page margins
+      // Add this to ensure proper scaling
+      element.style.width = `${element.scrollWidth}px`;
 
-    const opt = {
-      margin: 0,
-      padding: 0,
-      filename: `${invoiceNumber}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        dpi: 300,
-        letterRendering: true,
-        useCORS: true,
-        width: element.scrollWidth, // Explicitly set width
-        windowWidth: element.scrollWidth, // Match window width
-      },
-      jsPDF: {
-        unit: "px",
-        // format: "a4",
-        orientation: "portrait",
-         format: [794, 1122]
-      },
-      pagebreak: { mode: "css" },
-    };
+      // html2pdf().set(opt).from(element).save();
+      html2pdf()
+        .set(opt)
+        .from(element)
+        .save()
+        .then(() => {
+          // Restore scale after PDF is generated
 
-    // Add this to ensure proper scaling
-    element.style.width = `${element.scrollWidth}px`;
+          element.style.transform = "scale(0.75)";
+          element.style.transformOrigin = "top left";
+          element.style.width = "";
+        });
 
-    // html2pdf().set(opt).from(element).save();
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
-      .then(() => {
-        // Restore scale after PDF is generated
-
-        element.style.transform = "scale(0.75)";
-        element.style.transformOrigin = "top left";
+      // Reset the width after PDF generation if needed
+      setTimeout(() => {
         element.style.width = "";
-      });
-
-    // Reset the width after PDF generation if needed
-    setTimeout(() => {
-      element.style.width = "";
-    }, 500);
+      }, 500);
+    } catch (error) {
+      alert("Could not finalize invoice number.");
+    }
   };
 
   const saveInvoice = async () => {
     try {
+      const finalNo = await finalizeInvoiceNumber();
+
       const invoiceData = {
-        invoiceNumber,
+        invoiceNumber: finalNo,
         invoiceDate,
         invoiceType,
         selectedFirm,
@@ -384,10 +445,7 @@ const [imagesReady, setImagesReady] = useState(false);
         items,
         totalAmount: totalAmountWithTax,
       };
-      await axios.post(
-        "https://taskbe.sharda.co.in/api/invoices",
-        invoiceData
-      );
+      await axios.post("https://taskbe.sharda.co.in/api/invoices", invoiceData);
       // Display an alert once the invoice is saved successfully
       Swal.fire({
         icon: "success",
@@ -505,7 +563,6 @@ const [imagesReady, setImagesReady] = useState(false);
         >
           <button
             onClick={handleDownloadPDF}
-            
             style={{
               marginTop: 20,
               padding: "12px 24px",
@@ -761,7 +818,7 @@ const [imagesReady, setImagesReady] = useState(false);
         </button>
       </div>
       {/* Right side invoice preview */}
-      
+
       <div
         className="invoice-right screen-preview"
         ref={invoiceRef}
@@ -777,36 +834,11 @@ const [imagesReady, setImagesReady] = useState(false);
         }}
       >
         <div ref={invoiceRef}>
-       
-        <InvoicePage
-        pageNumber={1}
-          itemsOnPage={page1Items}
-          offset={offsetPage1}
-          isLastPage={page2Items.length === 0}
-          customer={customer}
-          selectedFirm={selectedFirm}
-          invoiceType={invoiceType}
-          invoiceNumber={invoiceNumber}
-          invoiceDate={invoiceDate}
-          placeOfSupply={placeOfSupply}
-          isSharda={isSharda}
-          totalAmount={totalAmount}
-          totalAmountWithTax={totalAmountWithTax}
-          taxableValue={taxableValue}
-          igstAmount={igstAmount}
-          cgstAmount={cgstAmount}
-          sgstAmount={sgstAmount}
-          numberToWordsIndian={numberToWordsIndian}
-          onImagesLoaded={() => setImagesReady(true)}
-        />
-        
-       
-        {page2Items.length > 0 && (
           <InvoicePage
-           pageNumber={2}
-            itemsOnPage={page2Items}
-            offset={offsetPage2}
-            isLastPage={true}
+            pageNumber={1}
+            itemsOnPage={page1Items}
+            offset={offsetPage1}
+            isLastPage={page2Items.length === 0}
             customer={customer}
             selectedFirm={selectedFirm}
             invoiceType={invoiceType}
@@ -823,12 +855,32 @@ const [imagesReady, setImagesReady] = useState(false);
             numberToWordsIndian={numberToWordsIndian}
             onImagesLoaded={() => setImagesReady(true)}
           />
-          
-        )}
-        
+
+          {page2Items.length > 0 && (
+            <InvoicePage
+              pageNumber={2}
+              itemsOnPage={page2Items}
+              offset={offsetPage2}
+              isLastPage={true}
+              customer={customer}
+              selectedFirm={selectedFirm}
+              invoiceType={invoiceType}
+              invoiceNumber={invoiceNumber}
+              invoiceDate={invoiceDate}
+              placeOfSupply={placeOfSupply}
+              isSharda={isSharda}
+              totalAmount={totalAmount}
+              totalAmountWithTax={totalAmountWithTax}
+              taxableValue={taxableValue}
+              igstAmount={igstAmount}
+              cgstAmount={cgstAmount}
+              sgstAmount={sgstAmount}
+              numberToWordsIndian={numberToWordsIndian}
+              onImagesLoaded={() => setImagesReady(true)}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 }
-

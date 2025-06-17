@@ -29,7 +29,7 @@ const Login = () => {
 
       const { token, name, role, email, department } = response.data;
       const loginExpiryHours = 10;
-const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
+      const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
 
       // ✅ Store to localStorage
       localStorage.setItem("authToken", token);
@@ -39,6 +39,7 @@ const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
       localStorage.setItem("department", department); // ✅ Save department
       localStorage.setItem("triggerLoginReminder", "true");
       localStorage.setItem("loginExpiry", loginExpiryTime);
+      localStorage.setItem("tokenLocal", token);
 
       // ✅ Dispatch to Redux
       dispatch(setAuth({ name, role, userId: email }));
