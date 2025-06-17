@@ -6,7 +6,7 @@ export const fetchClients = createAsyncThunk(
   "clients/fetchClients",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("https://sataskmanagementbackend.onrender.com/api/clients");
+      const res = await fetch("https://taskbe.sharda.co.in/api/clients");
       if (!res.ok) throw new Error("Failed to fetch clients");
       const data = await res.json();
       return data;

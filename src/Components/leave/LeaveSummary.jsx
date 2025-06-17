@@ -10,7 +10,7 @@ const LeaveSummary = () => {
     const fetchApprovedLeaves = async () => {
       try {
         const response = await axios.get(
-          `https://sataskmanagementbackend.onrender.com/api/leave?userId=${userId}`
+          `https://taskbe.sharda.co.in/api/leave?userId=${userId}`
         );
         const approved = response.data.filter(
           (leave) => leave.status === "Approved"
