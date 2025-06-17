@@ -94,30 +94,55 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   }, [initialData]);
 
   useEffect(() => {
+    // const fetchClients = async () => {
+    //   try {
+    //     const token = localStorage.getItem("authToken");
+    //     const res = await fetch(
+    //       "https://taskbe.sharda.co.in/api/clients", {
+    //     headers: {
+    //       Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+    //     },
+    //   }
+    //     );
+    //     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    //     const data = await res.json();
+    //     const formattedClients = Array.isArray(data)
+    //       ? data.map((client) => ({
+    //           label: client.name || client,
+    //           value: client.name || client,
+    //         }))
+    //       : [];
+    //     setClientOptions(formattedClients);
+    //   } catch (err) {
+    //     console.error("Failed to fetch clients", err);
+    //   }
+    // };
     const fetchClients = async () => {
-      try {
-        const res = await fetch(
+  
+  try {
+    const token = localStorage.getItem("authToken");
+    const response = await axios.get("https://taskbe.sharda.co.in/api/clients", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "x-app-client": "frontend-authenticated",
+      },
+    });
 
-          "https://taskbe.sharda.co.in/api/clients", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
-        },
-      }
+    const data = response.data;
 
-        );
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
-        const formattedClients = Array.isArray(data)
-          ? data.map((client) => ({
-              label: client.name || client,
-              value: client.name || client,
-            }))
-          : [];
-        setClientOptions(formattedClients);
-      } catch (err) {
-        console.error("Failed to fetch clients", err);
-      }
-    };
+    const formattedClients = Array.isArray(data)
+      ? data.map((client) => ({
+          label: client.name || client,
+          value: client.name || client,
+        }))
+      : [];
+
+    setClientOptions(formattedClients);
+  } catch (err) {
+         console.error("Failed to fetch clients", err);
+       }
+     };
+
     fetchClients();
   }, []);
 
