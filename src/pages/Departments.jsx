@@ -41,19 +41,19 @@ const Departments = () => {
 
       // Fetch departments
       const deptRes = await axios.get(
-        "https://sataskmanagementbackend.onrender.com/api/departments"
+        "https://taskbe.sharda.co.in/api/departments"
       );
       const departments = deptRes.data;
 
       // Fetch employees
       const employeeRes = await axios.get(
-        "https://sataskmanagementbackend.onrender.com/api/employees"
+        "https://taskbe.sharda.co.in/api/employees"
       );
       const employees = employeeRes.data;
 
       // Fetch tasks
       const taskRes = await axios.get(
-        "https://sataskmanagementbackend.onrender.com/api/tasks"
+        "https://taskbe.sharda.co.in/api/tasks"
       );
       const tasks = taskRes.data;
 
@@ -98,7 +98,7 @@ const Departments = () => {
   const fetchTaskCodes = async () => {
     try {
       const res = await axios.get(
-        "https://sataskmanagementbackend.onrender.com/api/task-codes"
+        "https://taskbe.sharda.co.in/api/task-codes"
       );
 
       const sortedData = res.data.sort((a, b) => {
@@ -120,7 +120,7 @@ const Departments = () => {
   // const fetchClients = async () => {
   //   try {
   //     const res = await fetch(
-  //       "https://sataskmanagementbackend.onrender.com/api/clients"
+  //       "https://taskbe.sharda.co.in/api/clients"
   //     );
 
   //     if (!res.ok) {
@@ -147,7 +147,7 @@ const Departments = () => {
   const fetchClients = async () => {
     try {
       const res = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/clients"
+        "https://taskbe.sharda.co.in/api/clients"
       );
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
@@ -193,7 +193,7 @@ const Departments = () => {
 
     try {
       await axios.put(
-        "https://sataskmanagementbackend.onrender.com/api/departments/remove-department",
+        "https://taskbe.sharda.co.in/api/departments/remove-department",
         { department: dept }
       );
 
@@ -250,7 +250,7 @@ const Departments = () => {
 
     try {
       await axios.delete(
-        `https://sataskmanagementbackend.onrender.com/api/task-codes/${codeId}`
+        `https://taskbe.sharda.co.in/api/task-codes/${codeId}`
       );
 
       Swal.fire({
@@ -290,7 +290,7 @@ const Departments = () => {
 
     try {
       const res = await axios.post(
-        "https://sataskmanagementbackend.onrender.com/api/departments",
+        "https://taskbe.sharda.co.in/api/departments",
         { name: newDeptName }
       );
       setDepartmentMap((prev) => ({
@@ -313,7 +313,7 @@ const Departments = () => {
 
     try {
       await axios.post(
-        `https://sataskmanagementbackend.onrender.com/api/task-codes`,
+        `https://taskbe.sharda.co.in/api/task-codes`,
         { name: newCodeName }
       );
       fetchTaskCodes();
@@ -347,7 +347,7 @@ const Departments = () => {
 
     try {
       await axios.delete(
-        `https://sataskmanagementbackend.onrender.com/api/clients`,
+        `https://taskbe.sharda.co.in/api/clients`,
         {
           data: { name: clientName },
         }
@@ -382,7 +382,7 @@ const Departments = () => {
   const handleUpdateCode = async (id) => {
     try {
       const res = await axios.put(
-        `https://sataskmanagementbackend.onrender.com/api/task-codes/${id}`,
+        `https://taskbe.sharda.co.in/api/task-codes/${id}`,
         {
           name: editCodeName,
         }
@@ -432,7 +432,7 @@ const Departments = () => {
   const handleRemoveUser = async (userId) => {
     try {
       await axios.delete(
-        `https://sataskmanagementbackend.onrender.com/api/employees/${userId}`
+        `https://taskbe.sharda.co.in/api/employees/${userId}`
       );
       setEditableUsers((prev) => prev.filter((u) => u._id !== userId));
     } catch (err) {
@@ -852,7 +852,7 @@ const tabs = [
           onCreate={async (clientData) => {
             try {
               await axios.post(
-                "https://sataskmanagementbackend.onrender.com/api/clients",
+                "https://taskbe.sharda.co.in/api/clients",
                 clientData
               );
 

@@ -86,14 +86,14 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
       if (employeeToEdit) {
         // Update existing employee
         await axios.put(
-          `https://sataskmanagementbackend.onrender.com/api/employees/${employeeToEdit._id}`,
+          `https://taskbe.sharda.co.in/api/employees/${employeeToEdit._id}`,
           dataToSend
         );
        showAlert("Employee updated successfully!");
       } else {
         // Add new employee
         await axios.post(
-          "https://sataskmanagementbackend.onrender.com/api/employees",
+          "https://taskbe.sharda.co.in/api/employees",
           dataToSend
         );
         showAlert("Employee added successfully!");

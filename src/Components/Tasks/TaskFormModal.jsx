@@ -7,7 +7,7 @@ import TaskCodeSelector from "./TaskCodeSelector";
 import DepartmentSelector from "./DepartmentSelector";
 import { io } from "socket.io-client";
 import { showAlert } from "../../utils/alert";
-
+import axios from 'axios';
 
 const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
@@ -94,24 +94,55 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   }, [initialData]);
 
   useEffect(() => {
+    // const fetchClients = async () => {
+    //   try {
+    //     const token = localStorage.getItem("authToken");
+    //     const res = await fetch(
+    //       "https://taskbe.sharda.co.in/api/clients", {
+    //     headers: {
+    //       Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+    //     },
+    //   }
+    //     );
+    //     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    //     const data = await res.json();
+    //     const formattedClients = Array.isArray(data)
+    //       ? data.map((client) => ({
+    //           label: client.name || client,
+    //           value: client.name || client,
+    //         }))
+    //       : [];
+    //     setClientOptions(formattedClients);
+    //   } catch (err) {
+    //     console.error("Failed to fetch clients", err);
+    //   }
+    // };
     const fetchClients = async () => {
-      try {
-        const res = await fetch(
-          "https://taskbe.sharda.co.in/api/clients"
-        );
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
-        const formattedClients = Array.isArray(data)
-          ? data.map((client) => ({
-              label: client.name || client,
-              value: client.name || client,
-            }))
-          : [];
-        setClientOptions(formattedClients);
-      } catch (err) {
-        console.error("Failed to fetch clients", err);
-      }
-    };
+  
+  try {
+    const token = localStorage.getItem("authToken");
+    const response = await axios.get("https://taskbe.sharda.co.in/api/clients", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "x-app-client": "frontend-authenticated",
+      },
+    });
+
+    const data = response.data;
+
+    const formattedClients = Array.isArray(data)
+      ? data.map((client) => ({
+          label: client.name || client,
+          value: client.name || client,
+        }))
+      : [];
+
+    setClientOptions(formattedClients);
+  } catch (err) {
+         console.error("Failed to fetch clients", err);
+       }
+     };
+
     fetchClients();
   }, []);
 

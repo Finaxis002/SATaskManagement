@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from '../utils/secureAxios';
 import { FaPlus, FaThLarge, FaTable } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ClientList from "../Components/client/ClientList";
@@ -15,36 +15,63 @@ const Clients = () => {
   const [viewMode, setViewMode] = useState("card"); 
 
 
-  const fetchClients = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/clients"
-      );
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
+  // const fetchClients = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const res = await axios.get(
+  //       "/clients"
+  //     );
+  //     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  //      const data = res.data;
 
-      const formattedClients = Array.isArray(data)
-        ? data.map((client) => ({
-            id: client._id,
-            name: client.name,
-            contactPerson: client.contactPerson || "-",
-            businessName: client.businessName || "-",
-          }))
-        : [];
+  //     const formattedClients = Array.isArray(data)
+  //       ? data.map((client) => ({
+  //           id: client._id,
+  //           name: client.name,
+  //           contactPerson: client.contactPerson || "-",
+  //           businessName: client.businessName || "-",
+  //         }))
+  //       : [];
 
-      setClients(formattedClients);
-    } catch (err) {
-      console.error("Failed to fetch clients", err);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to load clients. Please try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     setClients(formattedClients);
+  //   } catch (err) {
+  //     console.error("Failed to fetch clients", err);
+  //     Swal.fire({
+  //       icon: "error",
+  //       title: "Error",
+  //       text: "Failed to load clients. Please try again.",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+const fetchClients = async () => {
+  setLoading(true);
+  try {
+    const res = await axios.get("/clients");
+    const data = res.data;
+
+    const formattedClients = Array.isArray(data)
+      ? data.map((client) => ({
+          id: client._id,
+          name: client.name,
+          contactPerson: client.contactPerson || "-",
+          businessName: client.businessName || "-",
+        }))
+      : [];
+
+    setClients(formattedClients);
+  } catch (err) {
+    console.error("Failed to fetch clients", err);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Failed to load clients. Please try again.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchClients();
@@ -65,7 +92,7 @@ const Clients = () => {
 
     try {
       await axios.delete(
-        "https://sataskmanagementbackend.onrender.com/api/clients",
+        "/clients",
         {
           data: { name: clientName },
         }
@@ -162,7 +189,7 @@ const Clients = () => {
               if (editingClient) {
                 // Edit mode - update existing client
                 await axios.put(
-                  "https://sataskmanagementbackend.onrender.com/api/clients",
+                  "/clients",
                   {
                     id: editingClient.id,
                     ...clientData,
@@ -178,7 +205,7 @@ const Clients = () => {
               } else {
                 // Create mode - add new client
                 await axios.post(
-                  "https://sataskmanagementbackend.onrender.com/api/clients",
+                  "/clients",
                   clientData
                 );
                 Swal.fire({

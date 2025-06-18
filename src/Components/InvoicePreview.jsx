@@ -295,7 +295,7 @@ export default function InvoicePreview({
         backgroundColor: "#fff",
         border: "1px solid #000",
         padding: "0 20px 0px 20px",
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+         fontFamily: "'Glacial Indifference', sans-serif",
         fontSize: 12,
         color: "#000",
         position: "relative",
@@ -426,6 +426,7 @@ export default function InvoicePreview({
           borderCollapse: "collapse",
           border: "1px solid black",
           tableLayout: "fixed",
+          
         }}
       >
         <colgroup>
@@ -1364,7 +1365,7 @@ export default function InvoicePreview({
       </p>
 
       {/* Footer Image */}
-      <div style={{ marginLeft: "-20px", marginRight: "-20px", marginTop: 20 }}>
+      <div style={{ marginLeft: "-20px", marginRight: "-20px" , marginTop:180}}>
         {isSharda ? (
           <img
             src={footerImageSharda}

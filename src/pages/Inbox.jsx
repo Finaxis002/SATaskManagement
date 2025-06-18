@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 
 // Assume socket.io client setup
-const socket = io("https://sataskmanagementbackend.onrender.com", {
+const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
@@ -58,13 +58,13 @@ const Inbox = () => {
       try {
         if (currentUser.role === "admin") {
           const res = await axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/departments"
+            "https://taskbe.sharda.co.in/api/departments"
           );
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
           const res = await axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/employees"
+            "https://taskbe.sharda.co.in/api/employees"
           );
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
@@ -106,7 +106,7 @@ const Inbox = () => {
     const fetchAllUsers = async () => {
       try {
         const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/employees"
+          "https://taskbe.sharda.co.in/api/employees"
         );
         console.log("Fetched users:", res.data);
 
@@ -140,7 +140,7 @@ const Inbox = () => {
       try {
         if (selectedUser && selectedUser.name) {
           const res = await axios.get(
-            `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`
+            `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`
           );
 
           const filteredMessages = res.data.messages.filter((msg) => {
@@ -170,7 +170,7 @@ const Inbox = () => {
         } else if (selectedGroup) {
           const encodedGroup = encodeURIComponent(selectedGroup);
           const res = await axios.get(
-            `https://sataskmanagementbackend.onrender.com/api/messages/${encodedGroup}`
+            `https://taskbe.sharda.co.in/api/messages/${encodedGroup}`
           );
           setMessages(res.data.messages.reverse()); // No reverse here
         }
@@ -203,7 +203,7 @@ const Inbox = () => {
       let res;
       if (selectedUser) {
         res = await axios.post(
-          `https://sataskmanagementbackend.onrender.com/api/messages/user/${selectedUser.name}`,
+          `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`,
           newMessage
         );
         socket.emit("sendDirectMessage", {
@@ -212,7 +212,7 @@ const Inbox = () => {
         });
       } else if (selectedGroup) {
         res = await axios.post(
-          `https://sataskmanagementbackend.onrender.com/api/messages/${encodeURIComponent(
+          `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(
             selectedGroup
           )}`,
           newMessage
@@ -251,7 +251,7 @@ const Inbox = () => {
 
       // Then make the API call
       const res = await axios.put(
-        "https://sataskmanagementbackend.onrender.com/api/mark-read",
+        "https://taskbe.sharda.co.in/api/mark-read",
         {
           identifier,
         }
@@ -381,7 +381,7 @@ const Inbox = () => {
         const name = localStorage.getItem("name");
 
         const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/group-unread-counts",
+          "https://taskbe.sharda.co.in/api/group-unread-counts",
           {
             params: { name },
           }
@@ -407,7 +407,7 @@ const Inbox = () => {
       try {
         const name = localStorage.getItem("name");
         const res = await axios.get(
-          "https://sataskmanagementbackend.onrender.com/api/user-unread-counts",
+          "https://taskbe.sharda.co.in/api/user-unread-counts",
           {
             params: {
               name,
