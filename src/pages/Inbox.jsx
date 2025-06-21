@@ -249,9 +249,11 @@ const sendMessage = async () => {
   };
 
   // Optimistically update the UI with the new message for both personal and group chat
-  setMessages((prevMessages) => [...prevMessages, newMessage]);
-
+  if (selectedUser) {
+    setMessages((prevMessages) => [...prevMessages, newMessage]); // Personal Chat Update
+  }
   try {
+    
     if (selectedUser) {
       // Send to individual user
       const res = await axios.post(
