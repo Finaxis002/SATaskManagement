@@ -3,7 +3,13 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "../redux/userSlice";
-import { FaFile, FaPaperclip, FaTrashAlt, FaUsers } from "react-icons/fa";
+import {
+  FaFile,
+  FaPaperclip,
+  FaTrashAlt,
+  FaUsers,
+  FaDownload,
+} from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
@@ -30,6 +36,7 @@ const Inbox = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [file, setFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null); // new state for preview URL
+  const [newMessagesHeader, setNewMessagesHeader] = useState(false);
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
@@ -59,11 +66,15 @@ const Inbox = () => {
     const fetchUserDepartments = async () => {
       try {
         if (currentUser.role === "admin") {
-          const res = await axios.get("https://taskbe.sharda.co.in/api/departments");
+          const res = await axios.get(
+            "https://taskbe.sharda.co.in/api/departments"
+          );
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
-          const res = await axios.get("https://taskbe.sharda.co.in/api/employees");
+          const res = await axios.get(
+            "https://taskbe.sharda.co.in/api/employees"
+          );
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
           );
@@ -103,7 +114,9 @@ const Inbox = () => {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const res = await axios.get("https://taskbe.sharda.co.in/api/employees");
+        const res = await axios.get(
+          "https://taskbe.sharda.co.in/api/employees"
+        );
         console.log("Fetched users:", res.data);
 
         // Separate admins and regular users
@@ -257,6 +270,7 @@ const Inbox = () => {
     } catch (err) {
       console.error("❌ Failed to send message:", err.message);
     } finally {
+      setMessageText("");
       setFile(null);
       setFilePreview(null);
       messageInputRef.current?.focus();
@@ -352,43 +366,47 @@ const Inbox = () => {
     }));
   };
 
-useEffect(() => {
-  const handleReceiveMessage = (msg) => {
-    console.log("📨 Real-time message received:", msg);
+  useEffect(() => {
+    const handleReceiveMessage = (msg) => {
+      console.log("📨 Real-time message received:", msg);
 
-    // For Group Messages
-    if (msg.group) {
-      if (selectedGroup === msg.group) {
-        setMessages((prev) => [...prev, msg]);
-      } else if (groups.includes(msg.group)) {
-        setGroupUnreadCounts((prev) => ({
+      // For Group Messages
+      if (msg.group) {
+        if (selectedGroup === msg.group) {
+          setMessages((prev) => [...prev, msg]);
+          setNewMessagesHeader(false); // Remove "New Messages" header
+        } else if (groups.includes(msg.group)) {
+          setGroupUnreadCounts((prev) => ({
+            ...prev,
+            [msg.group]: (prev[msg.group] || 0) + 1,
+          }));
+          setNewMessagesHeader(true);
+        }
+      }
+
+      // For Direct Messages
+      else if (
+        msg.recipient === currentUser.name &&
+        msg.sender !== currentUser.name
+      ) {
+        if (selectedUser && selectedUser.name === msg.sender) {
+          setMessages((prev) => [...prev, msg]);
+          setNewMessagesHeader(false);
+        }
+        setUserUnreadCounts((prev) => ({
           ...prev,
-          [msg.group]: (prev[msg.group] || 0) + 1,
+          [msg.sender]: (prev[msg.sender] || 0) + 1,
         }));
+        setNewMessagesHeader(true);
       }
-    }
+    };
 
-    // For Direct Messages
-    else if (
-      msg.recipient === currentUser.name &&
-      msg.sender !== currentUser.name
-    ) {
-      if (selectedUser && selectedUser.name === msg.sender) {
-        setMessages((prev) => [...prev, msg]);
-      }
-      setUserUnreadCounts((prev) => ({
-        ...prev,
-        [msg.sender]: (prev[msg.sender] || 0) + 1,
-      }));
-    }
-  };
+    socket.on("receiveMessage", handleReceiveMessage);
 
-  socket.on("receiveMessage", handleReceiveMessage);
-
-  return () => {
-    socket.off("receiveMessage", handleReceiveMessage);
-  };
-}, [selectedGroup, selectedUser, currentUser.name, groups]);
+    return () => {
+      socket.off("receiveMessage", handleReceiveMessage);
+    };
+  }, [selectedGroup, selectedUser, currentUser.name, groups]);
 
   useEffect(() => {
     const fetchGroupUnreadCounts = async () => {
@@ -448,6 +466,17 @@ useEffect(() => {
     console.log("Selected User:", selectedUser);
   }, [selectedGroup, selectedUser]);
 
+ const handleFileDownload = (fileUrl) => {
+  const fullUrl = `https://taskbe.sharda.co.in${fileUrl}`; // Make sure this is the correct URL
+  const fileName = fileUrl.split("/").pop(); // Extract file name
+
+  const link = document.createElement("a");
+  link.href = fullUrl;
+  link.download = fileName; // This will force the browser to download the file
+  document.body.appendChild(link); // Append the link to the body
+  link.click(); // Trigger the download
+  document.body.removeChild(link); // Clean up the link element
+};
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
@@ -708,7 +737,6 @@ useEffect(() => {
           ref={scrollRef}
           className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4"
         >
-          {/* Check if messages is an array and has messages */}
           {Array.isArray(messages) && messages.length > 0 ? (
             <>
               {/* ✅ Read Messages */}
@@ -716,6 +744,7 @@ useEffect(() => {
                 .filter((msg) => msg.read || msg.sender === currentUser.name)
                 .map((msg, idx) => {
                   const isCurrentUser = msg.sender === currentUser.name;
+
                   return (
                     <div
                       key={`read-${idx}`}
@@ -731,45 +760,106 @@ useEffect(() => {
                         </span>
                         <span
                           className={`text-[10px] ${
-                            msg.sender === currentUser.name
-                              ? "text-gray-50" // Light color for sent messages (on dark background)
-                              : "text-gray-500" // Darker color for received messages (on light background)
+                            isCurrentUser ? "text-gray-50" : "text-gray-500"
                           }`}
                         >
                           {msg.timestamp}
                         </span>
                       </div>
+
+                      {/* 📎 File Attachment Preview */}
                       {msg.fileUrl && (
                         <div className="my-2">
-                          {msg.fileUrl.match(/\.(jpeg|jpg|png|gif)$/i) ? (
+                          {/* Image File */}
+                          {msg.fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i) ? (
                             <a
-                              href={`https://taskbe.sharda.co.in${msg.fileUrl}`}
-                              download
+                              onClick={() => handleFileDownload(msg.fileUrl)}
                               target="_blank"
+                              rel="noopener noreferrer"
+                              className="block relative"
                             >
-                              {console.log("fileUrl is", msg.fileUrl)}
                               <img
                                 src={`https://taskbe.sharda.co.in${msg.fileUrl}`}
-                                alt="attachment"
-                                className="max-w-[200px] rounded"
+                                alt="image"
+                                className="rounded-lg w-full max-w-xs shadow-sm"
+                                
                               />
+                              {/* Add a download button on top of the image */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleFileDownload(msg.fileUrl);
+                                }}
+                                className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <FaDownload size={14} />
+                              </button>
+                            </a>
+                          ) : msg.fileUrl.match(/\.pdf$/i) ? (
+                            <a
+                              onClick={() => handleFileDownload(msg.fileUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-between gap-3 bg-white  text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FaFile className="text-red-500 text-xl" />
+                                <div>
+                                  <p className="text-sm font-medium truncate">
+                                    {msg.fileUrl.split("/").pop()}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    PDF Document
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-blue-500 font-semibold text-sm cursor-pointer">
+                                Download
+                              </div>
                             </a>
                           ) : (
                             <a
-                              href={`https://taskbe.sharda.co.in${msg.fileUrl}`}
+                              onClick={() => handleFileDownload(msg.fileUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-indigo-600 underline flex items-center gap-1"
-                              download
+                              className="flex items-center gap-2 bg-white text-black border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs text-sm"
                             >
-                              <FaFile /> Download File
+                              <FaFile className="text-blue-500 text-lg" />
+                              <span className="truncate">
+                                {msg.fileUrl.split("/").pop()}
+                              </span>
+                              <span className="ml-auto text-blue-600 font-medium cursor-pointer">
+                                Download
+                              </span>
                             </a>
                           )}
                         </div>
                       )}
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {msg.text}
-                      </p>
+
+                      {/* 💬 Text Message with Link Detection */}
+                      {msg.text && (
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">
+                          {msg.text.split(" ").map((part, i) =>
+                            part.match(/(https?:\/\/[^\s]+)/gi) ? (
+                              <a
+                                key={i}
+                                href={part}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`underline break-all ${
+                                  isCurrentUser
+                                    ? "text-blue-200"
+                                    : "text-blue-600"
+                                }`}
+                              >
+                                {part}{" "}
+                              </a>
+                            ) : (
+                              part + " "
+                            )
+                          )}
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -793,24 +883,104 @@ useEffect(() => {
               {/* ✅ Unread Messages */}
               {messages
                 .filter((msg) => !msg.read && msg.sender !== currentUser.name)
-                .map((msg, idx) => {
-                  const isCurrentUser = msg.sender === currentUser.name;
-                  return (
-                    <div className="max-w-sm p-3 rounded-xl shadow-md border-2 border-gray-200 bg-gray-200 text-gray-800 mr-auto rounded-bl-none">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold">
-                          {msg.sender}
-                        </span>
-                        <span className="text-[10px] text-gray-800">
-                          {msg.timestamp}
-                        </span>
-                      </div>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {msg.text}
-                      </p>
+                .map((msg, idx) => (
+                  <div
+                    key={`unread-${idx}`}
+                    className="max-w-sm p-3 rounded-xl shadow-md border-2 border-gray-200 bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold">
+                        {msg.sender}
+                      </span>
+                      <span className="text-[10px] text-gray-800">
+                        {msg.timestamp}
+                      </span>
                     </div>
-                  );
-                })}
+
+                    {/* 📎 File Attachment Preview */}
+                    {msg.fileUrl && (
+                      <div className="my-2">
+                        {/* Image File */}
+                        {msg.fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i) ? (
+                          <a
+                            onClick={() => handleFileDownload(msg.fileUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block relative"
+                          >
+                            <img
+                              src={`https://taskbe.sharda.co.in${msg.fileUrl}`}
+                              alt="image"
+                              className="rounded-lg w-full max-w-xs shadow-sm"
+                            />
+                            {/* Add a download button on top of the image */}
+                            <div className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
+                              <FaDownload />
+                            </div>
+                          </a>
+                        ) : msg.fileUrl.match(/\.pdf$/i) ? (
+                          <a
+                            onClick={() => handleFileDownload(msg.fileUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between gap-3 bg-white  text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs"
+                          >
+                            <div className="flex items-center gap-2">
+                              <FaFile className="text-red-500 text-xl" />
+                              <div>
+                                <p className="text-sm font-medium truncate">
+                                  {msg.fileUrl.split("/").pop()}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  PDF Document
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-blue-500 font-semibold text-sm cursor-pointer">
+                              Download
+                            </div>
+                          </a>
+                        ) : (
+                          <a
+                            onClick={() => handleFileDownload(msg.fileUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 bg-white text-black border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs text-sm"
+                          >
+                            <FaFile className="text-blue-500 text-lg" />
+                            <span className="truncate">
+                              {msg.fileUrl.split("/").pop()}
+                            </span>
+                            <span className="ml-auto text-blue-600 font-medium cursor-pointer">
+                              Download
+                            </span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 💬 Text Message with Link Detection */}
+                    {msg.text && (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">
+                        {msg.text.split(" ").map((part, i) =>
+                          part.match(/(https?:\/\/[^\s]+)/gi) ? (
+                            <a
+                              key={i}
+                              href={part}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline break-all"
+                            >
+                              {part}{" "}
+                            </a>
+                          ) : (
+                            part + " "
+                          )
+                        )}
+                      </p>
+                    )}
+                  </div>
+                ))}
             </>
           ) : (
             <div className="text-center text-gray-500">
@@ -941,7 +1111,3 @@ useEffect(() => {
 };
 
 export default Inbox;
-
-
-
-
