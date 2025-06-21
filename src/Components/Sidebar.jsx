@@ -231,12 +231,6 @@ const Sidebar = () => {
             to="/viewinvoicewithotp"
           />
         )}
-
-        <SidebarItem
-          icon={<FaWhatsapp className="text-xl" style={{ color: "#25D366" }} />}
-          label="WhatsApp"
-          to="/whatsapp"
-        />
       </div>
 
       {/* Footer */}
