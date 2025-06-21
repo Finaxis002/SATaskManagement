@@ -66,15 +66,11 @@ const Inbox = () => {
     const fetchUserDepartments = async () => {
       try {
         if (currentUser.role === "admin") {
-          const res = await axios.get(
-            "https://taskbe.sharda.co.in/api/departments"
-          );
+          const res = await axios.get("https://taskbe.sharda.co.in/api/departments");
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
-          const res = await axios.get(
-            "https://taskbe.sharda.co.in/api/employees"
-          );
+          const res = await axios.get("https://taskbe.sharda.co.in/api/employees");
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
           );
@@ -114,9 +110,7 @@ const Inbox = () => {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const res = await axios.get(
-          "https://taskbe.sharda.co.in/api/employees"
-        );
+        const res = await axios.get("https://taskbe.sharda.co.in/api/employees");
         console.log("Fetched users:", res.data);
 
         // Separate admins and regular users
@@ -466,17 +460,24 @@ const Inbox = () => {
     console.log("Selected User:", selectedUser);
   }, [selectedGroup, selectedUser]);
 
- const handleFileDownload = (fileUrl) => {
-  const fullUrl = `https://taskbe.sharda.co.in${fileUrl}`; // Make sure this is the correct URL
-  const fileName = fileUrl.split("/").pop(); // Extract file name
+  const handleFileDownload = (fileUrl) => {
+    const fullUrl = `https://taskbe.sharda.co.in${fileUrl}`; // Ensure this URL is correct
+    const fileName = fileUrl.split("/").pop(); // Extract file name
 
-  const link = document.createElement("a");
-  link.href = fullUrl;
-  link.download = fileName; // This will force the browser to download the file
-  document.body.appendChild(link); // Append the link to the body
-  link.click(); // Trigger the download
-  document.body.removeChild(link); // Clean up the link element
-};
+    // Open the link in a new tab
+    const newTab = window.open(fullUrl, "_blank");
+
+    // Wait for the new tab to load, then trigger the download
+    newTab.onload = () => {
+      // Create an invisible download link in the new tab
+      const link = newTab.document.createElement("a");
+      link.href = fullUrl;
+      link.download = fileName; // Force the browser to download the file
+      newTab.document.body.appendChild(link); // Append the link to the new tab's body
+      link.click(); // Trigger the download
+      newTab.document.body.removeChild(link); // Clean up the link element in the new tab
+    };
+  };
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
@@ -782,18 +783,11 @@ const Inbox = () => {
                                 src={`https://taskbe.sharda.co.in${msg.fileUrl}`}
                                 alt="image"
                                 className="rounded-lg w-full max-w-xs shadow-sm"
-                                
                               />
                               {/* Add a download button on top of the image */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleFileDownload(msg.fileUrl);
-                                }}
-                                className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <FaDownload size={14} />
-                              </button>
+                              <div className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
+                                <FaDownload />
+                              </div>
                             </a>
                           ) : msg.fileUrl.match(/\.pdf$/i) ? (
                             <a
