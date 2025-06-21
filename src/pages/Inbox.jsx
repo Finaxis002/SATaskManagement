@@ -9,6 +9,7 @@ import {
   FaTrashAlt,
   FaUsers,
   FaDownload,
+  FaPaperPlane,
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -66,11 +67,15 @@ const Inbox = () => {
     const fetchUserDepartments = async () => {
       try {
         if (currentUser.role === "admin") {
-          const res = await axios.get("https://taskbe.sharda.co.in/api/departments");
+          const res = await axios.get(
+            "https://taskbe.sharda.co.in/api/departments"
+          );
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
-          const res = await axios.get("https://taskbe.sharda.co.in/api/employees");
+          const res = await axios.get(
+            "https://taskbe.sharda.co.in/api/employees"
+          );
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
           );
@@ -110,7 +115,9 @@ const Inbox = () => {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const res = await axios.get("https://taskbe.sharda.co.in/api/employees");
+        const res = await axios.get(
+          "https://taskbe.sharda.co.in/api/employees"
+        );
         console.log("Fetched users:", res.data);
 
         // Separate admins and regular users
@@ -479,6 +486,8 @@ const Inbox = () => {
     };
   };
 
+
+
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
       {/* Left column for groups */}
@@ -778,6 +787,7 @@ const Inbox = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="block relative"
+                              
                             >
                               <img
                                 src={`https://taskbe.sharda.co.in${msg.fileUrl}`}
@@ -807,8 +817,8 @@ const Inbox = () => {
                                   </p>
                                 </div>
                               </div>
-                              <div className="text-blue-500 font-semibold text-sm cursor-pointer">
-                                Download
+                              <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
+                                <FaDownload size={12} />
                               </div>
                             </a>
                           ) : (
@@ -822,9 +832,9 @@ const Inbox = () => {
                               <span className="truncate">
                                 {msg.fileUrl.split("/").pop()}
                               </span>
-                              <span className="ml-auto text-blue-600 font-medium cursor-pointer">
-                                Download
-                              </span>
+                              <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
+                                <FaDownload size={12} />
+                              </div>
                             </a>
                           )}
                         </div>
@@ -930,8 +940,8 @@ const Inbox = () => {
                                 </p>
                               </div>
                             </div>
-                            <div className="text-blue-500 font-semibold text-sm cursor-pointer">
-                              Download
+                            <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
+                              <FaDownload size={12} />
                             </div>
                           </a>
                         ) : (
@@ -945,9 +955,9 @@ const Inbox = () => {
                             <span className="truncate">
                               {msg.fileUrl.split("/").pop()}
                             </span>
-                            <span className="ml-auto text-blue-600 font-medium cursor-pointer">
-                              Download
-                            </span>
+                            <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
+                              <FaDownload size={12} />
+                            </div>
                           </a>
                         )}
                       </div>
@@ -1081,21 +1091,7 @@ const Inbox = () => {
               onClick={sendMessage}
               className="ml-2 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-4 h-4"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 12h14M12 5l7 7-7 7"
-                />
-              </svg>
-              Send
+              <FaPaperPlane />
             </button>
           </div>
         </div>
