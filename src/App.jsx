@@ -20,6 +20,7 @@ import InvoiceForm from "./pages/InvoiceForm";
 import Clients from "./pages/Clients";
 import ViewInvoices from "./pages/ViewInvoices";
 import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
+import WhatsAppPage from "./pages/WhatsAppPage";
 
 const App = () => {
   return (
@@ -208,6 +209,16 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
+        />
+        <Route 
+         path="/whatsapp"
+         element={
+          <ProtectedRoute>
+            <MainLayout>
+              <WhatsAppPage />
+            </MainLayout>
+          </ProtectedRoute>
+         }
         />
       </Routes>
     </Router>
