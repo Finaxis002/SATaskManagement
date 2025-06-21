@@ -112,19 +112,65 @@ const Inbox = () => {
     dispatch(fetchUsers());
   }, [dispatch]);
 
+  // useEffect(() => {
+  //   const fetchAllUsers = async () => {
+  //     try {
+  //       const res = await axios.get(
+  //         "https://taskbe.sharda.co.in/api/employees"
+  //       );
+  //       console.log("Fetched users:", res.data);
+
+  //       // Separate admins and regular users
+  //       const adminUsers = res.data.filter((user) => user.role === "admin");
+  //       const nonAdminUsers = res.data.filter((user) => user.role !== "admin");
+
+  //       setUsers(res.data);
+  //       setAdmins(adminUsers);
+  //       setRegularUsers(nonAdminUsers);
+  //     } catch (err) {
+  //       console.error("❌ Failed to fetch users:", err.message);
+  //       setUsers([]);
+  //       setAdmins([]);
+  //       setRegularUsers([]);
+  //     }
+  //   };
+
+  //   fetchAllUsers();
+  // }, []);
+
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const res = await axios.get(
+        // Fetch regular employees from the Employee collection
+        const employeesRes = await axios.get(
           "https://taskbe.sharda.co.in/api/employees"
         );
-        console.log("Fetched users:", res.data);
+
+        // Fetch main admins from the MainAdmin collection
+        const mainAdminsRes = await axios.get(
+          "http://localhost:1100/api/mainadmins"
+        );
+
+        console.log("Fetched employees:", employeesRes.data);
+        console.log("Fetched main admins:", mainAdminsRes.data);
+
+        // Merge employees and main admins into one array
+        const allUsers = [
+          ...employeesRes.data, // Regular employees
+          ...mainAdminsRes.data, // Main admin users
+        ];
+
+        console.log("All users after merge:", allUsers); // Log merged data
 
         // Separate admins and regular users
-        const adminUsers = res.data.filter((user) => user.role === "admin");
-        const nonAdminUsers = res.data.filter((user) => user.role !== "admin");
+        const adminUsers = allUsers.filter(
+          (user) => user.role === "admin" || user.userId === "admin"
+        ); // Check role for admins or match `userId`
+        const nonAdminUsers = allUsers.filter(
+          (user) => user.role !== "admin" && user.userId !== "admin"
+        );
 
-        setUsers(res.data);
+        setUsers(allUsers);
         setAdmins(adminUsers);
         setRegularUsers(nonAdminUsers);
       } catch (err) {
@@ -148,7 +194,7 @@ const Inbox = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        if (selectedUser && selectedUser.name) {
+       if (selectedUser && selectedUser.name) {
           const res = await axios.get(
             `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`
           );
@@ -203,85 +249,85 @@ const Inbox = () => {
     }
   };
 
-const sendMessage = async () => {
-  if (!messageText.trim() && !file) {
-    return; // Nothing to send
-  }
+  const sendMessage = async () => {
+    if (!messageText.trim() && !file) {
+      return; // Nothing to send
+    }
 
-  let fileUrl = null;
+    let fileUrl = null;
 
-  if (file) {
-    const formData = new FormData();
-    formData.append("file", file);
+    if (file) {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    try {
-      const uploadRes = await axios.post(
-        "https://taskbe.sharda.co.in/api/upload",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      try {
+        const uploadRes = await axios.post(
+          "https://taskbe.sharda.co.in/api/upload",
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
 
-      console.log("Upload response:", uploadRes);
+        console.log("Upload response:", uploadRes);
 
-      if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
-        throw new Error("Upload failed, invalid response from server.");
+        if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
+          throw new Error("Upload failed, invalid response from server.");
+        }
+
+        fileUrl = uploadRes.data.fileUrl;
+      } catch (uploadErr) {
+        console.error("❌ File upload failed:", uploadErr);
+        alert(`File upload failed: ${uploadErr.message}`);
+        return;
       }
-
-      fileUrl = uploadRes.data.fileUrl;
-    } catch (uploadErr) {
-      console.error("❌ File upload failed:", uploadErr);
-      alert(`File upload failed: ${uploadErr.message}`);
-      return;
     }
-  }
 
-  const newMessage = {
-    sender: currentUser.name,
-    text: messageText.trim(),
-    fileUrl,
-    timestamp: new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    read: false,
-    ...(selectedUser && { recipient: selectedUser.name }),  // Individual chat
-    ...(selectedGroup && { group: selectedGroup }),  // Group chat
-  };
+    const newMessage = {
+      sender: currentUser.name,
+      text: messageText.trim(),
+      fileUrl,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      read: false,
+      ...(selectedUser && { recipient: selectedUser.name }), // Individual chat
+      ...(selectedGroup && { group: selectedGroup }), // Group chat
+    };
 
-  // Optimistically update the UI with the new message for both personal and group chat
-  if (selectedUser) {
-    setMessages((prevMessages) => [...prevMessages, newMessage]); // Personal Chat Update
-  }
-  try {
-    
+    // Optimistically update the UI with the new message for both personal and group chat
     if (selectedUser) {
-      // Send to individual user
-      const res = await axios.post(
-        `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`,
-        newMessage
-      );
-      socket.emit("sendDirectMessage", {
-        message: res.data,
-        recipient: selectedUser.name,
-      });
-    } else if (selectedGroup) {
-      // Send to group
-      const res = await axios.post(
-        `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(selectedGroup)}`,
-        newMessage
-      );
-      socket.emit("sendMessage", res.data);
+      setMessages((prevMessages) => [...prevMessages, newMessage]); // Personal Chat Update
     }
-  } catch (err) {
-    console.error("❌ Failed to send message:", err.message);
-  } finally {
-    setMessageText("");
-    setFile(null);
-    setFilePreview(null);
-    messageInputRef.current?.focus();
-  }
-};
-
+    try {
+      if (selectedUser) {
+        // Send to individual user
+        const res = await axios.post(
+          `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`,
+          newMessage
+        );
+        socket.emit("sendDirectMessage", {
+          message: res.data,
+          recipient: selectedUser.name,
+        });
+      } else if (selectedGroup) {
+        // Send to group
+        const res = await axios.post(
+          `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(
+            selectedGroup
+          )}`,
+          newMessage
+        );
+        socket.emit("sendMessage", res.data);
+      }
+    } catch (err) {
+      console.error("❌ Failed to send message:", err.message);
+    } finally {
+      setMessageText("");
+      setFile(null);
+      setFilePreview(null);
+      messageInputRef.current?.focus();
+    }
+  };
 
   const handleChange = (e) => {
     const { value } = e.target;
@@ -359,60 +405,66 @@ const sendMessage = async () => {
   };
 
   const handleUserClick = async (user) => {
-    setSelectedUser(user);
+    // Handle if it's an admin (we use userId to identify)
+    if (user.userId === "admin" || user.role === "admin") {
+      setSelectedUser(user);
+    } else {
+      // For regular users, we check their `name`
+      setSelectedUser(user);
+    }
     setSelectedGroup(null);
 
     // Mark messages as read immediately when clicking the chat
-    await markMessagesAsRead(user.name);
+    await markMessagesAsRead(user.userId || user.name);
 
     // Force update the unread counts
     setUserUnreadCounts((prev) => ({
       ...prev,
-      [user.name]: 0, // Immediately set to 0
+      [user.name || user.userId]: 0, // Immediately set to 0
     }));
   };
 
- useEffect(() => {
-  const handleReceiveMessage = (msg) => {
-    console.log("📨 Real-time message received:", msg);
+  useEffect(() => {
+    const handleReceiveMessage = (msg) => {
+      console.log("📨 Real-time message received:", msg);
 
-    // For Group Messages
-    if (msg.group) {
-      if (selectedGroup === msg.group) {
-        setMessages((prev) => [...prev, msg]); // Add the message to the state
-        setNewMessagesHeader(false); // Remove "New Messages" header
-      } else if (groups.includes(msg.group)) {
-        setGroupUnreadCounts((prev) => ({
+      // For Group Messages
+      if (msg.group) {
+        if (selectedGroup === msg.group) {
+          setMessages((prev) => [...prev, msg]); // Add the message to the state
+          setNewMessagesHeader(false); // Remove "New Messages" header
+        } else if (groups.includes(msg.group)) {
+          setGroupUnreadCounts((prev) => ({
+            ...prev,
+            [msg.group]: (prev[msg.group] || 0) + 1,
+          }));
+          setNewMessagesHeader(true);
+        }
+      }
+
+      // For Direct Messages
+      else if (
+        msg.recipient === currentUser.name &&
+        msg.sender !== currentUser.name
+      ) {
+        if (selectedUser && selectedUser.name === msg.sender) {
+          setMessages((prev) => [...prev, msg]); // Add the message to the state
+          setNewMessagesHeader(false);
+        }
+        setUserUnreadCounts((prev) => ({
           ...prev,
-          [msg.group]: (prev[msg.group] || 0) + 1,
+          [msg.sender]: (prev[msg.sender] || 0) + 1,
         }));
         setNewMessagesHeader(true);
       }
-    }
+    };
 
-    // For Direct Messages
-    else if (
-      msg.recipient === currentUser.name &&
-      msg.sender !== currentUser.name
-    ) {
-      if (selectedUser && selectedUser.name === msg.sender) {
-        setMessages((prev) => [...prev, msg]); // Add the message to the state
-        setNewMessagesHeader(false);
-      }
-      setUserUnreadCounts((prev) => ({
-        ...prev,
-        [msg.sender]: (prev[msg.sender] || 0) + 1,
-      }));
-      setNewMessagesHeader(true);
-    }
-  };
+    socket.on("receiveMessage", handleReceiveMessage);
 
-  socket.on("receiveMessage", handleReceiveMessage);
-
-  return () => {
-    socket.off("receiveMessage", handleReceiveMessage);
-  };
-}, [selectedGroup, selectedUser, currentUser.name, groups]);
+    return () => {
+      socket.off("receiveMessage", handleReceiveMessage);
+    };
+  }, [selectedGroup, selectedUser, currentUser.name, groups]);
 
   useEffect(() => {
     const fetchGroupUnreadCounts = async () => {
@@ -490,8 +542,6 @@ const sendMessage = async () => {
       newTab.document.body.removeChild(link); // Clean up the link element in the new tab
     };
   };
-
-
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
@@ -613,109 +663,88 @@ const sendMessage = async () => {
                 )}
               </div>
 
-              {/* Admins Section */}
-              {users.filter((u) => u.role === "admin").length > 0 && (
+              {admins.length > 0 && (
                 <>
                   <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2">
                     Administrators
                   </h4>
-                  {users
-                    .filter(
-                      (user) =>
-                        user.role === "admin" &&
-                        user.name !== currentUser.name &&
-                        user.name
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase()) // 👈 add search filter
-                    )
-
-                    .map((admin) => (
-                      <div
-                        key={admin._id}
-                        onClick={() => handleUserClick(admin)}
-                        className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
-                          selectedUser?._id === admin._id
-                            ? "bg-indigo-100 border-indigo-300"
-                            : "bg-white hover:bg-gray-100 border-gray-200"
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                            {admin.name?.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-gray-800 block">
-                              {admin.name}
-                            </span>
-                            {admin.position && (
-                              <span className="text-xs text-gray-500 block">
-                                {admin.position}
-                              </span>
-                            )}
-                          </div>
+                  {admins.map((admin) => (
+                    <div
+                      key={admin._id || admin.userId}
+                      onClick={() => handleUserClick(admin)}
+                      className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+                        selectedUser?._id === admin._id ||
+                        selectedUser?.userId === admin.userId
+                          ? "bg-indigo-100 border-indigo-300"
+                          : "bg-white hover:bg-gray-100 border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                          {admin.name
+                            ? admin.name.charAt(0).toUpperCase()
+                            : admin.userId.charAt(0).toUpperCase()}
                         </div>
-                        {userUnreadCounts[admin.name] > 0 && (
-                          <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                            {userUnreadCounts[admin.name]}
+                        <div>
+                          <span className="text-sm font-medium text-gray-800 block">
+                            {admin.name || admin.userId}{" "}
+                            {/* Fall back to `userId` if name is missing */}
                           </span>
-                        )}
+                          {admin.position && (
+                            <span className="text-xs text-gray-500 block">
+                              {admin.position}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                      {userUnreadCounts[admin.name || admin.userId] > 0 && (
+                        <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {userUnreadCounts[admin.name || admin.userId]}
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </>
               )}
 
-              {/* Regular Users Section */}
-              {users.filter((u) => u.role !== "admin").length > 0 && (
+              {regularUsers.length > 0 && (
                 <>
                   <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2 mt-4">
-                    {currentUser.role === "user"
-                      ? "Colleagues"
-                      : "Team Members"}
+                    Team Members
                   </h4>
-                  {users
-                    .filter(
-                      (user) =>
-                        user.role !== "admin" &&
-                        user.name !== currentUser.name &&
-                        user.name
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase()) // 👈 add search filter
-                    )
-
-                    .map((user) => (
-                      <div
-                        key={user._id}
-                        onClick={() => handleUserClick(user)}
-                        className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
-                          selectedUser?._id === user._id
-                            ? "bg-indigo-100 border-indigo-300"
-                            : "bg-white hover:bg-gray-100 border-gray-200"
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                            {user.name?.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-gray-800 block">
-                              {user.name}
-                            </span>
-                            {user.department && (
-                              <span className="text-xs text-gray-500 block">
-                                {Array.isArray(user.department)
-                                  ? user.department.join(", ")
-                                  : user.department}
-                              </span>
-                            )}
-                          </div>
+                  {regularUsers.map((user) => (
+                    <div
+                      key={user._id || user.userId} // Use `_id` or `userId` to uniquely identify each user
+                      onClick={() => handleUserClick(user)}
+                      className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+                        selectedUser?._id === user._id ||
+                        selectedUser?.userId === user.userId
+                          ? "bg-indigo-100 border-indigo-300"
+                          : "bg-white hover:bg-gray-100 border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                          {user.name?.charAt(0).toUpperCase()}
                         </div>
-                        {userUnreadCounts[user.name] > 0 && (
-                          <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                            {userUnreadCounts[user.name]}
+                        <div>
+                          <span className="text-sm font-medium text-gray-800 block">
+                            {user.name}
                           </span>
-                        )}
+                          {user.position && (
+                            <span className="text-xs text-gray-500 block">
+                              {user.position}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                      {userUnreadCounts[user.name] > 0 && (
+                        <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {userUnreadCounts[user.name]}
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </>
               )}
 
@@ -739,13 +768,11 @@ const sendMessage = async () => {
             : "Select a Group or User to Chat"}{" "} */}
           {/* Default message if none is selected */}
 
-          {
-            selectedUser
-              ? `Chat with ${selectedUser.name}` // If group is selected, show group name
-              : selectedGroup
-              ? `Chat with ${selectedGroup}` // If user is selected, show user name
-              : "Select a Group or User to Chat" // If neither is selected, show default message
-          }
+          {selectedUser
+            ? `Chat with ${selectedUser.name || selectedUser.userId}` // If it's an admin, use `userId`
+            : selectedGroup
+            ? `Chat with ${selectedGroup}`
+            : "Select a Group or User to Chat"}
         </h2>
 
         <div
@@ -792,7 +819,6 @@ const sendMessage = async () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="block relative"
-                              
                             >
                               <img
                                 src={`https://taskbe.sharda.co.in${msg.fileUrl}`}
