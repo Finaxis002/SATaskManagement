@@ -203,80 +203,83 @@ const Inbox = () => {
     }
   };
 
-  const sendMessage = async () => {
-    if (!messageText.trim() && !file) {
-      return; // Nothing to send
-    }
+const sendMessage = async () => {
+  if (!messageText.trim() && !file) {
+    return; // Nothing to send
+  }
 
-    let fileUrl = null;
+  let fileUrl = null;
 
-    if (file) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const uploadRes = await axios.post(
-          "https://taskbe.sharda.co.in/api/upload",
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-
-        console.log("Upload response:", uploadRes);
-
-        if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
-          throw new Error("Upload failed, invalid response from server.");
-        }
-
-        fileUrl = uploadRes.data.fileUrl;
-      } catch (uploadErr) {
-        console.error("❌ File upload failed:", uploadErr);
-        alert(`File upload failed: ${uploadErr.message}`);
-        return;
-      }
-    }
-
-    const newMessage = {
-      sender: currentUser.name,
-      text: messageText.trim(),
-      fileUrl,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      read: false,
-      ...(selectedUser && { recipient: selectedUser.name }),
-      ...(selectedGroup && { group: selectedGroup }),
-    };
+  if (file) {
+    const formData = new FormData();
+    formData.append("file", file);
 
     try {
-      let res;
-      if (selectedUser) {
-        res = await axios.post(
-          `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`,
-          newMessage
-        );
-        socket.emit("sendDirectMessage", {
-          message: res.data,
-          recipient: selectedUser.name,
-        });
-      } else if (selectedGroup) {
-        res = await axios.post(
-          `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(
-            selectedGroup
-          )}`,
-          newMessage
-        );
-        socket.emit("sendMessage", res.data);
+      const uploadRes = await axios.post(
+        "https://taskbe.sharda.co.in/api/upload",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      console.log("Upload response:", uploadRes);
+
+      if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
+        throw new Error("Upload failed, invalid response from server.");
       }
-    } catch (err) {
-      console.error("❌ Failed to send message:", err.message);
-    } finally {
-      setMessageText("");
-      setFile(null);
-      setFilePreview(null);
-      messageInputRef.current?.focus();
+
+      fileUrl = uploadRes.data.fileUrl;
+    } catch (uploadErr) {
+      console.error("❌ File upload failed:", uploadErr);
+      alert(`File upload failed: ${uploadErr.message}`);
+      return;
     }
+  }
+
+  const newMessage = {
+    sender: currentUser.name,
+    text: messageText.trim(),
+    fileUrl,
+    timestamp: new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    read: false,
+    ...(selectedUser && { recipient: selectedUser.name }),  // Individual chat
+    ...(selectedGroup && { group: selectedGroup }),  // Group chat
   };
+
+  // Optimistically update the UI with the new message for both personal and group chat
+  setMessages((prevMessages) => [...prevMessages, newMessage]);
+
+  try {
+    if (selectedUser) {
+      // Send to individual user
+      const res = await axios.post(
+        `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`,
+        newMessage
+      );
+      socket.emit("sendDirectMessage", {
+        message: res.data,
+        recipient: selectedUser.name,
+      });
+    } else if (selectedGroup) {
+      // Send to group
+      const res = await axios.post(
+        `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(selectedGroup)}`,
+        newMessage
+      );
+      socket.emit("sendMessage", res.data);
+    }
+  } catch (err) {
+    console.error("❌ Failed to send message:", err.message);
+  } finally {
+    setMessageText("");
+    setFile(null);
+    setFilePreview(null);
+    messageInputRef.current?.focus();
+  }
+};
+
 
   const handleChange = (e) => {
     const { value } = e.target;
@@ -367,47 +370,47 @@ const Inbox = () => {
     }));
   };
 
-  useEffect(() => {
-    const handleReceiveMessage = (msg) => {
-      console.log("📨 Real-time message received:", msg);
+ useEffect(() => {
+  const handleReceiveMessage = (msg) => {
+    console.log("📨 Real-time message received:", msg);
 
-      // For Group Messages
-      if (msg.group) {
-        if (selectedGroup === msg.group) {
-          setMessages((prev) => [...prev, msg]);
-          setNewMessagesHeader(false); // Remove "New Messages" header
-        } else if (groups.includes(msg.group)) {
-          setGroupUnreadCounts((prev) => ({
-            ...prev,
-            [msg.group]: (prev[msg.group] || 0) + 1,
-          }));
-          setNewMessagesHeader(true);
-        }
-      }
-
-      // For Direct Messages
-      else if (
-        msg.recipient === currentUser.name &&
-        msg.sender !== currentUser.name
-      ) {
-        if (selectedUser && selectedUser.name === msg.sender) {
-          setMessages((prev) => [...prev, msg]);
-          setNewMessagesHeader(false);
-        }
-        setUserUnreadCounts((prev) => ({
+    // For Group Messages
+    if (msg.group) {
+      if (selectedGroup === msg.group) {
+        setMessages((prev) => [...prev, msg]); // Add the message to the state
+        setNewMessagesHeader(false); // Remove "New Messages" header
+      } else if (groups.includes(msg.group)) {
+        setGroupUnreadCounts((prev) => ({
           ...prev,
-          [msg.sender]: (prev[msg.sender] || 0) + 1,
+          [msg.group]: (prev[msg.group] || 0) + 1,
         }));
         setNewMessagesHeader(true);
       }
-    };
+    }
 
-    socket.on("receiveMessage", handleReceiveMessage);
+    // For Direct Messages
+    else if (
+      msg.recipient === currentUser.name &&
+      msg.sender !== currentUser.name
+    ) {
+      if (selectedUser && selectedUser.name === msg.sender) {
+        setMessages((prev) => [...prev, msg]); // Add the message to the state
+        setNewMessagesHeader(false);
+      }
+      setUserUnreadCounts((prev) => ({
+        ...prev,
+        [msg.sender]: (prev[msg.sender] || 0) + 1,
+      }));
+      setNewMessagesHeader(true);
+    }
+  };
 
-    return () => {
-      socket.off("receiveMessage", handleReceiveMessage);
-    };
-  }, [selectedGroup, selectedUser, currentUser.name, groups]);
+  socket.on("receiveMessage", handleReceiveMessage);
+
+  return () => {
+    socket.off("receiveMessage", handleReceiveMessage);
+  };
+}, [selectedGroup, selectedUser, currentUser.name, groups]);
 
   useEffect(() => {
     const fetchGroupUnreadCounts = async () => {
