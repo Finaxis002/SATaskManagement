@@ -16,6 +16,7 @@ import {
   FaMoneyBill,
   FaDochub,
   FaGolfBall,
+  FaWhatsapp
 } from "react-icons/fa";
 
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
@@ -30,31 +31,31 @@ const Sidebar = () => {
   const [leaveAlert, setLeaveAlert] = useState(false);
 
   useEffect(() => {
-  const updateLeaveAlert = () => {
-    const leaveAlertFlag = localStorage.getItem("showLeaveAlert");
-    setLeaveAlert(leaveAlertFlag === "true");
-  };
+    const updateLeaveAlert = () => {
+      const leaveAlertFlag = localStorage.getItem("showLeaveAlert");
+      setLeaveAlert(leaveAlertFlag === "true");
+    };
 
-  // Initial load
-  updateLeaveAlert();
+    // Initial load
+    updateLeaveAlert();
 
-  // Custom event listener for more reliable updates
-  const handleStorageChange = (e) => {
-    if (e.key === "showLeaveAlert") {
-      setLeaveAlert(e.newValue === "true");
-    }
-  };
+    // Custom event listener for more reliable updates
+    const handleStorageChange = (e) => {
+      if (e.key === "showLeaveAlert") {
+        setLeaveAlert(e.newValue === "true");
+      }
+    };
 
-  window.addEventListener("storage", handleStorageChange);
-  
-  // Also listen to custom events if localStorage isn't reliable
-  window.addEventListener("leaveAlertUpdate", updateLeaveAlert);
+    window.addEventListener("storage", handleStorageChange);
 
-  return () => {
-    window.removeEventListener("storage", handleStorageChange);
-    window.removeEventListener("leaveAlertUpdate", updateLeaveAlert);
-  };
-}, []);
+    // Also listen to custom events if localStorage isn't reliable
+    window.addEventListener("leaveAlertUpdate", updateLeaveAlert);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("leaveAlertUpdate", updateLeaveAlert);
+    };
+  }, []);
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
@@ -188,7 +189,7 @@ const Sidebar = () => {
             }
             label="Leave Management"
             to="/leavemanagement"
-             onClick={resetLeaveAlert}
+            onClick={resetLeaveAlert}
           />
         )}
 
@@ -230,6 +231,12 @@ const Sidebar = () => {
             to="/viewinvoicewithotp"
           />
         )}
+
+        <SidebarItem
+          icon={<FaWhatsapp className="text-xl" style={{ color: "#25D366" }} />}
+          label="WhatsApp"
+          to="/whatsapp"
+        />
       </div>
 
       {/* Footer */}

@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "vite preview --port $PORT"
+    "start": "vite preview --port $PORT",
+    "stop": "kill $(lsof -t -i:1100)"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -36,8 +37,10 @@
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
+    "lucide-react": "^0.518.0",
     "mdb-react-ui-kit": "^9.0.0",
     "moment-timezone": "^0.5.48",
+    "qrcode.react": "^4.2.0",
     "react": "19.1.0",
     "react-calendar": "^5.1.0",
     "react-date-range": "^2.0.1",

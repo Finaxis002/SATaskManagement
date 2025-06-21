@@ -55,7 +55,7 @@ const Completed = () => {
   });
 
   return (
-    <div className="p-6 h-[90vh] w-[180vh]  overflow-auto">
+    <div className="py-4 px-1 h-[90vh] w-[200vh]  overflow-auto">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:gap-4">
         {/* Filter by Client */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">

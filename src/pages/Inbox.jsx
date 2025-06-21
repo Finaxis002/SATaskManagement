@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "../redux/userSlice";
-import { FaTrashAlt, FaUsers } from "react-icons/fa";
+import { FaFile, FaPaperclip, FaTrashAlt, FaUsers } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
@@ -28,6 +28,8 @@ const Inbox = () => {
   const [admins, setAdmins] = useState([]);
   const [regularUsers, setRegularUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [file, setFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null); // new state for preview URL
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
@@ -57,15 +59,11 @@ const Inbox = () => {
     const fetchUserDepartments = async () => {
       try {
         if (currentUser.role === "admin") {
-          const res = await axios.get(
-            "https://taskbe.sharda.co.in/api/departments"
-          );
+          const res = await axios.get("https://taskbe.sharda.co.in/api/departments");
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
-          const res = await axios.get(
-            "https://taskbe.sharda.co.in/api/employees"
-          );
+          const res = await axios.get("https://taskbe.sharda.co.in/api/employees");
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
           );
@@ -105,9 +103,7 @@ const Inbox = () => {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const res = await axios.get(
-          "https://taskbe.sharda.co.in/api/employees"
-        );
+        const res = await axios.get("https://taskbe.sharda.co.in/api/employees");
         console.log("Fetched users:", res.data);
 
         // Separate admins and regular users
@@ -182,13 +178,53 @@ const Inbox = () => {
     fetchMessages();
   }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+
+      // Generate a preview URL
+      const previewURL = URL.createObjectURL(selectedFile);
+      setFilePreview(previewURL);
+    }
+  };
+
   const sendMessage = async () => {
-    const trimmedMessage = messageText.trim();
-    if (!trimmedMessage) return;
+    if (!messageText.trim() && !file) {
+      return; // Nothing to send
+    }
+
+    let fileUrl = null;
+
+    if (file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const uploadRes = await axios.post(
+          "https://taskbe.sharda.co.in/api/upload",
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+
+        console.log("Upload response:", uploadRes);
+
+        if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
+          throw new Error("Upload failed, invalid response from server.");
+        }
+
+        fileUrl = uploadRes.data.fileUrl;
+      } catch (uploadErr) {
+        console.error("❌ File upload failed:", uploadErr);
+        alert(`File upload failed: ${uploadErr.message}`);
+        return;
+      }
+    }
 
     const newMessage = {
       sender: currentUser.name,
-      text: trimmedMessage,
+      text: messageText.trim(),
+      fileUrl,
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -196,7 +232,6 @@ const Inbox = () => {
       read: false,
       ...(selectedUser && { recipient: selectedUser.name }),
       ...(selectedGroup && { group: selectedGroup }),
-      isDirectMessage: !!selectedUser,
     };
 
     try {
@@ -219,19 +254,12 @@ const Inbox = () => {
         );
         socket.emit("sendMessage", res.data);
       }
-
-      // Push the message to chat and clear input
-      setMessages((prev) => [...prev, res.data]);
     } catch (err) {
       console.error("❌ Failed to send message:", err.message);
     } finally {
-      // Always clear the input
-      setMessageText("");
-
-      // Optional: Refocus
-      setTimeout(() => {
-        messageInputRef.current?.focus();
-      }, 0);
+      setFile(null);
+      setFilePreview(null);
+      messageInputRef.current?.focus();
     }
   };
 
@@ -250,12 +278,9 @@ const Inbox = () => {
       }
 
       // Then make the API call
-      const res = await axios.put(
-        "https://taskbe.sharda.co.in/api/mark-read",
-        {
-          identifier,
-        }
-      );
+      const res = await axios.put("https://taskbe.sharda.co.in/api/mark-read", {
+        identifier,
+      });
 
       // Emit socket event after successful API call
       socket.emit("markRead", { identifier });
@@ -327,53 +352,43 @@ const Inbox = () => {
     }));
   };
 
+useEffect(() => {
+  const handleReceiveMessage = (msg) => {
+    console.log("📨 Real-time message received:", msg);
 
-
-  useEffect(() => {
-    const handleReceiveMessage = (msg) => {
-      console.log("📨 Real-time message received:", msg);
-
-      // For Group Messages
-      if (msg.group) {
-        // Only process if this is the currently selected group
-        if (selectedGroup === msg.group) {
-          setMessages((prev) => [...prev, msg]);
-        }
-
-        // Update unread counts if needed
-        if (groups.includes(msg.group)) {
-          setGroupUnreadCounts((prev) => {
-            // If the currently selected group is not this group, increment the badge
-            if (selectedGroup !== msg.group) {
-              return {
-                ...prev,
-                [msg.group]: (prev[msg.group] || 0) + 1,
-              };
-            } else {
-              // Still show message in chat (handled above), but don’t increment unread
-              return prev;
-            }
-          });
-        }
-      }
-      // For Direct Messages
-      else if (
-        msg.recipient === currentUser.name &&
-        msg.sender !== currentUser.name
-      ) {
-        if (selectedUser && selectedUser.name === msg.sender) {
-          setMessages((prev) => [...prev, msg]);
-        }
-        setUserUnreadCounts((prev) => ({
+    // For Group Messages
+    if (msg.group) {
+      if (selectedGroup === msg.group) {
+        setMessages((prev) => [...prev, msg]);
+      } else if (groups.includes(msg.group)) {
+        setGroupUnreadCounts((prev) => ({
           ...prev,
-          [msg.sender]: (prev[msg.sender] || 0) + 1,
+          [msg.group]: (prev[msg.group] || 0) + 1,
         }));
       }
-    };
+    }
 
-    socket.on("receiveMessage", handleReceiveMessage);
-    return () => socket.off("receiveMessage", handleReceiveMessage);
-  }, [selectedGroup, selectedUser, currentUser.name, groups]);
+    // For Direct Messages
+    else if (
+      msg.recipient === currentUser.name &&
+      msg.sender !== currentUser.name
+    ) {
+      if (selectedUser && selectedUser.name === msg.sender) {
+        setMessages((prev) => [...prev, msg]);
+      }
+      setUserUnreadCounts((prev) => ({
+        ...prev,
+        [msg.sender]: (prev[msg.sender] || 0) + 1,
+      }));
+    }
+  };
+
+  socket.on("receiveMessage", handleReceiveMessage);
+
+  return () => {
+    socket.off("receiveMessage", handleReceiveMessage);
+  };
+}, [selectedGroup, selectedUser, currentUser.name, groups]);
 
   useEffect(() => {
     const fetchGroupUnreadCounts = async () => {
@@ -433,24 +448,6 @@ const Inbox = () => {
     console.log("Selected User:", selectedUser);
   }, [selectedGroup, selectedUser]);
 
-  socket.on("receiveMessage", (msg) => {
-    // Always fetch fresh count after any group message
-    if (msg.group && groups.includes(msg.group)) {
-      axios
-        .get("/api/group-unread-counts", {
-          params: { name: currentUser.name },
-        })
-        .then((res) => {
-          setGroupUnreadCounts(res.data.groupUnreadCounts || {});
-        })
-        .catch((err) => {
-          console.error(
-            "❌ Failed to refetch group unread counts:",
-            err.message
-          );
-        });
-    }
-  });
 
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
@@ -742,6 +739,34 @@ const Inbox = () => {
                           {msg.timestamp}
                         </span>
                       </div>
+                      {msg.fileUrl && (
+                        <div className="my-2">
+                          {msg.fileUrl.match(/\.(jpeg|jpg|png|gif)$/i) ? (
+                            <a
+                              href={`https://taskbe.sharda.co.in${msg.fileUrl}`}
+                              download
+                              target="_blank"
+                            >
+                              {console.log("fileUrl is", msg.fileUrl)}
+                              <img
+                                src={`https://taskbe.sharda.co.in${msg.fileUrl}`}
+                                alt="attachment"
+                                className="max-w-[200px] rounded"
+                              />
+                            </a>
+                          ) : (
+                            <a
+                              href={`https://taskbe.sharda.co.in${msg.fileUrl}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 underline flex items-center gap-1"
+                              download
+                            >
+                              <FaFile /> Download File
+                            </a>
+                          )}
+                        </div>
+                      )}
                       <p className="whitespace-pre-wrap text-sm leading-relaxed">
                         {msg.text}
                       </p>
@@ -839,6 +864,46 @@ const Inbox = () => {
             )}
 
             <input
+              type="file"
+              className="hidden"
+              id="fileInput"
+              onChange={handleFileChange}
+            />
+
+            <label
+              htmlFor="fileInput"
+              className="ml-2 cursor-pointer text-indigo-600"
+            >
+              <FaPaperclip />
+            </label>
+
+            {filePreview && (
+              <div className="absolute -top-24 left-0 bg-gray-100 border p-2 rounded-lg shadow">
+                {file.type.startsWith("image/") ? (
+                  <img
+                    src={filePreview}
+                    alt="Preview"
+                    className="w-16 h-16 object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <FaFile className="text-gray-600 text-xl" />
+                    <span className="text-sm text-gray-700">{file.name}</span>
+                  </div>
+                )}
+                <button
+                  className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1"
+                  onClick={() => {
+                    setFile(null);
+                    setFilePreview(null);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            <input
               type="text"
               ref={messageInputRef}
               value={messageText} // Bind the input to the state
@@ -876,3 +941,7 @@ const Inbox = () => {
 };
 
 export default Inbox;
+
+
+
+
