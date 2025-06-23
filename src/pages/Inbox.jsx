@@ -3,16 +3,6 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "../redux/userSlice";
-import {
-  FaFile,
-  FaPaperclip,
-  FaTrashAlt,
-  FaUsers,
-  FaDownload,
-  FaPaperPlane,
-  FaTimes,
-} from "react-icons/fa";
-import EmojiPicker from "emoji-picker-react";
 import ChatSidebar from "../Components/Inbox/ChatSidebar";
 import ChatMessages from "../Components/Inbox/ChatMessages";
 import MessageInput from "../Components/Inbox/MessageInput";
@@ -37,8 +27,6 @@ const Inbox = () => {
   const [admins, setAdmins] = useState([]);
   const [regularUsers, setRegularUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [file, setFile] = useState(null);
-  const [filePreview, setFilePreview] = useState(null); // new state for preview URL
   const [newMessagesHeader, setNewMessagesHeader] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
@@ -127,32 +115,6 @@ const Inbox = () => {
   useEffect(() => {
     dispatch(fetchUsers());
   }, [dispatch]);
-
-  // useEffect(() => {
-  //   const fetchAllUsers = async () => {
-  //     try {
-  //       const res = await axios.get(
-  //         "https://taskbe.sharda.co.in/api/employees"
-  //       );
-  //       console.log("Fetched users:", res.data);
-
-  //       // Separate admins and regular users
-  //       const adminUsers = res.data.filter((user) => user.role === "admin");
-  //       const nonAdminUsers = res.data.filter((user) => user.role !== "admin");
-
-  //       setUsers(res.data);
-  //       setAdmins(adminUsers);
-  //       setRegularUsers(nonAdminUsers);
-  //     } catch (err) {
-  //       console.error("❌ Failed to fetch users:", err.message);
-  //       setUsers([]);
-  //       setAdmins([]);
-  //       setRegularUsers([]);
-  //     }
-  //   };
-
-  //   fetchAllUsers();
-  // }, []);
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -792,7 +754,8 @@ const Inbox = () => {
           setFilePreviews={setFilePreviews}
           setUploadProgress={setUploadProgress}
           setShowEmojiPicker={setShowEmojiPicker}
-          onEmojiClick ={onEmojiClick }
+          onEmojiClick={onEmojiClick}
+          filePreviews={filePreviews}
         />
       </div>
     </div>

@@ -1,5 +1,5 @@
-import React, {useState, useEffect} from "react";
-import { FaPaperclip, FaPaperPlane , FaFile , FaTimes} from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { FaPaperclip, FaPaperPlane, FaFile, FaTimes } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 
 const MessageInput = ({
@@ -14,13 +14,12 @@ const MessageInput = ({
   sendMessage,
   uploadProgress,
   setDragActive,
- setFiles,
-setFilePreviews,
-setUploadProgress,
-setShowEmojiPicker,
-onEmojiClick 
+  setFiles,
+  setFilePreviews,
+  setUploadProgress,
+  setShowEmojiPicker,
+  onEmojiClick,
 }) => {
-  
   return (
     <div
       className={`relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto
@@ -118,67 +117,7 @@ onEmojiClick
           <FaPaperclip />
         </label>
 
-        {/* {filePreview && (
-              <div className="absolute -top-20 left-0 bg-white border border-gray-200 p-3 rounded-lg shadow-md w-64">
-                <div className="flex items-start gap-3">
-                  {file.type.startsWith("image/") ? (
-                    <div className="relative">
-                      <img
-                        src={filePreview}
-                        alt="Preview"
-                        className="w-12 h-12 object-cover rounded-md"
-                      />
-                      {uploadProgress > 0 && uploadProgress < 100 && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gray-200 rounded-full h-1.5">
-                          <div
-                            className="bg-blue-500 h-1.5 rounded-full"
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="bg-blue-50 p-2 rounded-md">
-                      <FaFile className="text-blue-600 text-xl" />
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {Math.round(file.size / 1024)} KB
-                    </p>
-                    {uploadProgress > 0 && (
-                      <div className="mt-1">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>Uploading...</span>
-                          <span>{uploadProgress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div
-                            className="bg-blue-600 h-1.5 rounded-full"
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                    onClick={() => {
-                      setFile(null);
-                      setFilePreview(null);
-                      setUploadProgress(0);
-                    }}
-                  >
-                    <FaTimes className="text-sm" />
-                  </button>
-                </div>
-              </div>
-            )} */}
+      
 
         {files.length > 0 && (
           <div className="absolute bottom-14 left-0 bg-white border border-gray-200 p-3 rounded-lg shadow-md w-80 z-50">
