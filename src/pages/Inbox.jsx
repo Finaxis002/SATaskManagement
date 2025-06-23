@@ -10,6 +10,7 @@ import {
   FaUsers,
   FaDownload,
   FaPaperPlane,
+  FaTimes
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -39,6 +40,13 @@ const Inbox = () => {
   const [filePreview, setFilePreview] = useState(null); // new state for preview URL
   const [newMessagesHeader, setNewMessagesHeader] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+
+  //download pdf
+  const [loader, setLoader] = useState(false);
+  const [error, setError] = useState("");
+
+  //file upload progresss
+  const [uploadProgress, setUploadProgress] = useState(null);
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
@@ -257,6 +265,31 @@ const Inbox = () => {
 
     let fileUrl = null;
 
+    // if (file) {
+    //   const formData = new FormData();
+    //   formData.append("file", file);
+
+    //   try {
+    //     const uploadRes = await axios.post(
+    //       "https://taskbe.sharda.co.in/api/upload",
+    //       formData,
+    //       { headers: { "Content-Type": "multipart/form-data" } }
+    //     );
+
+    //     console.log("Upload response:", uploadRes);
+
+    //     if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
+    //       throw new Error("Upload failed, invalid response from server.");
+    //     }
+
+    //     fileUrl = uploadRes.data.fileUrl;
+    //   } catch (uploadErr) {
+    //     console.error("❌ File upload failed:", uploadErr);
+    //     alert(`File upload failed: ${uploadErr.message}`);
+    //     return;
+    //   }
+    // }
+
     if (file) {
       const formData = new FormData();
       formData.append("file", file);
@@ -265,10 +298,21 @@ const Inbox = () => {
         const uploadRes = await axios.post(
           "https://taskbe.sharda.co.in/api/upload",
           formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+            // 👇 Here's the upload progress callback
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                const percent = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total
+                );
+                setUploadProgress(percent);
+              }
+            },
+          }
         );
 
-        console.log("Upload response:", uploadRes);
+        setUploadProgress(null); // Reset after upload
 
         if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
           throw new Error("Upload failed, invalid response from server.");
@@ -276,6 +320,7 @@ const Inbox = () => {
 
         fileUrl = uploadRes.data.fileUrl;
       } catch (uploadErr) {
+        setUploadProgress(null); // Reset on error
         console.error("❌ File upload failed:", uploadErr);
         alert(`File upload failed: ${uploadErr.message}`);
         return;
@@ -542,6 +587,107 @@ const Inbox = () => {
       link.click(); // Trigger the download
       newTab.document.body.removeChild(link); // Clean up the link element in the new tab
     };
+  };
+
+  const downloadPdf = (fileUrl) => {
+    setLoader(true);
+    setError("");
+
+    const token = localStorage.getItem("tokenLocal");
+    if (token) {
+      const axiosConfig = {
+        responseType: "arraybuffer",
+        headers: {
+          Accept: "application/pdf",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      axios
+        .get(`https://taskbe.sharda.co.in${fileUrl}`, axiosConfig)
+        .then((response) => {
+          setLoader(false);
+
+          // Extract file name from URL
+          let fileName = "example.pdf";
+          if (fileUrl) {
+            const parts = fileUrl.split("/");
+            fileName = parts[parts.length - 1] || fileName;
+          }
+
+          const url = window.URL.createObjectURL(
+            new Blob([response.data], { type: "application/pdf" })
+          );
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", fileName);
+          document.body.appendChild(link);
+          link.click();
+
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+        })
+        .catch((error) => {
+          setLoader(false);
+          setError(error.message);
+        });
+    }
+  };
+
+  const downloadImage = (fileUrl) => {
+    setLoader(true);
+    setError("");
+
+    const token = localStorage.getItem("tokenLocal");
+    if (token) {
+      // Try to guess image MIME type from file extension
+      let mimeType = "image/jpeg"; // default
+      if (fileUrl.match(/\.png$/i)) mimeType = "image/png";
+      else if (fileUrl.match(/\.gif$/i)) mimeType = "image/gif";
+      else if (fileUrl.match(/\.webp$/i)) mimeType = "image/webp";
+      else if (fileUrl.match(/\.svg$/i)) mimeType = "image/svg+xml";
+
+      const axiosConfig = {
+        responseType: "arraybuffer",
+        headers: {
+          Accept: mimeType,
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      axios
+        .get(`https://taskbe.sharda.co.in${fileUrl}`, axiosConfig)
+        .then((response) => {
+          setLoader(false);
+
+          // Extract file name from URL (fallback: 'image')
+          let fileName = "image";
+          if (fileUrl) {
+            const parts = fileUrl.split("/");
+            fileName = parts[parts.length - 1] || fileName;
+          }
+
+          // Create Blob and download
+          const url = window.URL.createObjectURL(
+            new Blob([response.data], { type: mimeType })
+          );
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", fileName);
+          document.body.appendChild(link);
+          link.click();
+
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+        })
+        .catch((error) => {
+          setLoader(false);
+          setError(error.message);
+        });
+    }
   };
 
   return (
@@ -816,7 +962,7 @@ const Inbox = () => {
                           {/* Image File */}
                           {msg.fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i) ? (
                             <a
-                              onClick={() => handleFileDownload(msg.fileUrl)}
+                              onClick={() => downloadImage(msg.fileUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="block relative"
@@ -833,7 +979,7 @@ const Inbox = () => {
                             </a>
                           ) : msg.fileUrl.match(/\.pdf$/i) ? (
                             <a
-                              onClick={() => handleFileDownload(msg.fileUrl)}
+                              onClick={() => downloadPdf(msg.fileUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center justify-between gap-3 bg-white  text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs"
@@ -939,7 +1085,7 @@ const Inbox = () => {
                         {/* Image File */}
                         {msg.fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i) ? (
                           <a
-                            onClick={() => handleFileDownload(msg.fileUrl)}
+                            onClick={() => downloadImage(msg.fileUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block relative"
@@ -956,7 +1102,7 @@ const Inbox = () => {
                           </a>
                         ) : msg.fileUrl.match(/\.pdf$/i) ? (
                           <a
-                            onClick={() => handleFileDownload(msg.fileUrl)}
+                            onClick={() => downloadPdf(msg.fileUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-between gap-3 bg-white  text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs"
@@ -1108,7 +1254,9 @@ const Inbox = () => {
               <FaPaperclip />
             </label>
 
-            {filePreview && (
+            
+
+            {/* {filePreview && (
               <div className="absolute -top-24 left-0 bg-gray-100 border p-2 rounded-lg shadow">
                 {file.type.startsWith("image/") ? (
                   <img
@@ -1132,7 +1280,71 @@ const Inbox = () => {
                   ✕
                 </button>
               </div>
-            )}
+            )} */}
+
+
+{filePreview && (
+  <div className="absolute -top-20 left-0 bg-white border border-gray-200 p-3 rounded-lg shadow-md w-64">
+    <div className="flex items-start gap-3">
+      {file.type.startsWith("image/") ? (
+        <div className="relative">
+          <img
+            src={filePreview}
+            alt="Preview"
+            className="w-12 h-12 object-cover rounded-md"
+          />
+          {uploadProgress > 0 && uploadProgress < 100 && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-blue-500 h-1.5 rounded-full" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-blue-50 p-2 rounded-md">
+          <FaFile className="text-blue-600 text-xl" />
+        </div>
+      )}
+      
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 truncate">
+          {file.name}
+        </p>
+        <p className="text-xs text-gray-500">
+          {Math.round(file.size / 1024)} KB
+        </p>
+        {uploadProgress > 0 && (
+          <div className="mt-1">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Uploading...</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-blue-600 h-1.5 rounded-full" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <button
+        className="text-gray-400 hover:text-gray-600 transition-colors"
+        onClick={() => {
+          setFile(null);
+          setFilePreview(null);
+          setUploadProgress(0);
+        }}
+      >
+        <FaTimes className="text-sm" />
+      </button>
+    </div>
+  </div>
+)}
+            
 
             <input
               type="text"
