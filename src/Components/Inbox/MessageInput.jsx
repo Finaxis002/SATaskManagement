@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from "react";
 import { FaPaperclip, FaPaperPlane , FaFile , FaTimes} from "react-icons/fa";
+import EmojiPicker from "emoji-picker-react";
 
 const MessageInput = ({
   dragActive,
@@ -16,7 +17,8 @@ const MessageInput = ({
  setFiles,
 setFilePreviews,
 setUploadProgress,
-
+setShowEmojiPicker,
+onEmojiClick 
 }) => {
   
   return (
