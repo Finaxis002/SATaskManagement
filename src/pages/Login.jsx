@@ -33,7 +33,10 @@ const Login = () => {
 
       // ✅ Store to localStorage
       localStorage.setItem("authToken", token);
-      localStorage.setItem("name", name);
+      const normalizedName =
+        name && name.toLowerCase() === "admin" ? "admin" : name;
+      localStorage.setItem("name", normalizedName);
+
       localStorage.setItem("role", role);
       localStorage.setItem("userId", email);
       localStorage.setItem("department", department); // ✅ Save department
@@ -42,7 +45,7 @@ const Login = () => {
       localStorage.setItem("tokenLocal", token);
 
       // ✅ Dispatch to Redux
-      dispatch(setAuth({ name, role, userId: email }));
+      dispatch(setAuth({ name: normalizedName, role, userId: email }));
 
       // ✅ Redirect to dashboard or home
       window.location.href = "/";

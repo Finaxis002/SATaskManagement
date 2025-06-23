@@ -18,10 +18,16 @@ import {
   FaGolfBall,
   FaWhatsapp
 } from "react-icons/fa";
-
+import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
 import icon from "/icon.png";
+
+
+const socket = io("https://taskbe.sharda.co.in", {
+  withCredentials: true,
+});
+
 
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
