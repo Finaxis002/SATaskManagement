@@ -13,8 +13,9 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
+import ChatSidebar from "../Components/Inbox/ChatSidebar";
+import ChatMessages from "../Components/Inbox/ChatMessages";
+import MessageInput from "../Components/Inbox/MessageInput";
 
 // Assume socket.io client setup
 const socket = io("https://taskbe.sharda.co.in", {
@@ -46,13 +47,18 @@ const Inbox = () => {
   const [error, setError] = useState("");
   const [downloadProgress, setDownloadProgress] = useState(null);
 
-  //file upload progresss
-  const [uploadProgress, setUploadProgress] = useState(null);
+  // Replace single file state with arrays
+  const [files, setFiles] = useState([]); // Array of File objects
+  const [filePreviews, setFilePreviews] = useState([]); // Array of preview URLs
+  const [uploadProgress, setUploadProgress] = useState([]); // Array of progress numbers
+
+  //recentUserChat
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
     department: localStorage.getItem("department"),
     role: localStorage.getItem("role"),
+    userId: localStorage.getItem("userId"), // add this if you use userId elsewhere
   };
 
   // Add this function to handle emoji selection
@@ -201,6 +207,61 @@ const Inbox = () => {
     }
   };
 
+  // useEffect(() => {
+  //   const fetchMessages = async () => {
+  //     try {
+  //       if (selectedUser && selectedUser.name) {
+  //         const res = await axios.get(
+  //           `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`
+  //         );
+  //         const currentId = (currentUser.userId || currentUser.name)
+  //           .trim()
+  //           .toLowerCase();
+  //         const selectedId = (selectedUser.userId || selectedUser.name)
+  //           .trim()
+  //           .toLowerCase();
+
+  //         const filteredMessages = res.data.messages.filter((msg) => {
+  //           const trimmedSender = msg.sender
+  //             ? msg.sender.trim().toLowerCase()
+  //             : "";
+  //           const trimmedRecipient = msg.recipient
+  //             ? msg.recipient.trim().toLowerCase()
+  //             : "";
+  //           const trimmedLoggedInUser = (currentUser.userId || currentUser.name)
+  //             .trim()
+  //             .toLowerCase();
+
+  //           const isPersonalMessage =
+  //             (trimmedSender === trimmedLoggedInUser ||
+  //               trimmedRecipient === trimmedLoggedInUser) &&
+  //             (msg.group === undefined || msg.group === "");
+  //           return (
+  //             isPersonalMessage && (msg.group === undefined || msg.group === "")
+  //           );
+  //         });
+
+  //         const sortedMessages = [...filteredMessages].sort((a, b) => {
+  //           const timeA = new Date(`1970/01/01 ${a.timestamp}`);
+  //           const timeB = new Date(`1970/01/01 ${b.timestamp}`);
+  //           return timeA - timeB; // oldest to newest
+  //         });
+  //         setMessages(sortedMessages);
+  //       } else if (selectedGroup) {
+  //         const encodedGroup = encodeURIComponent(selectedGroup);
+  //         const res = await axios.get(
+  //           `https://taskbe.sharda.co.in/api/messages/${encodedGroup}`
+  //         );
+  //         setMessages(res.data.messages.reverse()); // No reverse here
+  //       }
+  //     } catch (err) {
+  //       console.error("❌ Error fetching messages:", err.message);
+  //     }
+  //   };
+
+  //   fetchMessages();
+  // }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
+
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -249,129 +310,105 @@ const Inbox = () => {
   }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(selectedFiles);
 
-      // Generate a preview URL
-      const previewURL = URL.createObjectURL(selectedFile);
-      setFilePreview(previewURL);
-    }
+    // Generate previews for each file
+    const previews = selectedFiles.map((file) => URL.createObjectURL(file));
+    setFilePreviews(previews);
+
+    // Reset progress (set to 0 for each file)
+    setUploadProgress(selectedFiles.map(() => 0));
   };
 
   const sendMessage = async () => {
-    if (!messageText.trim() && !file) {
+    if (!messageText.trim() && files.length === 0) {
       return; // Nothing to send
     }
 
-    let fileUrl = null;
+    let fileUrls = [];
 
-    // if (file) {
-    //   const formData = new FormData();
-    //   formData.append("file", file);
+    if (files.length > 0) {
+      // For each file, upload separately and collect URL
+      fileUrls = await Promise.all(
+        files.map((file, idx) => {
+          const formData = new FormData();
+          formData.append("file", file);
 
-    //   try {
-    //     const uploadRes = await axios.post(
-    //       "https://taskbe.sharda.co.in/api/upload",
-    //       formData,
-    //       { headers: { "Content-Type": "multipart/form-data" } }
-    //     );
-
-    //     console.log("Upload response:", uploadRes);
-
-    //     if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
-    //       throw new Error("Upload failed, invalid response from server.");
-    //     }
-
-    //     fileUrl = uploadRes.data.fileUrl;
-    //   } catch (uploadErr) {
-    //     console.error("❌ File upload failed:", uploadErr);
-    //     alert(`File upload failed: ${uploadErr.message}`);
-    //     return;
-    //   }
-    // }
-
-    if (file) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const uploadRes = await axios.post(
-          "https://taskbe.sharda.co.in/api/upload",
-          formData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-            // 👇 Here's the upload progress callback
-            onUploadProgress: (progressEvent) => {
-              if (progressEvent.total) {
-                const percent = Math.round(
-                  (progressEvent.loaded * 100) / progressEvent.total
-                );
-                setUploadProgress(percent);
-              }
-            },
-          }
-        );
-
-        setUploadProgress(null); // Reset after upload
-
-        if (!uploadRes || !uploadRes.data || !uploadRes.data.fileUrl) {
-          throw new Error("Upload failed, invalid response from server.");
-        }
-
-        fileUrl = uploadRes.data.fileUrl;
-      } catch (uploadErr) {
-        setUploadProgress(null); // Reset on error
-        console.error("❌ File upload failed:", uploadErr);
-        alert(`File upload failed: ${uploadErr.message}`);
-        return;
-      }
+          return axios
+            .post("https://taskbe.sharda.co.in/api/upload", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+              onUploadProgress: (progressEvent) => {
+                if (progressEvent.total) {
+                  const percent = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                  );
+                  setUploadProgress((prev) => {
+                    const updated = [...prev];
+                    updated[idx] = percent;
+                    return updated;
+                  });
+                }
+              },
+            })
+            .then((res) => res.data.fileUrl)
+            .catch((uploadErr) => {
+              setUploadProgress((prev) => {
+                const updated = [...prev];
+                updated[idx] = 0;
+                return updated;
+              });
+              alert(`File upload failed: ${uploadErr.message}`);
+              return null;
+            });
+        })
+      );
+      // Remove any nulls (failed uploads)
+      fileUrls = fileUrls.filter(Boolean);
     }
 
+    // or send separate messages for each file. Here, we'll send one message.
     const newMessage = {
-      sender: currentUser.name,
+      sender: currentUser.name === "Admin" ? "admin" : currentUser.name,
       text: messageText.trim(),
-      fileUrl,
+      fileUrls, // <-- array of all file URLs
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       }),
       read: false,
-      ...(selectedUser && { recipient: selectedUser.name }), // Individual chat
+      ...(selectedUser && {
+        recipient: selectedUser.userId || selectedUser.name,
+      }),
       ...(selectedGroup && { group: selectedGroup }), // Group chat
     };
 
-    // Optimistically update the UI with the new message for both personal and group chat
+    // Optimistically update UI (for each file, if you want per-file message)
     if (selectedUser) {
-      setMessages((prevMessages) => [...prevMessages, newMessage]); // Personal Chat Update
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
     }
+
     try {
       if (selectedUser) {
-        // Send to individual user
-        const res = await axios.post(
+        await axios.post(
           `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`,
           newMessage
         );
-        socket.emit("sendDirectMessage", {
-          message: res.data,
-          recipient: selectedUser.name,
-        });
       } else if (selectedGroup) {
-        // Send to group
-        const res = await axios.post(
+        await axios.post(
           `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(
             selectedGroup
           )}`,
           newMessage
         );
-        socket.emit("sendMessage", res.data);
       }
     } catch (err) {
       console.error("❌ Failed to send message:", err.message);
     } finally {
       setMessageText("");
-      setFile(null);
-      setFilePreview(null);
+      setFiles([]);
+      setFilePreviews([]);
+      setUploadProgress([]);
       messageInputRef.current?.focus();
     }
   };
@@ -590,52 +627,6 @@ const Inbox = () => {
     };
   };
 
-  // const downloadPdf = (fileUrl) => {
-  //   setLoader(true);
-  //   setError("");
-
-  //   const token = localStorage.getItem("tokenLocal");
-  //   if (token) {
-  //     const axiosConfig = {
-  //       responseType: "arraybuffer",
-  //       headers: {
-  //         Accept: "application/pdf",
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     };
-  //     axios
-  //       .get(`https://taskbe.sharda.co.in${fileUrl}`, axiosConfig)
-  //       .then((response) => {
-  //         setLoader(false);
-
-  //         // Extract file name from URL
-  //         let fileName = "example.pdf";
-  //         if (fileUrl) {
-  //           const parts = fileUrl.split("/");
-  //           fileName = parts[parts.length - 1] || fileName;
-  //         }
-
-  //         const url = window.URL.createObjectURL(
-  //           new Blob([response.data], { type: "application/pdf" })
-  //         );
-  //         const link = document.createElement("a");
-  //         link.href = url;
-  //         link.setAttribute("download", fileName);
-  //         document.body.appendChild(link);
-  //         link.click();
-
-  //         setTimeout(() => {
-  //           document.body.removeChild(link);
-  //           window.URL.revokeObjectURL(url);
-  //         }, 100);
-  //       })
-  //       .catch((error) => {
-  //         setLoader(false);
-  //         setError(error.message);
-  //       });
-  //   }
-  // };
-
   const downloadPdf = (fileUrl) => {
     setLoader(true);
     setError("");
@@ -752,684 +743,56 @@ const Inbox = () => {
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
       {/* Left column for groups */}
-      <div className="w-1/4 bg-white p-5 rounded-xl shadow-lg border border-gray-200 flex flex-col h-full">
-        {/* Toggle Buttons for Groups and Users/Personal Chat */}
-        <div className="flex gap-4 mb-4 relative">
-          {/* Groups Button */}
-          <button
-            onClick={() => setShowGroups(true)}
-            className={`relative px-4 py-2 text-sm rounded-lg ${
-              showGroups ? "bg-indigo-100" : "bg-gray-200"
-            }`}
-          >
-            Groups
-            {Object.values(groupUnreadCounts).reduce(
-              (acc, count) => acc + count,
-              0
-            ) > 0 && (
-              <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
-                {Object.values(groupUnreadCounts).reduce(
-                  (acc, count) => acc + count,
-                  0
-                )}
-              </span>
-            )}
-          </button>
-
-          {/* Personal Chat/Users Button */}
-          <button
-            onClick={() => setShowGroups(false)}
-            className={`relative px-4 py-2 text-sm rounded-lg ${
-              !showGroups ? "bg-indigo-100" : "bg-gray-200"
-            }`}
-          >
-            {currentUser.role === "user" ? "Personal Chat" : "Users"}
-            {Object.values(userUnreadCounts).reduce(
-              (acc, count) => acc + count,
-              0
-            ) > 0 && (
-              <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
-                {Object.values(userUnreadCounts).reduce(
-                  (acc, count) => acc + count,
-                  0
-                )}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Groups/Users Section */}
-        {showGroups ? (
-          <div className="flex-1 overflow-auto mb-6">
-            <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">
-              {currentUser.role === "user" ? "Your Groups" : "Groups"}
-            </h3>
-            {groups.length === 0 ? (
-              <p className="text-center text-gray-400 italic">
-                No chat group assigned.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {groups.map((group) => (
-                  <li
-                    key={group}
-                    onClick={() => handleGroupClick(group)}
-                    className={`relative cursor-pointer p-3 rounded-lg flex justify-between items-center transition-all duration-200 border ${
-                      selectedGroup === group
-                        ? "bg-indigo-100 border-indigo-300"
-                        : "hover:bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex flex-row items-center gap-2">
-                      <span className="text-indigo-600 flex gap-4 items-center font-medium text-sm hover:underline relative">
-                        <FaUsers className="text-indigo-600 text-lg" />
-                        {group}
-                      </span>
-                      {groupUnreadCounts[group] > 0 && (
-                        <span className="bg-red-500 text-white text-xs px-1 py-0 rounded-full">
-                          {groupUnreadCounts[group]}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : (
-          <div className="border-t border-gray-200 h-[70vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
-              {currentUser.role === "user" ? "Personal Chat" : "Users"}
-            </h3>
-            <div className="overflow-y-auto space-y-2 pr-1">
-              <div className="relative px-2 mb-3 py-2">
-                {/* Search Icon */}
-                <FontAwesomeIcon
-                  icon={faSearch}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"
-                />
-
-                {/* Input Field */}
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search user by name..."
-                  className="w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-
-                {/* Clear Button */}
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 focus:outline-none"
-                  >
-                    <FontAwesomeIcon icon={faTimesCircle} />
-                  </button>
-                )}
-              </div>
-
-              {admins.length > 0 && (
-                <>
-                  <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2">
-                    Administrators
-                  </h4>
-                  {admins.map((admin) => (
-                    <div
-                      key={admin._id || admin.userId}
-                      onClick={() => handleUserClick(admin)}
-                      className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
-                        selectedUser?._id === admin._id ||
-                        selectedUser?.userId === admin.userId
-                          ? "bg-indigo-100 border-indigo-300"
-                          : "bg-white hover:bg-gray-100 border-gray-200"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                          {admin.name
-                            ? admin.name.charAt(0).toUpperCase()
-                            : admin.userId.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-800 block">
-                            {admin.name || admin.userId}{" "}
-                            {/* Fall back to `userId` if name is missing */}
-                          </span>
-                          {admin.position && (
-                            <span className="text-xs text-gray-500 block">
-                              {admin.position}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {userUnreadCounts[admin.name || admin.userId] > 0 && (
-                        <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {userUnreadCounts[admin.name || admin.userId]}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </>
-              )}
-
-              {regularUsers.length > 0 && (
-                <>
-                  <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2 mt-4">
-                    Team Members
-                  </h4>
-                  {regularUsers.map((user) => (
-                    <div
-                      key={user._id || user.userId} // Use `_id` or `userId` to uniquely identify each user
-                      onClick={() => handleUserClick(user)}
-                      className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
-                        selectedUser?._id === user._id ||
-                        selectedUser?.userId === user.userId
-                          ? "bg-indigo-100 border-indigo-300"
-                          : "bg-white hover:bg-gray-100 border-gray-200"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                          {user.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-800 block">
-                            {user.name}
-                          </span>
-                          {user.position && (
-                            <span className="text-xs text-gray-500 block">
-                              {user.position}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {userUnreadCounts[user.name] > 0 && (
-                        <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {userUnreadCounts[user.name]}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </>
-              )}
-
-              {users.length === 0 && (
-                <p className="text-sm text-gray-400 text-center">
-                  No users found.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      <ChatSidebar
+        showGroups={showGroups}
+        groupUnreadCounts={groupUnreadCounts}
+        currentUser={currentUser}
+        userUnreadCounts={userUnreadCounts}
+        groups={groups}
+        selectedGroup={selectedGroup}
+        handleGroupClick={handleGroupClick}
+        setShowGroups={setShowGroups}
+        searchTerm={searchTerm}
+        admins={admins}
+        selectedUser={selectedUser}
+        regularUsers={regularUsers}
+        users={users}
+        handleUserClick={handleUserClick}
+        setSearchTerm={setSearchTerm}
+      />
 
       {/* Right column for chat messages */}
       <div className="w-3/4 pl-4 flex flex-col">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          {/* {selectedGroup
-            ? `Chat with ${selectedGroup}` // If a group is selected, show group name
-            : `${selectedUser.name}`
-            ? `Chat with ${selectedUser.name}` // If a user is selected, show user name
-            : "Select a Group or User to Chat"}{" "} */}
-          {/* Default message if none is selected */}
-
-          {selectedUser
-            ? `Chat with ${selectedUser.name || selectedUser.userId}` // If it's an admin, use `userId`
-            : selectedGroup
-            ? `Chat with ${selectedGroup}`
-            : "Select a Group or User to Chat"}
-        </h2>
-
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4"
-        >
-          {Array.isArray(messages) && messages.length > 0 ? (
-            <>
-              {/* ✅ Read Messages */}
-              {messages
-                .filter((msg) => msg.read || msg.sender === currentUser.name)
-                .map((msg, idx) => {
-                  const isCurrentUser = msg.sender === currentUser.name;
-
-                  return (
-                    <div
-                      key={`read-${idx}`}
-                      className={`max-w-sm p-3 rounded-xl shadow-md ${
-                        isCurrentUser
-                          ? "bg-indigo-500 text-white ml-auto rounded-br-none"
-                          : "bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold">
-                          {msg.sender}
-                        </span>
-                        <span
-                          className={`text-[10px] ${
-                            isCurrentUser ? "text-gray-50" : "text-gray-500"
-                          }`}
-                        >
-                          {msg.timestamp}
-                        </span>
-                      </div>
-
-                      {/* 📎 File Attachment Preview */}
-                      {msg.fileUrl && (
-                        <div className="my-2">
-                          {/* Image File */}
-                          {msg.fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i) ? (
-                            <a
-                              onClick={() => downloadImage(msg.fileUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block relative"
-                            >
-                              <img
-                                src={`https://taskbe.sharda.co.in${msg.fileUrl}`}
-                                alt="image"
-                                className="rounded-lg w-full max-w-xs shadow-sm"
-                              />
-                              {/* Add a download button on top of the image */}
-                              <div className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                                <FaDownload />
-                              </div>
-                            </a>
-                          ) : msg.fileUrl.match(/\.pdf$/i) ? (
-                            <a
-                              onClick={() => downloadPdf(msg.fileUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-between gap-3 bg-white  text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs"
-                            >
-                              <div className="flex items-center gap-2">
-                                <FaFile className="text-red-500 text-xl" />
-                                <div>
-                                  <p className="text-sm font-medium truncate">
-                                    {msg.fileUrl.split("/").pop()}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    PDF Document
-                                  </p>
-                                </div>
-                              </div>
-                              <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                                <FaDownload size={12} />
-                              </div>
-                              {downloadProgress !== null && (
-                                <div className="fixed top-16 left-1/2 transform -translate-x-1/2 w-64 bg-gray-200 rounded-full h-3 flex items-center shadow z-50">
-                                  <div
-                                    className="bg-green-500 h-3 rounded-full"
-                                    style={{ width: `${downloadProgress}%` }}
-                                  ></div>
-                                  <span className="absolute right-2 text-xs font-bold text-green-700">
-                                    {downloadProgress}%
-                                  </span>
-                                </div>
-                              )}
-                            </a>
-                          ) : (
-                            <a
-                              onClick={() => handleFileDownload(msg.fileUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 bg-white text-black border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs text-sm"
-                            >
-                              <FaFile className="text-blue-500 text-lg" />
-                              <span className="truncate">
-                                {msg.fileUrl.split("/").pop()}
-                              </span>
-                              <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                                <FaDownload size={12} />
-                              </div>
-                            </a>
-                          )}
-                        </div>
-                      )}
-
-                      {/* 💬 Text Message with Link Detection */}
-                      {msg.text && (
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">
-                          {msg.text.split(" ").map((part, i) =>
-                            part.match(/(https?:\/\/[^\s]+)/gi) ? (
-                              <a
-                                key={i}
-                                href={part}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`underline break-all ${
-                                  isCurrentUser
-                                    ? "text-blue-200"
-                                    : "text-blue-600"
-                                }`}
-                              >
-                                {part}{" "}
-                              </a>
-                            ) : (
-                              part + " "
-                            )
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-
-              {/* ✅ Header for unread messages */}
-              {messages.some(
-                (msg) => !msg.read && msg.sender !== currentUser.name
-              ) && (
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="px-3 py-1 text-xs font-semibold tracking-wide text-white bg-green-500 rounded-lg shadow-md">
-                      New Messages
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* ✅ Unread Messages */}
-              {messages
-                .filter((msg) => !msg.read && msg.sender !== currentUser.name)
-                .map((msg, idx) => (
-                  <div
-                    key={`unread-${idx}`}
-                    className="max-w-sm p-3 rounded-xl shadow-md border-2 border-gray-200 bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold">
-                        {msg.sender}
-                      </span>
-                      <span className="text-[10px] text-gray-800">
-                        {msg.timestamp}
-                      </span>
-                    </div>
-
-                    {/* 📎 File Attachment Preview */}
-                    {msg.fileUrl && (
-                      <div className="my-2">
-                        {/* Image File */}
-                        {msg.fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i) ? (
-                          <a
-                            onClick={() => downloadImage(msg.fileUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block relative"
-                          >
-                            <img
-                              src={`https://taskbe.sharda.co.in${msg.fileUrl}`}
-                              alt="image"
-                              className="rounded-lg w-full max-w-xs shadow-sm"
-                            />
-                            {/* Add a download button on top of the image */}
-                            <div className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                              <FaDownload />
-                            </div>
-                          </a>
-                        ) : msg.fileUrl.match(/\.pdf$/i) ? (
-                          <a
-                            onClick={() => downloadPdf(msg.fileUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-between gap-3 bg-white  text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs"
-                          >
-                            <div className="flex items-center gap-2">
-                              <FaFile className="text-red-500 text-xl" />
-                              <div>
-                                <p className="text-sm font-medium truncate">
-                                  {msg.fileUrl.split("/").pop()}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  PDF Document
-                                </p>
-                              </div>
-                            </div>
-                            <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                              <FaDownload size={12} />
-                            </div>
-                          </a>
-                        ) : (
-                          <a
-                            onClick={() => handleFileDownload(msg.fileUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 bg-white text-black border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs text-sm"
-                          >
-                            <FaFile className="text-blue-500 text-lg" />
-                            <span className="truncate">
-                              {msg.fileUrl.split("/").pop()}
-                            </span>
-                            <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                              <FaDownload size={12} />
-                            </div>
-                          </a>
-                        )}
-                      </div>
-                    )}
-
-                    {/* 💬 Text Message with Link Detection */}
-                    {msg.text && (
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">
-                        {msg.text.split(" ").map((part, i) =>
-                          part.match(/(https?:\/\/[^\s]+)/gi) ? (
-                            <a
-                              key={i}
-                              href={part}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline break-all"
-                            >
-                              {part}{" "}
-                            </a>
-                          ) : (
-                            part + " "
-                          )
-                        )}
-                      </p>
-                    )}
-                  </div>
-                ))}
-            </>
-          ) : (
-            <div className="text-center text-gray-500">
-              No messages available.
-            </div>
-          )}
-        </div>
+        <ChatMessages
+          selectedUser={selectedUser}
+          messages={messages}
+          selectedGroup={selectedGroup}
+          scrollRef={scrollRef}
+          currentUser={currentUser}
+          downloadProgress={downloadProgress}
+          downloadImage={downloadImage}
+          downloadPdf={downloadPdf}
+          handleFileDownload={handleFileDownload}
+        />
 
         {/* Input field and Send button (Fixed at the bottom) */}
-        <div
-          className={`relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto
-    ${dragActive ? "ring-2 ring-indigo-500" : ""}
-  `}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragEnter={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
-            setDragActive(false);
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragActive(false);
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-              setFile(e.dataTransfer.files[0]);
-              setFilePreview(URL.createObjectURL(e.dataTransfer.files[0]));
-            }
-          }}
-        >
-          {" "}
-          <div className="flex items-center">
-            {/* Emoji Picker Button */}
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="mr-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6 text-gray-500"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z"
-                />
-              </svg>
-            </button>
+        <MessageInput
+          dragActive={dragActive}
+          showEmojiPicker={showEmojiPicker}
+          handleFileChange={handleFileChange}
+          files={files}
+           messageInputRef ={ messageInputRef }
+           messageText={messageText}
+           handleChange ={handleChange }
+           handleKeyPress ={handleKeyPress }
+           sendMessage={sendMessage}
+           uploadProgress={uploadProgress}
+           setDragActive={setDragActive}
+           setFiles={setFiles}
+           setFilePreviews={setFilePreviews}
+           setUploadProgress={setUploadProgress}
 
-            {/* Emoji Picker */}
-            {showEmojiPicker && (
-              <div className="absolute bottom-16 left-0 z-10">
-                <EmojiPicker
-                  onEmojiClick={onEmojiClick}
-                  width={300}
-                  height={350}
-                  previewConfig={{ showPreview: false }} // Hide preview
-                  searchDisabled={false} // Keep search enabled
-                  skinTonesDisabled={true} // Disable skin tone variations
-                  categories={[
-                    { category: "symbols", name: "Symbols" },
-                    { category: "objects", name: "Objects" },
-                    { category: "flags", name: "Flags" },
-                  ]}
-                />
-              </div>
-            )}
-
-            <input
-              type="file"
-              className="hidden"
-              id="fileInput"
-              onChange={handleFileChange}
-            />
-
-            <label
-              htmlFor="fileInput"
-              className="ml-2 cursor-pointer text-indigo-600"
-            >
-              <FaPaperclip />
-            </label>
-
-            {/* {filePreview && (
-              <div className="absolute -top-24 left-0 bg-gray-100 border p-2 rounded-lg shadow">
-                {file.type.startsWith("image/") ? (
-                  <img
-                    src={filePreview}
-                    alt="Preview"
-                    className="w-16 h-16 object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <FaFile className="text-gray-600 text-xl" />
-                    <span className="text-sm text-gray-700">{file.name}</span>
-                  </div>
-                )}
-                <button
-                  className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1"
-                  onClick={() => {
-                    setFile(null);
-                    setFilePreview(null);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            )} */}
-
-            {filePreview && (
-              <div className="absolute -top-20 left-0 bg-white border border-gray-200 p-3 rounded-lg shadow-md w-64">
-                <div className="flex items-start gap-3">
-                  {file.type.startsWith("image/") ? (
-                    <div className="relative">
-                      <img
-                        src={filePreview}
-                        alt="Preview"
-                        className="w-12 h-12 object-cover rounded-md"
-                      />
-                      {uploadProgress > 0 && uploadProgress < 100 && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gray-200 rounded-full h-1.5">
-                          <div
-                            className="bg-blue-500 h-1.5 rounded-full"
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="bg-blue-50 p-2 rounded-md">
-                      <FaFile className="text-blue-600 text-xl" />
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {Math.round(file.size / 1024)} KB
-                    </p>
-                    {uploadProgress > 0 && (
-                      <div className="mt-1">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>Uploading...</span>
-                          <span>{uploadProgress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div
-                            className="bg-blue-600 h-1.5 rounded-full"
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                    onClick={() => {
-                      setFile(null);
-                      setFilePreview(null);
-                      setUploadProgress(0);
-                    }}
-                  >
-                    <FaTimes className="text-sm" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <input
-              type="text"
-              ref={messageInputRef}
-              value={messageText} // Bind the input to the state
-              onChange={handleChange} // This updates the state when typing
-              onKeyDown={handleKeyPress} // Handle enter key press
-              placeholder="Type your message..."
-              className="flex-1 px-4 py-2 text-sm bg-transparent focus:outline-none placeholder-gray-400 text-gray-700"
-            />
-
-            <button
-              onClick={sendMessage}
-              className="ml-2 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150"
-            >
-              <FaPaperPlane />
-            </button>
-          </div>
-        </div>
+        />
       </div>
     </div>
   );

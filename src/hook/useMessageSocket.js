@@ -1,11 +1,8 @@
 import { useEffect } from "react";
 import axios from "axios";
-import { io } from "socket.io-client";
+import socket from "../socket";
 
 // Create socket only once globally (not inside hook)
-const socket = io("https://sataskmanagementbackend.onrender.com", {
-  withCredentials: true,
-});
 
 const useMessageSocket = (setInboxCount) => {
   useEffect(() => {
@@ -19,13 +16,13 @@ const useMessageSocket = (setInboxCount) => {
 
         const [directRes, groupRes] = await Promise.all([
           axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/unread-count",
+            "https://taskbe.sharda.co.in/api/unread-count",
             {
               params: { name, role },
             }
           ),
           axios.get(
-            "https://sataskmanagementbackend.onrender.com/api/group-unread-counts",
+            "https://taskbe.sharda.co.in/api/group-unread-counts",
             {
               params: { name },
             }
