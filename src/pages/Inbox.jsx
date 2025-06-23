@@ -781,17 +781,18 @@ const Inbox = () => {
           showEmojiPicker={showEmojiPicker}
           handleFileChange={handleFileChange}
           files={files}
-           messageInputRef ={ messageInputRef }
-           messageText={messageText}
-           handleChange ={handleChange }
-           handleKeyPress ={handleKeyPress }
-           sendMessage={sendMessage}
-           uploadProgress={uploadProgress}
-           setDragActive={setDragActive}
-           setFiles={setFiles}
-           setFilePreviews={setFilePreviews}
-           setUploadProgress={setUploadProgress}
-
+          messageInputRef={messageInputRef}
+          messageText={messageText}
+          handleChange={handleChange}
+          handleKeyPress={handleKeyPress}
+          sendMessage={sendMessage}
+          uploadProgress={uploadProgress}
+          setDragActive={setDragActive}
+          setFiles={setFiles}
+          setFilePreviews={setFilePreviews}
+          setUploadProgress={setUploadProgress}
+          setShowEmojiPicker={setShowEmojiPicker}
+          onEmojiClick ={onEmojiClick }
         />
       </div>
     </div>
