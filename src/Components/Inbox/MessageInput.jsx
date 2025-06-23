@@ -19,6 +19,7 @@ const MessageInput = ({
   setUploadProgress,
   setShowEmojiPicker,
   onEmojiClick,
+  filePreviews
 }) => {
   return (
     <div

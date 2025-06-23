@@ -756,6 +756,7 @@ const Inbox = () => {
           setShowEmojiPicker={setShowEmojiPicker}
           onEmojiClick={onEmojiClick}
           filePreviews={filePreviews}
+          filePreviews
         />
       </div>
     </div>
