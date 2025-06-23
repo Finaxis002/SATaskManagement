@@ -38,6 +38,7 @@ const Inbox = () => {
   const [file, setFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null); // new state for preview URL
   const [newMessagesHeader, setNewMessagesHeader] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   const currentUser = {
     name: localStorage.getItem("name") || "User",
@@ -194,7 +195,7 @@ const Inbox = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-       if (selectedUser && selectedUser.name) {
+        if (selectedUser && selectedUser.name) {
           const res = await axios.get(
             `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`
           );
@@ -1025,7 +1026,32 @@ const Inbox = () => {
         </div>
 
         {/* Input field and Send button (Fixed at the bottom) */}
-        <div className="relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto">
+        <div
+          className={`relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto
+    ${dragActive ? "ring-2 ring-indigo-500" : ""}
+  `}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragActive(true);
+          }}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            setDragActive(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setDragActive(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragActive(false);
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+              setFile(e.dataTransfer.files[0]);
+              setFilePreview(URL.createObjectURL(e.dataTransfer.files[0]));
+            }
+          }}
+        >
+          {" "}
           <div className="flex items-center">
             {/* Emoji Picker Button */}
             <button
