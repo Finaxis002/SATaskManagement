@@ -10,7 +10,7 @@ import {
   FaUsers,
   FaDownload,
   FaPaperPlane,
-  FaTimes
+  FaTimes,
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -44,6 +44,7 @@ const Inbox = () => {
   //download pdf
   const [loader, setLoader] = useState(false);
   const [error, setError] = useState("");
+  const [downloadProgress, setDownloadProgress] = useState(null);
 
   //file upload progresss
   const [uploadProgress, setUploadProgress] = useState(null);
@@ -589,50 +590,108 @@ const Inbox = () => {
     };
   };
 
+  // const downloadPdf = (fileUrl) => {
+  //   setLoader(true);
+  //   setError("");
+
+  //   const token = localStorage.getItem("tokenLocal");
+  //   if (token) {
+  //     const axiosConfig = {
+  //       responseType: "arraybuffer",
+  //       headers: {
+  //         Accept: "application/pdf",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     };
+  //     axios
+  //       .get(`https://taskbe.sharda.co.in${fileUrl}`, axiosConfig)
+  //       .then((response) => {
+  //         setLoader(false);
+
+  //         // Extract file name from URL
+  //         let fileName = "example.pdf";
+  //         if (fileUrl) {
+  //           const parts = fileUrl.split("/");
+  //           fileName = parts[parts.length - 1] || fileName;
+  //         }
+
+  //         const url = window.URL.createObjectURL(
+  //           new Blob([response.data], { type: "application/pdf" })
+  //         );
+  //         const link = document.createElement("a");
+  //         link.href = url;
+  //         link.setAttribute("download", fileName);
+  //         document.body.appendChild(link);
+  //         link.click();
+
+  //         setTimeout(() => {
+  //           document.body.removeChild(link);
+  //           window.URL.revokeObjectURL(url);
+  //         }, 100);
+  //       })
+  //       .catch((error) => {
+  //         setLoader(false);
+  //         setError(error.message);
+  //       });
+  //   }
+  // };
+
   const downloadPdf = (fileUrl) => {
     setLoader(true);
     setError("");
+    setDownloadProgress(0);
 
     const token = localStorage.getItem("tokenLocal");
-    if (token) {
-      const axiosConfig = {
-        responseType: "arraybuffer",
-        headers: {
-          Accept: "application/pdf",
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      axios
-        .get(`https://taskbe.sharda.co.in${fileUrl}`, axiosConfig)
-        .then((response) => {
-          setLoader(false);
+    if (!token) return;
 
-          // Extract file name from URL
-          let fileName = "example.pdf";
-          if (fileUrl) {
-            const parts = fileUrl.split("/");
-            fileName = parts[parts.length - 1] || fileName;
-          }
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", `https://taskbe.sharda.co.in${fileUrl}`, true);
+    xhr.responseType = "arraybuffer";
+    xhr.setRequestHeader("Accept", "application/pdf");
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
-          const url = window.URL.createObjectURL(
-            new Blob([response.data], { type: "application/pdf" })
-          );
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", fileName);
-          document.body.appendChild(link);
-          link.click();
+    xhr.onprogress = function (event) {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded * 100) / event.total);
+        setDownloadProgress(percent);
+      }
+    };
 
-          setTimeout(() => {
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-          }, 100);
-        })
-        .catch((error) => {
-          setLoader(false);
-          setError(error.message);
-        });
-    }
+    xhr.onload = function () {
+      setLoader(false);
+      setDownloadProgress(null);
+
+      if (xhr.status === 200) {
+        let fileName = "example.pdf";
+        if (fileUrl) {
+          const parts = fileUrl.split("/");
+          fileName = parts[parts.length - 1] || fileName;
+        }
+        const url = window.URL.createObjectURL(
+          new Blob([xhr.response], { type: "application/pdf" })
+        );
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      } else {
+        setError("Failed to download PDF");
+      }
+    };
+
+    xhr.onerror = function () {
+      setLoader(false);
+      setDownloadProgress(null);
+      setError("Network error");
+    };
+
+    xhr.send();
   };
 
   const downloadImage = (fileUrl) => {
@@ -998,6 +1057,17 @@ const Inbox = () => {
                               <div className=" top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
                                 <FaDownload size={12} />
                               </div>
+                              {downloadProgress !== null && (
+                                <div className="fixed top-16 left-1/2 transform -translate-x-1/2 w-64 bg-gray-200 rounded-full h-3 flex items-center shadow z-50">
+                                  <div
+                                    className="bg-green-500 h-3 rounded-full"
+                                    style={{ width: `${downloadProgress}%` }}
+                                  ></div>
+                                  <span className="absolute right-2 text-xs font-bold text-green-700">
+                                    {downloadProgress}%
+                                  </span>
+                                </div>
+                              )}
                             </a>
                           ) : (
                             <a
@@ -1254,8 +1324,6 @@ const Inbox = () => {
               <FaPaperclip />
             </label>
 
-            
-
             {/* {filePreview && (
               <div className="absolute -top-24 left-0 bg-gray-100 border p-2 rounded-lg shadow">
                 {file.type.startsWith("image/") ? (
@@ -1282,69 +1350,67 @@ const Inbox = () => {
               </div>
             )} */}
 
+            {filePreview && (
+              <div className="absolute -top-20 left-0 bg-white border border-gray-200 p-3 rounded-lg shadow-md w-64">
+                <div className="flex items-start gap-3">
+                  {file.type.startsWith("image/") ? (
+                    <div className="relative">
+                      <img
+                        src={filePreview}
+                        alt="Preview"
+                        className="w-12 h-12 object-cover rounded-md"
+                      />
+                      {uploadProgress > 0 && uploadProgress < 100 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className="bg-blue-500 h-1.5 rounded-full"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-blue-50 p-2 rounded-md">
+                      <FaFile className="text-blue-600 text-xl" />
+                    </div>
+                  )}
 
-{filePreview && (
-  <div className="absolute -top-20 left-0 bg-white border border-gray-200 p-3 rounded-lg shadow-md w-64">
-    <div className="flex items-start gap-3">
-      {file.type.startsWith("image/") ? (
-        <div className="relative">
-          <img
-            src={filePreview}
-            alt="Preview"
-            className="w-12 h-12 object-cover rounded-md"
-          />
-          {uploadProgress > 0 && uploadProgress < 100 && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gray-200 rounded-full h-1.5">
-              <div 
-                className="bg-blue-500 h-1.5 rounded-full" 
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="bg-blue-50 p-2 rounded-md">
-          <FaFile className="text-blue-600 text-xl" />
-        </div>
-      )}
-      
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">
-          {file.name}
-        </p>
-        <p className="text-xs text-gray-500">
-          {Math.round(file.size / 1024)} KB
-        </p>
-        {uploadProgress > 0 && (
-          <div className="mt-1">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Uploading...</span>
-              <span>{uploadProgress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div 
-                className="bg-blue-600 h-1.5 rounded-full" 
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <button
-        className="text-gray-400 hover:text-gray-600 transition-colors"
-        onClick={() => {
-          setFile(null);
-          setFilePreview(null);
-          setUploadProgress(0);
-        }}
-      >
-        <FaTimes className="text-sm" />
-      </button>
-    </div>
-  </div>
-)}
-            
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {Math.round(file.size / 1024)} KB
+                    </p>
+                    {uploadProgress > 0 && (
+                      <div className="mt-1">
+                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                          <span>Uploading...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className="bg-blue-600 h-1.5 rounded-full"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => {
+                      setFile(null);
+                      setFilePreview(null);
+                      setUploadProgress(0);
+                    }}
+                  >
+                    <FaTimes className="text-sm" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             <input
               type="text"
