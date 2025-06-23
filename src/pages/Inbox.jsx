@@ -148,7 +148,7 @@ const Inbox = () => {
 
         // Fetch main admins from the MainAdmin collection
         const mainAdminsRes = await axios.get(
-          "http://localhost:1100/api/mainadmins"
+          "https://taskbe.sharda.co.in/api/mainadmins"
         );
 
         console.log("Fetched employees:", employeesRes.data);
