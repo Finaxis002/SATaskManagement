@@ -15,36 +15,7 @@ const Clients = () => {
   const [viewMode, setViewMode] = useState("card"); 
 
 
-  // const fetchClients = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const res = await axios.get(
-  //       "/clients"
-  //     );
-  //     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-  //      const data = res.data;
 
-  //     const formattedClients = Array.isArray(data)
-  //       ? data.map((client) => ({
-  //           id: client._id,
-  //           name: client.name,
-  //           contactPerson: client.contactPerson || "-",
-  //           businessName: client.businessName || "-",
-  //         }))
-  //       : [];
-
-  //     setClients(formattedClients);
-  //   } catch (err) {
-  //     console.error("Failed to fetch clients", err);
-  //     Swal.fire({
-  //       icon: "error",
-  //       title: "Error",
-  //       text: "Failed to load clients. Please try again.",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 const fetchClients = async () => {
   setLoading(true);
   try {
