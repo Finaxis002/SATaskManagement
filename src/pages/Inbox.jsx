@@ -699,6 +699,8 @@ const filteredRegularUsers = regularUsers.filter(user => user.name !== currentUs
           downloadImage={downloadImage}
           downloadPdf={downloadPdf}
           handleFileDownload={handleFileDownload}
+           groups={groups}
+           users={users}
         />
 
         {/* Input field and Send button (Fixed at the bottom) */}
