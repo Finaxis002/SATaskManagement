@@ -37,7 +37,8 @@ const ChatMessages = ({
           <>
             {/* ✅ Read Messages */}
             {messages
-              .filter((msg) => msg.read || msg.sender === currentUser.name)
+              .filter((msg) => msg.readBy?.includes(currentUser.name) || msg.sender === currentUser.name)
+
               .map((msg, idx) => {
                 const isCurrentUser = msg.sender === currentUser.name;
 
@@ -179,7 +180,7 @@ const ChatMessages = ({
 
             {/* ✅ Header for unread messages */}
             {messages.some(
-              (msg) => !msg.read && msg.sender !== currentUser.name
+              (msg) => !msg.readBy?.includes(currentUser.name) && msg.sender !== currentUser.name
             ) && (
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
@@ -195,7 +196,7 @@ const ChatMessages = ({
 
             {/* ✅ Unread Messages */}
             {messages
-              .filter((msg) => !msg.read && msg.sender !== currentUser.name)
+              .filter((msg) => !msg.readBy?.includes(currentUser.name) && msg.sender !== currentUser.name)
               .map((msg, idx) => {
                 // Repeat the same logic as above for unread messages
                 const filesArray =
