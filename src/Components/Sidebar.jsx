@@ -73,10 +73,6 @@ const Sidebar = () => {
     setLeaveAlert(false);
   };
 
-  const openAddEmployeeModal = () => {
-    setIsAddEmployeeModalOpen(true);
-  };
-
   useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
 
   useNotificationSocket(setNotificationCount);

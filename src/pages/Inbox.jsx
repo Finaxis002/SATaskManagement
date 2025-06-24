@@ -8,7 +8,7 @@ import ChatMessages from "../Components/Inbox/ChatMessages";
 import MessageInput from "../Components/Inbox/MessageInput";
 
 // Assume socket.io client setup
-const socket = io("https://taskbe.sharda.co.in", {
+const socket = io("http://localhost:1100", {
   withCredentials: true,
 });
 
@@ -72,13 +72,13 @@ const Inbox = () => {
       try {
         if (currentUser.role === "admin") {
           const res = await axios.get(
-            "https://taskbe.sharda.co.in/api/departments"
+            "http://localhost:1100/api/departments"
           );
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
           const res = await axios.get(
-            "https://taskbe.sharda.co.in/api/employees"
+            "http://localhost:1100/api/employees"
           );
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
@@ -121,12 +121,12 @@ const Inbox = () => {
       try {
         // Fetch regular employees from the Employee collection
         const employeesRes = await axios.get(
-          "https://taskbe.sharda.co.in/api/employees"
+          "http://localhost:1100/api/employees"
         );
 
         // Fetch main admins from the MainAdmin collection
         const mainAdminsRes = await axios.get(
-          "https://taskbe.sharda.co.in/api/mainadmins"
+          "http://localhost:1100/api/mainadmins"
         );
 
         console.log("Fetched employees:", employeesRes.data);
@@ -174,7 +174,7 @@ const Inbox = () => {
   //     try {
   //       if (selectedUser && selectedUser.name) {
   //         const res = await axios.get(
-  //           `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`
+  //           `http://localhost:1100/api/messages/user/${selectedUser.name}`
   //         );
   //         const currentId = (currentUser.userId || currentUser.name)
   //           .trim()
@@ -212,7 +212,7 @@ const Inbox = () => {
   //       } else if (selectedGroup) {
   //         const encodedGroup = encodeURIComponent(selectedGroup);
   //         const res = await axios.get(
-  //           `https://taskbe.sharda.co.in/api/messages/${encodedGroup}`
+  //           `http://localhost:1100/api/messages/${encodedGroup}`
   //         );
   //         setMessages(res.data.messages.reverse()); // No reverse here
   //       }
@@ -229,7 +229,7 @@ const Inbox = () => {
       try {
         if (selectedUser && selectedUser.name) {
           const res = await axios.get(
-            `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`
+            `http://localhost:1100/api/messages/user/${selectedUser.name}`
           );
 
           const filteredMessages = res.data.messages.filter((msg) => {
@@ -259,7 +259,7 @@ const Inbox = () => {
         } else if (selectedGroup) {
           const encodedGroup = encodeURIComponent(selectedGroup);
           const res = await axios.get(
-            `https://taskbe.sharda.co.in/api/messages/${encodedGroup}`
+            `http://localhost:1100/api/messages/${encodedGroup}`
           );
           setMessages(res.data.messages.reverse()); // No reverse here
         }
@@ -270,6 +270,17 @@ const Inbox = () => {
 
     fetchMessages();
   }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
+
+
+  // ========== [Add after fetchMessages useEffect in Inbox.jsx] ==========
+useEffect(() => {
+  if ((selectedGroup || selectedUser) && messages.length) {
+    markMessagesAsRead();
+  }
+  // eslint-disable-next-line
+}, [messages, selectedGroup, selectedUser]);
+
+
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -298,7 +309,7 @@ const Inbox = () => {
           formData.append("file", file);
 
           return axios
-            .post("https://taskbe.sharda.co.in/api/upload", formData, {
+            .post("http://localhost:1100/api/upload", formData, {
               headers: { "Content-Type": "multipart/form-data" },
               onUploadProgress: (progressEvent) => {
                 if (progressEvent.total) {
@@ -338,7 +349,7 @@ const Inbox = () => {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      read: false,
+       readBy: [currentUser.name],
       ...(selectedUser && {
         recipient: selectedUser.userId || selectedUser.name,
       }),
@@ -353,12 +364,12 @@ const Inbox = () => {
     try {
       if (selectedUser) {
         await axios.post(
-          `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`,
+          `http://localhost:1100/api/messages/user/${selectedUser.name}`,
           newMessage
         );
       } else if (selectedGroup) {
         await axios.post(
-          `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(
+          `http://localhost:1100/api/messages/${encodeURIComponent(
             selectedGroup
           )}`,
           newMessage
@@ -380,38 +391,34 @@ const Inbox = () => {
     setMessageText(value);
   };
 
-  const markMessagesAsRead = async (identifier) => {
-    try {
-      // Optimistically update the UI first
-      if (selectedGroup) {
-        setGroupUnreadCounts((prev) => ({ ...prev, [selectedGroup]: 0 }));
-      } else if (selectedUser) {
-        setUserUnreadCounts((prev) => ({ ...prev, [selectedUser.name]: 0 }));
-      }
+const markMessagesAsRead = async () => {
+  let unreadMessageIds = [];
 
-      // Then make the API call
-      const res = await axios.put("https://taskbe.sharda.co.in/api/mark-read", {
-        identifier,
-      });
+  // Find unread messages for the selected conversation
+  if (selectedGroup) {
+    unreadMessageIds = messages
+      .filter(msg => msg.group === selectedGroup && !msg.readBy?.includes(currentUser.name))
+      .map(msg => msg._id);
+  } else if (selectedUser) {
+    unreadMessageIds = messages
+      .filter(
+        msg =>
+          ((msg.sender === selectedUser.name && msg.recipient === currentUser.name) ||
+           (msg.sender === currentUser.name && msg.recipient === selectedUser.name)) &&
+          !msg.readBy?.includes(currentUser.name) &&
+          (!msg.group || msg.group === "")
+      )
+      .map(msg => msg._id);
+  }
 
-      // Emit socket event after successful API call
-      socket.emit("markRead", { identifier });
-    } catch (err) {
-      console.error("❌ Failed to mark messages as read:", err.message);
-      // Revert the optimistic update if failed
-      if (selectedGroup) {
-        setGroupUnreadCounts((prev) => ({
-          ...prev,
-          [selectedGroup]: prev[selectedGroup],
-        }));
-      } else if (selectedUser) {
-        setUserUnreadCounts((prev) => ({
-          ...prev,
-          [selectedUser.name]: prev[selectedUser.name],
-        }));
-      }
-    }
-  };
+  if (unreadMessageIds.length) {
+    await axios.put("http://localhost:1100/api/mark-read", {
+      messageIds: unreadMessageIds,
+      userId: currentUser.name, // or userId if you have that uniquely
+    });
+  }
+};
+
 
   useEffect(() => {
     socket.on("markRead", (data) => {
@@ -518,7 +525,7 @@ const Inbox = () => {
         const name = localStorage.getItem("name");
 
         const res = await axios.get(
-          "https://taskbe.sharda.co.in/api/group-unread-counts",
+          "http://localhost:1100/api/group-unread-counts",
           {
             params: { name },
           }
@@ -544,7 +551,7 @@ const Inbox = () => {
       try {
         const name = localStorage.getItem("name");
         const res = await axios.get(
-          "https://taskbe.sharda.co.in/api/user-unread-counts",
+          "http://localhost:1100/api/user-unread-counts",
           {
             params: {
               name,
@@ -571,7 +578,7 @@ const Inbox = () => {
   }, [selectedGroup, selectedUser]);
 
   const handleFileDownload = (fileUrl) => {
-    const fullUrl = `https://taskbe.sharda.co.in${fileUrl}`; // Ensure this URL is correct
+    const fullUrl = `http://localhost:1100${fileUrl}`; // Ensure this URL is correct
     const fileName = fileUrl.split("/").pop(); // Extract file name
 
     // Open the link in a new tab
@@ -598,7 +605,7 @@ const Inbox = () => {
     if (!token) return;
 
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", `https://taskbe.sharda.co.in${fileUrl}`, true);
+    xhr.open("GET", `http://localhost:1100${fileUrl}`, true);
     xhr.responseType = "arraybuffer";
     xhr.setRequestHeader("Accept", "application/pdf");
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -669,7 +676,7 @@ const Inbox = () => {
       };
 
       axios
-        .get(`https://taskbe.sharda.co.in${fileUrl}`, axiosConfig)
+        .get(`http://localhost:1100${fileUrl}`, axiosConfig)
         .then((response) => {
           setLoader(false);
 
@@ -756,7 +763,6 @@ const Inbox = () => {
           setShowEmojiPicker={setShowEmojiPicker}
           onEmojiClick={onEmojiClick}
           filePreviews={filePreviews}
-          filePreviews
         />
       </div>
     </div>

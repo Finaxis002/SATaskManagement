@@ -2,35 +2,23 @@ import { useEffect } from "react";
 import axios from "axios";
 import socket from "../socket";
 
-// Create socket only once globally (not inside hook)
-
 const useMessageSocket = (setInboxCount) => {
   useEffect(() => {
-    const name = localStorage.getItem("name");
-    const role = localStorage.getItem("role");
-
     const fetchUpdatedCount = async () => {
       try {
         const name = localStorage.getItem("name");
         const role = localStorage.getItem("role");
 
         const [directRes, groupRes] = await Promise.all([
-          axios.get(
-            "https://taskbe.sharda.co.in/api/unread-count",
-            {
-              params: { name, role },
-            }
-          ),
-          axios.get(
-            "https://taskbe.sharda.co.in/api/group-unread-counts",
-            {
-              params: { name },
-            }
-          ),
+          axios.get("http://localhost:1100/api/unread-count", {
+            params: { name, role },
+          }),
+          axios.get("http://localhost:1100/api/group-unread-counts", {
+            params: { name },
+          }),
         ]);
 
         const directCount = directRes.data.unreadCount || 0;
-
         const groupCountsObj = groupRes.data.groupUnreadCounts || {};
         const groupCount = Object.values(groupCountsObj).reduce(
           (acc, val) => acc + val,
@@ -38,7 +26,6 @@ const useMessageSocket = (setInboxCount) => {
         );
 
         const totalUnread = directCount + groupCount;
-
         console.log("📩 Combined unread count:", totalUnread);
         setInboxCount(totalUnread);
       } catch (err) {
@@ -46,43 +33,34 @@ const useMessageSocket = (setInboxCount) => {
       }
     };
 
-    fetchUpdatedCount(); // Fetch once on mount
+    // Initial fetch
+    fetchUpdatedCount();
 
     const handleReceiveMessage = (msg) => {
-      console.log("📨 Message received in hook:", msg); // Add this
-      const currentUser = localStorage.getItem("name");
-      const currentRole = localStorage.getItem("role");
-
-      const isGroupMessage = !!msg.group?.trim();
-      const isRecipient = msg.recipient === currentUser;
-      const isSender = msg.sender === currentUser;
-
-      if (
-        (isGroupMessage && currentRole === "admin") ||
-        isRecipient ||
-        isSender
-      ) {
-        console.log("📥 Relevant message, updating inbox count");
-        fetchUpdatedCount();
-      } else {
-        console.log("🚫 Message not relevant to this user");
-      }
+      console.log("📨 Message received in hook:", msg);
+      fetchUpdatedCount(); // Always update when a message is received
     };
 
-    // 🔄 Attach listeners ONCE
-    socket.off("receiveMessage", handleReceiveMessage); // Clear previous
+    const handleInboxUpdate = () => {
+      console.log("🔔 Inbox update triggered");
+      fetchUpdatedCount();
+    };
+
+    // Connect listeners
     socket.on("receiveMessage", handleReceiveMessage);
+    socket.on("inboxCountUpdated", handleInboxUpdate);
+    socket.on("markRead", handleInboxUpdate);
 
-    socket.off("inboxCountUpdated");
-    socket.on("inboxCountUpdated", fetchUpdatedCount);
-
-    socket.off("markRead");
-    socket.on("markRead", fetchUpdatedCount);
+    // Ensure socket is connected
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     return () => {
+      // Cleanup listeners
       socket.off("receiveMessage", handleReceiveMessage);
-      socket.off("inboxCountUpdated", fetchUpdatedCount);
-      socket.off("markRead", fetchUpdatedCount);
+      socket.off("inboxCountUpdated", handleInboxUpdate);
+      socket.off("markRead", handleInboxUpdate);
     };
   }, [setInboxCount]);
 };
