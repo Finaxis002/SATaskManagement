@@ -2,6 +2,12 @@ import { useEffect } from "react";
 import axios from "axios";
 import socket from "../socket";
 
+// Function to play notification sound
+const playNotificationSound = () => {
+  const audio = new Audio("/reminder-sound.mp3");
+  audio.play();
+};
+
 const useMessageSocket = (setInboxCount) => {
   useEffect(() => {
     const fetchUpdatedCount = async () => {
@@ -9,31 +15,22 @@ const useMessageSocket = (setInboxCount) => {
         const name = localStorage.getItem("name");
         const role = localStorage.getItem("role");
 
-        const [directRes, groupRes] = await Promise.all([
-          axios.get("http://localhost:1100/api/unread-count", {
+        // Remove groupRes!
+        const directRes = await axios.get(
+          "https://taskbe.sharda.co.in/api/unread-count",
+          {
             params: { name, role },
-          }),
-          axios.get("http://localhost:1100/api/group-unread-counts", {
-            params: { name },
-          }),
-        ]);
-
-        const directCount = directRes.data.unreadCount || 0;
-        const groupCountsObj = groupRes.data.groupUnreadCounts || {};
-        const groupCount = Object.values(groupCountsObj).reduce(
-          (acc, val) => acc + val,
-          0
+          }
         );
 
-        const totalUnread = directCount + groupCount;
-        console.log("📩 Combined unread count:", totalUnread);
+        const totalUnread = directRes.data.unreadCount || 0; // <-- ONLY THIS
         setInboxCount(totalUnread);
+        playNotificationSound();
       } catch (err) {
-        console.error("❌ Failed fetching combined inbox count:", err.message);
+        console.error("❌ Failed fetching inbox count:", err.message);
       }
     };
 
-    // Initial fetch
     fetchUpdatedCount();
 
     const handleReceiveMessage = (msg) => {

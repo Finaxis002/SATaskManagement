@@ -8,7 +8,7 @@ import ChatMessages from "../Components/Inbox/ChatMessages";
 import MessageInput from "../Components/Inbox/MessageInput";
 
 // Assume socket.io client setup
-const socket = io("http://localhost:1100", {
+const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
@@ -39,6 +39,9 @@ const Inbox = () => {
   const [files, setFiles] = useState([]); // Array of File objects
   const [filePreviews, setFilePreviews] = useState([]); // Array of preview URLs
   const [uploadProgress, setUploadProgress] = useState([]); // Array of progress numbers
+
+
+
 
   //recentUserChat
 
@@ -72,13 +75,13 @@ const Inbox = () => {
       try {
         if (currentUser.role === "admin") {
           const res = await axios.get(
-            "http://localhost:1100/api/departments"
+            "https://taskbe.sharda.co.in/api/departments"
           );
           setGroups(res.data.map((dept) => dept.name));
         } else {
           // Fetch all employees and find the current user
           const res = await axios.get(
-            "http://localhost:1100/api/employees"
+            "https://taskbe.sharda.co.in/api/employees"
           );
           const currentEmployee = res.data.find(
             (emp) => emp.name === currentUser.name
@@ -121,16 +124,16 @@ const Inbox = () => {
       try {
         // Fetch regular employees from the Employee collection
         const employeesRes = await axios.get(
-          "http://localhost:1100/api/employees"
+          "https://taskbe.sharda.co.in/api/employees"
         );
 
         // Fetch main admins from the MainAdmin collection
         const mainAdminsRes = await axios.get(
-          "http://localhost:1100/api/mainadmins"
+          "https://taskbe.sharda.co.in/api/mainadmins"
         );
 
-        console.log("Fetched employees:", employeesRes.data);
-        console.log("Fetched main admins:", mainAdminsRes.data);
+        // console.log("Fetched employees:", employeesRes.data);
+        // console.log("Fetched main admins:", mainAdminsRes.data);
 
         // Merge employees and main admins into one array
         const allUsers = [
@@ -138,7 +141,7 @@ const Inbox = () => {
           ...mainAdminsRes.data, // Main admin users
         ];
 
-        console.log("All users after merge:", allUsers); // Log merged data
+        // console.log("All users after merge:", allUsers); // Log merged data
 
         // Separate admins and regular users
         const adminUsers = allUsers.filter(
@@ -169,67 +172,13 @@ const Inbox = () => {
     }
   };
 
-  // useEffect(() => {
-  //   const fetchMessages = async () => {
-  //     try {
-  //       if (selectedUser && selectedUser.name) {
-  //         const res = await axios.get(
-  //           `http://localhost:1100/api/messages/user/${selectedUser.name}`
-  //         );
-  //         const currentId = (currentUser.userId || currentUser.name)
-  //           .trim()
-  //           .toLowerCase();
-  //         const selectedId = (selectedUser.userId || selectedUser.name)
-  //           .trim()
-  //           .toLowerCase();
-
-  //         const filteredMessages = res.data.messages.filter((msg) => {
-  //           const trimmedSender = msg.sender
-  //             ? msg.sender.trim().toLowerCase()
-  //             : "";
-  //           const trimmedRecipient = msg.recipient
-  //             ? msg.recipient.trim().toLowerCase()
-  //             : "";
-  //           const trimmedLoggedInUser = (currentUser.userId || currentUser.name)
-  //             .trim()
-  //             .toLowerCase();
-
-  //           const isPersonalMessage =
-  //             (trimmedSender === trimmedLoggedInUser ||
-  //               trimmedRecipient === trimmedLoggedInUser) &&
-  //             (msg.group === undefined || msg.group === "");
-  //           return (
-  //             isPersonalMessage && (msg.group === undefined || msg.group === "")
-  //           );
-  //         });
-
-  //         const sortedMessages = [...filteredMessages].sort((a, b) => {
-  //           const timeA = new Date(`1970/01/01 ${a.timestamp}`);
-  //           const timeB = new Date(`1970/01/01 ${b.timestamp}`);
-  //           return timeA - timeB; // oldest to newest
-  //         });
-  //         setMessages(sortedMessages);
-  //       } else if (selectedGroup) {
-  //         const encodedGroup = encodeURIComponent(selectedGroup);
-  //         const res = await axios.get(
-  //           `http://localhost:1100/api/messages/${encodedGroup}`
-  //         );
-  //         setMessages(res.data.messages.reverse()); // No reverse here
-  //       }
-  //     } catch (err) {
-  //       console.error("❌ Error fetching messages:", err.message);
-  //     }
-  //   };
-
-  //   fetchMessages();
-  // }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
 
   useEffect(() => {
     const fetchMessages = async () => {
       try {
         if (selectedUser && selectedUser.name) {
           const res = await axios.get(
-            `http://localhost:1100/api/messages/user/${selectedUser.name}`
+            `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`
           );
 
           const filteredMessages = res.data.messages.filter((msg) => {
@@ -259,7 +208,7 @@ const Inbox = () => {
         } else if (selectedGroup) {
           const encodedGroup = encodeURIComponent(selectedGroup);
           const res = await axios.get(
-            `http://localhost:1100/api/messages/${encodedGroup}`
+            `https://taskbe.sharda.co.in/api/messages/${encodedGroup}`
           );
           setMessages(res.data.messages.reverse()); // No reverse here
         }
@@ -271,16 +220,13 @@ const Inbox = () => {
     fetchMessages();
   }, [selectedUser, selectedGroup, currentUser.name]); // Ensure it triggers when the selected user or group changes
 
-
   // ========== [Add after fetchMessages useEffect in Inbox.jsx] ==========
-useEffect(() => {
-  if ((selectedGroup || selectedUser) && messages.length) {
-    markMessagesAsRead();
-  }
-  // eslint-disable-next-line
-}, [messages, selectedGroup, selectedUser]);
-
-
+  useEffect(() => {
+    if ((selectedGroup || selectedUser) && messages.length) {
+      markMessagesAsRead();
+    }
+    // eslint-disable-next-line
+  }, [messages, selectedGroup, selectedUser]);
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -309,7 +255,7 @@ useEffect(() => {
           formData.append("file", file);
 
           return axios
-            .post("http://localhost:1100/api/upload", formData, {
+            .post("https://taskbe.sharda.co.in/api/upload", formData, {
               headers: { "Content-Type": "multipart/form-data" },
               onUploadProgress: (progressEvent) => {
                 if (progressEvent.total) {
@@ -349,7 +295,7 @@ useEffect(() => {
         hour: "2-digit",
         minute: "2-digit",
       }),
-       readBy: [currentUser.name],
+      readBy: [currentUser.name],
       ...(selectedUser && {
         recipient: selectedUser.userId || selectedUser.name,
       }),
@@ -364,12 +310,12 @@ useEffect(() => {
     try {
       if (selectedUser) {
         await axios.post(
-          `http://localhost:1100/api/messages/user/${selectedUser.name}`,
+          `https://taskbe.sharda.co.in/api/messages/user/${selectedUser.name}`,
           newMessage
         );
       } else if (selectedGroup) {
         await axios.post(
-          `http://localhost:1100/api/messages/${encodeURIComponent(
+          `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(
             selectedGroup
           )}`,
           newMessage
@@ -391,34 +337,39 @@ useEffect(() => {
     setMessageText(value);
   };
 
-const markMessagesAsRead = async () => {
-  let unreadMessageIds = [];
+  const markMessagesAsRead = async () => {
+    let unreadMessageIds = [];
 
-  // Find unread messages for the selected conversation
-  if (selectedGroup) {
-    unreadMessageIds = messages
-      .filter(msg => msg.group === selectedGroup && !msg.readBy?.includes(currentUser.name))
-      .map(msg => msg._id);
-  } else if (selectedUser) {
-    unreadMessageIds = messages
-      .filter(
-        msg =>
-          ((msg.sender === selectedUser.name && msg.recipient === currentUser.name) ||
-           (msg.sender === currentUser.name && msg.recipient === selectedUser.name)) &&
-          !msg.readBy?.includes(currentUser.name) &&
-          (!msg.group || msg.group === "")
-      )
-      .map(msg => msg._id);
-  }
+    // Find unread messages for the selected conversation
+    if (selectedGroup) {
+      unreadMessageIds = messages
+        .filter(
+          (msg) =>
+            msg.group === selectedGroup &&
+            !msg.readBy?.includes(currentUser.name)
+        )
+        .map((msg) => msg._id);
+    } else if (selectedUser) {
+      unreadMessageIds = messages
+        .filter(
+          (msg) =>
+            ((msg.sender === selectedUser.name &&
+              msg.recipient === currentUser.name) ||
+              (msg.sender === currentUser.name &&
+                msg.recipient === selectedUser.name)) &&
+            !msg.readBy?.includes(currentUser.name) &&
+            (!msg.group || msg.group === "")
+        )
+        .map((msg) => msg._id);
+    }
 
-  if (unreadMessageIds.length) {
-    await axios.put("http://localhost:1100/api/mark-read", {
-      messageIds: unreadMessageIds,
-      userId: currentUser.name, // or userId if you have that uniquely
-    });
-  }
-};
-
+    if (unreadMessageIds.length) {
+      await axios.put("https://taskbe.sharda.co.in/api/mark-read", {
+        messageIds: unreadMessageIds,
+        userId: currentUser.name, // or userId if you have that uniquely
+      });
+    }
+  };
 
   useEffect(() => {
     socket.on("markRead", (data) => {
@@ -480,6 +431,7 @@ const markMessagesAsRead = async () => {
   useEffect(() => {
     const handleReceiveMessage = (msg) => {
       console.log("📨 Real-time message received:", msg);
+      
 
       // For Group Messages
       if (msg.group) {
@@ -523,24 +475,18 @@ const markMessagesAsRead = async () => {
     const fetchGroupUnreadCounts = async () => {
       try {
         const name = localStorage.getItem("name");
-
         const res = await axios.get(
-          "http://localhost:1100/api/group-unread-counts",
-          {
-            params: { name },
-          }
+          "https://taskbe.sharda.co.in/api/group-unread-counts",
+          { params: { name } }
         );
-
         setGroupUnreadCounts(res.data.groupUnreadCounts || {});
-        console.log("📊 Group Unread Counts:", res.data.groupUnreadCounts);
       } catch (err) {
-        console.error("❌ Failed to fetch group unread counts:", err.message);
+        console.error("❌ Failed fetching group unread counts:", err.message);
       }
     };
 
     fetchGroupUnreadCounts();
-
-    socket.on("inboxCountUpdated", fetchGroupUnreadCounts); // Update live
+    socket.on("inboxCountUpdated", fetchGroupUnreadCounts);
     return () => {
       socket.off("inboxCountUpdated", fetchGroupUnreadCounts);
     };
@@ -551,7 +497,7 @@ const markMessagesAsRead = async () => {
       try {
         const name = localStorage.getItem("name");
         const res = await axios.get(
-          "http://localhost:1100/api/user-unread-counts",
+          "https://taskbe.sharda.co.in/api/user-unread-counts",
           {
             params: {
               name,
@@ -578,7 +524,7 @@ const markMessagesAsRead = async () => {
   }, [selectedGroup, selectedUser]);
 
   const handleFileDownload = (fileUrl) => {
-    const fullUrl = `http://localhost:1100${fileUrl}`; // Ensure this URL is correct
+    const fullUrl = `https://taskbe.sharda.co.in${fileUrl}`; // Ensure this URL is correct
     const fileName = fileUrl.split("/").pop(); // Extract file name
 
     // Open the link in a new tab
@@ -605,7 +551,7 @@ const markMessagesAsRead = async () => {
     if (!token) return;
 
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", `http://localhost:1100${fileUrl}`, true);
+    xhr.open("GET", `https://taskbe.sharda.co.in${fileUrl}`, true);
     xhr.responseType = "arraybuffer";
     xhr.setRequestHeader("Accept", "application/pdf");
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -676,7 +622,7 @@ const markMessagesAsRead = async () => {
       };
 
       axios
-        .get(`http://localhost:1100${fileUrl}`, axiosConfig)
+        .get(`https://taskbe.sharda.co.in${fileUrl}`, axiosConfig)
         .then((response) => {
           setLoader(false);
 
@@ -709,6 +655,40 @@ const markMessagesAsRead = async () => {
     }
   };
 
+
+const sortGroups = (groups, messages) => {
+  return groups.sort((a, b) => {
+    const aLastMessage = messages.filter((msg) => msg.group === a).pop();
+    const bLastMessage = messages.filter((msg) => msg.group === b).pop();
+    
+    // Ensure that if there is no message for a group, it doesn't break the sorting
+    const aTime = aLastMessage ? new Date(aLastMessage.timestamp) : 0;
+    const bTime = bLastMessage ? new Date(bLastMessage.timestamp) : 0;
+
+    return bTime - aTime; // Sort by latest message (most recent first)
+  });
+};
+
+
+const sortUsers = (users, messages) => {
+  return users.sort((a, b) => {
+    const aLastMessage = messages.filter(
+      (msg) => msg.recipient === a.name || msg.sender === a.name
+    ).pop();
+    const bLastMessage = messages.filter(
+      (msg) => msg.recipient === b.name || msg.sender === b.name
+    ).pop();
+    
+    // Ensure that if there is no message for a user, it doesn't break the sorting
+    const aTime = aLastMessage ? new Date(aLastMessage.timestamp) : 0;
+    const bTime = bLastMessage ? new Date(bLastMessage.timestamp) : 0;
+
+    return bTime - aTime; // Sort by latest message (most recent first)
+  });
+};
+
+
+
   return (
     <div className="w-full max-h-screen p-4 flex bg-gray-100">
       {/* Left column for groups */}
@@ -728,6 +708,9 @@ const markMessagesAsRead = async () => {
         users={users}
         handleUserClick={handleUserClick}
         setSearchTerm={setSearchTerm}
+        messages={messages}
+        sortGroups={sortGroups}
+        sortUsers={sortUsers}
       />
 
       {/* Right column for chat messages */}
