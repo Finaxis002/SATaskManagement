@@ -25,7 +25,7 @@ const useMessageSocket = (setInboxCount) => {
 
         const totalUnread = directRes.data.unreadCount || 0; // <-- ONLY THIS
         setInboxCount(totalUnread);
-        playNotificationSound();
+        // playNotificationSound();
       } catch (err) {
         console.error("❌ Failed fetching inbox count:", err.message);
       }
