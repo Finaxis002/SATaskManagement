@@ -18,7 +18,7 @@ const ForwardFileModal = ({
   );
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-opacity-70 flex items-center justify-center z-50 ">
       <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl transform transition-all">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800">Forward File</h3>
@@ -59,10 +59,7 @@ const ForwardFileModal = ({
                   onChange={(e) => setForwardRecipient(e.target.value)}
                   className="text-blue-600"
                 />
-                <label
-                  htmlFor={recipient.id}
-                  className="text-gray-700 w-full"
-                >
+                <label htmlFor={recipient.id} className="text-gray-700 w-full">
                   {recipient.type === "group"
                     ? `📌 Group: ${recipient.name}`
                     : `👤 User: ${recipient.name}`}
