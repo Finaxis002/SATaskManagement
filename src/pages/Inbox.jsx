@@ -655,38 +655,13 @@ const Inbox = () => {
     }
   };
 
-
-const sortGroups = (groups, messages) => {
-  return groups.sort((a, b) => {
-    const aLastMessage = messages.filter((msg) => msg.group === a).pop();
-    const bLastMessage = messages.filter((msg) => msg.group === b).pop();
-    
-    // Ensure that if there is no message for a group, it doesn't break the sorting
-    const aTime = aLastMessage ? new Date(aLastMessage.timestamp) : 0;
-    const bTime = bLastMessage ? new Date(bLastMessage.timestamp) : 0;
-
-    return bTime - aTime; // Sort by latest message (most recent first)
-  });
-};
+  
+// Helper function to convert time string (e.g., "2:30 PM") to comparable value
 
 
-const sortUsers = (users, messages) => {
-  return users.sort((a, b) => {
-    const aLastMessage = messages.filter(
-      (msg) => msg.recipient === a.name || msg.sender === a.name
-    ).pop();
-    const bLastMessage = messages.filter(
-      (msg) => msg.recipient === b.name || msg.sender === b.name
-    ).pop();
-    
-    // Ensure that if there is no message for a user, it doesn't break the sorting
-    const aTime = aLastMessage ? new Date(aLastMessage.timestamp) : 0;
-    const bTime = bLastMessage ? new Date(bLastMessage.timestamp) : 0;
-
-    return bTime - aTime; // Sort by latest message (most recent first)
-  });
-};
-
+// Filter out the current user (logged-in user) from the admins and regular users
+const filteredAdmins = admins.filter(admin => admin.name !== currentUser.name);
+const filteredRegularUsers = regularUsers.filter(user => user.name !== currentUser.name);
 
 
   return (
@@ -702,15 +677,14 @@ const sortUsers = (users, messages) => {
         handleGroupClick={handleGroupClick}
         setShowGroups={setShowGroups}
         searchTerm={searchTerm}
-        admins={admins}
+       admins={filteredAdmins}
         selectedUser={selectedUser}
-        regularUsers={regularUsers}
+        regularUsers={filteredRegularUsers}
         users={users}
         handleUserClick={handleUserClick}
         setSearchTerm={setSearchTerm}
         messages={messages}
-        sortGroups={sortGroups}
-        sortUsers={sortUsers}
+       
       />
 
       {/* Right column for chat messages */}
