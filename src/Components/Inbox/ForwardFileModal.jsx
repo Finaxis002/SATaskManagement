@@ -51,36 +51,35 @@ const ForwardFileModal = ({
                 key={recipient.id}
                 className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-100 rounded-lg"
               >
-             <label className="relative flex items-center cursor-pointer select-none">
-  <input
-    type="checkbox"
-    name="recipient"
-    id={recipient.id}
-    value={recipient.id}
-    checked={forwardRecipients.includes(recipient.id)}
-    onChange={() => {
-      setForwardRecipients((prev) =>
-        prev.includes(recipient.id)
-          ? prev.filter((id) => id !== recipient.id)
-          : [...prev, recipient.id]
-      );
-    }}
-    className="peer appearance-none w-5 h-5 rounded-full border-2 border-blue-500 bg-white checked:bg-blue-600 checked:border-blue-600 transition-all duration-200 focus:outline-none"
-  />
-  {/* Custom checkmark SVG absolutely centered */}
-  <svg
-    className="pointer-events-none absolute left-0 top-0 w-5 h-5 flex items-center justify-center opacity-0 peer-checked:opacity-100 transition-opacity duration-150"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="white"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="20 6 10 18 4 12" />
-  </svg>
-</label>
-
+                <label className="relative flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    name="recipient"
+                    id={recipient.id}
+                    value={recipient.id}
+                    checked={forwardRecipients.includes(recipient.id)}
+                    onChange={() => {
+                      setForwardRecipients((prev) =>
+                        prev.includes(recipient.id)
+                          ? prev.filter((id) => id !== recipient.id)
+                          : [...prev, recipient.id]
+                      );
+                    }}
+                    className="peer appearance-none w-5 h-5 rounded-full border-2 border-blue-500 bg-white checked:bg-blue-600 checked:border-blue-600 transition-all duration-200 focus:outline-none"
+                  />
+                  {/* Custom checkmark SVG absolutely centered */}
+                  <svg
+                    className="pointer-events-none absolute left-0 top-0 w-5 h-5 flex items-center justify-center opacity-0 peer-checked:opacity-100 transition-opacity duration-150"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 10 18 4 12" />
+                  </svg>
+                </label>
 
                 <div className="flex items-center justify-between gap-2 w-full">
                   {/* Avatar + Name */}
