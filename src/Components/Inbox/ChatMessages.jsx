@@ -17,7 +17,8 @@ const ChatMessages = ({
 }) => {
   const [forwardingFile, setForwardingFile] = useState(null);
   const [showForwardModal, setShowForwardModal] = useState(false);
-  const [forwardRecipient, setForwardRecipient] = useState("");
+  const [forwardRecipients, setForwardRecipients] = useState([]);
+
   const [availableRecipients, setAvailableRecipients] = useState([]);
   const messageEndRef = useRef(null); // Reference for scroll position
   useEffect(() => {
@@ -54,6 +55,7 @@ const ChatMessages = ({
         type: "user",
         id: user.name || user.userId,
         name: user.name,
+        position: user.position,
       })),
       ...groups.map((group) => ({ type: "group", id: group, name: group })),
     ];
@@ -62,48 +64,48 @@ const ChatMessages = ({
   };
 
   const forwardFile = async () => {
-    if (!forwardingFile || !forwardRecipient) return;
+    if (!forwardingFile || forwardRecipients.length === 0) return;
 
     try {
-      const recipient = availableRecipients.find(
-        (r) => r.id === forwardRecipient
-      );
+      for (let recipientId of forwardRecipients) {
+        const recipient = availableRecipients.find((r) => r.id === recipientId);
 
-      const newMessage = {
-        sender: currentUser.name,
-        text: `Forwarded file: ${forwardingFile.split("/").pop()}`,
-        fileUrls: [forwardingFile],
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        readBy: [currentUser.name],
-        ...(recipient.type === "user" && {
-          recipient: recipient.id,
-        }),
-        ...(recipient.type === "group" && {
-          group: recipient.id,
-        }),
-      };
+        const newMessage = {
+          sender: currentUser.name,
+          text: `Forwarded file: ${forwardingFile.split("/").pop()}`,
+          fileUrls: [forwardingFile],
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          readBy: [currentUser.name],
+          ...(recipient.type === "user" && {
+            recipient: recipient.id,
+          }),
+          ...(recipient.type === "group" && {
+            group: recipient.id,
+          }),
+        };
 
-      if (recipient.type === "user") {
-        await axios.post(
-          `https://taskbe.sharda.co.in/api/messages/user/${recipient.id}`,
-          newMessage
-        );
-      } else {
-        await axios.post(
-          `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(
-            recipient.id
-          )}`,
-          newMessage
-        );
+        if (recipient.type === "user") {
+          await axios.post(
+            `https://taskbe.sharda.co.in/api/messages/user/${recipient.id}`,
+            newMessage
+          );
+        } else {
+          await axios.post(
+            `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(
+              recipient.id
+            )}`,
+            newMessage
+          );
+        }
       }
 
       // Close modal and reset state
       setShowForwardModal(false);
       setForwardingFile(null);
-      setForwardRecipient("");
+      setForwardRecipients([]);
     } catch (err) {
       console.error("Error forwarding file:", err);
     }
@@ -112,40 +114,37 @@ const ChatMessages = ({
   const renderFileWithActions = (fileUrl, isCurrentUser) => {
     if (fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i)) {
       return (
-        <div className="relative group">
-          <a
-            onClick={() => downloadImage(fileUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block relative"
-          >
-            <img
-              src={`https://taskbe.sharda.co.in${fileUrl}`}
-              alt="image"
-              className="rounded-lg w-full max-w-xs shadow-sm"
-            />
-            <div className="absolute top-2 right-0 flex gap-1">
-              <div
-                className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleForwardFile(fileUrl);
-                }}
-              >
-                <FaShare size={9} />
-              </div>
-              <div
-                className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  downloadImage(fileUrl);
-                }}
-              >
-                <FaDownload size={9} />
-              </div>
-            </div>
-          </a>
-        </div>
+    <div className="flex items-end gap-2">
+  <a
+    onClick={() => downloadImage(fileUrl)}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="block relative"
+  >
+    <img
+      src={`https://taskbe.sharda.co.in${fileUrl}`}
+      alt="image"
+      className="rounded-lg w-full max-w-xs shadow-sm"
+    />
+  </a>
+  <div className="flex flex-col gap-2">
+    <div
+      className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
+      onClick={() => handleForwardFile(fileUrl)}
+      title="Forward"
+    >
+      <FaShare size={14} />
+    </div>
+    <div
+      className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
+      onClick={() => downloadImage(fileUrl)}
+      title="Download"
+    >
+      <FaDownload size={14} />
+    </div>
+  </div>
+</div>
+
       );
     } else if (fileUrl.match(/\.pdf$/i)) {
       return (
@@ -267,8 +266,8 @@ const ChatMessages = ({
                       <ForwardFileModal
                         showForwardModal={showForwardModal}
                         setShowForwardModal={setShowForwardModal}
-                        forwardRecipient={forwardRecipient}
-                        setForwardRecipient={setForwardRecipient}
+                        forwardRecipients={forwardRecipients}
+                        setForwardRecipients={setForwardRecipients}
                         availableRecipients={availableRecipients}
                         forwardFile={forwardFile}
                       />

@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { FaTimes, FaSearch } from "react-icons/fa";
+import { FaTimes, FaSearch, FaPaperPlane } from "react-icons/fa";
 
 const ForwardFileModal = ({
   showForwardModal,
   setShowForwardModal,
-  forwardRecipient,
-  setForwardRecipient,
+  forwardRecipients,
+  setForwardRecipients,  // ✅ USE THIS
   availableRecipients,
   forwardFile,
 }) => {
@@ -16,6 +16,8 @@ const ForwardFileModal = ({
   const filteredRecipients = availableRecipients.filter((recipient) =>
     recipient.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // console.log("filtered Recipients : ", filteredRecipients);
 
   return (
     <div className="fixed inset-0 bg-opacity-70 flex items-center justify-center z-50 ">
@@ -48,22 +50,52 @@ const ForwardFileModal = ({
               <div
                 key={recipient.id}
                 className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-100 rounded-lg"
-                onClick={() => setForwardRecipient(recipient.id)}
               >
                 <input
-                  type="radio"
+                  type="checkbox"
                   name="recipient"
                   id={recipient.id}
                   value={recipient.id}
-                  checked={forwardRecipient === recipient.id}
-                  onChange={(e) => setForwardRecipient(e.target.value)}
+                  checked={forwardRecipients.includes(recipient.id)}
+                  onChange={() => {
+                    setForwardRecipients((prev) =>
+                      prev.includes(recipient.id)
+                        ? prev.filter((id) => id !== recipient.id)
+                        : [...prev, recipient.id]
+                    );
+                  }}
                   className="text-blue-600"
                 />
-                <label htmlFor={recipient.id} className="text-gray-700 w-full">
-                  {recipient.type === "group"
-                    ? `📌 Group: ${recipient.name}`
-                    : `👤 User: ${recipient.name}`}
-                </label>
+                <div className="flex items-center justify-between gap-2 w-full">
+                  {/* Avatar + Name */}
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-base font-semibold shadow
+      ${
+        recipient.type === "group" ? "bg-green-600" : "bg-indigo-500"
+      } text-white`}
+                    >
+                      {recipient.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <label
+                      htmlFor={recipient.id}
+                      className="text-gray-700 cursor-pointer"
+                    >
+                      {recipient.name}
+                    </label>
+                  </div>
+                  {/* Position or Group Badge on the right */}
+                  <span className="ml-2 px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">
+                    {recipient.type === "group"
+                      ? "Group"
+                      : recipient.position
+                      ? recipient.position
+                      : recipient.role
+                      ? recipient.role.charAt(0).toUpperCase() +
+                        recipient.role.slice(1)
+                      : "User"}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -78,14 +110,14 @@ const ForwardFileModal = ({
           </button>
           <button
             onClick={forwardFile}
-            disabled={!forwardRecipient}
+             disabled={forwardRecipients.length === 0}
             className={`px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-              forwardRecipient
+              forwardRecipients
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-blue-400 cursor-not-allowed"
             }`}
           >
-            Forward
+            <FaPaperPlane size={12} />
           </button>
         </div>
       </div>
