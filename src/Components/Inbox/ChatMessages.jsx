@@ -114,37 +114,36 @@ const ChatMessages = ({
   const renderFileWithActions = (fileUrl, isCurrentUser) => {
     if (fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i)) {
       return (
-    <div className="flex items-end gap-2">
-  <a
-    onClick={() => downloadImage(fileUrl)}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="block relative"
-  >
-    <img
-      src={`https://taskbe.sharda.co.in${fileUrl}`}
-      alt="image"
-      className="rounded-lg w-full max-w-xs shadow-sm"
-    />
-  </a>
-  <div className="flex flex-col gap-2">
-    <div
-      className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
-      onClick={() => handleForwardFile(fileUrl)}
-      title="Forward"
-    >
-      <FaShare size={14} />
-    </div>
-    <div
-      className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
-      onClick={() => downloadImage(fileUrl)}
-      title="Download"
-    >
-      <FaDownload size={14} />
-    </div>
-  </div>
-</div>
-
+        <div className="flex items-end gap-2">
+          <a
+            onClick={() => downloadImage(fileUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block relative"
+          >
+            <img
+              src={`https://taskbe.sharda.co.in${fileUrl}`}
+              alt="image"
+              className="rounded-lg w-full max-w-xs shadow-sm"
+            />
+          </a>
+          <div className="flex flex-col gap-2">
+            <div
+              className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
+              onClick={() => handleForwardFile(fileUrl)}
+              title="Forward"
+            >
+              <FaShare size={12} />
+            </div>
+            <div
+              className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
+              onClick={() => downloadImage(fileUrl)}
+              title="Download"
+            >
+              <FaDownload size={12} />
+            </div>
+          </div>
+        </div>
       );
     } else if (fileUrl.match(/\.pdf$/i)) {
       return (
@@ -160,10 +159,11 @@ const ChatMessages = ({
           </div>
           <div className="flex gap-1">
             <div
-              className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
+              className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
               onClick={() => handleForwardFile(fileUrl)}
+              title="Forward"
             >
-              <FaShare size={9} />
+              <FaShare size={12} />
             </div>
             <div
               className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
@@ -181,10 +181,11 @@ const ChatMessages = ({
           <span className="truncate">{fileUrl.split("/").pop()}</span>
           <div className="flex gap-1 ml-auto">
             <div
-              className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
+              className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
               onClick={() => handleForwardFile(fileUrl)}
+              title="Forward"
             >
-              <FaShare size={9} />
+              <FaShare size={12} />
             </div>
             <div
               className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
@@ -356,32 +357,40 @@ const ChatMessages = ({
                         {filesArray.map((fileUrl, fIdx) => {
                           if (fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i)) {
                             return (
-                              <a
-                                key={`img-${fIdx}`}
-                                onClick={() => downloadImage(fileUrl)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block relative"
-                              >
-                                <img
-                                  src={`https://taskbe.sharda.co.in${fileUrl}`}
-                                  alt="image"
-                                  className="rounded-lg w-full max-w-xs shadow-sm"
-                                />
-                                <div className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                                  <FaDownload size={9} />
+                              <div className="flex items-end gap-2">
+                                <a
+                                  onClick={() => downloadImage(fileUrl)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block relative"
+                                >
+                                  <img
+                                    src={`https://taskbe.sharda.co.in${fileUrl}`}
+                                    alt="image"
+                                    className="rounded-lg w-full max-w-xs shadow-sm"
+                                  />
+                                </a>
+                                <div className="flex flex-col gap-2">
+                                  <div
+                                    className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
+                                    onClick={() => handleForwardFile(fileUrl)}
+                                    title="Forward"
+                                  >
+                                    <FaShare size={12} />
+                                  </div>
+                                  <div
+                                    className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
+                                    onClick={() => downloadImage(fileUrl)}
+                                    title="Download"
+                                  >
+                                    <FaDownload size={12} />
+                                  </div>
                                 </div>
-                              </a>
+                              </div>
                             );
                           } else if (fileUrl.match(/\.pdf$/i)) {
                             return (
-                              <a
-                                key={`pdf-${fIdx}`}
-                                onClick={() => downloadPdf(fileUrl)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-between gap-3 bg-white text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs"
-                              >
+                              <div className="flex items-center justify-between gap-3 bg-white text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs">
                                 <div className="flex items-center gap-2">
                                   <FaFile className="text-red-500 text-xl" />
                                   <div>
@@ -393,28 +402,46 @@ const ChatMessages = ({
                                     </p>
                                   </div>
                                 </div>
-                                <div className="top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                                  <FaDownload size={9} />
+                                <div className="flex gap-1">
+                                  <div
+                                    className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
+                                    onClick={() => handleForwardFile(fileUrl)}
+                                    title="Forward"
+                                  >
+                                    <FaShare size={12} />
+                                  </div>
+                                  <div
+                                    className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
+                                    onClick={() => downloadPdf(fileUrl)}
+                                  >
+                                    <FaDownload size={9} />
+                                  </div>
                                 </div>
-                              </a>
+                              </div>
                             );
                           } else if (isFileTypeSupported(fileUrl)) {
                             return (
-                              <a
-                                key={`file-${fIdx}`}
-                                onClick={() => handleFileDownload(fileUrl)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 bg-white text-black border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs text-sm"
-                              >
+                              <div className="flex items-center gap-2 bg-white text-black border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs text-sm">
                                 <FaFile className="text-blue-500 text-lg" />
                                 <span className="truncate">
                                   {fileUrl.split("/").pop()}
                                 </span>
-                                <div className="top-2 right-2 bg-blue-500 text-white p-2 rounded-full">
-                                  <FaDownload size={9} />
+                                <div className="flex gap-1 ml-auto">
+                                  <div
+                                    className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 cursor-pointer"
+                                    onClick={() => handleForwardFile(fileUrl)}
+                                    title="Forward"
+                                  >
+                                    <FaShare size={12} />
+                                  </div>
+                                  <div
+                                    className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 cursor-pointer"
+                                    onClick={() => handleFileDownload(fileUrl)}
+                                  >
+                                    <FaDownload size={9} />
+                                  </div>
                                 </div>
-                              </a>
+                              </div>
                             );
                           }
                         })}
