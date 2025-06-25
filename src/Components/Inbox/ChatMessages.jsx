@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { FaDownload, FaFile, FaShare, FaTimes } from "react-icons/fa";
 import axios from "axios";
 import ForwardFileModal from "./ForwardFileModal";
+import ChatHeader from "./ChatHeader";
 
 const ChatMessages = ({
   selectedUser,
@@ -229,136 +230,154 @@ const ChatMessages = ({
   }, [messages, currentUser.name]);
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 bg-gray-50">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        {selectedUser
-          ? `Chat with ${selectedUser.name || selectedUser.userId}`
-          : selectedGroup
-          ? `Chat with ${selectedGroup}`
-          : "Select a Group or User to Chat"}
-      </h2>
-
-      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
+    <>
+      <ChatHeader selectedGroup={selectedGroup} selectedUser={selectedUser} />
+      <div
+        ref={scrollRef}
+        className="flex-1 relative overflow-y-auto p-4 bg-gray-50"
+      >
         <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
-          {Array.isArray(messages) && messages.length > 0 ? (
-            <>
-              {/* ✅ Only this block is needed */}
-              {sortedMessages.map((msg, idx) => {
-                const isCurrentUser = msg.sender === currentUser.name;
-                const filesArray =
-                  msg.fileUrls &&
-                  Array.isArray(msg.fileUrls) &&
-                  msg.fileUrls.length > 0
-                    ? msg.fileUrls
-                    : msg.fileUrl
-                    ? [msg.fileUrl]
-                    : [];
+          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
+            {Array.isArray(messages) && messages.length > 0 ? (
+              <>
+                {/* ✅ Only this block is needed */}
+                {sortedMessages.map((msg, idx) => {
+                  const isCurrentUser = msg.sender === currentUser.name;
+                  const filesArray =
+                    msg.fileUrls &&
+                    Array.isArray(msg.fileUrls) &&
+                    msg.fileUrls.length > 0
+                      ? msg.fileUrls
+                      : msg.fileUrl
+                      ? [msg.fileUrl]
+                      : [];
 
-                // Show header just before first unread received message
-                const shouldShowHeader =
-                  idx === firstUnreadIdx && firstUnreadIdx !== -1;
+                  // Show header just before first unread received message
+                  const shouldShowHeader =
+                    idx === firstUnreadIdx && firstUnreadIdx !== -1;
 
-                return (
-                  <React.Fragment key={msg._id || idx}>
-                    {shouldShowHeader && (
-                      <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-gray-200"></div>
+                  return (
+                    <React.Fragment key={msg._id || idx}>
+                      {shouldShowHeader && (
+                        <div className="relative my-6">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200"></div>
+                          </div>
+                          <div className="relative flex justify-center">
+                            <span className="px-3 py-1 text-xs font-semibold tracking-wide text-white bg-green-500 rounded-lg shadow-md">
+                              New Messages
+                            </span>
+                          </div>
                         </div>
-                        <div className="relative flex justify-center">
-                          <span className="px-3 py-1 text-xs font-semibold tracking-wide text-white bg-green-500 rounded-lg shadow-md">
-                            New Messages
+                      )}
+                      <div
+                        className={`max-w-sm p-3 rounded-xl shadow-md ${
+                          isCurrentUser
+                            ? "bg-indigo-500 text-white ml-auto rounded-br-none"
+                            : msg.readBy?.includes(currentUser.name)
+                            ? "bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
+                            : "border-2 border-gray-200 bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold">
+                            {msg.sender}
+                          </span>
+                          <span
+                            className={`text-[10px] ${
+                              isCurrentUser ? "text-gray-50" : "text-gray-500"
+                            }`}
+                          >
+                            {msg.timestamp}
                           </span>
                         </div>
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-sm p-3 rounded-xl shadow-md ${
-                        isCurrentUser
-                          ? "bg-indigo-500 text-white ml-auto rounded-br-none"
-                          : msg.readBy?.includes(currentUser.name)
-                          ? "bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
-                          : "border-2 border-gray-200 bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold">
-                          {msg.sender}
-                        </span>
-                        <span
-                          className={`text-[10px] ${
-                            isCurrentUser ? "text-gray-50" : "text-gray-500"
-                          }`}
-                        >
-                          {msg.timestamp}
-                        </span>
-                      </div>
 
-                      {/* Attachments */}
-                      {filesArray.length > 0 && (
-                        <div className="my-2 flex flex-col gap-2">
-                          {filesArray.map((fileUrl, fIdx) => (
-                            <div key={`file-${fIdx}`}>
-                              {renderFileWithActions(fileUrl, isCurrentUser)}
+                        {/* Attachments */}
+                        {filesArray.length > 0 && (
+                          <div className="my-2 flex flex-col gap-2">
+                            {filesArray.map((fileUrl, fIdx) => (
+                              <div key={`file-${fIdx}`}>
+                                {renderFileWithActions(fileUrl, isCurrentUser)}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Text */}
+                        {msg.text && (
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">
+                            {msg.text.split(" ").map((part, i) =>
+                              part.match(/(https?:\/\/[^\s]+)/gi) ? (
+                                <a
+                                  key={i}
+                                  href={part}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`underline break-all ${
+                                    isCurrentUser
+                                      ? "text-blue-200"
+                                      : "text-blue-600"
+                                  }`}
+                                >
+                                  {part}{" "}
+                                </a>
+                              ) : (
+                                part + " "
+                              )
+                            )}
+                          </p>
+                        )}
+
+                        {isCurrentUser &&
+                          selectedUser &&
+                          msg.readBy?.includes(selectedUser.name) && (
+                            <div className="text-right mt-1">
+                              <span className="text-xs text-gray-50 font-semibold">
+                                Seen
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Text */}
-                      {msg.text && (
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">
-                          {msg.text.split(" ").map((part, i) =>
-                            part.match(/(https?:\/\/[^\s]+)/gi) ? (
-                              <a
-                                key={i}
-                                href={part}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`underline break-all ${
-                                  isCurrentUser
-                                    ? "text-blue-200"
-                                    : "text-blue-600"
-                                }`}
-                              >
-                                {part}{" "}
-                              </a>
-                            ) : (
-                              part + " "
-                            )
                           )}
-                        </p>
-                      )}
-                    </div>
-                  </React.Fragment>
-                );
-              })}
+                        {isCurrentUser &&
+                          selectedGroup &&
+                          msg.readBy &&
+                          msg.readBy.length > 1 && (
+                            <div className="text-right mt-1">
+                              <span className="text-xs text-gray-50 font-semibold">
+                                Seen by:{" "}
+                                {msg.readBy
+                                  .filter((name) => name !== currentUser.name)
+                                  .join(", ")}
+                              </span>
+                            </div>
+                          )}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
 
-               {showForwardModal && (
-                      <ForwardFileModal
-                        showForwardModal={showForwardModal}
-                        setShowForwardModal={setShowForwardModal}
-                        forwardRecipients={forwardRecipients}
-                        setForwardRecipients={setForwardRecipients}
-                        availableRecipients={availableRecipients}
-                        forwardFile={forwardFile}
-                      />
-                    )}
+                {showForwardModal && (
+                  <ForwardFileModal
+                    showForwardModal={showForwardModal}
+                    setShowForwardModal={setShowForwardModal}
+                    forwardRecipients={forwardRecipients}
+                    setForwardRecipients={setForwardRecipients}
+                    availableRecipients={availableRecipients}
+                    forwardFile={forwardFile}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="text-center text-gray-500">
+                No messages available.
+              </div>
+            )}
+          </div>
 
-            </>
-          ) : (
-            <div className="text-center text-gray-500">
-              No messages available.
-            </div>
-          )}
           {/* Scroll to Bottom Indicator */}
           <div ref={messageEndRef} />
         </div>
-
-        {/* Scroll to Bottom Indicator */}
-        <div ref={messageEndRef} />
       </div>
-    </div>
+    </>
   );
 };
 
