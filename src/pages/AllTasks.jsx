@@ -73,7 +73,7 @@ const handleRemoveCompletedTasks = async () => {
 
   return (
     <>
-      <div className="p-6  w-[202vh]  overflow-auto">
+      <div className="p-6  w-[1300px]  overflow-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold"
           style={{ fontFamily: "Poppins, sans-serif" }}
