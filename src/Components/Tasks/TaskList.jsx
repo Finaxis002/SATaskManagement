@@ -92,9 +92,7 @@ const TaskList = ({
 
   const fetchTasksFromAPI = async () => {
     try {
-      const response = await fetch(
-        "https://taskbe.sharda.co.in/api/tasks"
-      );
+      const response = await fetch("https://taskbe.sharda.co.in/api/tasks");
       const data = await response.json();
 
       const visibleTasks = data.filter((task) => !task.isHidden);
@@ -381,20 +379,17 @@ const TaskList = ({
         email: localStorage.getItem("userId"),
       };
 
-      await fetch(
-        `https://taskbe.sharda.co.in/api/tasks/${task._id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            isRepetitive: false,
-            nextRepetitionDate: null,
-            updatedBy,
-          }),
-        }
-      );
+      await fetch(`https://taskbe.sharda.co.in/api/tasks/${task._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          isRepetitive: false,
+          nextRepetitionDate: null,
+          updatedBy,
+        }),
+      });
 
       await deleteTaskRequest(task._id);
       console.log("🔁 Repetition stopped and task deleted");
@@ -572,17 +567,14 @@ const TaskList = ({
       });
 
       // API call to create the new task
-      const response = await fetch(
-        "https://taskbe.sharda.co.in/api/tasks",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(newTask),
-        }
-      );
+      const response = await fetch("https://taskbe.sharda.co.in/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(newTask),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -1045,46 +1037,57 @@ const TaskList = ({
           // style={{ minWidth: "1100px" }}
           className="min-w-[1100px] table-auto border-collapse text-xs text-gray-800"
         >
-          <thead className="bg-gradient-to-r from-gray-300 to-gray-300 text-black text-xs sticky top-0 z-10">
-            <tr className="text-left">
-              <th className="py-3 px-4 min-w-[70px] font-semibold">S. No</th>
-              <th className="py-3 px-6 min-w-[180px] font-semibold">
+          <thead className="bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 text-gray-700 text-xs uppercase tracking-wide sticky top-0 z-20 shadow-sm border-b border-gray-200">
+            <tr>
+              <th className="py-1 px-4 min-w-[70px] font-bold text-[13px]">
+                S. No
+              </th>
+              <th className="py-1 px-6 min-w-[180px] font-bold text-[13px]">
                 Task Name
               </th>
-              <th className="py-3 px-6  min-w-[250px] font-semibold">
-                Work Description + Code
+              <th className="py-1 px-6 min-w-[250px] font-bold text-[13px]">
+                Work Description{" "}
+                <span className="text-indigo-400 font-extrabold">+</span> Code
               </th>
-              <th className="py-3 px-6 min-w-[150px] font-semibold">
+              <th className="py-1 px-6 min-w-[150px] font-bold text-[13px]">
                 Date of Work
               </th>
               <th
-                className="py-3 px-6  font-semibold cursor-pointer"
-                onClick={() => {
+                className={`py-1 px-6 font-bold text-[13px] cursor-pointer transition duration-100 hover:text-indigo-700 select-none`}
+                onClick={() =>
                   setDueDateSortOrder((prev) =>
                     prev === "asc" ? "desc" : "asc"
-                  );
-                }}
+                  )
+                }
               >
-                Due Date
-                {dueDateSortOrder === "asc"
-                  ? " 🔼"
-                  : dueDateSortOrder === "desc"
-                  ? " 🔽"
-                  : ""}
+                <span className="flex items-center gap-1">
+                  Due Date
+                  {dueDateSortOrder === "asc" ? (
+                    <span className="text-[12px]">▲</span>
+                  ) : dueDateSortOrder === "desc" ? (
+                    <span className="text-[12px]">▼</span>
+                  ) : (
+                    ""
+                  )}
+                </span>
               </th>
-              <th className="py-3 px-6 min-w-[140px] font-semibold text-center">
+              <th className="py-1 px-6 min-w-[140px] font-bold text-center text-[13px]">
                 Status
               </th>
-              <th className="py-3 px-6 min-w-[160px] font-semibold">Remarks</th>
-              <th className="py-3 px-6 min-w-[180px] font-semibold">Team</th>
-              <th className="py-3 px-6 min-w-[130px] font-semibold">
+              <th className="py-1 px-6 min-w-[160px] font-bold text-[13px]">
+                Remarks
+              </th>
+              <th className="py-1 px-6 min-w-[180px] font-bold text-[13px]">
+                Team
+              </th> 
+              <th className="py-1 px-6 min-w-[130px] font-bold text-[13px]">
                 Assigned By
               </th>
-              <th className="py-3 px-4 min-w-[80px] font-semibold text-center">
+              <th className="py-1 px-4 min-w-[80px] font-bold text-center text-[13px]">
                 Copy
               </th>
               {role === "admin" && (
-                <th className="py-3 px-6 min-w-[80px] font-semibold text-center">
+                <th className="py-1 px-6 min-w-[80px] font-bold text-center text-[13px]">
                   Delete
                 </th>
               )}
@@ -1148,7 +1151,6 @@ const TaskList = ({
           </tbody>
         </table>
       </div>
-      
     </div>
   );
 };
