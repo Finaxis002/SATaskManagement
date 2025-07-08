@@ -85,7 +85,7 @@ const Sidebar = () => {
       <div className="flex justify-center pt-2">
         <NavLink to="/">
           <img
-            src={icon}
+            src="/SALOGO.png"
             alt="Logo"
             className="w-10 h-10 object-contain rounded-4xl z-0"
           />

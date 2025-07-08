@@ -1,5 +1,5 @@
 import Select from "react-select";
-import { useEffect , useState } from "react";
+import { useEffect, useState } from "react";
 import { FaCalendarAlt, FaFilter, FaTimes } from "react-icons/fa";
 import TaskCodeFilterSelector from "./TaskCodeFilterSelector";
 
@@ -14,9 +14,9 @@ export const customSelectStyles = {
     background: "#f9fafb",
     transition: "border-color 0.2s, box-shadow 0.2s",
     outline: "none",
-    '&:hover': {
+    "&:hover": {
       borderColor: "#a5b4fc",
-    }
+    },
   }),
   menu: (base) => ({
     ...base,
@@ -26,12 +26,12 @@ export const customSelectStyles = {
     padding: 0,
     background: "#fff",
     zIndex: 20,
-      overflowX: "hidden",
-    width: "100%",         // <-- Match the control width
-    minWidth: 0,           // <-- Allow shrinking
-    maxWidth: "100%",      // <-- Prevent growing beyond control
+    overflowX: "hidden",
+    width: "100%", // <-- Match the control width
+    minWidth: 0, // <-- Allow shrinking
+    maxWidth: "100%", // <-- Prevent growing beyond control
     whiteSpace: "normal",
-    wordBreak: "break-word"
+    wordBreak: "break-word",
   }),
   menuPortal: (base) => ({
     ...base,
@@ -52,7 +52,7 @@ export const customSelectStyles = {
     transition: "background 0.18s, color 0.18s",
     borderRadius: 8,
     margin: "2px 6px",
-    background:""
+    background: "",
   }),
   placeholder: (base) => ({
     ...base,
@@ -72,9 +72,9 @@ export const customSelectStyles = {
     color: state.isFocused ? "#6366f1" : "#94a3b8",
     transition: "color 0.18s",
     padding: "2px 6px",
-    '&:hover': {
+    "&:hover": {
       color: "#6366f1",
-    }
+    },
   }),
   indicatorSeparator: (base) => ({
     ...base,
@@ -89,16 +89,15 @@ export const customSelectStyles = {
     ...base,
     padding: "2px 6px",
     color: "#cbd5e1",
-    '&:hover': {
+    "&:hover": {
       color: "#6366f1",
-    }
+    },
   }),
   valueContainer: (base) => ({
     ...base,
     padding: "2px 8px",
   }),
 };
-
 
 const FilterSection = ({
   filters,
@@ -118,24 +117,24 @@ const FilterSection = ({
     handleFilterChange("dueBefore", "");
   };
 
-   const [options, setOptions] = useState([]);
-  
-    useEffect(() => {
-      fetch("https://taskbe.sharda.co.in/api/task-codes")
-        .then((r) => {
-          if (!r.ok) throw new Error(r.statusText);
-          return r.json();
-        })
-        .then((data) => {
-          setOptions(
-            data.map((code) => ({
-              label: code.name,
-              value: code.name,
-            }))
-          );
-        })
-        .catch(console.error);
-    }, []);
+  const [options, setOptions] = useState([]);
+
+  useEffect(() => {
+    fetch("https://taskbe.sharda.co.in/api/task-codes")
+      .then((r) => {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      })
+      .then((data) => {
+        setOptions(
+          data.map((code) => ({
+            label: code.name,
+            value: code.name,
+          }))
+        );
+      })
+      .catch(console.error);
+  }, []);
 
   return (
     // <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-200 mb-6 z-20">
@@ -375,25 +374,39 @@ const FilterSection = ({
         </div>
 
         {/* Task Code */}
+        {/* Task Code */}
         <div className="flex flex-col flex-grow min-w-[140px] max-w-[170px]">
           <label className="mb-1 ml-1 text-[12px] font-medium text-gray-600 tracking-wide flex items-center gap-1">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-300 mr-1"></span>
             Task Code
           </label>
-           <Select
-      isClearable
-      isSearchable
-      options={options}
-      value={filters.code ? { label: filters.code, value: filters.code } : null}
-      onChange={(selectedOption) =>
+          <Select
+            options={options}
+            value={
+              filters.code ? { label: filters.code, value: filters.code } : null
+            }
+            onChange={(selectedOption) =>
               handleFilterChange("code", selectedOption?.value || "")
             }
-      placeholder="Select task code"
-      noOptionsMessage={() => "No matching codes"}
-      styles={{
-        ...customSelectStyles,
-      }}
-    />
+            styles={{
+              ...customSelectStyles,
+              control: (base) => ({
+                ...base,
+                borderRadius: 12,
+                borderColor: "#e5e7eb",
+                boxShadow: "none",
+                minHeight: 36,
+                fontSize: 14,
+                background: "#f9fafb",
+              }),
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            }}
+            menuPortalTarget={document.body}
+            placeholder="Select"
+            isClearable
+            isSearchable
+            noOptionsMessage={() => "No matching codes"}
+          />
         </div>
 
         {/* Assignee */}
