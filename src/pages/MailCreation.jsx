@@ -187,7 +187,7 @@ const MailCreation = () => {
             </h2>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto h-[55vh]">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 text-gray-600 text-sm">
