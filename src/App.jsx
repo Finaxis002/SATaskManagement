@@ -21,6 +21,7 @@ import Clients from "./pages/Clients";
 import ViewInvoices from "./pages/ViewInvoices";
 import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
 import WhatsAppPage from "./pages/WhatsAppPage";
+import MailCreation from "./pages/MailCreation";
 
 const App = () => {
   return (
@@ -216,6 +217,16 @@ const App = () => {
           <ProtectedRoute>
             <MainLayout>
               <WhatsAppPage />
+            </MainLayout>
+          </ProtectedRoute>
+         }
+        />
+         <Route 
+         path="/mail-creation"
+         element={
+          <ProtectedRoute>
+            <MainLayout>
+              <MailCreation />
             </MainLayout>
           </ProtectedRoute>
          }
