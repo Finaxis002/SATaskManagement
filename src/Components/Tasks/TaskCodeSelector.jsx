@@ -45,7 +45,6 @@ export const customSelectStyles = {
     transition: "background 0.18s, color 0.18s",
     borderRadius: 8,
     margin: "2px 6px",
-    background: "",
   }),
   placeholder: (base) => ({
     ...base,
