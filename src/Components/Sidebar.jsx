@@ -16,18 +16,16 @@ import {
   FaMoneyBill,
   FaDochub,
   FaGolfBall,
-  FaWhatsapp
+  FaMailBulk,
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
 import icon from "/icon.png";
 
-
 const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
-
 
 const Sidebar = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
@@ -233,6 +231,13 @@ const Sidebar = () => {
             to="/viewinvoicewithotp"
           />
         )}
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaMailBulk className="text-xl" />}
+            label="Mail Creation Page"
+            to="/mail-creation"
+          />
+        )}
       </div>
 
       {/* Footer */}
@@ -270,12 +275,10 @@ const SidebarItem = ({ icon, label, to, onClick }) => (
   >
     <span className="text-base">{icon}</span>
     {/* Tooltip that appears on hover */}
-    <span className="absolute left-full top-0 transform -translate-x-1/2 ml-10 px-2 py-1 bg-blue-500 text-white text-sm rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[9999] pointer-events-none">
-      <span className="whitespace-normal break-words max-w-[150px]  text-ellipsis">
-        {label}
-      </span>
+    <span className="absolute left-full top-1/2 transform -translate-y-1/2 ml-3 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out z-[9999] pointer-events-none shadow-lg max-w-xs">
+      <span className="">{label}</span>
       {/* Tooltip arrow */}
-      <div className="absolute left-0 top-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-0 border-t-4 border-l-transparent border-r-transparent border-t-blue-500 "></div>
+      <div className="absolute right-full top-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 transform rotate-45"></div>
     </span>
   </NavLink>
 );
