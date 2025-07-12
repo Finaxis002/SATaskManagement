@@ -14,7 +14,8 @@ import {
   Key,
   RotateCcw,
 } from "lucide-react";
-import EmailCreationModel from "../Components/emailCreationModel";
+
+import EmailCreationModel from "../Components/EmailCreationModel";
 
 const fetchMailUsers = async () => {
   const res = await fetch(
