@@ -22,8 +22,18 @@ import ViewInvoices from "./pages/ViewInvoices";
 import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
 import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
+import MailBox from "./pages/MailBox";
 
 const App = () => {
+  function MailBoxEmbed() {
+    return (
+      <iframe
+        src="https://mailbox.sharda.co.in/"
+        style={{ width: "100%", height: "100vh", border: "none" }}
+        title="Mailbox"
+      />
+    );
+  }
   return (
     <Router>
       <Routes>
@@ -90,7 +100,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/notifications"
           element={
@@ -211,25 +220,35 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route 
-         path="/whatsapp"
-         element={
-          <ProtectedRoute>
-            <MainLayout>
-              <WhatsAppPage />
-            </MainLayout>
-          </ProtectedRoute>
-         }
+        <Route
+          path="/whatsapp"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <WhatsAppPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
         />
-         <Route 
-         path="/mail-creation"
-         element={
-          <ProtectedRoute>
-            <MainLayout>
-              <MailCreation />
-            </MainLayout>
-          </ProtectedRoute>
-         }
+        <Route
+          path="/mail-creation"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MailCreation />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mailbox"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
         />
       </Routes>
     </Router>
