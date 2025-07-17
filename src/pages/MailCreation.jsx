@@ -163,16 +163,16 @@ const MailCreation = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
+    <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 ">
       <div className=" mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold text-indigo-900 tracking-tight drop-shadow-sm flex items-center">
             <span className="h-8 w-1 bg-indigo-500 rounded-full mr-4"></span>
             Mail User Management
           </h1>
           <button
             onClick={openModal}
-            className="inline-flex items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95"
+            className="inline-flex items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 text-sm"
           >
             <PlusCircle className="w-5 h-5 mr-2" />
             Create Mail ID
@@ -180,14 +180,14 @@ const MailCreation = () => {
         </div>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-2xl font-semibold text-gray-800 flex items-center">
+          <div className="p-2 border-b border-gray-100">
+            <h2 className="text-xl font-semibold text-gray-800 flex items-center">
               <Mail className="w-5 h-5 mr-2 text-indigo-600" />
               Existing Mail Users
             </h2>
           </div>
 
-          <div className="overflow-x-auto h-[55vh]">
+          <div className="overflow-x-auto h-[30vh]">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 text-gray-600 text-sm">

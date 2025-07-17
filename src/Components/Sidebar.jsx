@@ -17,6 +17,7 @@ import {
   FaDochub,
   FaGolfBall,
   FaMailBulk,
+  FaEnvelope,
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
@@ -233,9 +234,9 @@ const Sidebar = () => {
         )}
         {role === "admin" && (
           <SidebarItem
-            icon={<FaMailBulk className="text-xl" />}
-            label="Mail Creation Page"
-            to="/mail-creation"
+            icon={<FaEnvelope className="text-xl" />}
+            label="Mail Box"
+            to="/mailbox"
           />
         )}
       </div>

@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import ReportGeneration from "../Components/ReportGeneration";
 import ClientList from "../Components/client/ClientList";
 import CreateClientModal from "../Components/client/CreateClientModal";
+import MailCreation from "./MailCreation";
 
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
@@ -444,6 +445,7 @@ const tabs = [
     { key: "department", label: "Department Overview" },
     { key: "code", label: "Code Overview" },
     { key: "report", label: "Report Generation" },
+    {key: "mail", label: "Mail User Creation" },
   ];
 
   return (
@@ -765,6 +767,10 @@ const tabs = [
           )} */}
 
           {activeTab === "report" && role === "admin" && <ReportGeneration />}
+
+          <div className="max-h-[20vh]">{activeTab === "mail" && role === "admin" && <MailCreation />}</div>
+
+          
         </>
       )}
 
