@@ -410,25 +410,6 @@ const Departments = () => {
     }));
   };
 
-  const handleSaveEditedUsers = async () => {
-    if (!editingDept || !editableUsersMap[editingDept]) return;
-    try {
-      await Promise.all(
-        editableUsersMap[editingDept].map((user) =>
-          axios.put(`/api/employees/${user._id}`, {
-            name: user.name,
-            position: user.position,
-            role: user.role,
-            department: user.department,
-          })
-        )
-      );
-      setEditingDept(null);
-      await fetchDepartmentsAgain();
-    } catch (err) {
-      console.error("Failed to save changes:", err);
-    }
-  };
 
   const handleRemoveUser = async (userId) => {
     try {

@@ -34,6 +34,16 @@ const App = () => {
       />
     );
   }
+
+  function AdminMailBoxEmbed() {
+    return (
+      <iframe
+        src="http://localhost:5235/admin"
+        style={{ width: "100%", height: "100vh", border: "none" }}
+        title="Mailbox"
+      />
+    );
+  }
   return (
     <Router>
       <Routes>
@@ -246,6 +256,17 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <MailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin-mailbox"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <AdminMailBoxEmbed />
               </MainLayout>
             </ProtectedRoute>
           }
