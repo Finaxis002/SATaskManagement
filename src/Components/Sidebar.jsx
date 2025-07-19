@@ -232,13 +232,20 @@ const Sidebar = () => {
             to="/viewinvoicewithotp"
           />
         )}
-        {role === "admin" && (
+
+        <SidebarItem
+          icon={<FaEnvelope className="text-xl" />}
+          label="Mail Box"
+          to="/mailbox"
+        />
+
+        {/* {role === "admin" && (
           <SidebarItem
-            icon={<FaEnvelope className="text-xl" />}
-            label="Mail Box"
-            to="/mailbox"
+            icon={<FaMailBulk className="text-xl" />}
+            label="Admin Mailbox"
+            to="/admin-mailbox"
           />
-        )}
+        )} */}
       </div>
 
       {/* Footer */}
