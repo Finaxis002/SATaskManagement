@@ -29,11 +29,27 @@ const socket = io("https://taskbe.sharda.co.in", {
 });
 
 const Sidebar = () => {
-  const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [role, setRole] = useState("");
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
   const [leaveAlert, setLeaveAlert] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const items = [
+    { to: "/", icon: <FaHome />, label: "Home" },
+    {
+      to: "/all-employees",
+      icon: <FaUsers />,
+      label: "All Users",
+      admin: true,
+    },
+    { to: "/all-tasks", icon: <FaClipboardList />, label: "Tasks" },
+    { to: "/clients", icon: <FaBriefcase />, label: "Clients" },
+    { to: "/leave", icon: <FaGolfBall />, label: "Leave" },
+    { to: "/mailbox", icon: <FaEnvelope />, label: "Mail Box" },
+    { to: "/departments", icon: <FaCog />, label: "Settings", admin: true },
+    // ... add more
+  ];
 
   useEffect(() => {
     const updateLeaveAlert = () => {
@@ -79,7 +95,16 @@ const Sidebar = () => {
 
   return (
     // <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] hover:w-[250px] transition-all duration-300">
-    <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] ">
+    <div
+      className={`
+    fixed left-0 top-0 h-screen z-100
+    bg-[#0b1425] text-white flex flex-col justify-between border-r border-gray-700
+    transition-all duration-300
+    ${expanded ? "w-[220px]" : "w-[70px]"}
+  `}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+    >
       {/* Logo at the top */}
       <div className="flex justify-center pt-2">
         <NavLink to="/">
@@ -98,18 +123,20 @@ const Sidebar = () => {
           icon={<FaHome className="text-xl" />}
           label="Home"
           to="/"
+          expanded={expanded}
         />
         {role === "admin" && (
           <>
-            <SidebarItem
+            {/* <SidebarItem
               icon={<FaPlus className="text-xl" />}
               label="Add User"
               to="/add-employee"
-            />
+            /> */}
             <SidebarItem
               icon={<FaUsers className="text-xl" />}
               label="All Users"
               to="/all-employees"
+              expanded={expanded}
             />
           </>
         )}
@@ -118,13 +145,15 @@ const Sidebar = () => {
           icon={<FaClipboardList className="text-xl" />}
           label="Tasks"
           to="/all-tasks"
+          expanded={expanded}
         />
         <SidebarItem
           icon={<FaBriefcase className="text-xl" />}
           label="Clients"
           to="/clients"
+          expanded={expanded}
         />
-        <SidebarItem
+        {/* <SidebarItem
           icon={
             <div className="relative">
               <FaInbox />
@@ -137,10 +166,10 @@ const Sidebar = () => {
           }
           label="Inbox"
           to="/inbox"
-        />
+        /> */}
 
         {/* Notification Badge */}
-        <SidebarItem
+        {/* <SidebarItem
           icon={
             <div className="relative">
               <FaBell className="text-xl" />
@@ -153,13 +182,13 @@ const Sidebar = () => {
           }
           label={<span className="text-sm">Notification</span>}
           to="/notifications"
-        />
+        /> */}
 
-        <SidebarItem
+        {/* <SidebarItem
           icon={<FaClock className="text-xl" />}
           label="Reminders"
           to="/reminders"
-        />
+        /> */}
 
         <SidebarItem
           icon={
@@ -174,6 +203,7 @@ const Sidebar = () => {
           }
           label="Leave"
           to="/leave"
+          expanded={expanded}
         />
 
         {role === "admin" && (
@@ -191,6 +221,7 @@ const Sidebar = () => {
             label="Leave Management"
             to="/leavemanagement"
             onClick={resetLeaveAlert}
+            expanded={expanded}
           />
         )}
 
@@ -199,6 +230,7 @@ const Sidebar = () => {
             icon={<FaCog className="text-xl" />}
             label="Settings"
             to="/departments"
+            expanded={expanded}
           />
         )}
 
@@ -207,6 +239,7 @@ const Sidebar = () => {
             icon={<FaCheckCircle className="text-xl" />}
             label="Completed Tasks"
             to="/completed"
+            expanded={expanded}
           />
         )}
 
@@ -215,6 +248,7 @@ const Sidebar = () => {
             icon={<FaMoneyBill className="text-xl" />}
             label="Invoice"
             to="/invoice"
+            expanded={expanded}
           />
         )}
 
@@ -230,6 +264,7 @@ const Sidebar = () => {
             icon={<FaDochub className="text-xl" />}
             label="View Invoice"
             to="/viewinvoicewithotp"
+            expanded={expanded}
           />
         )}
 
@@ -237,6 +272,7 @@ const Sidebar = () => {
           icon={<FaEnvelope className="text-xl" />}
           label="Mail Box"
           to="/mailbox"
+          expanded={expanded}
         />
 
         {/* {role === "admin" && (
@@ -249,45 +285,29 @@ const Sidebar = () => {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-gray-700 text-xs text-gray-400">
+      <div className="px-2 py-3 border-t border-gray-700 text-xs text-gray-400">
         © 2025 Finaxis
       </div>
     </div>
   );
 };
 
-const SidebarItem = ({ icon, label, to, onClick }) => (
-  // <NavLink
-  //   to={to}
-  //   onClick={onClick}
-  //   className={({ isActive }) =>
-  //     `flex items-center gap-3 px-3 py-2 rounded transition-colors text-sm ${
-  //       isActive ? "bg-gray-800 text-white" : "hover:bg-[#2b2c2f] text-white"
-  //     }`
-  //   }
-  // >
-  //   <span className="text-base text-white">{icon}</span>
-  //   <span className="text-white">{label}</span>
-  // </NavLink>
-
+const SidebarItem = ({ icon, label, to, onClick, expanded }) => (
   <NavLink
     to={to}
     onClick={onClick}
     className={({ isActive }) =>
-      `flex items-center gap-3 px-3 py-2 rounded transition-all duration-300 text-sm relative ${
+      `flex items-center gap-3 px-3 py-2 rounded transition-all duration-300 text-sm relative
+      ${
         isActive
-          ? "bg-gray-800 text-white"
-          : "hover:bg-[#2b2c2f] text-white group"
+          ? "bg-indigo-700 text-white border-l-4 border-indigo-400 shadow-md"
+          : "hover:bg-[#2b2c2f] text-white border-l-4 border-transparent"
       }`
     }
   >
     <span className="text-base">{icon}</span>
-    {/* Tooltip that appears on hover */}
-    <span className="absolute left-full top-1/2 transform -translate-y-1/2 ml-3 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out z-[9999] pointer-events-none shadow-lg max-w-xs">
-      <span className="">{label}</span>
-      {/* Tooltip arrow */}
-      <div className="absolute right-full top-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 transform rotate-45"></div>
-    </span>
+    {/* Label only shown if expanded */}
+    {expanded && <span className="ml-1.5 whitespace-nowrap">{label}</span>}
   </NavLink>
 );
 

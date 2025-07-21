@@ -4,6 +4,8 @@ import bgImage from "../assets/bg.png";
 import TaskOverview from "../Components/TaskOverview";
 import UserGrid from "../Components/UserGrid";
 import useSocketSetup from "../hook/useSocketSetup";
+import useStickyNotes from "../hook/useStickyNotes";
+import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
 
 function getTimeBasedGreeting() {
   const hour = new Date().getHours();
@@ -17,7 +19,9 @@ const Dashboard = () => {
   const [currentDate, setCurrentDate] = useState("");
   useSocketSetup();
 
-  const { name, role } = useSelector((state) => state.auth);
+  const { name, role, loading } = useSelector((state) => state.auth);
+
+  const { notes: latestNotes, loading: notesLoading } = useStickyNotes(3);
 
   useEffect(() => {
     const now = new Date();
@@ -31,8 +35,36 @@ const Dashboard = () => {
     setCurrentDate(now.toLocaleDateString("en-US", options));
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[90vh] bg-gray-50">
+        <svg
+          className="animate-spin h-10 w-10 text-blue-600"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8z"
+          ></path>
+        </svg>
+        <span className="ml-3 text-lg text-gray-600">Loading dashboard...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full  h-[90vh] overflow-y-auto p-6 text-gray-800 bg-gray-50">
+    <div className="relative w-full  h-[90vh] overflow-y-auto px-6 text-gray-800 bg-gray-50">
       {/* Centered Header */}
 
       <div className="bg-gradient-to-r from-[#f6f9fc] to-[#eef2f5] py-5 px-8 shadow-sm border-b border-gray-100">
@@ -100,7 +132,7 @@ const Dashboard = () => {
       </div>
 
       {/* Task Container */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden pt-6 ">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden  ">
         <div className="flex justify-between items-center">
           <h2
             className="text-xl font-semibold text-gray-800 p-6 pb-0"
@@ -115,12 +147,18 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* UserGrid for Admin */}
-      {role === "admin" ? (
-        <div className="mt-6 bg-white rounded-lg shadow-md  grid ">
-          <UserGrid />
+      <div className="mt-6 flex flex-col md:flex-row gap-6">
+        {/* UserGrid for Admin (right on desktop) */}
+        {role === "admin" && (
+          <div className="md:w-1/2">
+            <UserGrid />
+          </div>
+        )}
+        {/* Latest Sticky Notes (left on desktop) */}
+        <div className="md:w-1/2">
+          <StickyNotesDashboard />
         </div>
-      ) : null}
+      </div>
     </div>
   );
 };

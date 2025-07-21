@@ -7,13 +7,19 @@ import {
   FaBuilding,
   FaEye,
   FaEyeSlash,
+  FaLock,
 } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
 
 import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
 import { showAlert } from "../utils/alert"; // Import the showAlert function
 
-const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCloseModal }) => {
+const AddEmployee = ({
+  showEditModal,
+  setShowEditModal,
+  employeeToEdit,
+  handleCloseModal,
+}) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -54,7 +60,6 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
   //   }));
   // };
 
-
   useEffect(() => {
     if (employeeToEdit) {
       setFormData({
@@ -89,7 +94,7 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
           `https://taskbe.sharda.co.in/api/employees/${employeeToEdit._id}`,
           dataToSend
         );
-       showAlert("Employee updated successfully!");
+        showAlert("Employee updated successfully!");
       } else {
         // Add new employee
         await axios.post(
@@ -107,8 +112,7 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
   };
 
   return (
-    
-    <div className="relative w-full max-h-screen text-gray-800 bg-gray-100 py-14 px-6">
+    <div className="relative w-full max-h-screen text-gray-800  py-14 px-6">
       <img
         src={bgImage}
         alt="Background"
@@ -117,8 +121,16 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
 
       <div className="relative z-10 max-w-4xl mx-auto bg-white p-10 rounded-xl shadow-lg">
         <h3 className="text-xl font-semibold mb-4 text-center">
-          {employeeToEdit ? "Edit Employee" : "Add New Employee"}
+          {employeeToEdit ? "Edit User" : "Add New User"}
         </h3>
+        <button
+          type="button"
+          onClick={handleCloseModal}
+          className="absolute top-3 right-3 text-gray-500 hover:text-red-600 text-2xl font-bold focus:outline-none"
+          aria-label="Close"
+        >
+          &times;
+        </button>
 
         <form
           onSubmit={handleSubmit}
@@ -207,25 +219,28 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
           </div>
 
           {/* Password */}
-          <div className="relative">
-            <FaSuitcase className="absolute top-4 left-4 text-gray-400" />
-            <input
-              type={passwordVisible ? "text" : "password"}
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="pl-10 pr-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="button"
-              onClick={togglePasswordVisibility}
-              className="absolute top-4 right-4 text-gray-400"
-            >
-              {passwordVisible ? <FaEyeSlash /> : <FaEye />}
-            </button>
-          </div>
+          {/* Password (Only show on Add User) */}
+          {!employeeToEdit && (
+            <div className="relative">
+              <FaLock className="absolute top-4 left-4 text-gray-400" />
+              <input
+                type={passwordVisible ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="pl-10 pr-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute top-4 right-4 text-gray-400"
+              >
+                {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+          )}
 
           {/* Admin Checkbox */}
           {/* <div className="md:col-span-2">
@@ -241,22 +256,21 @@ const AddEmployee = ({ showEditModal, setShowEditModal, employeeToEdit, handleCl
             </label>
           </div> */}
           {/* Role Dropdown */}
-<div className="relative md:col-span-2">
-  <label className="block mb-1 text-sm font-medium text-gray-700">
-    Select Role
-  </label>
-  <select
-    name="role"
-    value={formData.role}
-    onChange={handleChange}
-    className="w-40 py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-  >
-    <option value="user">User</option>
-    <option value="admin">Admin</option>
-    <option value="manager">Manager</option>
-  </select>
-</div>
-
+          <div className="relative md:col-span-2">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Select Role
+            </label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="w-40 py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+            </select>
+          </div>
 
           {/* Submit Button (Full Width) */}
           <div className="md:col-span-2 flex justify-center mt-6">
