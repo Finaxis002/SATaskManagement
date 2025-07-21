@@ -12,10 +12,11 @@ import axios from "axios";
 import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
 import { showAlert } from "../utils/alert"; // Import the showAlert function
 import Swal from "sweetalert2";
+import AddEmployee from "./AddEmployee";
 
 const AllEmployees = () => {
   const dispatch = useDispatch();
-  const { list: users, loading, error } = useSelector((state) => state.users);
+  const { list: users, error } = useSelector((state) => state.users);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -29,8 +30,13 @@ const AllEmployees = () => {
     userId: "",
   }); // Stores the form data to be updated
 
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    dispatch(fetchUsers());
+    setLoading(true); // Start loader as soon as we fetch
+    dispatch(fetchUsers()).finally(() => setLoading(false));
   }, [dispatch]);
 
   // const handleDelete = (id) => {
@@ -136,18 +142,33 @@ const AllEmployees = () => {
     setSelectedUser(null);
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUpdatedUserData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-
-  if (loading)
-    return <div className="text-center pt-10 text-lg">Loading users...</div>;
-  if (error)
-    return <div className="text-center pt-10 text-red-600">Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[250px]">
+        <svg
+          className="animate-spin h-8 w-8 text-indigo-500"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8z"
+          ></path>
+        </svg>
+        <span className="ml-3 text-indigo-600 font-semibold">
+          Loading Users...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-[90vh] overflow-y-auto">
@@ -165,6 +186,15 @@ const AllEmployees = () => {
         </h2>
 
         <div className="overflow-x-auto">
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg font-semibold transition"
+            >
+              + Add User
+            </button>
+          </div>
+
           <table className="min-w-full border-collapse bg-white text-sm shadow-sm rounded-md">
             <thead>
               <tr className="bg-gray-300 text-black text-left font-semibold">
@@ -180,67 +210,35 @@ const AllEmployees = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user, index) => (
-                <tr
-                  key={user._id}
-                  className={`${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-100"
-                  }  transition duration-300`}
-                   style={{ fontFamily: "Roboto, sans-serif" }}
-                >
-                  <td className="px-5 py-3 border-b text-gray-700">
-                    {user.userId}
-                  </td>
-                  <td className="px-5 py-3 border-b font-semibold">
-                    {user.name}
-                  </td>
-                  <td className="px-5 py-3 border-b text-gray-600">
-                    {user.email}
-                  </td>
-                  <td className="px-5 py-3 border-b">{user.position}</td>
-                  <td className="px-5 py-3 border-b">
-                    {Array.isArray(user.department) ? (
-                      user.department.map((dept, index) => (
-                        <span
-                          key={index}
-                          className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full"
-                        >
-                          {dept}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full">
-                        {user.department}
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="px-5 py-4 text-center">
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="animate-spin h-6 w-6 text-indigo-500 mr-3"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8z"
+                        ></path>
+                      </svg>
+                      <span className="text-indigo-600 font-medium">
+                        Loading Users...
                       </span>
-                    )}
-                  </td>
-
-                  <td className="px-5 py-3 border-b">{user.role}</td>
-                  <td className="px-5 py-3 border-b text-center">
-                    <div className="flex justify-center gap-3">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="  flex items-center gap-2 px-4 py-2  hover:bg-[#d2d5f1]  text-xs rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105"
-                      >
-                        <FaEdit className="text-xs text-blue-500" /> 
-                      </button>
-                      <button
-                        onClick={() => handleResetPassword(user._id, user.name)}
-                        className="flex items-center gap-2 px-4 py-2  hover:bg-[#f7f7a2]  text-xs rounded-md shadow-md transition ease-in-out transform hover:scale-105"
-                      >
-                        <FaSyncAlt className="text-xs text-yellow-500" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user._id)}
-                        className="flex items-center gap-2 px-3 py-1.5  hover:bg-[#f5a8a8] rounded-md shadow-sm transition ease-in-out transform hover:scale-105"
-                      >
-                        <FaTrash className="text-xs text-red-500" />
-                      </button>
                     </div>
                   </td>
                 </tr>
-              ))}
-              {users.length === 0 && (
+              ) : users.length === 0 ? (
                 <tr>
                   <td
                     colSpan="7"
@@ -249,6 +247,69 @@ const AllEmployees = () => {
                     No users found.
                   </td>
                 </tr>
+              ) : (
+                users.map((user, index) => (
+                  <tr
+                    key={user._id}
+                    className={`${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-100"
+                    }  transition duration-300`}
+                    style={{ fontFamily: "Roboto, sans-serif" }}
+                  >
+                    <td className="px-5 py-3 border-b text-gray-700">
+                      {user.userId}
+                    </td>
+                    <td className="px-5 py-3 border-b font-semibold">
+                      {user.name}
+                    </td>
+                    <td className="px-5 py-3 border-b text-gray-600">
+                      {user.email}
+                    </td>
+                    <td className="px-5 py-3 border-b">{user.position}</td>
+                    <td className="px-5 py-3 border-b">
+                      {Array.isArray(user.department) ? (
+                        user.department.map((dept, index) => (
+                          <span
+                            key={index}
+                            className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full"
+                          >
+                            {dept}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full">
+                          {user.department}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-3 border-b">{user.role}</td>
+                    <td className="px-5 py-3 border-b text-center">
+                      <div className="flex justify-center gap-3">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="  flex items-center gap-2 px-4 py-2  hover:bg-[#d2d5f1]  text-xs rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105"
+                        >
+                          <FaEdit className="text-xs text-blue-500" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleResetPassword(user._id, user.name)
+                          }
+                          className="flex items-center gap-2 px-4 py-2  hover:bg-[#f7f7a2]  text-xs rounded-md shadow-md transition ease-in-out transform hover:scale-105"
+                        >
+                          <FaSyncAlt className="text-xs text-yellow-500" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user._id)}
+                          className="flex items-center gap-2 px-3 py-1.5  hover:bg-[#f5a8a8] rounded-md shadow-sm transition ease-in-out transform hover:scale-105"
+                        >
+                          <FaTrash className="text-xs text-red-500" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -257,141 +318,28 @@ const AllEmployees = () => {
 
       {/* Modal for editing employee */}
       {showEditModal && (
-        <div className="fixed inset-0 flex justify-center items-center bg-[oklch(0.28 0.03 256.85 / 0.5)] bg-opacity-70 z-20 ">
-          <div className="bg-white bg-opacity-80 p-10 rounded-lg shadow-xl backdrop-blur-md">
-            <h3 className="text-3xl font-semibold mb-6 text-center text-gray-800">
-              Edit Employee
-            </h3>
+        <div className="fixed inset-0 flex justify-center items-center bg-opacity-30 z-30">
+          <AddEmployee
+            showEditModal={true}
+            setShowEditModal={setShowEditModal}
+            employeeToEdit={selectedUser} // Pass the selected user here!
+            handleCloseModal={() => {
+              setShowEditModal(false);
+              setSelectedUser(null);
+              dispatch(fetchUsers());
+            }}
+          />
+        </div>
+      )}
 
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                {/* Name */}
-                <div className="mb-4">
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={updatedUserData.name}
-                    onChange={handleChange}
-                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-
-                {/* Email */}
-                <div className="mb-4">
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={updatedUserData.email}
-                    onChange={handleChange}
-                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-
-                {/* Position */}
-                <div className="mb-4">
-                  <label
-                    htmlFor="position"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Position
-                  </label>
-                  <input
-                    type="text"
-                    id="position"
-                    name="position"
-                    value={updatedUserData.position}
-                    onChange={handleChange}
-                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-
-                {/* Department */}
-                <div className="mb-4 w-[18rem]">
-                  <label
-                    htmlFor="department"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Department
-                  </label>
-                  <DepartmentSelector
-                    selectedDepartments={department}
-                    setSelectedDepartments={setDepartment}
-                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-
-                {/* Role */}
-                <div className="mb-4">
-                  <label
-                    htmlFor="role"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Role
-                  </label>
-                  <select
-                    name="role"
-                    id="role"
-                    value={updatedUserData.role}
-                    onChange={handleChange}
-                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
-                  </select>
-                </div>
-
-                {/* User ID */}
-                <div className="mb-4">
-                  <label
-                    htmlFor="userId"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    User ID
-                  </label>
-                  <input
-                    type="text"
-                    id="userId"
-                    name="userId"
-                    value={updatedUserData.userId}
-                    onChange={handleChange}
-                    className="w-full p-3 mt-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-between mt-6">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  onClick={handleUpdate}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-300"
-                >
-                  Update
-                </button>
-              </div>
-            </form>
-          </div>
+      {showAddModal && (
+        <div className="fixed inset-0 flex justify-center items-center bg-opacity-30 z-30">
+          <AddEmployee
+            showEditModal={false}
+            setShowEditModal={setShowAddModal} // This will close modal from AddEmployee
+            employeeToEdit={null} // Ensure it's in 'add' mode
+            handleCloseModal={() => setShowAddModal(false)}
+          />
         </div>
       )}
     </div>

@@ -11,6 +11,7 @@ const Login = () => {
   });
 
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -20,6 +21,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       const response = await axios.post(
@@ -46,8 +48,6 @@ const Login = () => {
 
       // ✅ Dispatch to Redux
       dispatch(setAuth({ name: normalizedName, role, userId: email }));
-
-      // ✅ Redirect to dashboard or home
       window.location.href = "/";
     } catch (err) {
       alert("Failed to log in. Please check your credentials.");
@@ -58,6 +58,36 @@ const Login = () => {
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-gray-50">
+        <div className="flex flex-col items-center">
+          <svg
+            className="animate-spin h-12 w-12 text-indigo-600 mb-4"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8z"
+            ></path>
+          </svg>
+          <span className="text-lg text-indigo-600 font-semibold">
+            Signing you in...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-50 flex items-center justify-center p-6">

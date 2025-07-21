@@ -1,21 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FaBell,
   FaUserCircle,
   FaSearch,
   FaSignOutAlt,
   FaHome,
+  FaRegStickyNote,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import useNotificationSocket from "../hook/useNotificationSocket";
+import StickyNotes from "./notes/StickyNotes";
+import QuickActionsDropdown from "./QuickActionsDropdown";
+
+import { useNavigate, useRoutes } from "react-router-dom";
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileInitial, setProfileInitial] = useState("Fi");
   const [searchTerm, setSearchTerm] = useState("");
   const [highlightRefs, setHighlightRefs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [showNotes, setShowNotes] = useState(false);
 
   const navigate = useNavigate();
 
+  useNotificationSocket(setNotificationCount);
   //for search bar
   useEffect(() => {
     const highlightMatches = (term) => {
@@ -149,13 +157,13 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="bg-[#ffffff] w-full text-white px-4 py-2 flex items-center justify-between ">
+    <header className="bg-white w-full text-gray-800 px-6 py-3 flex items-center justify-between shadow-sm sticky top-0 z-50">
       {/* Search Bar */}
-      <div className="flex-1 flex justify-end-safe">
+      <div className="flex-1 flex justify-end">
         <div className="relative w-full max-w-xl">
           {/* Search Icon */}
-          <span className="absolute inset-y-0 left-3 flex items-center text-gray-200">
-            <FaSearch />
+          <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+            <FaSearch className="w-4 h-4" />
           </span>
 
           {/* Search Input */}
@@ -165,19 +173,19 @@ const Header = () => {
             onChange={handleSearchChange}
             placeholder="Search..."
             id="global-search-input"
-            className="w-full pl-10 pr-10 py-2 rounded-full bg-[#e5e7e9de] text-sm placeholder-gray-400 text-black focus:outline-none"
+            className="w-full pl-10 pr-24 py-2.5 rounded-full bg-gray-100 text-sm placeholder-gray-500 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-200"
           />
 
-          {/* Right-side controls (clear button and match count) */}
+          {/* Right-side controls */}
           <div className="absolute inset-y-0 right-3 flex items-center gap-2">
-            {/* Match Count - only shows when there are matches */}
+            {/* Match Count */}
             {highlightRefs.length > 0 && (
-              <span className="text-xs text-gray-300 whitespace-nowrap">
+              <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
                 {currentIndex + 1}/{highlightRefs.length}
               </span>
             )}
 
-            {/* Clear Button - only shows when there's text */}
+            {/* Clear Button */}
             {searchTerm && (
               <button
                 onClick={() => {
@@ -185,9 +193,23 @@ const Header = () => {
                   setHighlightRefs([]);
                   setCurrentIndex(0);
                 }}
-                className="text-gray-400 hover:text-white flex-shrink-0"
+                className="text-gray-500 hover:text-gray-700 flex-shrink-0 transition-colors duration-200"
+                aria-label="Clear search"
               >
-                ✖
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
             )}
           </div>
@@ -195,65 +217,89 @@ const Header = () => {
       </div>
 
       {/* Right Icons */}
-      <div className="flex items-center gap-4 ml-6 relative">
-        {/* Profile Icon */}
-        <div
-          id="profile-menu"
-          onClick={handleMenuToggle}
-          className="bg-purple-500 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold cursor-pointer"
+      <div className="flex items-center gap-5 ml-6 relative">
+        {/* Notifications */}
+        <button
+          onClick={() => navigate("/notifications")}
+          className="relative bg-gray-100 rounded-full p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200"
+          aria-label="Notifications"
         >
-          {profileInitial}
-        </div>
+          <FaBell className="text-gray-600 text-lg" />
+          {/* Notification badge */}
+          {notificationCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center ">
+              {notificationCount}
+            </span>
+          )}
+        </button>
 
-        {/* Dropdown Menu */}
-        {isMenuOpen && (
-          <div
-            id="profile-menu-dropdown"
-            style={{
-              top: "110%",
-              right: 0,
-              position: "absolute",
-              zIndex: 10,
-            }}
-            className="w-40 bg-white text-black rounded-lg shadow-lg p-2"
-            onClick={(e) => e.stopPropagation()}
+        {/* Notes */}
+        <QuickActionsDropdown
+          onShowNotes={() => setShowNotes(true)}
+          onShowInbox={() => setShowInbox(true)}
+          onShowReminders={() => setShowReminders(true)}
+        />
+
+        {showNotes && <StickyNotes onClose={() => setShowNotes(false)} />}
+
+        {/* Profile Menu */}
+        <div className="relative">
+          <button
+            id="profile-menu"
+            onClick={handleMenuToggle}
+            className="bg-blue-400 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+            aria-label="Profile menu"
           >
-            {/* Home Button */}
-            <button
-              onClick={() => {
-                navigate("/");
-                setIsMenuOpen(false);
-              }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-md flex items-center gap-2"
-            >
-              <FaHome className="text-gray-600" />
-              Home
-            </button>
-            {/* Profile Button */}
-            <button
-              onClick={() => {
-                navigate("/profile");
-                setIsMenuOpen(false);
-              }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-md flex items-center gap-2"
-            >
-              <FaUserCircle className="text-gray-600" />
-              Profile
-            </button>
+            {profileInitial}
+          </button>
 
-            {/* Logout Button */}
-            <button
-              onClick={() => {
-                handleLogout();
-                setIsMenuOpen(false);
-              }}
-              className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100 rounded-md flex items-center gap-2"
+          {/* Dropdown Menu */}
+          {isMenuOpen && (
+            <div
+              id="profile-menu-dropdown"
+              className="absolute top-12 right-0 w-48 bg-white rounded-lg shadow-xl overflow-hidden py-1 z-50 border border-gray-100"
+              onClick={(e) => e.stopPropagation()}
             >
-              <FaSignOutAlt className="text-red-500" />
-              Logout
-            </button>
-          </div>
-        )}
+              {/* Home Button */}
+              <button
+                onClick={() => {
+                  navigate("/");
+                  setIsMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-3 transition-colors duration-150"
+              >
+                <FaHome className="text-gray-500 flex-shrink-0" />
+                <span>Home</span>
+              </button>
+
+              {/* Profile Button */}
+              <button
+                onClick={() => {
+                  navigate("/profile");
+                  setIsMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-3 transition-colors duration-150"
+              >
+                <FaUserCircle className="text-gray-500 flex-shrink-0" />
+                <span>Profile</span>
+              </button>
+
+              <div className="border-t border-gray-100 my-1"></div>
+
+              {/* Logout Button */}
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-red-50 text-red-500 flex items-center gap-3 transition-colors duration-150"
+              >
+                <FaSignOutAlt className="flex-shrink-0" />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

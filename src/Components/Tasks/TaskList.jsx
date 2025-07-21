@@ -44,6 +44,7 @@ const TaskList = ({
   const [departmentsForAdmin, setDepartmentsForAdmin] = useState([]);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [loading, setLoading] = useState(true);
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
@@ -122,6 +123,7 @@ const TaskList = ({
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -334,9 +336,11 @@ const TaskList = ({
 
   const filteredTasks = (tasksOverride || tasks)
     .filter((task) => {
-      // exclude hidden tasks
+      // Exclude hidden tasks and obsolete hidden tasks
       if (task.isHidden) return false;
+      if (task.isObsoleteHidden) return false; // <-- ADD THIS LINE
 
+      // ...your existing filtering logic below
       const matchesFilter =
         (filters.department === "" ||
           task.department.includes(filters.department)) &&
@@ -349,15 +353,12 @@ const TaskList = ({
         (filters.status === "" || task.status === filters.status);
 
       const shouldHide = hideCompleted && task.status === "Completed";
-
-      // ✅ Due Date comparison
       const dueDate = new Date(task.dueDate);
       const selectedDate = filters.dueBefore
         ? new Date(filters.dueBefore)
         : null;
       const matchesDueBefore = selectedDate ? dueDate <= selectedDate : true;
 
-      // return matchesFilter && !shouldHide;
       return matchesFilter && !shouldHide && matchesDueBefore;
     })
     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
@@ -1027,16 +1028,12 @@ const TaskList = ({
         // }}
         className="overflow-x-auto overflow-y-auto"
         style={{
-          maxHeight: "calc(75vh - 120px)",
+          maxHeight: "calc(80vh - 120px)",
           position: "relative",
         }}
         onScroll={() => syncScroll("vertical")}
       >
-        <table
-          // className=" w-full min-w-full table-auto border-collapse text-xs text-gray-800"
-          // style={{ minWidth: "1100px" }}
-          className="min-w-[1100px] table-auto border-collapse text-xs text-gray-800"
-        >
+        <table className="w-full table-auto border-collapse text-sm text-gray-800">
           <thead className="bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 text-gray-700 text-xs uppercase tracking-wide sticky top-0 z-20 shadow-sm border-b border-gray-200">
             <tr>
               <th className="py-1 px-4 min-w-[70px] font-bold text-[13px]">
@@ -1079,7 +1076,7 @@ const TaskList = ({
               </th>
               <th className="py-1 px-6 min-w-[180px] font-bold text-[13px]">
                 Team
-              </th> 
+              </th>
               <th className="py-1 px-6 min-w-[130px] font-bold text-[13px]">
                 Assigned By
               </th>
@@ -1096,9 +1093,36 @@ const TaskList = ({
 
           <tbody className="text-xs text-gray-700">
             {/* High Priority Section */}
-            {highPriorityTasks.length === 0 &&
-            mediumPriorityTasks.length === 0 &&
-            lowPriorityTasks.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="13" className="py-10 text-center">
+                  <svg
+                    className="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-2"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
+                  </svg>
+                  <span className="text-indigo-600 font-medium">
+                    Loading tasks...
+                  </span>
+                </td>
+              </tr>
+            ) : highPriorityTasks.length === 0 &&
+              mediumPriorityTasks.length === 0 &&
+              lowPriorityTasks.length === 0 ? (
               <tr className="even:bg-gray-50 odd:bg-white">
                 <td colSpan="13" className="text-center py-6 text-gray-500">
                   🚫 No tasks Assigned Yet.

@@ -4,6 +4,7 @@ import TaskCodeSelector from "../Components/Tasks/TaskCodeSelector"; // Adjust p
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTaskCodes } from "../redux/taskCodeSlice"; // Adjust path as needed
 import { fetchClients } from "../redux/clientSlice"; // Adjust path as needed
+import { FaExclamationTriangle, FaCheckCircle } from "react-icons/fa";
 
 const Completed = () => {
   const [tasks, setTasks] = useState([]);
@@ -13,6 +14,8 @@ const Completed = () => {
   const codeOptions = useSelector((state) => state.taskCodes.list); // ✅ Use Redux data
   const clientOptions = useSelector((state) => state.clients.list);
 
+  const [activeTab, setActiveTab] = useState("completed"); // "completed" or "obsolete"
+
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
   const userEmail = localStorage.getItem("userId");
@@ -21,9 +24,7 @@ const Completed = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await fetch(
-          "https://taskbe.sharda.co.in/api/tasks"
-        );
+        const response = await fetch("https://taskbe.sharda.co.in/api/tasks");
         const data = await response.json();
         setTasks(data);
       } catch (err) {
@@ -42,83 +43,134 @@ const Completed = () => {
     dispatch(fetchTaskCodes());
   }, [dispatch]);
 
-  const codeLoading = useSelector((state) => state.taskCodes.loading);
-  const codeError = useSelector((state) => state.taskCodes.error);
-
-  const completedTasks = tasks.filter((task) => {
+  const filteredTasks = tasks.filter((task) => {
     const clientMatch =
       selectedClient === "" || task.clientName === selectedClient;
-
     const codeMatch = selectedCode === "" || task.code === selectedCode;
 
-    return task.status === "Completed" && clientMatch && codeMatch;
+    if (activeTab === "completed") {
+      // Only completed & isHidden === true
+      return (
+        task.status === "Completed" &&
+        task.isHidden === true &&
+        clientMatch &&
+        codeMatch
+      );
+    } else if (activeTab === "obsolete") {
+      // Only obsolete & isObsoleteHidden === true
+      return (
+        task.status === "Obsolete" &&
+        task.isObsoleteHidden === true &&
+        clientMatch &&
+        codeMatch
+      );
+    }
+    return false;
   });
 
   return (
-    <div className="py-4 px-1 h-[90vh] w-[200vh]  overflow-auto">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:gap-4">
-        {/* Filter by Client */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-          <label
-            htmlFor="client-filter"
-            className="text-sm font-medium text-gray-700"
-          >
-            Filter by Client:
-          </label>
-          <Select
-            id="client-filter"
-            options={[
-              { value: "", label: "All Clients" },
-              ...clientOptions.map((client) => ({
-                value: client.name, // ✅ Use client name as value
-                label: client.name, // ✅ Display name in dropdown
-              })),
-            ]}
-            value={
-              selectedClient
-                ? { value: selectedClient, label: selectedClient }
-                : { value: "", label: "All Clients" }
-            }
-            onChange={(selectedOption) =>
-              setSelectedClient(selectedOption.value)
-            }
-            className="w-full sm:w-64 text-sm"
-            isSearchable
-            placeholder="Select client..."
-          />
+    <div className=" px-1 h-[90vh] w-[200vh] overflow-auto">
+      <div className="sticky w-[101%] top-0 w-full z-20 bg-white py-3 px-4 mb-3 flex justify-between items-center gap-6 shadow">
+        {/* Tabs */}
+        <div className="flex flex-col">
+          <div className="flex gap-2 mb-6">
+            <button
+              className={`px-6 py-2 rounded-t-md font-medium text-sm border-b-2 ${
+                activeTab === "completed"
+                  ? "border-indigo-600 text-indigo-700 bg-indigo-50"
+                  : "border-transparent text-gray-400 bg-white"
+              }`}
+              onClick={() => setActiveTab("completed")}
+            >
+              Completed Tasks
+            </button>
+            <button
+              className={`px-6 py-2 rounded-t-md font-medium text-sm border-b-2 ${
+                activeTab === "obsolete"
+                  ? "border-indigo-600 text-indigo-700 bg-indigo-50"
+                  : "border-transparent text-gray-400 bg-white"
+              }`}
+              onClick={() => setActiveTab("obsolete")}
+            >
+              Obsolete Tasks
+            </button>
+          </div>
         </div>
 
-        {/* Filter by Code */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-          <label
-            htmlFor="code-filter"
-            className="text-sm font-medium text-gray-700"
-          >
-            Filter by Code:
-          </label>
-          <Select
-            id="code-filter"
-            options={[
-              { value: "", label: "All Codes" },
-              ...codeOptions.map((code) => ({
-                value: code,
-                label: code,
-              })),
-            ]}
-            value={
-              selectedCode
-                ? { value: selectedCode, label: selectedCode }
-                : { value: "", label: "All Codes" }
-            }
-            onChange={(selectedOption) => setSelectedCode(selectedOption.value)}
-            className="w-full sm:w-64 text-sm"
-            isSearchable
-            placeholder="Select code..."
-          />
+        {/* Divider */}
+        <div className="h-8 border-l border-gray-200 mx-6" />
+
+        {/* Filters - make filters row, responsive */}
+        <div className="flex gap-6 flex-wrap items-center">
+          {/* Client Filter */}
+          <div className="flex items-center gap-2 min-w-[210px]">
+            <label
+              htmlFor="client-filter"
+              className="text-sm text-gray-600 font-medium whitespace-nowrap"
+            >
+              Client:
+            </label>
+            <div className="flex-1 min-w-[130px]">
+              <Select
+                id="client-filter"
+                options={[
+                  { value: "", label: "All Clients" },
+                  ...clientOptions.map((client) => ({
+                    value: client.name,
+                    label: client.name,
+                  })),
+                ]}
+                value={
+                  selectedClient
+                    ? { value: selectedClient, label: selectedClient }
+                    : { value: "", label: "All Clients" }
+                }
+                onChange={(selectedOption) =>
+                  setSelectedClient(selectedOption.value)
+                }
+                className="text-sm"
+                isSearchable
+                placeholder="Select client..."
+              />
+            </div>
+          </div>
+
+          {/* Code Filter */}
+          <div className="flex items-center gap-2 min-w-[210px]">
+            <label
+              htmlFor="code-filter"
+              className="text-sm text-gray-600 font-medium whitespace-nowrap"
+            >
+              Code:
+            </label>
+            <div className="flex-1 min-w-[120px]">
+              <Select
+                id="code-filter"
+                options={[
+                  { value: "", label: "All Codes" },
+                  ...codeOptions.map((code) => ({
+                    value: code,
+                    label: code,
+                  })),
+                ]}
+                value={
+                  selectedCode
+                    ? { value: selectedCode, label: selectedCode }
+                    : { value: "", label: "All Codes" }
+                }
+                onChange={(selectedOption) =>
+                  setSelectedCode(selectedOption.value)
+                }
+                className="text-sm"
+                isSearchable
+                placeholder="Select code..."
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <table className="min-w-[1300px] w-full table-auto border-collapse text-sm text-gray-800">
+      <table className="w-full table-auto border-collapse text-sm text-gray-800">
         <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-sm">
           <tr className="text-left">
             <th className="py-4 px-4 min-w-[70px] font-semibold">S. No</th>
@@ -147,14 +199,14 @@ const Completed = () => {
         </thead>
 
         <tbody>
-          {completedTasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <tr>
               <td colSpan="10" className="text-center py-6 text-gray-500">
                 🚫 No completed tasks available.
               </td>
             </tr>
           ) : (
-            completedTasks.map((task, index) => (
+            filteredTasks.map((task, index) => (
               <tr key={task._id} className="border-b">
                 <td className="py-3 px-4">{index + 1}</td>
 
