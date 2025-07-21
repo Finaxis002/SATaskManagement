@@ -148,14 +148,13 @@ const Dashboard = () => {
       </div>
 
       <div className="mt-6 flex flex-col md:flex-row gap-6">
-        {/* UserGrid for Admin (right on desktop) */}
+        
         {role === "admin" && (
           <div className="md:w-1/2">
             <UserGrid />
           </div>
         )}
-        {/* Latest Sticky Notes (left on desktop) */}
-        <div className="md:w-1/2">
+        <div className={role === "admin" ? "md:w-1/2" : "w-full"}>
           <StickyNotesDashboard />
         </div>
       </div>

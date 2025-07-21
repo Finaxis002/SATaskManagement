@@ -256,7 +256,7 @@ const TaskOverview = () => {
                   />
 
                   <span
-                    className={`text-gray-800 text-lg  ${
+                    className={`text-gray-800 text-sm  ${
                       task.status === "Completed" || justCompleted.has(task._id)
                         ? "line-through text-gray-400"
                         : ""
