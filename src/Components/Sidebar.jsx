@@ -206,7 +206,7 @@ const Sidebar = () => {
           expanded={expanded}
         />
 
-        {role === "admin" && (
+        {/* {role === "admin" && (
           <SidebarItem
             icon={
               <div className="relative">
@@ -223,7 +223,7 @@ const Sidebar = () => {
             onClick={resetLeaveAlert}
             expanded={expanded}
           />
-        )}
+        )} */}
 
         {role === "admin" && (
           <SidebarItem
@@ -268,12 +268,12 @@ const Sidebar = () => {
           />
         )}
 
-        <SidebarItem
+        {/* <SidebarItem
           icon={<FaEnvelope className="text-xl" />}
           label="Mail Box"
           to="/mailbox"
           expanded={expanded}
-        />
+        /> */}
 
         {/* {role === "admin" && (
           <SidebarItem

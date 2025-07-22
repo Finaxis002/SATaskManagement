@@ -669,7 +669,7 @@ const ReportGeneration = ({
   };
 
   return (
-    <div className="overflow-x-auto h-[68vh] w-[180vh] relative">
+    <div className="overflow-x-auto h-[68vh] w-[195vh] relative">
       <div className="flex items-center justify-between mb-6 flex-wrap">
         {/* Left section: Filters */}
         <div className="flex items-center space-x-6 flex-wrap">
