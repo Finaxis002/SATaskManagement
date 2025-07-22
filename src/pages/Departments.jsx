@@ -6,6 +6,7 @@ import ReportGeneration from "../Components/ReportGeneration";
 import ClientList from "../Components/client/ClientList";
 import CreateClientModal from "../Components/client/CreateClientModal";
 import MailCreation from "./MailCreation";
+import LeaveManagement from "./LeaveManagement";
 
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
@@ -53,9 +54,7 @@ const Departments = () => {
       const employees = employeeRes.data;
 
       // Fetch tasks
-      const taskRes = await axios.get(
-        "https://taskbe.sharda.co.in/api/tasks"
-      );
+      const taskRes = await axios.get("https://taskbe.sharda.co.in/api/tasks");
       const tasks = taskRes.data;
 
       const deptMap = {};
@@ -98,9 +97,7 @@ const Departments = () => {
 
   const fetchTaskCodes = async () => {
     try {
-      const res = await axios.get(
-        "https://taskbe.sharda.co.in/api/task-codes"
-      );
+      const res = await axios.get("https://taskbe.sharda.co.in/api/task-codes");
 
       const sortedData = res.data.sort((a, b) => {
         // Extract the leading number from the name (before first space)
@@ -147,9 +144,7 @@ const Departments = () => {
   // };
   const fetchClients = async () => {
     try {
-      const res = await fetch(
-        "https://taskbe.sharda.co.in/api/clients"
-      );
+      const res = await fetch("https://taskbe.sharda.co.in/api/clients");
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
 
@@ -313,10 +308,9 @@ const Departments = () => {
     if (!newCodeName.trim()) return;
 
     try {
-      await axios.post(
-        `https://taskbe.sharda.co.in/api/task-codes`,
-        { name: newCodeName }
-      );
+      await axios.post(`https://taskbe.sharda.co.in/api/task-codes`, {
+        name: newCodeName,
+      });
       fetchTaskCodes();
       setNewCodeName("");
       setShowCodeModal(false);
@@ -347,12 +341,9 @@ const Departments = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await axios.delete(
-        `https://taskbe.sharda.co.in/api/clients`,
-        {
-          data: { name: clientName },
-        }
-      );
+      await axios.delete(`https://taskbe.sharda.co.in/api/clients`, {
+        data: { name: clientName },
+      });
       Swal.fire({
         icon: "success",
         title: "Deleted!",
@@ -410,90 +401,36 @@ const Departments = () => {
     }));
   };
 
-
   const handleRemoveUser = async (userId) => {
     try {
-      await axios.delete(
-        `https://taskbe.sharda.co.in/api/employees/${userId}`
-      );
+      await axios.delete(`https://taskbe.sharda.co.in/api/employees/${userId}`);
       setEditableUsers((prev) => prev.filter((u) => u._id !== userId));
     } catch (err) {
       console.error("Failed to remove user:", err);
     }
   };
   const [activeTab, setActiveTab] = useState("department");
-const tabs = [
+  const tabs = [
     { key: "department", label: "Department Overview" },
     { key: "code", label: "Code Overview" },
     { key: "report", label: "Report Generation" },
-    {key: "mail", label: "Mail User Creation" },
+    { key: "manageleave", label: "Leave Management" },
+    { key: "mail", label: "Mail User Creation" },
   ];
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      {/* <h1 className="text-3xl font-bold text-center text-indigo-900 mb-5">
-        {view === "department"
-          ? "Departments Overview"
-          : view === "code"
-          ? "Code Overview"
-          : view === "client"
-          ? "Client Overview"
-          : "Reports Overview"}
-      </h1> */}
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Application Settings
+      </h1>
 
-      {/* 🔘 View Switch Buttons */}
-      {/* <div className="flex justify-center gap-4 mb-6">
-        {role === "admin" && (
-          <button
-            className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-              view === "department"
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-            }`}
-            onClick={() => setView("department")}
-          >
-            Department Overview
-          </button>
-        )}
-
-        {role === "admin" && (
-          <button
-            className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-              view === "code"
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-            }`}
-            onClick={() => setView("code")}
-          >
-            Code Overview
-          </button>
-        )}
-
-        {role === "admin" && (
-          <button
-            className={`px-6 py-2 text-sm font-medium rounded-md transition-colors ${
-              view === "report"
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50"
-            }`}
-            onClick={() => setView("report")}
-          >
-            Report Generation
-          </button>
-        )}
-      </div> */}
-
-      <h1 className="text-4xl font-bold text-gray-900 mb-2">Application Settings</h1>
-        <p className="text-base text-gray-500 mb-8">
-          Configure and manage TaskFlow to suit your needs.
-        </p>
-
+      <div className="flex justify-between">
         {/* Tab Buttons */}
         <div className="flex gap-2 border border-gray-200 rounded-md overflow-hidden mb-6 w-fit">
           {tabs.map((tab) => (
             <button
               key={tab.key}
-             onClick={() => setActiveTab(tab.key)}
+              onClick={() => setActiveTab(tab.key)}
               className={`px-6 py-2 text-sm font-medium transition-all ${
                 activeTab === tab.key
                   ? "bg-white text-indigo-600 border-b-2 border-indigo-600"
@@ -505,25 +442,26 @@ const tabs = [
           ))}
         </div>
 
-      {/* 🔘 Action Buttons */}
-      <div className="flex justify-end mb-2">
-        {activeTab === "department" && role === "admin" && (
-          <button
-            onClick={handleCreateDepartment}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-          >
-            <FaPlus /> Add Department
-          </button>
-        )}
+        {/* 🔘 Action Buttons */}
+        <div className="flex justify-end mb-2">
+          {activeTab === "department" && role === "admin" && (
+            <button
+              onClick={handleCreateDepartment}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 absolute rounded-md flex items-center gap-2 transition-colors"
+            >
+              <FaPlus /> Add Department
+            </button>
+          )}
 
-        {activeTab === "code" && role === "admin" && (
-          <button
-            onClick={handleCreateCode}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-          >
-            <FaPlus /> Add Code
-          </button>
-        )}
+          {activeTab === "code" && role === "admin" && (
+            <button
+              onClick={handleCreateCode}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 absolute rounded-md flex items-center gap-2 transition-colors"
+            >
+              <FaPlus /> Add Code
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 🔁 View Content */}
@@ -542,7 +480,7 @@ const tabs = [
                 </p>
               </div>
             ) : (
-              <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
+              <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto">
                 {Object.entries(departmentMap).map(([dept, { users }]) => (
                   <div
                     key={dept}
@@ -563,7 +501,7 @@ const tabs = [
                           onClick={() => handleEditDepartment(dept, users)}
                           className="text-blue-600 hover:text-blue-800 text-sm"
                         >
-                          ✏️ Edit 
+                          ✏️ Edit
                         </button>
                         <button
                           type="button"
@@ -749,9 +687,13 @@ const tabs = [
 
           {activeTab === "report" && role === "admin" && <ReportGeneration />}
 
-          <div className="max-h-[20vh]">{activeTab === "mail" && role === "admin" && <MailCreation />}</div>
+          {activeTab === "manageleave" && role === "admin" && (
+            <LeaveManagement />
+          )}
 
-          
+          <div className="max-h-[20vh]">
+            {activeTab === "mail" && role === "admin" && <MailCreation />}
+          </div>
         </>
       )}
 

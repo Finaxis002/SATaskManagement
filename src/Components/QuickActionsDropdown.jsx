@@ -1,5 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FaRegStickyNote, FaBell, FaInbox, FaClock } from "react-icons/fa";
+import {
+  FaRegStickyNote,
+  FaBell,
+  FaInbox,
+  FaClock,
+  FaEnvelope,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import useMessageSocket from "../hook/useMessageSocket";
 
@@ -23,6 +29,16 @@ const QuickActionsDropdown = ({
     if (open) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
+
+  function MailBoxEmbed() {
+    return (
+      <iframe
+        src="https://mailbox.sharda.co.in/"
+        style={{ width: "100%", height: "100vh", border: "none" }}
+        title="Mailbox"
+      />
+    );
+  }
 
   return (
     <div className="relative" ref={ref}>
@@ -74,6 +90,15 @@ const QuickActionsDropdown = ({
             }}
           >
             <FaClock className="text-blue-400" /> Reminders
+          </button>
+          <button
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-yellow-50 transition"
+            onClick={() => {
+              setOpen(false);
+              navigate("/mailbox");
+            }}
+          >
+            <FaEnvelope className="text-yellow-400" /> Mailbox
           </button>
         </div>
       )}

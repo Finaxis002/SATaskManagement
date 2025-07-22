@@ -6,22 +6,22 @@ import LeaveOverview from "../Components/leave/adminPanel/LeaveOverview";
 
 const LeaveManagement = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [leaveAlert, setLeaveAlert] = useState('false')
+  const [leaveAlert, setLeaveAlert] = useState("false");
 
   const formatDate = (date) =>
-  new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  
-if (Notification.permission !== "granted") {
-  Notification.requestPermission().then((perm) => {
-    console.log("🔔 Notification permission notification permission:", perm);
-  });
-}
+    new Date(date).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
 
-useEffect(() => {
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission().then((perm) => {
+      console.log("🔔 Notification permission notification permission:", perm);
+    });
+  }
+
+  useEffect(() => {
     const email = localStorage.getItem("userId");
     const name = localStorage.getItem("name");
 
@@ -29,36 +29,37 @@ useEffect(() => {
       socket.emit("register", email, name);
     }
 
-   const handleNewLeave = (data) => {
-    console.log("New leave request received:", data);
-    const role = localStorage.getItem("role");
+    const handleNewLeave = (data) => {
+      console.log("New leave request received:", data);
+      const role = localStorage.getItem("role");
 
-    if (role === "admin") {
-      if (Notification.permission === "granted") {
-        new Notification("📩 New Leave Request", {
-          body: `${data.userId} applied for ${data.leaveType} leave\n${formatDate(data.fromDate)} → ${formatDate(data.toDate)}`,
+      if (role === "admin") {
+        if (Notification.permission === "granted") {
+          new Notification("📩 New Leave Request", {
+            body: `${data.userId} applied for ${
+              data.leaveType
+            } leave\n${formatDate(data.fromDate)} → ${formatDate(data.toDate)}`,
+          });
+        }
+
+        // Only show the alert if this is a new leave request
+        const lastLeaveTimestamp = localStorage.getItem("lastLeaveTimestamp");
+        const currentTimestamp = new Date().getTime().toString();
+
+        if (lastLeaveTimestamp !== currentTimestamp) {
+          setLeaveAlert(true);
+          localStorage.setItem("showLeaveAlert", "true");
+          localStorage.setItem("lastLeaveTimestamp", currentTimestamp);
+        }
+
+        // Dispatch event to update other parts of the app (sidebar)
+        const event = new StorageEvent("storage", {
+          key: "showLeaveAlert",
+          newValue: "true",
         });
+        window.dispatchEvent(event);
       }
-
-      // Only show the alert if this is a new leave request
-      const lastLeaveTimestamp = localStorage.getItem("lastLeaveTimestamp");
-      const currentTimestamp = new Date().getTime().toString();
-
-      if (lastLeaveTimestamp !== currentTimestamp) {
-        setLeaveAlert(true);
-        localStorage.setItem("showLeaveAlert", "true");
-        localStorage.setItem("lastLeaveTimestamp", currentTimestamp);
-      }
-
-      // Dispatch event to update other parts of the app (sidebar)
-      const event = new StorageEvent("storage", {
-        key: "showLeaveAlert",
-        newValue: "true",
-      });
-      window.dispatchEvent(event);
-    }
-  };
-
+    };
 
     socket.on("new-leave", handleNewLeave);
 
@@ -67,7 +68,7 @@ useEffect(() => {
     };
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
     const updateLeaveAlert = () => {
       const leaveAlertFlag = localStorage.getItem("showLeaveAlert");
       setLeaveAlert(leaveAlertFlag === "true");
@@ -92,12 +93,12 @@ useEffect(() => {
     };
   }, []);
 
-   const resetLeaveAlert = () => {
+  const resetLeaveAlert = () => {
     localStorage.setItem("showLeaveAlert", "false");
     setLeaveAlert(false);
   };
 
- useEffect(() => {
+  useEffect(() => {
     if (activeTab === "requests") {
       resetLeaveAlert(); // Reset the leave alert when switching to the "Manage Requests" tab
       // Emit custom event if localStorage isn't enough
@@ -107,9 +108,9 @@ useEffect(() => {
   }, [activeTab]);
 
   return (
-    <div className="p-6 text-white min-h-screen bg-gray-900">
+    <div className="p-6 text-white bg-gray-900 h-[68vh] overflow-y-scroll">
       <h1 className="text-3xl font-bold mb-4">Leave Management (Admin)</h1>
-{/* Leave Alert Notification */}
+      {/* Leave Alert Notification */}
       {leaveAlert && (
         <div className="bg-yellow-600 text-white p-3 rounded mb-4">
           You have a new leave request!
