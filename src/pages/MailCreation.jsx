@@ -16,10 +16,12 @@ import {
 } from "lucide-react";
 
 import EmailCreationModel from "../Components/EmailCreationModel";
+import Swal from 'sweetalert2';
+
 
 const fetchMailUsers = async () => {
   const res = await fetch(
-    "https://taskbe.sharda.co.in/api/email/list-email-users"
+    "https://mailbackend.sharda.co.in/api/email/list-email-users"
   );
   const data = await res.json();
   return data.users || [];
@@ -84,7 +86,7 @@ const MailCreation = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        "https://taskbe.sharda.co.in/api/email/create-email-user",
+        "https://mailbackend.sharda.co.in/api/email/create-email-user",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -106,10 +108,19 @@ const MailCreation = () => {
   };
 
   const handleDelete = async (email) => {
-    if (!window.confirm(`Delete ${email}? This cannot be undone!`)) return;
+    const result = await Swal.fire({
+    title: `Delete ${email}?`,
+    text: "This cannot be undone!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, delete it!",
+  });
+  if (!result.isConfirmed) return;
     try {
       const res = await fetch(
-        "https://taskbe.sharda.co.in/api/email/delete-email-user",
+        "https://mailbackend.sharda.co.in/api/email/delete-email-user",
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -121,7 +132,7 @@ const MailCreation = () => {
         // Optionally show toast
         setUsers(users.filter((u) => u.email !== email));
       } else {
-        alert("Failed to delete: " + (data.error || data.message));
+        Swal.fire("Failed to delete", data.error || data.message, "error");
       }
     } catch (err) {
       alert("Server error. Please try again.");
@@ -146,7 +157,7 @@ const MailCreation = () => {
     setLoadingReset(true);
     try {
       const res = await fetch(
-        "https://taskbe.sharda.co.in/api/email/reset-email-password",
+        "https://mailbackend.sharda.co.in/api/email/reset-email-password",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
