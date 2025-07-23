@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaTrashAlt, FaUsers, FaPlus, FaTimes } from "react-icons/fa";
+import {
+  FaTrashAlt,
+  FaUsers,
+  FaPlus,
+  FaTimes,
+  FaDotCircle,
+} from "react-icons/fa";
 import Swal from "sweetalert2";
 import ReportGeneration from "../Components/ReportGeneration";
 import ClientList from "../Components/client/ClientList";
 import CreateClientModal from "../Components/client/CreateClientModal";
 import MailCreation from "./MailCreation";
 import LeaveManagement from "./LeaveManagement";
+import socket from "../socket";
 
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
@@ -18,14 +25,47 @@ const Departments = () => {
   const [newDeptName, setNewDeptName] = useState("");
   const [newCodeName, setNewCodeName] = useState("");
   const [clients, setClients] = useState([]);
-  const [newClientName, setNewClientName] = useState("");
   const [showClientModal, setShowClientModal] = useState(false);
-  const [clientOptions, setClientOptions] = useState([]);
   const [role, setRole] = useState("");
   const [editCodeId, setEditCodeId] = useState(null);
   const [editCodeName, setEditCodeName] = useState("");
   const [editingDept, setEditingDept] = useState(null); // department name being edited
   const [editableUsersMap, setEditableUsersMap] = useState({}); // { [dept]: [users] }
+  const [activeTab, setActiveTab] = useState("department");
+  const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
+
+ const fetchPendingLeaveCount = async () => {
+  try {
+    const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
+    setPendingLeaveCount(res.data.length || 0);
+    console.log("pending leave :", pendingLeaveCount)
+  } catch (err) {
+    setPendingLeaveCount(0);
+  }
+};
+
+  useEffect(() => {
+    fetchDepartmentsData();
+    fetchTaskCodes();
+    fetchClients();
+    fetchPendingLeaveCount();
+
+    // Listen for new leaves via socket (optional, for real-time update)
+    socket.on("new-leave", fetchPendingLeaveCount);
+    socket.on("leave-status-updated", fetchPendingLeaveCount); // Optional, handle approve/reject too
+
+    return () => {
+      socket.off("new-leave", fetchPendingLeaveCount);
+      socket.off("leave-status-updated", fetchPendingLeaveCount);
+    };
+  }, []);
+
+    useEffect(() => {
+    localStorage.setItem("pendingLeaveCount", pendingLeaveCount);
+  }, [pendingLeaveCount]);
+
+
+  // console.log("pending status :", pendingLeaveCount)
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
@@ -115,33 +155,6 @@ const Departments = () => {
     }
   };
 
-  // const fetchClients = async () => {
-  //   try {
-  //     const res = await fetch(
-  //       "https://taskbe.sharda.co.in/api/clients"
-  //     );
-
-  //     if (!res.ok) {
-  //       throw new Error(`HTTP error! status: ${res.status}`);
-  //     }
-
-  //     const data = await res.json();
-  //     console.log("Clients data:", data); // Debug log
-
-  //     const formattedClients = Array.isArray(data)
-  //       ? data.map((client) => ({
-  //           label: client.name || client,
-  //           value: client.name || client,
-  //         }))
-  //       : [];
-
-  //     // 🔁 This sets both states
-  //     setClientOptions(formattedClients);
-  //     setClients(formattedClients.map((c) => c.value)); // ✅ fix: sets raw client name strings for display
-  //   } catch (err) {
-  //     console.error("Failed to fetch clients", err);
-  //   }
-  // };
   const fetchClients = async () => {
     try {
       const res = await fetch("https://taskbe.sharda.co.in/api/clients");
@@ -158,7 +171,7 @@ const Departments = () => {
 
       setClients(formattedClients);
     } catch (err) {
-      console.error("Failed to fetch clients", err);
+      // console.error("Failed to fetch clients", err);
     }
   };
 
@@ -327,42 +340,6 @@ const Departments = () => {
     }
   };
 
-  const handleDeleteClient = async (clientName) => {
-    const result = await Swal.fire({
-      title: `Delete "${clientName}"?`,
-      text: "This action cannot be undone.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      await axios.delete(`https://taskbe.sharda.co.in/api/clients`, {
-        data: { name: clientName },
-      });
-      Swal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: `Client "${clientName}" was deleted successfully.`,
-        timer: 2000,
-        showConfirmButton: false,
-      });
-
-      fetchClients(); // Refresh
-    } catch (err) {
-      console.error("Delete failed", err);
-      Swal.fire({
-        icon: "error",
-        title: "Failed",
-        text: "Failed to delete client. Please try again.",
-      });
-    }
-  };
-
   const handleEditCode = (code) => {
     setEditCodeId(code._id);
     // Remove serial number prefix while editing
@@ -401,20 +378,25 @@ const Departments = () => {
     }));
   };
 
-  const handleRemoveUser = async (userId) => {
-    try {
-      await axios.delete(`https://taskbe.sharda.co.in/api/employees/${userId}`);
-      setEditableUsers((prev) => prev.filter((u) => u._id !== userId));
-    } catch (err) {
-      console.error("Failed to remove user:", err);
-    }
-  };
-  const [activeTab, setActiveTab] = useState("department");
+  const showLeaveAlert = localStorage.getItem("showLeaveAlert") === "true";
+
   const tabs = [
     { key: "department", label: "Department Overview" },
     { key: "code", label: "Code Overview" },
     { key: "report", label: "Report Generation" },
-    { key: "manageleave", label: "Leave Management" },
+    {
+      key: "manageleave",
+      label: (
+        <span className="relative inline-flex items-center">
+          Leave Management
+          {pendingLeaveCount > 0 && (
+            <span className="ml-2 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-semibold px-2 py-0.5 min-w-[20px] h-5">
+              {pendingLeaveCount}
+            </span>
+          )}
+        </span>
+      ),
+    },
     { key: "mail", label: "Mail User Creation" },
   ];
 
@@ -678,12 +660,6 @@ const Departments = () => {
                 </div>
               </div>
             ))}
-
-          {/* {activeTab === "client" && (
-            <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-              <ClientList clients={clients} onDelete={handleDeleteClient} />
-            </div>
-          )} */}
 
           {activeTab === "report" && role === "admin" && <ReportGeneration />}
 

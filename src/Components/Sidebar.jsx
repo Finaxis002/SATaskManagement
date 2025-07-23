@@ -35,21 +35,12 @@ const Sidebar = () => {
   const [leaveAlert, setLeaveAlert] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const items = [
-    { to: "/", icon: <FaHome />, label: "Home" },
-    {
-      to: "/all-employees",
-      icon: <FaUsers />,
-      label: "All Users",
-      admin: true,
-    },
-    { to: "/all-tasks", icon: <FaClipboardList />, label: "Tasks" },
-    { to: "/clients", icon: <FaBriefcase />, label: "Clients" },
-    { to: "/leave", icon: <FaGolfBall />, label: "Leave" },
-    { to: "/mailbox", icon: <FaEnvelope />, label: "Mail Box" },
-    { to: "/departments", icon: <FaCog />, label: "Settings", admin: true },
-    // ... add more
-  ];
+
+  const pendingLeaveCount = localStorage.getItem("pendingLeaveCount")
+
+
+
+
 
   useEffect(() => {
     const updateLeaveAlert = () => {
@@ -83,15 +74,15 @@ const Sidebar = () => {
     setRole(storedRole);
   }, []);
 
-  const resetLeaveAlert = () => {
-    localStorage.setItem("showLeaveAlert", "false");
-    setLeaveAlert(false);
-  };
 
   useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
 
   useNotificationSocket(setNotificationCount);
   // console.log("🔢 Notification count state:", notificationCount);
+
+    useEffect(() => {
+    console.log("pendingLeaveCount updated:", pendingLeaveCount);
+  }, [pendingLeaveCount]);
 
   return (
     // <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] hover:w-[250px] transition-all duration-300">
@@ -231,6 +222,7 @@ const Sidebar = () => {
             label="Settings"
             to="/departments"
             expanded={expanded}
+            badge={pendingLeaveCount > 0 ? pendingLeaveCount : null}
           />
         )}
 
@@ -291,8 +283,7 @@ const Sidebar = () => {
     </div>
   );
 };
-
-const SidebarItem = ({ icon, label, to, onClick, expanded }) => (
+const SidebarItem = ({ icon, label, to, onClick, expanded, badge }) => (
   <NavLink
     to={to}
     onClick={onClick}
@@ -305,8 +296,14 @@ const SidebarItem = ({ icon, label, to, onClick, expanded }) => (
       }`
     }
   >
-    <span className="text-base">{icon}</span>
-    {/* Label only shown if expanded */}
+    <span className="text-base relative">
+      {icon}
+      {badge && (
+        <span className="absolute -top-2 -right-2 min-w-[18px] h-5 bg-red-600 text-white text-xs font-semibold rounded-full px-2 flex items-center justify-center">
+          {badge}
+        </span>
+      )}
+    </span>
     {expanded && <span className="ml-1.5 whitespace-nowrap">{label}</span>}
   </NavLink>
 );
