@@ -16,8 +16,7 @@ import {
 } from "lucide-react";
 
 import EmailCreationModel from "../Components/EmailCreationModel";
-import Swal from 'sweetalert2';
-
+import Swal from "sweetalert2";
 
 const fetchMailUsers = async () => {
   const res = await fetch(
@@ -78,7 +77,7 @@ const MailCreation = () => {
       setErrorMsg("Email must be @sharda.co.in domain.");
       return;
     }
-   
+
     if (password !== confirmPassword) {
       setErrorMsg("Passwords do not match.");
       return;
@@ -109,15 +108,15 @@ const MailCreation = () => {
 
   const handleDelete = async (email) => {
     const result = await Swal.fire({
-    title: `Delete ${email}?`,
-    text: "This cannot be undone!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#3085d6",
-    confirmButtonText: "Yes, delete it!",
-  });
-  if (!result.isConfirmed) return;
+      title: `Delete ${email}?`,
+      text: "This cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+    if (!result.isConfirmed) return;
     try {
       const res = await fetch(
         "https://mailbackend.sharda.co.in/api/email/delete-email-user",
