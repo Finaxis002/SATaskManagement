@@ -299,7 +299,7 @@ const SidebarItem = ({ icon, label, to, onClick, expanded, badge }) => (
     <span className="text-base relative">
       {icon}
       {badge && (
-        <span className="absolute -top-2 -right-2 min-w-[18px] h-5 bg-red-600 text-white text-xs font-semibold rounded-full px-2 flex items-center justify-center">
+        <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-600 text-white text-[9px] font-semibold rounded-full px-2 flex items-center justify-center">
           {badge}
         </span>
       )}
