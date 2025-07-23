@@ -390,7 +390,7 @@ const Departments = () => {
         <span className="relative inline-flex items-center">
           Leave Management
           {pendingLeaveCount > 0 && (
-            <span className="ml-2 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-semibold px-2 py-0.5 min-w-[20px] h-5">
+            <span className="ml-2 flex items-center justify-center bg-red-600 text-white rounded-full text-[9px] font-semibold px-2 py-0.5 w-4 h-4">
               {pendingLeaveCount}
             </span>
           )}
