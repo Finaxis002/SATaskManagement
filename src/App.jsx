@@ -23,6 +23,7 @@ import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
 import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
+import { NotesProvider } from "./context/NotesContext";
 
 const App = () => {
   function MailBoxEmbed() {
@@ -45,6 +46,7 @@ const App = () => {
     );
   }
   return (
+    
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} /> {/* Login route */}
