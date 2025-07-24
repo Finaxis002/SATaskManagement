@@ -23,10 +23,12 @@ import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
 import icon from "/icon.png";
+import axios from "axios";
 
-const socket = io("https://taskbe.sharda.co.in", {
-  withCredentials: true,
+const socket = io('https://taskbe.sharda.co.in', {
+  query: { token: localStorage.getItem("authToken") },
 });
+
 
 const Sidebar = () => {
   const [role, setRole] = useState("");
@@ -35,7 +37,40 @@ const Sidebar = () => {
   const [leaveAlert, setLeaveAlert] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const pendingLeaveCount = localStorage.getItem("pendingLeaveCount");
+  const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
+
+const fetchPendingLeaveCount = async () => {
+  try {
+    const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
+    console.log("Leave response:", res.data); // Log the data received from the API
+    const leaveCount = res.data.length || 0;
+    setPendingLeaveCount(leaveCount);
+    console.log("pending leave count:", leaveCount); // Log the count
+  } catch (err) {
+    setPendingLeaveCount(0);
+    console.error("Error fetching pending leaves:", err);
+  }
+};
+
+useEffect(() => {
+  console.log("useEffect triggered to fetch pending leave count");
+  fetchPendingLeaveCount();
+}, []);
+
+
+
+  useEffect(() => {
+    fetchPendingLeaveCount();
+
+    // Listen for new leaves via socket (optional, for real-time update)
+    socket.on("new-leave", fetchPendingLeaveCount);
+    socket.on("leave-status-updated", fetchPendingLeaveCount); // Optional, handle approve/reject too
+
+    return () => {
+      socket.off("new-leave", fetchPendingLeaveCount);
+      socket.off("leave-status-updated", fetchPendingLeaveCount);
+    };
+  }, []);
 
   useEffect(() => {
     const updateLeaveAlert = () => {
@@ -74,9 +109,6 @@ const Sidebar = () => {
   useNotificationSocket(setNotificationCount);
   // console.log("🔢 Notification count state:", notificationCount);
 
-  useEffect(() => {
-    console.log("pendingLeaveCount updated:", pendingLeaveCount);
-  }, [pendingLeaveCount]);
 
   return (
     // <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] hover:w-[250px] transition-all duration-300">
