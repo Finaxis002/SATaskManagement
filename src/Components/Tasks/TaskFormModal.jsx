@@ -8,6 +8,7 @@ import DepartmentSelector from "./DepartmentSelector";
 import { io } from "socket.io-client";
 import { showAlert } from "../../utils/alert";
 import axios from 'axios';
+import { FaTimes } from "react-icons/fa";
 
 const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
@@ -264,31 +265,20 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   }));
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-opacity-40 z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center bg-opacity-40 z-[1000] p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-gray-800">
               {initialData ? "Update Task" : "Create New Task"}
             </h3>
             <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 focus:outline-none"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+  onClick={onClose}
+  className="text-red-500 hover:text-red-700 focus:outline-none"
+>
+  <FaTimes />
+</button>
+
           </div>
         </div>
 

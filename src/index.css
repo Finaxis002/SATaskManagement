@@ -259,3 +259,19 @@ main {
     width: 100%;
   }
 }
+
+
+.ql-editor ol li:is([data-list='bullet'])::before {
+  content: "•";
+}
+
+.ql-editor ol li:not(.ql-direction-rtl), .ql-editor ul li:not(.ql-direction-rtl) {
+    padding-left: 0;
+}
+
+.ql-toolbar.ql-snow {
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    padding: 1px !important;
+}

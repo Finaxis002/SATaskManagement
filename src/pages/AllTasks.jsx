@@ -153,13 +153,15 @@ const AllTasks = () => {
           hideObsolete={true}
         />
 
-        {showForm && (
+        <div className="flex items-center justify-center">
+          {showForm && (
           <TaskFormModal
             onClose={() => setShowForm(false)}
             onSave={handleSaveTask}
             initialData={editingTask}
           />
         )}
+        </div>
       </div>
       {/* <div className="flex flex-col h-full w-full">
    
