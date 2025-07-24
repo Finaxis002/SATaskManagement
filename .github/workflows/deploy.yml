@@ -34,9 +34,9 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SERVER_IP }}
           REMOTE_USER: root
-          TARGET: /home/SATaskManagement  # Update to the new path
+          TARGET: /var/www/tasks.sharda.co.in  # Path for Task Management app
           SOURCE: dist/  # Use the dist folder as the source for deployment
           SCRIPT_AFTER: |
-            chown -R www-data:www-data /home/SATaskManagement  # Update ownership to the new path
-            chmod -R 755 /home/SATaskManagement  # Update permissions to the new path
+            chown -R www-data:www-data /var/www/tasks.sharda.co.in
+            chmod -R 755 /var/www/tasks.sharda.co.in
             sudo systemctl restart nginx  # Restart nginx to reflect changes
