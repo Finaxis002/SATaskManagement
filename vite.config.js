@@ -58,7 +58,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      
+    },
+  },
+
+  build: {
+    rollupOptions: {
+      external: ['quill'],  // This tells Vite not to bundle Quill, and expect it externally
     },
   },
 })
