@@ -1026,11 +1026,8 @@ const TaskList = ({
         //   overflowX: "auto",
         //   position: "relative",
         // }}
-        className="overflow-x-auto overflow-y-auto"
-        style={{
-          maxHeight: "calc(80vh - 120px)",
-          position: "relative",
-        }}
+        className="overflow-x-auto overflow-y-auto max-h-[57vh]"
+        
         onScroll={() => syncScroll("vertical")}
       >
         <table className="w-full table-auto border-collapse text-sm text-gray-800">

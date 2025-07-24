@@ -68,32 +68,31 @@ const Completed = () => {
     return false;
   });
 
-  useEffect(() => {
-  console.log("Clients from Redux:", clientOptions);
-}, [clientOptions]);
-
+  //   useEffect(() => {
+  //   console.log("Clients from Redux:", clientOptions);
+  // }, [clientOptions]);
 
   return (
     <div className=" px-1 h-[90vh] w-[200vh] overflow-auto">
-      <div className="sticky w-[101%] top-0 w-full z-20 bg-white py-3 px-4 mb-3 flex justify-between items-center gap-6 shadow">
+      <div className="sticky w-[101%] top-0 z-20 bg-white py-4 px-6 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-md border-b border-gray-100">
         {/* Tabs */}
-        <div className="flex flex-col">
-          <div className="flex gap-2 mb-6">
+        <div className="w-full md:w-auto">
+          <div className="flex gap-1 md:gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <button
-              className={`px-6 py-2 rounded-t-md font-medium text-sm border-b-2 ${
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
                 activeTab === "completed"
-                  ? "border-indigo-600 text-indigo-700 bg-indigo-50"
-                  : "border-transparent text-gray-400 bg-white"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
               }`}
               onClick={() => setActiveTab("completed")}
             >
               Completed Tasks
             </button>
             <button
-              className={`px-6 py-2 rounded-t-md font-medium text-sm border-b-2 ${
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
                 activeTab === "obsolete"
-                  ? "border-indigo-600 text-indigo-700 bg-indigo-50"
-                  : "border-transparent text-gray-400 bg-white"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
               }`}
               onClick={() => setActiveTab("obsolete")}
             >
@@ -102,20 +101,20 @@ const Completed = () => {
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="h-8 border-l border-gray-200 mx-6" />
+        {/* Divider - only visible on larger screens */}
+        <div className="hidden md:block h-8 border-l border-gray-200 mx-2" />
 
-        {/* Filters - make filters row, responsive */}
-        <div className="flex gap-6 flex-wrap items-center">
+        {/* Filters */}
+        <div className="w-full md:w-auto grid grid-cols-1 sm:grid-cols-2 gap-3 md:flex md:gap-4 md:items-center">
           {/* Client Filter */}
-          <div className="flex items-center gap-2 min-w-[210px]">
+          <div className="flex items-center gap-2 min-w-[180px]">
             <label
               htmlFor="client-filter"
               className="text-sm text-gray-600 font-medium whitespace-nowrap"
             >
               Client:
             </label>
-            <div className="flex-1 min-w-[130px]">
+            <div className="flex-1 min-w-[120px]">
               <Select
                 id="client-filter"
                 options={[
@@ -135,13 +134,25 @@ const Completed = () => {
                 }
                 className="text-sm"
                 isSearchable
-                placeholder="Select client..."
+                placeholder="Select..."
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    minHeight: "32px",
+                    height: "32px",
+                    fontSize: "0.875rem",
+                  }),
+                  option: (provided) => ({
+                    ...provided,
+                    fontSize: "0.875rem",
+                  }),
+                }}
               />
             </div>
           </div>
 
           {/* Code Filter */}
-          <div className="flex items-center gap-2 min-w-[210px]">
+          <div className="flex items-center gap-2 min-w-[180px]">
             <label
               htmlFor="code-filter"
               className="text-sm text-gray-600 font-medium whitespace-nowrap"
@@ -168,7 +179,19 @@ const Completed = () => {
                 }
                 className="text-sm"
                 isSearchable
-                placeholder="Select code..."
+                placeholder="Select..."
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    minHeight: "32px",
+                    height: "32px",
+                    fontSize: "0.875rem",
+                  }),
+                  option: (provided) => ({
+                    ...provided,
+                    fontSize: "0.875rem",
+                  }),
+                }}
               />
             </div>
           </div>
