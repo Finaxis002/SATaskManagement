@@ -29,9 +29,9 @@ const StickyNotesDashboard = () => {
   };
 
   return (
-    <div className="bg-yellow-50 rounded-xl shadow-lg border border-yellow-100 p-5 w-full max-w-xl  relative">
+    <div className="bg-yellow-50 rounded-xl shadow-lg border border-yellow-100 p-2 py-4 w-full max-w-xl  relative">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between px-4">
         <h2 className="text-xl font-bold text-yellow-900 flex items-center gap-2">
           <FaStickyNote className="text-yellow-400" />
           Sticky Notes
