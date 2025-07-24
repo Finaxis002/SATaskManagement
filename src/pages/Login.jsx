@@ -4,6 +4,7 @@ import { FaUserAlt, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { setAuth } from "../redux/authSlice"; // adjust path
 import ReCAPTCHA from "react-google-recaptcha";
+import Swal from "sweetalert2";
 
 const RECAPTCHA_SITE_KEY = "6LfwLlMrAAAAAIFtLSnFxwGP_xfkeDU7xuz69sLa";
 
@@ -23,50 +24,55 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-  if (!captchaToken) {
-    alert("Please verify the reCAPTCHA first.");
-    setLoading(false);
-    return;
-  }
+    if (!captchaToken) {
+      Swal.fire({
+        icon: "warning",
+        title: "reCAPTCHA Required",
+        text: "Please verify the reCAPTCHA before signing in.",
+        confirmButtonColor: "#6366F1", // Indigo color to match your theme
+      });
+      setLoading(false);
+      return;
+    }
 
-  try {
-    const response = await axios.post(
-      "https://taskbe.sharda.co.in/api/employees/login",
-      {
-        ...formData,
-        captchaToken, // ✅ corrected key name
-      }
-    );
+    try {
+      const response = await axios.post(
+        "https://taskbe.sharda.co.in/api/employees/login",
+        {
+          ...formData,
+          captchaToken, // ✅ corrected key name
+        }
+      );
 
-    const { token, name, role, email, department } = response.data;
-    const loginExpiryHours = 10;
-    const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
+      const { token, name, role, email, department } = response.data;
+      const loginExpiryHours = 10;
+      const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
 
-    localStorage.setItem("authToken", token);
-    const normalizedName =
-      name && name.toLowerCase() === "admin" ? "admin" : name;
-    localStorage.setItem("name", normalizedName);
-    localStorage.setItem("role", role);
-    localStorage.setItem("userId", email);
-    localStorage.setItem("department", department);
-    localStorage.setItem("triggerLoginReminder", "true");
-    localStorage.setItem("loginExpiry", loginExpiryTime);
-    localStorage.setItem("tokenLocal", token);
+      localStorage.setItem("authToken", token);
+      const normalizedName =
+        name && name.toLowerCase() === "admin" ? "admin" : name;
+      localStorage.setItem("name", normalizedName);
+      localStorage.setItem("role", role);
+      localStorage.setItem("userId", email);
+      localStorage.setItem("department", department);
+      localStorage.setItem("triggerLoginReminder", "true");
+      localStorage.setItem("loginExpiry", loginExpiryTime);
+      localStorage.setItem("tokenLocal", token);
 
-    dispatch(setAuth({ name: normalizedName, role, userId: email }));
-    window.location.href = "/";
-  } catch (err) {
-    alert("Failed to log in. Please check your credentials.");
-    console.error(err);
-    setCaptchaToken(null); // ✅ optional: clear captcha state
-  } finally {
-    setLoading(false);
-  }
-};
+      dispatch(setAuth({ name: normalizedName, role, userId: email }));
+      window.location.href = "/";
+    } catch (err) {
+      alert("Failed to log in. Please check your credentials.");
+      console.error(err);
+      setCaptchaToken(null); // ✅ optional: clear captcha state
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
