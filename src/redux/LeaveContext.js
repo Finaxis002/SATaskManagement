@@ -1,5 +1,5 @@
 // LeaveContext.js
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback , useEffect } from "react";
 export const LeaveContext = createContext();
 export const useLeave = () => useContext(LeaveContext);
 
@@ -14,6 +14,8 @@ export function LeaveProvider({ children }) {
       setPendingLeaveCount(0);
     }
   }, []);
+
+  
 
   return (
     <LeaveContext.Provider value={{ pendingLeaveCount, fetchPendingLeaveCount }}>

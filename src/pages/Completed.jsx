@@ -68,6 +68,11 @@ const Completed = () => {
     return false;
   });
 
+  useEffect(() => {
+  console.log("Clients from Redux:", clientOptions);
+}, [clientOptions]);
+
+
   return (
     <div className=" px-1 h-[90vh] w-[200vh] overflow-auto">
       <div className="sticky w-[101%] top-0 w-full z-20 bg-white py-3 px-4 mb-3 flex justify-between items-center gap-6 shadow">

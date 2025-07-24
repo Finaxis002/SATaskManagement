@@ -137,28 +137,28 @@ const Clients = () => {
 
       {loading ? (
         <div className="flex items-center justify-center h-[250px]">
-        <svg
-          className="animate-spin h-8 w-8 text-indigo-500"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8z"
-          ></path>
-        </svg>
-        <span className="ml-3 text-indigo-600 font-semibold">
-          Loading Clients...
-        </span>
-      </div>
+          <svg
+            className="animate-spin h-8 w-8 text-indigo-500"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8z"
+            ></path>
+          </svg>
+          <span className="ml-3 text-indigo-600 font-semibold">
+            Loading Clients...
+          </span>
+        </div>
       ) : clients.length === 0 ? (
         <div className="flex justify-center items-center h-64">
           <p className="text-center text-gray-500">No clients found.</p>
