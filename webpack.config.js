@@ -1,10 +1,12 @@
+// webpack.config.js
 module.exports = {
   resolve: {
-    alias: {
-      quill: "quill/dist/quill.js", // Correct path for Quill in the browser
+    fallback: {
+      fs: false, // To avoid issues with 'fs' module
+      path: require.resolve("path-browserify"),
+      os: require.resolve("os-browserify"),
+      util: require.resolve("util/"),
+      assert: require.resolve("assert/"),
     },
-  },
-  externals: {
-    quill: "Quill",  // Treat Quill as an external dependency
   },
 };
