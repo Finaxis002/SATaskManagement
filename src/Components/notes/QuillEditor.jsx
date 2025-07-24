@@ -7,9 +7,9 @@ const QuillEditor = ({ value, onChange }) => {
     modules: {
       toolbar: {
         container: [
-          ["bold", "italic", "underline", "strike" , "link"],
+          ["bold", "italic", "underline", "strike", "link"],
           [{ list: "ordered" }, { list: "bullet" }],
-          [{ color: [] }, { background: [] } ,],
+          [{ color: [] }, { background: [] }],
         ],
       },
     },
@@ -28,7 +28,7 @@ const QuillEditor = ({ value, onChange }) => {
     if (quill) {
       // Custom list handling to prevent conflicts
       const toolbar = quill.getModule("toolbar");
-      
+
       toolbar.addHandler("list", function (value) {
         if (value === "ordered") {
           // Clear bullet list format first
