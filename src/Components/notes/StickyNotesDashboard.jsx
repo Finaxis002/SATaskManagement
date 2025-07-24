@@ -21,22 +21,22 @@ if (!token) {
 }
 
   // Fetch all notes
- useEffect(() => {
-  fetch(API_BASE)
-    .then((res) => {
-      if (!res.ok) throw new Error("Unauthorized or API error");
-      return res.json();
+  useEffect(() => {
+    fetch(API_BASE, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+      },
     })
-    .then((data) => {
-      if (Array.isArray(data)) setNotes(data);
-      else setNotes([]);
-    })
-    .catch((error) => {
-      console.error("Error fetching notes:", error); // Debugging line
-      setNotes([]);
-    });
-}, []);
-
+      .then((res) => {
+        if (!res.ok) throw new Error("Unauthorized or API error");
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setNotes(data);
+        else setNotes([]);
+      })
+      .catch(() => setNotes([]));
+  }, []);
 
   // Create a note
   const createNote = async () => {
