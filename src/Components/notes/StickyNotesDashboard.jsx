@@ -9,23 +9,34 @@ const StickyNotesDashboard = () => {
   const [notes, setNotes] = useState([]);
   const [creating, setCreating] = useState(false);
 
+  
+const token = localStorage.getItem("authToken");
+
+console.log("token : ", token)
+
+if (!token) {
+  // Handle missing token
+  console.log("Token not available, redirecting to login...");
+  // Redirect to login page or show a message to the user
+}
+
   // Fetch all notes
-  useEffect(() => {
-    fetch(API_BASE, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-      },
+ useEffect(() => {
+  fetch(API_BASE)
+    .then((res) => {
+      if (!res.ok) throw new Error("Unauthorized or API error");
+      return res.json();
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Unauthorized or API error");
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) setNotes(data);
-        else setNotes([]);
-      })
-      .catch(() => setNotes([]));
-  }, []);
+    .then((data) => {
+      if (Array.isArray(data)) setNotes(data);
+      else setNotes([]);
+    })
+    .catch((error) => {
+      console.error("Error fetching notes:", error); // Debugging line
+      setNotes([]);
+    });
+}, []);
+
 
   // Create a note
   const createNote = async () => {
