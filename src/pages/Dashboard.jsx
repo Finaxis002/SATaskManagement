@@ -133,7 +133,7 @@ const Dashboard = () => {
 
       {/* Task Container */}
 
-      <div className="mt-6 flex flex-col md:flex-row gap-6">
+      <div className="mt-6 flex flex-col md:flex-row gap-2">
         {/* Task Overview - 70% width on medium screens and up */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden w-full md:w-[70%]">
           <div className="flex justify-between items-center">
