@@ -190,13 +190,15 @@ const TaskOverview = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
-      <div className="flex justify-between items-center px-6 py-4 border-b ">
-        <h2
-          className="text-xl font-semibold text-gray-900"
-          style={{ fontFamily: "Poppins, sans-serif" }}
-        >
-          My Tasks
-        </h2>
+      <div className="flex justify-between items-center px-6 py- border-b ">
+        {role === "user" && (
+          <h2
+            className="text-xl font-semibold text-gray-900"
+            style={{ fontFamily: "Poppins, sans-serif" }}
+          >
+            My Tasks
+          </h2>
+        )}
 
         <div
           className="flex gap-6 text-sm"
@@ -232,7 +234,7 @@ const TaskOverview = () => {
         </div>
       </div>
 
-      <div className="divide-y  max-h-[50vh] overflow-y-scroll">
+      <div className="divide-y  max-h-[43vh] overflow-y-scroll">
         {getTasksByTab().filter((task) => !isHiddenCompletedTask(task))
           .length === 0 ? (
           <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>

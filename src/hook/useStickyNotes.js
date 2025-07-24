@@ -7,7 +7,7 @@ export default function useStickyNotes(limit = 3) {
   // Fetch notes (with sorting & limit)
   const fetchNotes = useCallback(() => {
     setLoading(true);
-    fetch("http://localhost:1100/api/stickynotes", {
+    fetch("https://taskbe.sharda.co.in/api/stickynotes", {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("authToken")}`,
       },
@@ -40,7 +40,7 @@ export default function useStickyNotes(limit = 3) {
 
   // Add Note function
   const addNote = async (content = "", color = "#fffde7") => {
-    const res = await fetch("http://localhost:1100/api/stickynotes", {
+    const res = await fetch("https://taskbe.sharda.co.in/api/stickynotes", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

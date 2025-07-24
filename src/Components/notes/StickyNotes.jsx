@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaStickyNote, FaTimes, FaPlus, FaTrash } from "react-icons/fa";
 import debounce from "lodash.debounce";
+import QuillEditor from "./QuillEditor";
 
 const API_BASE = "https://taskbe.sharda.co.in/api/stickynotes"; // Change as needed
 
@@ -117,13 +118,13 @@ const StickyNotes = ({ onClose }) => {
         </div>
 
         {/* Notes Container */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-4">
           {notes.map((note) => (
             <div
               key={note._id}
               className="bg-yellow-50 rounded-xl p-4 shadow-sm border border-yellow-100 hover:shadow-md transition-shadow relative group"
             >
-              <textarea
+              {/* <textarea
                 className="w-full resize-none p-1 bg-transparent outline-none text-gray-700 rounded-lg font-normal"
                 rows={Math.max(1, note.content.split("\n").length)}
                 value={note.content}
@@ -136,6 +137,18 @@ const StickyNotes = ({ onClose }) => {
                   updateNote(note._id, e.target.value);
                 }}
                 placeholder="Write your note here..."
+              /> */}
+
+              <QuillEditor
+                value={note.content}
+                onChange={(content) => {
+                  setNotes((prevNotes) =>
+                    prevNotes.map((n) =>
+                      n._id === note._id ? { ...n, content } : n
+                    )
+                  );
+                  updateNote(note._id, content);
+                }}
               />
               <button
                 className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600"

@@ -378,7 +378,7 @@ const Departments = () => {
     }));
   };
 
-  const showLeaveAlert = localStorage.getItem("showLeaveAlert") === "true";
+
 
   const tabs = [
     { key: "department", label: "Department Overview" },

@@ -35,12 +35,7 @@ const Sidebar = () => {
   const [leaveAlert, setLeaveAlert] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-
-  const pendingLeaveCount = localStorage.getItem("pendingLeaveCount")
-
-
-
-
+  const pendingLeaveCount = localStorage.getItem("pendingLeaveCount");
 
   useEffect(() => {
     const updateLeaveAlert = () => {
@@ -74,13 +69,12 @@ const Sidebar = () => {
     setRole(storedRole);
   }, []);
 
-
   useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
 
   useNotificationSocket(setNotificationCount);
   // console.log("🔢 Notification count state:", notificationCount);
 
-    useEffect(() => {
+  useEffect(() => {
     console.log("pendingLeaveCount updated:", pendingLeaveCount);
   }, [pendingLeaveCount]);
 

@@ -64,7 +64,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="relative w-full  h-[90vh] overflow-y-auto px-6 text-gray-800 bg-gray-50">
+    <div className="relative w-full pb-5 h-[90vh] overflow-y-auto px-6 text-gray-800 bg-gray-50">
       {/* Centered Header */}
 
       <div className="bg-gradient-to-r from-[#f6f9fc] to-[#eef2f5] py-5 px-8 shadow-sm border-b border-gray-100">
@@ -132,29 +132,26 @@ const Dashboard = () => {
       </div>
 
       {/* Task Container */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden  ">
-        <div className="flex justify-between items-center">
-          <h2
-            className="text-xl font-semibold text-gray-800 p-6 pb-0"
-            style={{ fontFamily: "Poppins, sans-serif" }}
-          >
-            Task Overview
-          </h2>
-        </div>
-
-        <div className="mt-6">
-          <TaskOverview />
-        </div>
-      </div>
 
       <div className="mt-6 flex flex-col md:flex-row gap-6">
-        
-        {role === "admin" && (
-          <div className="md:w-1/2">
-            <UserGrid />
+        {/* Task Overview - 70% width on medium screens and up */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden w-full md:w-[70%]">
+          <div className="flex justify-between items-center">
+            <h2
+              className="text-xl font-semibold text-gray-800 p-6 pb-0"
+              style={{ fontFamily: "Poppins, sans-serif" }}
+            >
+              Task Overview
+            </h2>
           </div>
-        )}
-        <div className={role === "admin" ? "md:w-1/2" : "w-full"}>
+
+          <div className="">
+            <TaskOverview />
+          </div>
+        </div>
+
+        {/* Sticky Notes - 30% width on medium screens and up */}
+        <div className= "w-full md:w-[30%]  w-full">
           <StickyNotesDashboard />
         </div>
       </div>

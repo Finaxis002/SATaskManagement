@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaStickyNote, FaPlus, FaTrash } from "react-icons/fa";
 import debounce from "lodash.debounce";
+import QuillEditor from "./QuillEditor";
 
 const API_BASE = "https://taskbe.sharda.co.in/api/stickynotes";
 
@@ -86,7 +87,10 @@ const StickyNotesDashboard = () => {
         </button>
       </div>
       {/* Notes */}
-      <div className="space-y-3 relative overflow-y-auto" style={{ maxHeight: "40vh" }}>
+      <div
+        className="space-y-3 relative overflow-y-auto"
+        style={{ maxHeight: "40vh" }}
+      >
         {notes.length === 0 ? (
           <div className="text-sm text-gray-500">No notes yet.</div>
         ) : (
@@ -95,7 +99,7 @@ const StickyNotesDashboard = () => {
               key={note._id}
               className="relative bg-yellow-100 rounded-lg border border-yellow-100 shadow-sm hover:shadow-md transition flex items-center"
             >
-              <textarea
+              {/* <textarea
                 className="w-full resize-none p-3 bg-transparent outline-none text-gray-700 rounded-lg font-normal"
                 rows={Math.max(2, note.content.split("\n").length)}
                 value={note.content}
@@ -108,7 +112,20 @@ const StickyNotesDashboard = () => {
                   updateNote(note._id, e.target.value);
                 }}
                 placeholder="Write your note here..."
+              /> */}
+
+              <QuillEditor
+                value={note.content}
+                onChange={(content) => {
+                  setNotes((prevNotes) =>
+                    prevNotes.map((n) =>
+                      n._id === note._id ? { ...n, content } : n
+                    )
+                  );
+                  updateNote(note._id, content);
+                }}
               />
+
               <button
                 className="absolute right-2 top-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow"
                 onClick={() => deleteNote(note._id)}
