@@ -70,7 +70,7 @@ const StickyNotesDashboard = () => {
   };
 
   return (
-    <div className="bg-yellow-50 rounded-xl shadow-lg border border-yellow-100 p-5 w-full max-w-xl max-h-[55vh] relative">
+    <div className="bg-yellow-50 rounded-xl shadow-lg border border-yellow-100 p-5 w-full max-w-xl  relative">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-bold text-yellow-900 flex items-center gap-2">
@@ -89,7 +89,7 @@ const StickyNotesDashboard = () => {
       {/* Notes */}
       <div
         className="space-y-3 relative overflow-y-auto"
-        style={{ maxHeight: "40vh" }}
+        style={{ maxHeight: "52vh" }}
       >
         {notes.length === 0 ? (
           <div className="text-sm text-gray-500">No notes yet.</div>
