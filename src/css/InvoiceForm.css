@@ -4,6 +4,7 @@
   font-weight: normal;
   font-style: normal;
 }
+
 .invoice-page-container *,
 .pdf-wrapper * {
   font-family: 'Glacial Indifference', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
@@ -29,7 +30,7 @@
 }
 
 .header-right button {
-   margin-left: 10px;
+  margin-left: 10px;
   padding: 7px 14px;
   border-radius: 5px;
   border: none;
@@ -61,11 +62,11 @@
   padding: 1.5rem;
   margin-bottom: 20px;
   border-radius: 8px;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
 }
 
 .invoice-section h2 {
-   font-weight: 700;
+  font-weight: 700;
   margin-bottom: 18px;
   font-size: 20px;
   color: #004d51;
@@ -134,20 +135,22 @@
   margin-top: 2rem;
   padding-bottom: 1rem;
 }
+
 .invoice-body {
   display: flex;
   gap: 30px;
   max-width: 1200px;
   margin: auto;
   padding: 2rem;
-  height: calc(100vh - 80px); /* Full viewport height minus header */
+  height: calc(100vh - 80px);
+  /* Full viewport height minus header */
 }
 
 .invoice-left {
   background: white;
   border-radius: 8px;
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.1);
-  padding: 1.5rem 2rem;
+  padding: 2rem !important;
   width: 55%;
   overflow-y: auto;
   display: flex;
@@ -165,20 +168,26 @@
 } */
 
 /* scrollbar styling (optional) */
-.invoice-left::-webkit-scrollbar, .invoice-right::-webkit-scrollbar {
+.invoice-left::-webkit-scrollbar,
+.invoice-right::-webkit-scrollbar {
   width: 8px;
 }
-.invoice-left::-webkit-scrollbar-thumb, .invoice-right::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.1);
+
+.invoice-left::-webkit-scrollbar-thumb,
+.invoice-right::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
 }
-.invoice-left::-webkit-scrollbar-track, .invoice-right::-webkit-scrollbar-track {
+
+.invoice-left::-webkit-scrollbar-track,
+.invoice-right::-webkit-scrollbar-track {
   background: #f5f5f5;
 }
+
 /* General label styling */
 .invoice-left label {
   display: block;
- 
+
   margin-bottom: 6px;
   font-weight: 600;
   color: #333;
@@ -198,7 +207,8 @@
   color: #222;
   background-color: white;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  appearance: none; /* Remove default arrow in some browsers */
+  appearance: none;
+  /* Remove default arrow in some browsers */
   -webkit-appearance: none;
   -moz-appearance: none;
   cursor: pointer;
@@ -320,7 +330,7 @@
   width: 65%;
   height: 100%;
   background: white;
- 
+
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
   /* padding: 1.5rem 2rem; */
   overflow-y: auto;
@@ -439,9 +449,11 @@
   color: #555;
   margin: 2px 0;
 }
+
 .normal-text {
   font-weight: normal !important;
 }
+
 .page {
   /* page-break-after: always; */
   padding: 0 10px;
@@ -462,7 +474,7 @@
   margin: 0 !important;
  
 } */
- .pdf-wrapper {
+.pdf-wrapper {
   width: 210mm;
   min-height: 297mm;
   box-sizing: border-box;
@@ -492,12 +504,14 @@
   page-break-after: auto;
 } */
 
-.invoice-header, .invoice-page-container > :first-child {
+.invoice-header,
+.invoice-page-container> :first-child {
   margin-top: 0 !important;
   padding-top: 0 !important;
 }
 
 @media print {
+
   /* .invoice-page-container {
     width: 800px !important;
     padding: 0 !important;
@@ -508,13 +522,14 @@
     margin: 0;
     padding: 0;
   } */
-   @page {
+  @page {
     size: A4;
     margin: 0;
     padding: 0;
   }
 
-  html, body {
+  html,
+  body {
     margin: 0;
     padding: 0;
     width: 210mm;
@@ -539,7 +554,7 @@
     page-break-after: auto;
     background-color: blue;
   } */
-/* .pdf-wrapper:not(:last-child) {
+  /* .pdf-wrapper:not(:last-child) {
     page-break-after: always;
 } */
   .header-image {
@@ -548,7 +563,7 @@
     left: 0;
     width: 100%;
     height: 80px;
-      
+
   }
 
   .footer-image {
@@ -556,7 +571,7 @@
     bottom: 0;
     left: 0;
     width: 100%;
-      height: 80px;
+    height: 80px;
   }
 
   /* .invoice-content {
@@ -573,11 +588,11 @@
 }
 
 
-.text-align-center{
-    text-align: center;
+.text-align-center {
+  text-align: center;
 }
 
-.border-none td{
+.border-none td {
   padding: 6px;
   text-align: center;
   border: 1px solid #000;
@@ -591,6 +606,6 @@
   border-collapse: collapse;
 }
 
-.border-left-none{
+.border-left-none {
   border-left: "none";
 }

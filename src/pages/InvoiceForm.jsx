@@ -6,6 +6,7 @@ import Select from "react-select";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
 import { FaTrash } from "react-icons/fa";
+import { FiSave, FiDownload } from "react-icons/fi";
 import InvoicePage from "../Components/invoice/InvoicePage";
 const ITEMS_PER_PAGE = 8;
 const firms = [
@@ -510,6 +511,75 @@ export default function InvoiceForm() {
   const page1Items = items.slice(0, ITEMS_PER_PAGE);
   const page2Items = items.slice(ITEMS_PER_PAGE);
 
+  const handleSaveAndDownloadPDF = async () => {
+    try {
+      // Finalize the invoice number and mark it as finalized
+      const finalNo = await finalizeInvoiceNumber();
+      setInvoiceNumber(finalNo);
+
+      // Save the invoice to the backend
+      const invoiceData = {
+        invoiceNumber: finalNo,
+        invoiceDate,
+        invoiceType,
+        selectedFirm,
+        placeOfSupply,
+        customer,
+        items,
+        totalAmount: totalAmountWithTax,
+      };
+
+      await axios.post("/invoices", invoiceData);
+
+      // Show save success alert
+      await Swal.fire({
+        icon: "success",
+        title: "Invoice Saved",
+        text: `Invoice ${finalNo} has been successfully saved.`,
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "Ok",
+      });
+
+      // Now generate PDF
+      if (!invoiceRef.current) return;
+      const element = invoiceRef.current;
+      element.style.transform = "scale(1)";
+      element.style.transformOrigin = "top left";
+      element.style.width = `${element.scrollWidth}px`;
+
+      const opt = {
+        margin: 0,
+        padding: 0,
+        filename: `${finalNo}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          dpi: 300,
+          letterRendering: true,
+          useCORS: true,
+          width: element.scrollWidth,
+          windowWidth: element.scrollWidth,
+        },
+        jsPDF: {
+          unit: "px",
+          orientation: "portrait",
+          format: [794, 1122],
+        },
+        pagebreak: { mode: "css" },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+
+      // Reset styles
+      element.style.transform = "scale(0.90)";
+      element.style.transformOrigin = "top left";
+      element.style.width = "";
+    } catch (error) {
+      console.error("Failed to save or generate PDF:", error);
+      Swal.fire("Error", "Could not save or generate the invoice.", "error");
+    }
+  };
+
   return (
     <div
       className="invoice-page"
@@ -539,33 +609,13 @@ export default function InvoiceForm() {
           }}
         >
           <button
-            onClick={handleDownloadPDF}
-            title="Download invoice as PDF"
-            className="group relative px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium cursor-pointer flex items-center justify-center gap-1 shadow hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
+            onClick={handleSaveAndDownloadPDF}
+            title="Save and Download PDF"
+            className="group mb-3 relative px-4 py-2.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
           >
-            <span className="text-base">📄</span>
-            <span>PDF</span>
-          </button>
-
-          <button
-            onClick={saveInvoice}
-            title="Save invoice to database"
-            className="group relative px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium cursor-pointer flex items-center justify-center gap-1 shadow hover:bg-green-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
-          >
-            <svg
-              className="w-4 h-4 text-white"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <span>Save</span>
+            <FiSave className="w-4 h-4 transition-transform group-hover:scale-110" />
+            <span>Save & Generate PDF</span>
+            <FiDownload className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-1" />
           </button>
         </div>
 
@@ -719,8 +769,8 @@ export default function InvoiceForm() {
           </div>
 
           {/* Items Section */}
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-10">Items</h2>
+          <div className="relative max-h-[60vh] overflow-y-auto pr-2">
+            <h2 className="text-lg font-semibold text-gray-800">Items</h2>
             {items.map((item, idx) => {
               const amount = (item.qty * item.rate).toFixed(2);
               return (
@@ -786,7 +836,7 @@ export default function InvoiceForm() {
                       className="mt-6  transition text-red-500 hover:text-red-800"
                       title="Delete Task"
                     >
-                     <FaTrash />
+                      <FaTrash />
                     </button>
                   </div>
                 </div>
