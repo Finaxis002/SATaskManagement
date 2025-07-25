@@ -1213,11 +1213,11 @@ export default function InvoicePage({
                                 fontStyle: "normal",
                               }}
                             >
-                              Bank Name: {selectedFirm.bank.name} <br />
-                              Account Name :{selectedFirm.bank.accountName}{" "}
+                              Bank Name: {selectedFirm?.bank?.name} <br />
+                              Account Name :{selectedFirm?.bank?.accountName}{" "}
                               <br />
-                              Account Number: {selectedFirm.bank.account} <br />
-                              IFSC Code: {selectedFirm.bank.ifsc}
+                              Account Number: {selectedFirm?.bank?.account} <br />
+                              IFSC Code: {selectedFirm?.bank?.ifsc}
                             </td>
                           </tr>
                           {isSharda && (
