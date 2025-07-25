@@ -61,6 +61,7 @@
     "qrcode.react": "^4.2.0",
     "quill": "^2.0.3",
     "react": "19.1.0",
+    "react-beautiful-dnd": "^13.1.1",
     "react-calendar": "^5.1.0",
     "react-date-range": "^2.0.1",
     "react-dnd": "^16.0.1",

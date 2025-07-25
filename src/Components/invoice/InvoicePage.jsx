@@ -6,6 +6,7 @@ import finaxisHeader from "../../assets/finaxis_header.png";
 import shardaHeader from "../../assets/ShardaHeader.png";
 import headerImageSharda from "../../assets/headerImgSharda.png";
 import footerImageSharda from "../../assets/ShardaBottom.png";
+import calogonew from "../../assets/New_CA_India_Logo.png";
 import "../../css/InvoiceForm.css";
 
 export default function InvoicePage({
@@ -27,7 +28,9 @@ export default function InvoicePage({
   cgstAmount,
   sgstAmount,
   numberToWordsIndian,
+  showGSTIN,
 }) {
+  console.log("{showGSTIN :", showGSTIN);
   const isLocalSupply = () => {
     const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
     return place === "mp" || place === "madhyapradesh";
@@ -40,33 +43,36 @@ export default function InvoicePage({
   //   marginBottom: pageNumber === 1 ? "20px" : "5px",
   //   marginTop: pageNumber === 1 ? "0px" : "0px",
   // };
-  const headerStyle = pageNumber === 1
-  ? { width: "100%", display: "block", height: "auto", marginBottom: 20 }
-  : { width: "100%", display: "block", height: 'auto' }
+  const headerStyle =
+    pageNumber === 1
+      ? { width: "100%", display: "block", height: "auto", marginBottom: 20 }
+      : { width: "100%", display: "block", height: "auto" };
 
-  const footerStyle = pageNumber === 1
-  ? { width: "100%", display: "block", height: "auto" , marginTop:25}
-  : { width: "100%", display: "block", height: 'auto', marginTop: 10}
+  const footerStyle =
+    pageNumber === 1
+      ? { width: "100%", display: "block", height: "auto", marginTop: 25 }
+      : { width: "100%", display: "block", height: "auto", marginTop: 10 };
 
   const ITEMS_PER_PAGE = 8;
-  
 
   return (
-    <div className="pdf-wrapper"
-    style={{
-    width: "794px",
-    height: "1122px",
-    margin: "0 auto",
-    background: "#fff",
-    position: "relative",
-    boxSizing: "border-box",
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    pageBreakInside: "avoid",
-    breakInside: "avoid"
-  }}>
+    <div
+      className="pdf-wrapper"
+      style={{
+        width: "794px",
+        height: "1122px",
+        margin: "0 auto",
+        background: "#fff",
+        position: "relative",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        pageBreakInside: "avoid",
+        breakInside: "avoid",
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -74,12 +80,18 @@ export default function InvoicePage({
           padding: 0,
         }}
       >
-        {isSharda ? (
+        {selectedFirm.name === "Sharda Associates" ? (
           <img
             className="header-image"
             src={headerImageSharda}
             alt="Invoice header"
             // style={{ width: "100%", display: "block", height: "auto" }}
+            style={headerStyle}
+          />
+        ) : selectedFirm.name === "Anunay Sharda & Associates" ? (
+          <img
+            src={headerImageFinaxis}
+            alt="Anunay Sharda & Associates"
             style={headerStyle}
           />
         ) : (
@@ -100,9 +112,26 @@ export default function InvoicePage({
         }}
       >
         {/* Watermark */}
-        {isSharda ? (
+        {selectedFirm.name === "Sharda Associates" ? (
           <img
             src={shardaLogo}
+            alt="Watermark"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "400px",
+              height: "auto",
+              opacity: 0.1,
+              transform: "translate(-50%, -50%) ",
+              pointerEvents: "none",
+              userSelect: "none",
+              zIndex: 0,
+            }}
+          />
+        ) : selectedFirm.name === "Anunay Sharda & Associates" ? (
+          <img
+            src={calogonew}
             alt="Watermark"
             style={{
               position: "absolute",
@@ -136,10 +165,10 @@ export default function InvoicePage({
           />
         )}
 
-       
         <div
           style={{
             paddingBottom: 10,
+
             marginBottom: 15,
             display: "flex",
             alignItems: "flex-start",
@@ -153,88 +182,69 @@ export default function InvoicePage({
               alignItems: "center",
             }}
           >
-            <div style={{ textAlign: "center" }}>
+            {selectedFirm.name === "Sharda Associates" ? (
               <div
                 style={{
-                  fontSize: 24,
-                  color: "#1A2B59",
-                  lineHeight: 1.1,
-                  textAlign: "center",
-                  fontWeight: "",
-                  marginLeft: 0,
-                  marginRight: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  justifyContent: "center",
                 }}
               >
-                {/* {selectedFirm.name.split(" ").join("\n")} */}
-                {/* {selectedFirm.name} */}
-                <div
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    marginBottom: 15,
-                  }}
-                >
-                  {selectedFirm.name === "Sharda Associates" ? (
-                    // Sharda Associates Header
-                    <>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                        }}
-                      >
-                        <img
-                          src={shardaLogo}
-                          alt="Sharda Associates Logo"
-                          style={{ height: 92 }}
-                        />
-
-                        <img
-                          src={shardaHeader}
-                          alt="finaxis business consultancy header"
-                          style={{ height: 75, marginBottom: 8 }}
-                        />
-                      </div>
-                    </>
-                  ) : selectedFirm.name === "Finaxis Business Consultancy" ? (
-                    // Finaxis Header
-                    <>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                        }}
-                      >
-                        <img
-                          src={finaxisLogo}
-                          alt="Finaxis Logo"
-                          style={{ height: 80, marginBottom: 8 }}
-                        />
-
-                        <img
-                          src={finaxisHeader}
-                          alt="finaxis business consultancy header"
-                          style={{ height: 80, marginBottom: 8 }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    // Default Header (simple)
-                    <div
-                      style={{
-                        fontSize: 24,
-                        color: "#1A2B59",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {selectedFirm.name}
-                    </div>
-                  )}
-                </div>
+                <img
+                  src={shardaLogo}
+                  alt="Sharda Associates Logo"
+                  style={{ height: 92 }}
+                />
+                <img
+                  src={shardaHeader}
+                  alt="Sharda Header"
+                  style={{ height: 75, marginBottom: 8 }}
+                />
               </div>
-            </div>
+            ) : selectedFirm.name === "Anunay Sharda & Associates" ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={calogonew}
+                  alt="Anunay Logo"
+                  style={{ height: 100 }}
+                />
+              </div>
+            ) : selectedFirm.name ===
+              "Finaxis Business Consultancy Private Limited" ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={finaxisLogo}
+                  alt="Finaxis Logo"
+                  style={{ height: 80, marginBottom: 8 }}
+                />
+                <img
+                  src={finaxisHeader}
+                  alt="Finaxis Header"
+                  style={{ height: 80, marginBottom: 8 }}
+                />
+              </div>
+            ) : (
+              <div
+                style={{ fontSize: 24, color: "#1A2B59", fontWeight: "bold" }}
+              >
+                {selectedFirm.name}
+              </div>
+            )}
           </div>
         </div>
         {/* Item Table */}
@@ -243,31 +253,35 @@ export default function InvoicePage({
             width: "100%",
             overflowX: "auto",
             // height: "800px",
-             padding: "0 20px 0px 20px",
+            padding: "0 20px 0px 20px",
           }}
-          
         >
           <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              border: "1px solid black",
-              tableLayout: "fixed",
-               height: "100%",
-            }}
+            className="single-border-table"
+            style={{ width: "100%", tableLayout: "fixed" }}
           >
-            <colgroup>
-              <col style={{ width: "10%" }} />
-              <col />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "10%" }} />
-              <col />
-              <col style={{ width: "15%" }} />
-            </colgroup>
             <thead>
               <tr style={{ backgroundColor: "#eee" }}>
                 {!isSharda ? (
                   <>
+                    {!isSharda && showGSTIN && (
+                      <th
+                        colSpan={3}
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          fontSize: 14,
+                          textAlign: "center",
+                          borderLeft: "none",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderRight: "none",
+                        }}
+                      >
+                        GSTIN: {selectedFirm.gstin}
+                      </th>
+                    )}
                     <th
                       colSpan={3}
                       style={{
@@ -276,18 +290,9 @@ export default function InvoicePage({
                         fontWeight: "bold",
                         fontSize: 14,
                         textAlign: "center",
-                      }}
-                    >
-                      GSTIN: {selectedFirm.gstin}
-                    </th>
-                    <th
-                      colSpan={3}
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        fontWeight: "bold",
-                        fontSize: 14,
-                        textAlign: "center",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderRight: "none",
                       }}
                     >
                       {invoiceType}
@@ -310,6 +315,7 @@ export default function InvoicePage({
               </tr>
               <tr>
                 <th
+                  className="border-left-none"
                   colSpan={3}
                   style={{
                     border: "1px solid black",
@@ -318,6 +324,9 @@ export default function InvoicePage({
                     fontSize: 12,
                     textAlign: "center",
                     width: "50%",
+
+                    borderBottom: "none",
+                    borderRight: "none",
                   }}
                 >
                   CLIENT DETAILS
@@ -331,6 +340,9 @@ export default function InvoicePage({
                     fontSize: 12,
                     textAlign: "center",
                     width: "50%",
+
+                    borderBottom: "none",
+                    borderRight: "none",
                   }}
                 >
                   COMPANY DETAILS
@@ -338,12 +350,14 @@ export default function InvoicePage({
               </tr>
               <tr>
                 <td
+                  className="text-align-center"
                   style={{
-                    border: "1px solid black",
                     padding: 6,
                     fontWeight: "Bold",
-                    width: "15%",
+                    width: "25%",
                     minWidth: "120px",
+                    borderRight: "none",
+                    borderBottom: "none",
                   }}
                 >
                   Name
@@ -351,20 +365,23 @@ export default function InvoicePage({
                 <td
                   colSpan={2}
                   style={{
-                    border: "1px solid black",
                     padding: 6,
                     width: "35%",
                     fontWeight: "Bold",
+                    borderRight: "none",
+                    borderBottom: "none",
                   }}
                 >
                   {customer.name}
                 </td>
                 <td
+                  className="text-align-center"
                   style={{
-                    border: "1px solid black",
                     padding: 6,
                     fontWeight: "bold",
-                    width: "15%",
+                    width: "25%",
+                    borderRight: "none",
+                    borderBottom: "none",
                   }}
                 >
                   Name
@@ -372,9 +389,9 @@ export default function InvoicePage({
                 <td
                   colSpan={2}
                   style={{
-                    border: "1px solid black",
                     padding: 6,
                     fontWeight: "Bold",
+                    borderBottom: "none",
                   }}
                 >
                   {selectedFirm.name}
@@ -385,11 +402,13 @@ export default function InvoicePage({
                 <>
                   <tr>
                     <td
+                      className="text-align-center"
                       rowSpan={3}
                       style={{
-                        border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       Address
@@ -401,15 +420,19 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       {customer.address}
                     </td>
                     <td
+                      className="text-align-center"
                       style={{
-                        border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       Address
@@ -420,6 +443,8 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       {selectedFirm.address}
@@ -427,10 +452,13 @@ export default function InvoicePage({
                   </tr>
                   <tr>
                     <td
+                      className="text-align-center"
                       style={{
                         border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       Contact No.
@@ -441,6 +469,8 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       {selectedFirm.phone}
@@ -461,12 +491,12 @@ export default function InvoicePage({
                         <tbody>
                           <tr>
                             <td
+                              className="text-align-center"
                               style={{
                                 padding: 6,
                                 fontWeight: "bold",
-                                width: "50%",
-                                borderRight: "1px solid black",
-                                borderBottom: "1px solid black",
+                                borderTop: "none",
+                                borderLeft: "none",
                               }}
                             >
                               Invoice No.
@@ -475,8 +505,8 @@ export default function InvoicePage({
                               style={{
                                 fontWeight: "bold",
                                 padding: 6,
-                                width: "50%",
-                                borderBottom: "1px solid black",
+                                border: "none",
+                                borderBottom: "1px solid #000",
                               }}
                             >
                               {invoiceNumber}
@@ -484,10 +514,15 @@ export default function InvoicePage({
                           </tr>
                           <tr>
                             <td
+                              className="text-align-center"
                               style={{
                                 padding: 6,
                                 fontWeight: "bold",
+                                ...(isSharda && { width: "50%" }),
                                 borderRight: "1px solid black",
+                                borderTop: "none",
+                                borderBottom: "none",
+                                borderLeft: "none",
                               }}
                             >
                               Invoice Date
@@ -496,6 +531,8 @@ export default function InvoicePage({
                               style={{
                                 fontWeight: "bold",
                                 padding: 6,
+                                borderRight: "none",
+                                borderBottom: "none",
                               }}
                             >
                               {invoiceDate}
@@ -510,10 +547,12 @@ export default function InvoicePage({
                 <>
                   <tr>
                     <td
+                      className="text-align-center"
                       style={{
-                        border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       Address
@@ -525,16 +564,20 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         fontWeight: "Bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       {customer.address}
                     </td>
 
                     <td
+                      className="text-align-center"
                       style={{
-                        border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       Address
@@ -546,19 +589,24 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         fontWeight: "Bold",
+                        borderRight: "none",
+                        borderBottom: "none",
                       }}
                     >
                       {selectedFirm.address}
                     </td>
                   </tr>
 
-                  {!isSharda && (
+                  {!isSharda && showGSTIN && (
                     <tr>
                       <td
+                        className="text-align-center border-left-none"
                         style={{
                           border: "1px solid black",
                           padding: 6,
                           fontWeight: "bold",
+                          borderRight: "none",
+                          borderBottom: "none",
                         }}
                       >
                         GSTIN
@@ -569,16 +617,21 @@ export default function InvoicePage({
                           border: "1px solid black",
                           padding: 6,
                           fontWeight: "Bold",
+                          borderRight: "none",
+                          borderBottom: "none",
                         }}
                       >
                         {customer.GSTIN}
                       </td>
 
                       <td
+                        className="text-align-center"
                         style={{
                           border: "1px solid black",
                           padding: 6,
                           fontWeight: "bold",
+                          borderRight: "none",
+                          borderBottom: "none",
                         }}
                       >
                         Contact No.
@@ -589,6 +642,8 @@ export default function InvoicePage({
                           border: "1px solid black",
                           padding: 6,
                           fontWeight: "Bold",
+                          borderRight: "none",
+                          borderBottom: "none",
                         }}
                       >
                         {selectedFirm.phone}
@@ -607,10 +662,13 @@ export default function InvoicePage({
                       ></td>
 
                       <td
+                        className="text-align-center"
                         style={{
                           border: "1px solid black",
                           padding: 6,
                           fontWeight: "bold",
+                          borderRight: "none",
+                          borderBottom: "none",
                         }}
                       >
                         Contact No.
@@ -621,6 +679,8 @@ export default function InvoicePage({
                           border: "1px solid black",
                           padding: 6,
                           fontWeight: "Bold",
+                          borderRight: "none",
+                          borderBottom: "none",
                         }}
                       >
                         {selectedFirm.phone}
@@ -631,10 +691,14 @@ export default function InvoicePage({
                   {!isSharda ? (
                     <tr>
                       <td
+                        className="text-align-center"
                         style={{
                           border: "1px solid black",
                           padding: 6,
                           fontWeight: "bold",
+
+                          borderBottom: "none",
+                          borderLeft: "none",
                         }}
                       >
                         Place of Supply
@@ -642,9 +706,10 @@ export default function InvoicePage({
                       <td
                         colSpan={2}
                         style={{
-                          border: "1px solid black",
+                          border: "none",
                           padding: 6,
                           fontWeight: "Bold",
+                          borderTop: "",
                         }}
                       >
                         {placeOfSupply}
@@ -668,22 +733,24 @@ export default function InvoicePage({
                           <tbody>
                             <tr>
                               <td
+                                className="text-align-center"
                                 style={{
                                   padding: 6,
                                   fontWeight: "bold",
-                                  width: "50%",
-                                  borderRight: " 1px solid black",
-                                  borderBottom: "1px solid black",
+                                  border: "none",
+                                  borderBottom: "1px solid #000",
+                                  borderLeft: "none",
                                 }}
                               >
                                 Invoice No.
                               </td>
                               <td
                                 style={{
-                                  fontWeight: "Bold",
                                   padding: 6,
-                                  width: "50%",
-                                  borderBottom: "1px solid black",
+                                  fontWeight: "bold",
+                                  border: "none",
+                                  borderLeft: "1px solid #000",
+                                  borderBottom: "1px solid #000",
                                 }}
                               >
                                 {invoiceNumber}
@@ -691,10 +758,13 @@ export default function InvoicePage({
                             </tr>
                             <tr>
                               <td
+                                className="text-align-center"
                                 style={{
                                   padding: 6,
                                   fontWeight: "bold",
-                                  borderRight: "1px solid black",
+                                  border: "none",
+                                  borderBottom: "none",
+                                  borderLeft: "none",
                                 }}
                               >
                                 Invoice Date
@@ -703,6 +773,9 @@ export default function InvoicePage({
                                 style={{
                                   fontWeight: "Bold",
                                   padding: 6,
+                                  borderRight: "none",
+                                  borderBottom: "none",
+                                  borderTop: "none",
                                 }}
                               >
                                 {invoiceDate}
@@ -732,12 +805,12 @@ export default function InvoicePage({
                           <tbody>
                             <tr>
                               <td
+                                className="text-align-center"
                                 style={{
                                   padding: 6,
                                   fontWeight: "bold",
-                                  width: "50%",
-                                  borderRight: " 1px solid black",
-                                  borderBottom: "1px solid black",
+                                  border: "none",
+                                  borderBottom: "1px solid #000",
                                 }}
                               >
                                 Invoice No.
@@ -747,7 +820,8 @@ export default function InvoicePage({
                                   fontWeight: "Bold",
                                   padding: 6,
                                   width: "50%",
-                                  borderBottom: "1px solid black",
+                                  borderLeft: "none",
+                                  borderBottom: "none",
                                 }}
                               >
                                 {invoiceNumber}
@@ -759,6 +833,9 @@ export default function InvoicePage({
                                   padding: 6,
                                   fontWeight: "bold",
                                   borderRight: "1px solid black",
+                                  borderTop: "none",
+                                  borderLeft: "none",
+                                  borderBottom: "none",
                                 }}
                               >
                                 Invoice Date
@@ -767,6 +844,9 @@ export default function InvoicePage({
                                 style={{
                                   fontWeight: "Bold",
                                   padding: 6,
+                                  width: "50%",
+                                  borderRight: "none",
+                                  borderBottom: "none",
                                 }}
                               >
                                 {invoiceDate}
@@ -780,15 +860,17 @@ export default function InvoicePage({
                 </>
               )}
             </thead>
-
+          </table>
+          <table className="w-[100%]">
             <tbody>
               <tr>
                 <th
                   style={{
                     border: "1px solid black",
                     padding: 6,
-                    width: "6%",
+                    width: "11.8%",
                     fontWeight: "bold",
+                    borderTop: "none",
                   }}
                 >
                   Sr. No.
@@ -797,9 +879,11 @@ export default function InvoicePage({
                   style={{
                     border: "1px solid black",
                     padding: 6,
-                    width: "50%",
+                    width: "33.4%",
                     fontWeight: "bold",
                     textAlign: "left",
+                    borderTop: "none",
+                    borderLeft: "none",
                   }}
                 >
                   Description of Services
@@ -810,6 +894,8 @@ export default function InvoicePage({
                     padding: 6,
                     width: "15%",
                     fontWeight: "bold",
+                    borderTop: "none",
+                    borderLeft: "none",
                   }}
                 >
                   SAC CODE
@@ -820,6 +906,8 @@ export default function InvoicePage({
                     padding: 6,
                     width: "10%",
                     fontWeight: "bold",
+                    borderTop: "none",
+                    borderLeft: "none",
                   }}
                 >
                   Unit(s)
@@ -830,6 +918,8 @@ export default function InvoicePage({
                     padding: 6,
                     width: "10%",
                     fontWeight: "bold",
+                    borderTop: "none",
+                    borderLeft: "none",
                   }}
                 >
                   Rate
@@ -840,6 +930,9 @@ export default function InvoicePage({
                     padding: 6,
                     width: "10%",
                     fontWeight: "bold",
+                    borderTop: "none",
+                    borderBottom: "1px solid black",
+                    borderLeft: "none",
                   }}
                 >
                   Amount
@@ -852,6 +945,8 @@ export default function InvoicePage({
                     <td
                       style={{
                         border: "1px solid black",
+                        borderTop: "none",
+                        borderBottom: "none",
                         padding: 6,
                         textAlign: "center",
                       }}
@@ -859,7 +954,15 @@ export default function InvoicePage({
                       {/* {idx + 1 + (isLastPage ? 0 : 0)} adjust if needed */}
                       {offset + idx + 1}
                     </td>
-                    <td style={{ border: "1px solid black", padding: 6 }}>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
+                      }}
+                    >
                       {item.description}
                     </td>
                     <td
@@ -867,6 +970,9 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         textAlign: "center",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
                       }}
                     >
                       9971
@@ -876,6 +982,9 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         textAlign: "center",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
                       }}
                     >
                       {item.qty}
@@ -885,6 +994,9 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         textAlign: "right",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
                       }}
                     >
                       ₹{item.rate.toFixed(2)}
@@ -894,6 +1006,9 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         textAlign: "right",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
                       }}
                     >
                       ₹{amount.toFixed(2)}
@@ -930,18 +1045,8 @@ export default function InvoicePage({
                         padding: 6,
                         height: 30,
                         textAlign: "center",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td style={{ border: "1px solid black", padding: 6 }}>
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "center",
+                        borderTop: "none",
+                        borderBottom: "none",
                       }}
                     >
                       &nbsp;
@@ -950,7 +1055,33 @@ export default function InvoicePage({
                       style={{
                         border: "1px solid black",
                         padding: 6,
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
+                      }}
+                    >
+                      &nbsp;
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
                         textAlign: "center",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
+                      }}
+                    >
+                      &nbsp;
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        padding: 6,
+                        textAlign: "center",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
                       }}
                     >
                       &nbsp;
@@ -960,6 +1091,9 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         textAlign: "right",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
                       }}
                     >
                       &nbsp;
@@ -969,6 +1103,9 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         textAlign: "right",
+                        borderTop: "none",
+                        borderBottom: "none",
+                        borderLeft: "none",
                       }}
                     >
                       &nbsp;
@@ -986,7 +1123,10 @@ export default function InvoicePage({
                         border: "1px solid black",
                         padding: 6,
                         fontWeight: "bold",
-                        textAlign: "right",
+                        textAlign: "left",
+                        paddingLeft: "60px",
+                        borderBottom: "none",
+                        borderRight: "none",
                       }}
                     >
                       Total in Rupees
@@ -997,6 +1137,7 @@ export default function InvoicePage({
                         padding: 6,
                         textAlign: "right",
                         fontWeight: "bold",
+                        borderBottom: "none",
                       }}
                     >
                       ₹{totalAmount.toFixed(2)}
@@ -1009,7 +1150,10 @@ export default function InvoicePage({
                   <tr>
                     <td
                       colSpan={isSharda ? 6 : 3}
-                      style={{ border: "1px solid black", padding: 0 }}
+                      style={{
+                        border: "1px solid black",
+                        borderRight: isSharda ? "1px solid black" : "none",
+                      }}
                     >
                       <table
                         style={{
@@ -1027,6 +1171,7 @@ export default function InvoicePage({
                                 fontWeight: "light",
                                 fontSize: 10,
                                 textAlign: "center",
+                                borderRight: "none",
                               }}
                             >
                               Total Amount in Words
@@ -1106,8 +1251,9 @@ export default function InvoicePage({
                         <table
                           style={{
                             width: "100%",
-                            borderCollapse: "collapse",
+
                             tableLayout: "fixed",
+                            marginTop: "-37%",
                           }}
                         >
                           <tbody>
@@ -1118,6 +1264,7 @@ export default function InvoicePage({
                                   padding: 6,
                                   fontSize: 10,
                                   textAlign: "right",
+                                  borderLeft: "none",
                                 }}
                               >
                                 Taxable Value
@@ -1237,22 +1384,20 @@ export default function InvoicePage({
               )}
             </tbody>
           </table>
-          
         </div>
         <p
-            style={{
-              fontSize: 10,
-              marginTop: 10,
-              fontStyle: "italic",
-              textAlign: "center",
-            }}
-          >
-            This is a system generated invoice and does not require any
-            signature.
-          </p>
+          style={{
+            fontSize: 10,
+            marginTop: 10,
+            fontStyle: "italic",
+            textAlign: "center",
+          }}
+        >
+          This is a system generated invoice and does not require any signature.
+        </p>
       </div>
       {/* Footer */}
-      <div style={{ marginLeft: "-20px", marginRight: "-20px"}}>
+      <div style={{ marginLeft: "-20px", marginRight: "-20px" }}>
         {isSharda ? (
           <img
             className="footer-image"
