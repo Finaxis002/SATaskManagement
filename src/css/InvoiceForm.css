@@ -572,3 +572,25 @@
   } */
 }
 
+
+.text-align-center{
+    text-align: center;
+}
+
+.border-none td{
+  padding: 6px;
+  text-align: center;
+  border: 1px solid #000;
+}
+
+
+.single-border-table,
+.single-border-table th,
+.single-border-table td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+
+.border-left-none{
+  border-left: "none";
+}

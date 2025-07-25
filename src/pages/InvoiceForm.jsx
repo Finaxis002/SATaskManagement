@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import html2pdf from "html2pdf.js";
 import "../css/InvoiceForm.css";
-import axios from '../utils/secureAxios';
+import axios from "../utils/secureAxios";
 import Select from "react-select";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
+import { FaTrash } from "react-icons/fa";
 import InvoicePage from "../Components/invoice/InvoicePage";
 const ITEMS_PER_PAGE = 8;
 const firms = [
   {
-    name: "Finaxis Business Consultancy",
+    name: "Finaxis Business Consultancy Private Limited",
     subtitle: "Business Consultancy",
     gstin: "GST5454",
-    address: "Vidhya Nagar, Bhopal",
-    email: "finaxis@gmail.com",
-    phone: "25666566",
+    address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
+    email: "finaxis.in@gmail.com",
+    phone: "+91-7987021896",
     bank: {
       name: "HDFC",
       accountName: "Anugrah Sharda",
@@ -26,34 +27,75 @@ const firms = [
     name: "Sharda Associates",
     subtitle: "Associates",
     gstin: "GST9876",
-    address: "Indrapuri, Bhopal",
+    address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
     email: "sharda@gmail.com",
     phone: "7894561230",
-    bank: {
-      name: "SBI",
-      accountName: " Anunay Sharda",
-      account: "1234567890",
-      ifsc: "SBIN0001234",
-    },
+    banks: [
+      // <-- instead of single `bank` object
+      {
+        label: "SBI Main",
+        name: "SBI",
+        accountName: "Anunay Sharda",
+        account: "1234567890",
+        ifsc: "SBIN0001234",
+      },
+      {
+        label: "ICICI Secondary",
+        name: "ICICI",
+        accountName: "Anunay Sharda",
+        account: "5555555555",
+        ifsc: "ICIC0005678",
+      },
+      {
+        label: "HDFC",
+        name: "HDFC",
+        accountName: "Anunay Sharda",
+        account: "5555555555",
+        ifsc: "ICIC0005678",
+      },
+      {
+        label: "Axis Bank",
+        name: "Axis Bank",
+        accountName: "Anunay Sharda",
+        account: "5555555555",
+        ifsc: "ICIC0005678",
+      },
+    ],
   },
   {
     name: "Kailash Real Estate",
     subtitle: "Real Estate",
-    gstin: "GST1122",
-    address: "MP Nagar, Bhopal",
+    address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
     email: "kailashre@gmail.com",
     phone: "7569341285",
     bank: { name: "ICICI", account: "0987654321", ifsc: "ICIC0005678" },
   },
+  // {
+  //   name: "Bhojpal Realities",
+  //   subtitle: "Realities",
+  //   gstin: "GST3344",
+  //   address: "Arera Colony, Bhopal",
+  //   email: "bhojpalr@gmail.com",
+  //   phone: "8652349871",
+  //   bank: { name: "Axis", account: "111222333", ifsc: "UTIB0000123" },
+  // },
   {
-    name: "Bhojpal Realities",
+    name: "Anunay Sharda & Associates",
     subtitle: "Realities",
     gstin: "GST3344",
-    address: "Arera Colony, Bhopal",
-    email: "bhojpalr@gmail.com",
-    phone: "8652349871",
+    address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
+    email: "anunaysharda@gmail.com",
+    phone: "+91-7987021896",
     bank: { name: "Axis", account: "111222333", ifsc: "UTIB0000123" },
   },
+  //  {
+  //   name: "Finaxis Business Consultancy Private Limited",
+  //   gstin: "GST3344",
+  //   address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
+  //   email: "bhojpalr@gmail.com",
+  //   phone: "8652349871",
+  //   bank: { name: "Axis", account: "111222333", ifsc: "UTIB0000123" },
+  // },
 ];
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
@@ -72,6 +114,7 @@ export default function InvoiceForm() {
   const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
   const [isFinalized, setIsFinalized] = useState(false);
+  const [selectedBankIndex, setSelectedBankIndex] = useState(0);
 
   // Preview invoice number - does not change DB
   const previewInvoiceNumber = async () => {
@@ -79,17 +122,14 @@ export default function InvoiceForm() {
     const month = String(new Date().getMonth() + 1).padStart(2, "0");
 
     try {
-      const res = await axios.get(
-        "/invoices/preview-serial",
-        {
-          params: {
-            firm: selectedFirm.name,
-            type: invoiceType,
-            year,
-            month,
-          },
-        }
-      );
+      const res = await axios.get("/invoices/preview-serial", {
+        params: {
+          firm: selectedFirm.name,
+          type: invoiceType,
+          year,
+          month,
+        },
+      });
       setInvoiceNumber(res.data.invoiceNumber);
     } catch (error) {
       console.error("Error previewing invoice number", error);
@@ -103,15 +143,12 @@ export default function InvoiceForm() {
     const month = String(new Date().getMonth() + 1).padStart(2, "0");
 
     try {
-      const res = await axios.post(
-        "/invoices/finalize-serial",
-        {
-          firm: selectedFirm.name,
-          type: invoiceType,
-          year,
-          month,
-        }
-      );
+      const res = await axios.post("/invoices/finalize-serial", {
+        firm: selectedFirm.name,
+        type: invoiceType,
+        year,
+        month,
+      });
       setInvoiceNumber(res.data.invoiceNumber);
       setIsFinalized(true);
       return res.data.invoiceNumber;
@@ -166,6 +203,7 @@ export default function InvoiceForm() {
 
   const invoiceRef = useRef();
   const isSharda = selectedFirm.name === "Sharda Associates";
+  const showGSTIN = !!selectedFirm.gstin;
 
   const offsetPage1 = 0;
   const offsetPage2 = ITEMS_PER_PAGE;
@@ -175,9 +213,7 @@ export default function InvoiceForm() {
     const fetchClients = async () => {
       try {
         console.log("Fetching clients..."); // Debug log
-        const response = await axios.get(
-          "/clients/details"
-        );
+        const response = await axios.get("/clients/details");
         console.log("Clients fetched:", response.data); // Debug log
         setClients(response.data);
       } catch (error) {
@@ -219,9 +255,7 @@ export default function InvoiceForm() {
       });
 
       try {
-        let url = `/tasks/by-client-name/${encodeURIComponent(
-          client.name
-        )}`;
+        let url = `/tasks/by-client-name/${encodeURIComponent(client.name)}`;
         const params = new URLSearchParams();
         if (fromDate) params.append("fromDate", fromDate);
         if (toDate) params.append("toDate", toDate);
@@ -254,65 +288,6 @@ export default function InvoiceForm() {
   }, [selectedFirm, invoiceType]);
 
   // Handle client selection
-
-  const handleClientChange = async (selectedOption) => {
-    if (!selectedOption) {
-      setCustomer({
-        _id: "",
-        name: "",
-        address: "",
-        GSTIN: "",
-        mobile: "",
-        emailId: "",
-      });
-      setItems([]); // Clear items if no client is selected
-      return;
-    }
-
-    const clientId = selectedOption.value;
-    const client = clients.find((c) => c._id === clientId);
-    if (!client) return;
-
-    setCustomer({
-      _id: client._id,
-      name: client.name,
-      address: client.address || "",
-      GSTIN: client.GSTIN || "",
-      mobile: client.mobile || "",
-      emailId: client.emailId || "",
-    });
-
-    try {
-      let url = `/tasks/by-client-name/${encodeURIComponent(
-        client.name
-      )}`;
-
-      // Add query params for date filtering only if dates are selected
-      const params = new URLSearchParams();
-      if (fromDate) params.append("fromDate", fromDate);
-      if (toDate) params.append("toDate", toDate);
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await axios.get(url);
-      const tasks = response.data || [];
-
-      const taskItems = tasks.map((task) => ({
-        id: uuidv4(),
-        description: task.taskName || task.workDesc || "Task",
-        hsn: "9971", // default HSN for professional services
-        qty: 1,
-        rate: 1000,
-        gst: 0,
-      }));
-
-      setItems(taskItems.length ? taskItems : []);
-    } catch (error) {
-      console.error("Failed to fetch tasks for client:", error);
-    }
-  };
 
   // useEffect(() => {
   //   setInvoiceNumber(generateInvoiceNumber());
@@ -425,7 +400,7 @@ export default function InvoiceForm() {
       // Reset the width after PDF generation if needed
       setTimeout(() => {
         element.style.width = "";
-      }, 500);
+      }, 2000);
     } catch (error) {
       alert("Could not finalize invoice number.");
     }
@@ -549,273 +524,286 @@ export default function InvoiceForm() {
     >
       {/* Left form side */}
       <div
-        className="invoice-left scrollable-panel"
-        style={{ flex: "1 1 550px", maxWidth: 550 }}
+        className="invoice-left scrollable-panel "
+        style={{ flex: "1 1 550px", maxWidth: 500 }}
       >
         {/* ... Your left side inputs and controls ... */}
         <div
           style={{
             display: "flex",
-            gap: "20px", // space between buttons
-            marginTop: 20,
-            justifyContent: "center", // center align horizontally (optional)
+            flexWrap: "wrap",
+            gap: "10px",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "16px",
           }}
         >
           <button
             onClick={handleDownloadPDF}
-            style={{
-              marginTop: 20,
-              padding: "12px 24px",
-              backgroundColor: "#1a73e8",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "16px",
-              fontWeight: "600",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden",
-              ":hover": {
-                backgroundColor: "#0d5bba",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-                transform: "translateY(-2px)",
-              },
-              ":active": {
-                transform: "translateY(0)",
-              },
-            }}
+            title="Download invoice as PDF"
+            className="group relative px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium cursor-pointer flex items-center justify-center gap-1 shadow hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
           >
-            <span style={{ fontSize: "20px" }}>📄</span>
-            <span>Generate PDF</span>
-            <span
-              style={{
-                position: "absolute",
-                background: "rgba(255,255,255,0.2)",
-                borderRadius: "50%",
-                transform: "scale(0)",
-                animation: "ripple 0.6s linear",
-                pointerEvents: "none",
-              }}
-            ></span>
+            <span className="text-base">📄</span>
+            <span>PDF</span>
           </button>
 
           <button
             onClick={saveInvoice}
-            style={{
-              marginTop: 20,
-              padding: "12px 24px",
-              backgroundColor: "#28a745",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "16px",
-              fontWeight: "600",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden",
-              ":hover": {
-                backgroundColor: "#0d5bba",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-                transform: "translateY(-2px)",
-              },
-              ":active": {
-                transform: "translateY(0)",
-              },
-            }}
+            title="Save invoice to database"
+            className="group relative px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium cursor-pointer flex items-center justify-center gap-1 shadow hover:bg-green-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
           >
-            Save Invoice
+            <svg
+              className="w-4 h-4 text-white"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <span>Save</span>
           </button>
         </div>
 
-        <label>From Date</label>
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          max={toDate || undefined}
-        />
-
-        <label>To Date</label>
-        <input
-          type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-          min={fromDate || undefined}
-        />
-
-        <h2>Your Details</h2>
-        <select
-          value={selectedFirm.name}
-          onChange={(e) => {
-            const firm = firms.find((f) => f.name === e.target.value);
-            if (firm) setSelectedFirm(firm);
-          }}
-        >
-          {firms.map((f) => (
-            <option key={f.name}>{f.name}</option>
-          ))}
-        </select>
-
-        {/* <label>Invoice Number</label>
-        <input type="text" readOnly value={invoiceNumber} /> */}
-
-        <label>Invoice Type</label>
-        <select
-          value={invoiceType}
-          onChange={(e) => setInvoiceType(e.target.value)}
-        >
-          {invoiceTypes.map((type) => (
-            <option key={type}>{type}</option>
-          ))}
-        </select>
-
-        <label>Invoice Date</label>
-        <input
-          type="date"
-          value={invoiceDate}
-          onChange={(e) => setInvoiceDate(e.target.value)}
-        />
-
-        {/* Add other form controls here as needed */}
-
-        <h2>Customer Details</h2>
-
-        <Select
-          options={clientOptions}
-          value={clientOptions.find((option) => option.value === customer._id)}
-          // onChange={handleClientChange}
-          onChange={(option) => setSelectedClientOption(option)}
-          placeholder="Search or select client..."
-          isClearable
-          styles={{
-            control: (base) => ({
-              ...base,
-              marginBottom: "10px",
-              minHeight: "40px",
-            }),
-            menu: (base) => ({
-              ...base,
-              zIndex: 9999, // ensure dropdown appears above other elements
-            }),
-          }}
-          theme={(theme) => ({
-            ...theme,
-            colors: {
-              ...theme.colors,
-              primary: "#1a73e8", // match your button color
-            },
-          })}
-        />
-
-        <input
-          placeholder="Place of Supply"
-          value={placeOfSupply}
-          onChange={(e) => setPlaceOfSupply(e.target.value)}
-        />
-
-        <h2>Items</h2>
-
-        {items.map((item, idx) => {
-          const amount = (item.qty * item.rate).toFixed(2);
-          return (
-            <div
-              key={idx}
-              style={{
-                marginBottom: 20,
-                padding: 10,
-                border: "1px solid #ccc",
-                borderRadius: 8,
-                backgroundColor: "#fdfdfd",
-              }}
-            >
-              <label>Description</label>
+        <div className="space-y-1">
+          {/* Date Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                From Date
+              </label>
               <input
-                value={item.description}
-                onChange={(e) => updateItem(idx, "description", e.target.value)}
-                placeholder="Description"
-                style={{ width: "100%", marginBottom: 10 }}
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                max={toDate || undefined}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <label>Qty</label>
-                  <input
-                    type="number"
-                    value={item.qty}
-                    onChange={(e) =>
-                      updateItem(idx, "qty", Number(e.target.value))
-                    }
-                    placeholder="Qty"
-                    min={1}
-                    style={{ width: "100%" }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Rate</label>
-                  <input
-                    type="number"
-                    value={item.rate}
-                    onChange={(e) =>
-                      updateItem(idx, "rate", Number(e.target.value))
-                    }
-                    placeholder="Rate"
-                    step="0.01"
-                    style={{ width: "100%" }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label>Amount</label>
-                  <input
-                    readOnly
-                    value={`₹${amount}`}
-                    style={{ width: "100%", backgroundColor: "#f1f1f1" }}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => deleteItem(item.id)}
-                  style={{
-                    marginTop: 22,
-                    backgroundColor: "#dc3545",
-                    color: "#fff",
-                    border: "none",
-                    padding: "8px 10px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "16px",
-                  }}
-                  title="Delete Task"
-                >
-                  🗑️
-                </button>
-              </div>
             </div>
-          );
-        })}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                min={fromDate || undefined}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
 
-        <button onClick={addItem} className="mb-20">
-          + Add Item
-        </button>
+          {/* Firm Selection */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              Your Details
+            </h2>
+            <label className="block text-sm font-medium text-gray-700">
+              Select Firm
+            </label>
+            <select
+              value={selectedFirm.name}
+              onChange={(e) => {
+                const firm = firms.find((f) => f.name === e.target.value);
+                if (firm) setSelectedFirm(firm);
+              }}
+              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {firms.map((f) => (
+                <option key={f.name}>{f.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sharda Bank Dropdown */}
+          {selectedFirm.name === "Sharda Associates" && selectedFirm.banks && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Select Bank Account
+              </label>
+              <select
+                value={selectedBankIndex}
+                onChange={(e) => setSelectedBankIndex(parseInt(e.target.value))}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {selectedFirm.banks.map((bank, idx) => (
+                  <option key={idx} value={idx}>
+                    {bank.label || `${bank.name} - ${bank.account}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Invoice Type */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Invoice Type
+              </label>
+              <select
+                value={invoiceType}
+                onChange={(e) => setInvoiceType(e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {invoiceTypes.map((type) => (
+                  <option key={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Invoice Date
+              </label>
+              <input
+                type="date"
+                value={invoiceDate}
+                onChange={(e) => setInvoiceDate(e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Client Selection */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              Customer Details
+            </h2>
+            <Select
+              options={clientOptions}
+              value={clientOptions.find(
+                (option) => option.value === customer._id
+              )}
+              onChange={(option) => setSelectedClientOption(option)}
+              placeholder="Search or select client..."
+              isClearable
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  marginBottom: "10px",
+                  minHeight: "40px",
+                  borderRadius: "0.375rem",
+                  borderColor: "#d1d5db",
+                }),
+                menu: (base) => ({
+                  ...base,
+                  zIndex: 9999,
+                }),
+              }}
+              theme={(theme) => ({
+                ...theme,
+                colors: {
+                  ...theme.colors,
+                  primary: "#1a73e8",
+                },
+              })}
+            />
+          </div>
+
+          {/* Place of Supply */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Place of Supply
+            </label>
+            <input
+              placeholder="Place of Supply"
+              value={placeOfSupply}
+              onChange={(e) => setPlaceOfSupply(e.target.value)}
+              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Items Section */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-10">Items</h2>
+            {items.map((item, idx) => {
+              const amount = (item.qty * item.rate).toFixed(2);
+              return (
+                <div
+                  key={idx}
+                  className="border border-gray-300 rounded-lg p-4 mb-2 bg-white shadow-sm"
+                >
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
+                  <input
+                    value={item.description}
+                    onChange={(e) =>
+                      updateItem(idx, "description", e.target.value)
+                    }
+                    placeholder="Description"
+                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Qty
+                      </label>
+                      <input
+                        type="number"
+                        value={item.qty}
+                        onChange={(e) =>
+                          updateItem(idx, "qty", Number(e.target.value))
+                        }
+                        min={1}
+                        className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Rate
+                      </label>
+                      <input
+                        type="number"
+                        value={item.rate}
+                        onChange={(e) =>
+                          updateItem(idx, "rate", Number(e.target.value))
+                        }
+                        step="0.01"
+                        className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Amount
+                      </label>
+                      <input
+                        readOnly
+                        value={`₹${amount}`}
+                        className="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteItem(item.id)}
+                      className="mt-6  transition text-red-500 hover:text-red-800"
+                      title="Delete Task"
+                    >
+                     <FaTrash />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Add Item Button */}
+            <div className="mt-4 sticky bottom-4 bg-white py-2">
+              <button
+                onClick={addItem}
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
+              >
+                + Add Item
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       {/* Right side invoice preview */}
 
@@ -827,7 +815,7 @@ export default function InvoiceForm() {
           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
           fontSize: 12,
           color: "#000",
-          transform: "scale(0.75)", // visually shrink
+          transform: "scale(0.90)", // visually shrink
           transformOrigin: "top left",
           position: "relative",
           width: "794px",
@@ -840,7 +828,13 @@ export default function InvoiceForm() {
             offset={offsetPage1}
             isLastPage={page2Items.length === 0}
             customer={customer}
-            selectedFirm={selectedFirm}
+            selectedFirm={{
+              ...selectedFirm,
+              bank:
+                selectedFirm.name === "Sharda Associates"
+                  ? selectedFirm.banks[selectedBankIndex]
+                  : selectedFirm.bank,
+            }}
             invoiceType={invoiceType}
             invoiceNumber={invoiceNumber}
             invoiceDate={invoiceDate}
@@ -854,6 +848,7 @@ export default function InvoiceForm() {
             sgstAmount={sgstAmount}
             numberToWordsIndian={numberToWordsIndian}
             onImagesLoaded={() => setImagesReady(true)}
+            showGSTIN={showGSTIN}
           />
 
           {page2Items.length > 0 && (
