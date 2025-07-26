@@ -7,6 +7,12 @@ import Swal from "sweetalert2";
 import InvoicePreview from "../Components/InvoicePreview";
 import { FaTrash } from "react-icons/fa";
 export default function ViewInvoices() {
+   const [firms] = useState([
+    { name: "Finaxis Business Consultancy", gstin: "GST5454" },
+    { name: "Sharda Associates", gstin: "GST9876" },
+    { name : "Kailash Real Estate", gstin: "GST9855"},
+    { name : "Bhojpal Realities", gstin: "GST9878"}
+  ]);
   console.log("ViewInvoices component rendered");
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -17,7 +23,11 @@ export default function ViewInvoices() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [filteredInvoices, setFilteredInvoices] = useState([]);
+  const [filterByFirm, setFilterByFirm] = useState([])
+  
+   const [selectedFirm, setSelectedFirm] = useState(null); 
 
+ 
   useEffect(() => {
     axios
       .get("/clients/details")
@@ -27,6 +37,8 @@ export default function ViewInvoices() {
       })
       .catch(console.error);
   }, []);
+
+  
 
   const clientOptions = clients.map((client) => ({
     value: client._id,
@@ -74,12 +86,13 @@ export default function ViewInvoices() {
           "/invoices"
         );
         console.log("All invoices fetched:", invoicesRes.data);
-
+        
         const sortedInvoices = [...(invoicesRes.data || [])].sort(
           (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
         );
         console.log("Sorted invoices:", sortedInvoices);
         setInvoices(sortedInvoices);
+         setFilteredInvoices(sortedInvoices);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -358,6 +371,25 @@ export default function ViewInvoices() {
     return rupeeWords + paiseWords + " Rupees Only";
   }
 
+  // Firm options for the dropdown
+  const firmOptions = firms.map((firm) => ({
+    value: firm.name,
+    label: firm.name,
+  }));
+
+  // Filter invoices when firm is selected
+  useEffect(() => {
+    if (!selectedFirm) {
+      setFilteredInvoices(invoices); // No firm selected, show all invoices
+      return;
+    }
+
+    const filtered = invoices.filter(
+      (invoice) => invoice.selectedFirm.name === selectedFirm.value
+    );
+    setFilteredInvoices(filtered);
+  }, [selectedFirm, invoices]);
+
   return (
     <div style={{ padding: 20 }}>
       <h2>View Invoices</h2>
@@ -365,6 +397,13 @@ export default function ViewInvoices() {
         options={clientOptions}
         onChange={setSelectedClient}
         placeholder="Select client to filter invoices"
+        isClearable
+      />
+
+       <Select
+        options={firmOptions}
+        onChange={setSelectedFirm}
+        placeholder="Select firm to filter invoices"
         isClearable
       />
 
