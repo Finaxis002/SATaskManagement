@@ -269,12 +269,13 @@ useEffect(() => {
             expanded={expanded}
           />
         )}
-
-        {/* {role === "admin" && (
+{/* 
+        {role === "admin" && (
           <SidebarItem
             icon={<FaDochub className="text-xl" />}
             label="View Invoice"
             to="/viewinvoices"
+            expanded={expanded}
           />
         )} */}
         {role === "admin" && (
