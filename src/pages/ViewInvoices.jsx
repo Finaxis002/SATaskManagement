@@ -33,29 +33,7 @@ export default function ViewInvoices() {
     label: client.name,
   }));
 
-  // useEffect(() => {
-  //   if (!selectedClient) {
-  //     setInvoices([]);
-  //     return;
-  //   }
-  //   axios
-  //     .get(
-  //       `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
-  //     )
-  //     .then((res) => {
-  //       console.log(
-  //         `Invoices fetched for clientId=${selectedClient.value}:`,
-  //         res.data
-  //       );
-  //       setInvoices(res.data);
-  //     })
-  //     .catch(console.error);
-  // }, [selectedClient]);
 
-  // Fetch all invoices on mount
-
-  // Initial load - fetch both clients and all invoices
-  // In your initial fetch useEffect
   useEffect(() => {
     const fetchInitialData = async () => {
       setIsLoading(true);
@@ -509,6 +487,8 @@ export default function ViewInvoices() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
+               paddingBottom:"20px"
+                
             }}
           >
             <div
@@ -521,7 +501,7 @@ export default function ViewInvoices() {
                 fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                 fontSize: 12,
                 color: "#000",
-                
+               
               }}
             >
               {/* <InvoicePreview invoice={invoiceToView} /> */}
