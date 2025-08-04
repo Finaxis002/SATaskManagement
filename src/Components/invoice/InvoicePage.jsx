@@ -55,6 +55,48 @@ export default function InvoicePage({
 
   const ITEMS_PER_PAGE = 8;
 
+  const getWalletInfo = () => {
+  if (selectedFirm.name === "Sharda Associates") {
+    const label = selectedFirm.bank?.label?.toLowerCase() || "";
+    if (label.includes("sbi") && label.includes("anugrah")) {
+      return (
+        <>
+          <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
+          <br />
+          Name - Anugrah Sharda <br />
+          Mobile Number – 9713330373 <br/>
+          UPI ID - 9713330373@ybl <br/>
+        </>
+      );
+    } else if (label.includes("kotak") && label.includes("anunay")) {
+      return (
+        <>
+          <strong>For Online Wallets - Paytm, GPay and PhonePe.</strong>
+          <br />
+          Name - Anunay Sharda <br />
+          Mobile Number - 7869777747 <br />
+          UPI ID - 7869777747@ybl
+        </>
+      );
+    }
+  }
+
+  if (selectedFirm.name === "Finaxis Business Consultancy Pvt. Ltd.") {
+    return (
+      <>
+        <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
+        <br />
+        Name : Finaxis Business Consultancy <br />
+        Mobile Number - 9425008997 <br />
+        UPI ID - 9425008997@kotak
+      </>
+    );
+  }
+
+  return null;
+};
+
+
   return (
     <div
       className="pdf-wrapper"
@@ -218,7 +260,7 @@ export default function InvoicePage({
                 />
               </div>
             ) : selectedFirm.name ===
-              "Finaxis Business Consultancy Private Limited" ? (
+              "Finaxis Business Consultancy Pvt. Ltd." ? (
               <div
                 style={{
                   display: "flex",
@@ -1220,7 +1262,7 @@ export default function InvoicePage({
                               IFSC Code: {selectedFirm?.bank?.ifsc}
                             </td>
                           </tr>
-                          {isSharda && (
+                          {/* {isSharda && (
                             <tr>
                               <td
                                 className="normal-text "
@@ -1236,10 +1278,19 @@ export default function InvoicePage({
                                 </strong>
                                 <br />
                                 Name : Anunay Sharda <br />
-                                Mobile Number : 7869777747
+                                Mobile Number : 7869777747<br />
+                                UPI ID - 7869777747@ybl
                               </td>
                             </tr>
-                          )}
+                          )} */}
+                          {getWalletInfo() && (
+  <tr>
+    <td className="normal-text" style={{ padding: 6, fontSize: 10 }}>
+      {getWalletInfo()}
+    </td>
+  </tr>
+)}
+
                         </tbody>
                       </table>
                     </td>
