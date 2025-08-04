@@ -11,17 +11,17 @@ import InvoicePage from "../Components/invoice/InvoicePage";
 const ITEMS_PER_PAGE = 8;
 const firms = [
   {
-    name: "Finaxis Business Consultancy Private Limited",
+    name: "Finaxis Business Consultancy Pvt. Ltd.",
     subtitle: "Business Consultancy",
     gstin: "GST5454",
-    address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
+    address: "Vidya Nagar, Hoshangabad Road, Bhopal- 462026",
     email: "finaxis.in@gmail.com",
     phone: "+91-7987021896",
     bank: {
-      name: "HDFC",
+      name: "Kotak Mahindra",
       accountName: "Anugrah Sharda",
-      account: "45555415656",
-      ifsc: "HDFC4555",
+      account: "9425008997",
+      ifsc: "KKBK0005945",
     },
   },
   {
@@ -34,18 +34,18 @@ const firms = [
     banks: [
       // <-- instead of single `bank` object
       {
-        label: "SBI Main",
-        name: "SBI",
-        accountName: "Anunay Sharda",
-        account: "1234567890",
-        ifsc: "SBIN0001234",
+        label: "SBI Anugrah Sharda",
+        name: "State Bank of India",
+        accountName: "Anugrah Sharda",
+        account: "20410532258",
+        ifsc: "SBIN0030390",
       },
       {
-        label: "ICICI Secondary",
-        name: "ICICI",
+        label: "Kotak Mahindra Anunay Sharda",
+        name: "Kotak Mahindra",
         accountName: "Anunay Sharda",
-        account: "5555555555",
-        ifsc: "ICIC0005678",
+        account: "5811615757",
+        ifsc: "KKBK0005945",
       },
       {
         label: "HDFC",
@@ -204,6 +204,7 @@ export default function InvoiceForm() {
 
   const invoiceRef = useRef();
   const isSharda = selectedFirm.name === "Sharda Associates";
+
   const showGSTIN = !!selectedFirm.gstin;
 
   const offsetPage1 = 0;

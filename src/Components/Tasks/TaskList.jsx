@@ -703,7 +703,7 @@ const TaskList = ({
             )}
           </span>
 
-          {(task.workDesc || "").length > 60 && (
+          {/* {(task.workDesc || "").length > 60 && (
             <button
               className="text-blue-500 hover:text-blue-700 text-xs font-medium transition-colors"
               onClick={() => {
@@ -713,7 +713,19 @@ const TaskList = ({
             >
               Read more
             </button>
+          )} */}
+          {(task.workDesc || "").length > 60 && (
+            <div className="relative group inline-block">
+              <span className="text-blue-500 text-xs font-medium cursor-pointer">
+                {" "}
+                {" "}
+              </span>
+              <div className="absolute z-50 hidden group-hover:block w-64 bg-white border border-gray-300 shadow-lg rounded-md p-3 text-xs text-gray-800 whitespace-pre-wrap left-1/1 -translate-x-1/1 top-1">
+                {task.workDesc}
+              </div>
+            </div>
           )}
+
           <FontAwesomeIcon
             icon={faPen}
             className="cursor-pointer text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity w-3 h-3"
@@ -1027,7 +1039,6 @@ const TaskList = ({
         //   position: "relative",
         // }}
         className="overflow-x-auto overflow-y-auto max-h-[57vh]"
-        
         onScroll={() => syncScroll("vertical")}
       >
         <table className="w-full table-auto border-collapse text-sm text-gray-800">
