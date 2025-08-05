@@ -23,6 +23,8 @@ const Reminders = () => {
   const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
 
+  console.log("linkedemail :", linkedEmail)
+
   useEffect(() => {
     const fetchReminders = async () => {
       try {
@@ -142,15 +144,21 @@ const Reminders = () => {
     localStorage.setItem("reminders", JSON.stringify(updatedReminders));
   }, [updatedReminders]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const email = params.get("email");
+ useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const email = params.get("email");  // Get email from the query parameter
 
-    if (email) {
-      localStorage.setItem("googleEmail", email); // Optional: persist it
-      setLinkedEmail(email);
-    }
-  }, []);
+  if (email) {
+    // Assuming userId is the email, you can store it or a custom userId
+    const userId = email;  // Or use any other userId if available
+    localStorage.setItem("googleEmail", email);  // Persist google email
+    localStorage.setItem("userId", userId);  // Persist userId (using email as an example)
+    
+    // You can now proceed with your reminder fetching logic
+    setLinkedEmail(email);
+  }
+}, []);
+
 
   return (
     <div className="h-screen p-4 relative bg-gradient-to-br from-blue-50 to-purple-100 overflow-hidden">
