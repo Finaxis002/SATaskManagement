@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { isToday, isBefore, isTomorrow, parseISO, format } from "date-fns";
 import bgImage from "../assets/bg.png";
-import { FaCalendarAlt, FaClock, FaPlus, FaTimes } from "react-icons/fa";
-
+import { FaCalendarAlt, FaClock, FaPen, FaPlus, FaTimes } from "react-icons/fa";
 
 const Reminders = () => {
   const [reminders, setReminders] = useState(() => {
@@ -16,39 +15,76 @@ const Reminders = () => {
     time: "",
     snoozeBefore: "1", // default value in minutes
   });
+  const [editId, setEditId] = useState(null);
+  const [linkedEmail, setLinkedEmail] = useState(
+    localStorage.getItem("googleEmail") || null
+  );
 
-  const addReminder = () => {
-    if (!newReminder.text || !newReminder.date || !newReminder.time) return;
+  useEffect(() => {
+    const fetchReminders = async () => {
+      try {
+        const res = await fetch("https://taskbe.sharda.co.in/api/reminders");
+        const data = await res.json();
+        setReminders(data);
+      } catch (err) {
+        console.error("❌ Failed to load reminders:", err);
+      }
+    };
+    fetchReminders();
+  }, []);
 
-    // Combine date and time into a single ISO string
-    const combinedDateTime = new Date(
-      `${newReminder.date}T${newReminder.time}`
-    ).toISOString();
-
-    setNewReminder({ text: "", date: "", time: "" });
-    setShowPopup(false);
-    setReminders((prev) => [
-      ...prev,
-      {
-        ...newReminder,
-        datetime: combinedDateTime,
-        snoozeBefore: parseInt(newReminder.snoozeBefore, 10),
-        snoozed: false, // 🆕 prevent duplicate alerts
-      },
-    ]);
+  const handleDeleteReminder = async (id) => {
+    try {
+      await fetch(`https://taskbe.sharda.co.in/api/reminders/${id}`, {
+        method: "DELETE",
+      });
+      setReminders((prev) => prev.filter((r) => r._id !== id));
+    } catch (err) {
+      console.error("❌ Failed to delete:", err);
+    }
   };
 
-  const handleDeleteReminder = (datetime) => {
-    const filtered = reminders.filter((r) => r.datetime !== datetime);
-    setReminders(filtered);
+const saveReminder = async () => {
+  const combinedDateTime = new Date(
+    `${newReminder.date}T${newReminder.time}`
+  ).toISOString();
+
+  const reminderPayload = {
+    text: newReminder.text,
+    datetime: combinedDateTime,
+    snoozeBefore: parseInt(newReminder.snoozeBefore),
+    userEmail: linkedEmail, // ✅ Pass the email here
   };
+
+  if (editId) {
+    const res = await fetch(`https://taskbe.sharda.co.in/api/reminders/${editId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reminderPayload),
+    });
+    const data = await res.json();
+    setReminders((prev) =>
+      prev.map((r) => (r._id === editId ? data.reminder : r))
+    );
+  } else {
+    const res = await fetch("https://taskbe.sharda.co.in/api/reminders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reminderPayload),
+    });
+    const data = await res.json();
+    setReminders((prev) => [...prev, data.reminder]);
+  }
+
+  setNewReminder({ text: "", date: "", time: "", snoozeBefore: "1" });
+  setEditId(null);
+  setShowPopup(false);
+};
+
 
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(reminders));
   }, [reminders]);
-
-
-
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission !== "granted") {
@@ -87,49 +123,144 @@ const Reminders = () => {
     return date < now;
   });
 
-  
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(updatedReminders));
   }, [updatedReminders]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email");
+
+    if (email) {
+      localStorage.setItem("googleEmail", email); // Optional: persist it
+      setLinkedEmail(email);
+    }
+  }, []);
+
   return (
     <div className="h-screen p-4 relative bg-gradient-to-br from-blue-50 to-purple-100 overflow-hidden">
-      
       <img
         src={bgImage}
         alt="Background"
         className="absolute top-0 left-0 w-full h-full object-cover z-0"
       />
-     
-      <div className="max-w-5xl relative mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">📅 My Reminders</h2>
-          <button
-            onClick={() => setShowPopup(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow hover:bg-indigo-700 transition"
-          >
-            <FaPlus /> Add Reminder
-          </button>
-        </div>
 
+      <div className="max-w-5xl relative mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <span>📅</span> My Reminders
+          </h2>
+
+          <div className="flex flex-col w-full sm:w-auto gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setShowPopup(true)}
+                className="flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-indigo-700 transition"
+              >
+                <FaPlus className="text-xs" /> Add Reminder
+              </button>
+
+              <button
+                onClick={() =>
+                  window.open("https://taskbe.sharda.co.in/auth/google", "_blank")
+                }
+                className="flex items-center gap-1.5 bg-white text-gray-700 px-3 py-1.5 text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
+              >
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/1024px-Google_Calendar_icon_%282020%29.svg.png"
+                  alt="Google Calendar"
+                  className="w-4 h-4"
+                />
+                Connect
+              </button>
+            </div>
+
+            {linkedEmail ? (
+              <div className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-100">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3.5 w-3.5 text-green-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span className="font-medium">Connected: </span>
+                <span className="truncate max-w-[180px]">{linkedEmail}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded-full border border-gray-200">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3.5 w-3.5 text-gray-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>Not connected to Google Calendar</span>
+              </div>
+            )}
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <ReminderSection
             title="Today"
             color="bg-blue-300"
             data={todayReminders}
             onDelete={handleDeleteReminder}
+            onEdit={(reminder) => {
+              setNewReminder({
+                text: reminder.text,
+                date: reminder.datetime.slice(0, 10), // extract yyyy-mm-dd
+                time: reminder.datetime.slice(11, 16), // extract hh:mm
+                snoozeBefore: reminder.snoozeBefore.toString(),
+              });
+              setEditId(reminder._id);
+              setShowPopup(true);
+            }}
           />
+
           <ReminderSection
             title="Later"
             color="bg-green-300"
             data={laterReminders}
             onDelete={handleDeleteReminder}
+            onEdit={(reminder) => {
+              setNewReminder({
+                text: reminder.text,
+                date: reminder.datetime.slice(0, 10),
+                time: reminder.datetime.slice(11, 16),
+                snoozeBefore: reminder.snoozeBefore.toString(),
+              });
+              setEditId(reminder._id);
+              setShowPopup(true);
+            }}
           />
+
           <ReminderSection
             title="Overdue"
             color="bg-red-300"
             data={outdatedReminders}
             onDelete={handleDeleteReminder}
+            onEdit={(reminder) => {
+              setNewReminder({
+                text: reminder.text,
+                date: reminder.datetime.slice(0, 10),
+                time: reminder.datetime.slice(11, 16),
+                snoozeBefore: reminder.snoozeBefore.toString(),
+              });
+              setEditId(reminder._id);
+              setShowPopup(true);
+            }}
           />
         </div>
 
@@ -202,10 +333,10 @@ const Reminders = () => {
               </div>
 
               <button
-                onClick={addReminder}
+                onClick={saveReminder}
                 className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
               >
-                Save Reminder
+                {editId ? "Update Reminder" : "Save Reminder"}
               </button>
             </div>
           </div>
@@ -216,7 +347,7 @@ const Reminders = () => {
 };
 
 // 👇 Reminder Card Display with Time
-const ReminderSection = ({ title, color, data, onDelete }) => (
+const ReminderSection = ({ title, color, data, onDelete, onEdit }) => (
   <div className={`rounded-xl relative p-4 shadow-sm ${color}`}>
     <h4 className="text-lg font-semibold mb-3 text-gray-700">{title}</h4>
     {data.length === 0 ? (
@@ -233,9 +364,17 @@ const ReminderSection = ({ title, color, data, onDelete }) => (
               ⏰ {format(parseISO(reminder.datetime), "dd MMM yyyy, hh:mm a")}
             </div>
             <button
-              onClick={() => onDelete(reminder.datetime)}
+              onClick={() => onEdit(reminder)}
+              className="absolute top-2 right-6 text-blue-500 hover:text-blue-700"
+              title="Edit"
+            >
+              <FaPen size={12} />
+            </button>
+
+            <button
+              onClick={() => onDelete(reminder._id)}
               className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
-              title="Delete Reminder"
+              title="Delete"
             >
               <FaTimes size={12} />
             </button>

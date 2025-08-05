@@ -1,172 +1,3 @@
-// import React from "react";
-// import finaxisLogo from "../assets/Finaxis_logo.png";
-// import shardaLogo from "../assets/ShardaLogo.png";
-// import footerImageFinaxis from "../assets/LetterheadBottomFinaxis.jpg";
-// import headerImageFinaxis from "../assets/LetterheadTopFinaxis.png";
-// import finaxisHeader from "../assets/finaxis_header.png";
-// import shardaHeader from "../assets/ShardaHeader.png";
-// import headerImageSharda from "../assets/ShardaTop.png";
-// import footerImageSharda from "../assets/ShardaBottom.png";
-// import InvoicePage from "./invoice/InvoicePage";
-
-// export default function InvoicePreview({
-//   selectedFirm,
-//   invoiceType,
-//   invoiceNumber,
-//   invoiceDate,
-//   placeOfSupply,
-//   customer,
-//   items,
-// }) {
-//   if (!selectedFirm || !customer || !items) return null;
-//   const ITEMS_PER_PAGE = 8;
-// const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
-
-//   const isSharda = selectedFirm.name === "Sharda Associates";
-
-//   // Calculate totals & taxes
-//   const isLocalSupply = () => {
-//     const place = (placeOfSupply || "").toLowerCase().replace(/\s+/g, "");
-//     return place === "mp" || place === "madhyapradesh";
-//   };
-
-//   const totalAmount = items.reduce(
-//     (sum, item) => sum + item.qty * item.rate,
-//     0
-//   );
-//   const taxableValue = totalAmount;
-//   const igstRate = 0.18;
-//   const cgstRate = 0.09;
-//   const sgstRate = 0.09;
-
-//   const igstAmount = isLocalSupply() ? 0 : taxableValue * igstRate;
-//   const cgstAmount = isLocalSupply() ? taxableValue * cgstRate : 0;
-//   const sgstAmount = isLocalSupply() ? taxableValue * sgstRate : 0;
-//   const totalTax = igstAmount + cgstAmount + sgstAmount;
-//   const totalAmountWithTax = taxableValue + totalTax;
-
-//   function numberToWordsIndian(num) {
-//     const a = [
-//       "",
-//       "One",
-//       "Two",
-//       "Three",
-//       "Four",
-//       "Five",
-//       "Six",
-//       "Seven",
-//       "Eight",
-//       "Nine",
-//       "Ten",
-//       "Eleven",
-//       "Twelve",
-//       "Thirteen",
-//       "Fourteen",
-//       "Fifteen",
-//       "Sixteen",
-//       "Seventeen",
-//       "Eighteen",
-//       "Nineteen",
-//     ];
-//     const b = [
-//       "",
-//       "",
-//       "Twenty",
-//       "Thirty",
-//       "Forty",
-//       "Fifty",
-//       "Sixty",
-//       "Seventy",
-//       "Eighty",
-//       "Ninety",
-//     ];
-//     const numberToWords = (n) => {
-//       if (n < 20) return a[n];
-//       if (n < 100)
-//         return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
-//       if (n < 1000)
-//         return (
-//           a[Math.floor(n / 100)] +
-//           " Hundred" +
-//           (n % 100 ? " and " + numberToWords(n % 100) : "")
-//         );
-//       if (n < 100000)
-//         return (
-//           numberToWords(Math.floor(n / 1000)) +
-//           " Thousand" +
-//           (n % 1000 ? " " + numberToWords(n % 1000) : "")
-//         );
-//       if (n < 10000000)
-//         return (
-//           numberToWords(Math.floor(n / 100000)) +
-//           " Lakh" +
-//           (n % 100000 ? " " + numberToWords(n % 100000) : "")
-//         );
-//       return (
-//         numberToWords(Math.floor(n / 10000000)) +
-//         " Crore" +
-//         (n % 10000000 ? " " + numberToWords(n % 10000000) : "")
-//       );
-//     };
-//     const [rupees, paise] = num.toFixed(2).split(".");
-//     const rupeeWords = numberToWords(parseInt(rupees));
-//     const paiseWords =
-//       paise !== "00" ? ` and ${numberToWords(parseInt(paise))} Paise` : "";
-//     return rupeeWords + paiseWords + " Rupees Only";
-//   }
-
-//   return (
-//     <div className="invoice-preview" style={{ transform: "scale(0.75)", transformOrigin: "top left" }}>
-//     {Array.from({ length: totalPages }).map((_, pageIndex) => {
-//       const start = pageIndex * ITEMS_PER_PAGE;
-//       const end = start + ITEMS_PER_PAGE;
-//       const itemsOnPage = items.slice(start, end); // ✅ Use `items`, not `allItems`
-//       const isLastPage = pageIndex === totalPages - 1;
-
-//       return (
-//         <div
-//         key={pageIndex}
-//         className={!isLastPage ? "page-break" : ""}
-//         style={{
-//           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-//           fontSize: 12,
-//           color: "#000",
-//           transform: "scale(0.75)", // visually shrink
-//           transformOrigin: "top left",
-//           position: "relative",
-//           width: "210mm",
-//         }}
-//         >
-//           <InvoicePage
-//             pageNumber={pageIndex + 1}
-//             itemsOnPage={itemsOnPage}
-//             offset={start}
-//             isLastPage={isLastPage}
-//             customer={customer}
-//             selectedFirm={selectedFirm}
-//             invoiceType={invoiceType}
-//             invoiceNumber={invoiceNumber}
-//             invoiceDate={invoiceDate}
-//             placeOfSupply={placeOfSupply}
-//             isSharda={isSharda}
-//             totalAmount={totalAmount}
-//             totalAmountWithTax={totalAmountWithTax}
-//             taxableValue={taxableValue}
-//             igstAmount={igstAmount}
-//             cgstAmount={cgstAmount}
-//             sgstAmount={sgstAmount}
-//             numberToWordsIndian={numberToWordsIndian}
-//           />
-//         </div>
-//       );
-//     })}
-//   </div>
-//   );
-
-// }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
 import React from "react";
 import finaxisLogo from "../assets/Finaxis_logo.png";
 import shardaLogo from "../assets/ShardaLogo.png";
@@ -931,7 +762,7 @@ export default function InvoicePreview({
                                 border: "none",
                                 borderBottom: "none",
                                 borderLeft: "none",
-                                borderRight:"none"
+                                borderRight: "none",
                               }}
                             >
                               Invoice Date
@@ -943,7 +774,7 @@ export default function InvoicePreview({
                                 borderRight: "none",
                                 borderBottom: "none",
                                 borderTop: "none",
-                                borderLeft:"none"
+                                borderLeft: "none",
                               }}
                             >
                               {invoiceDate}
@@ -1015,7 +846,7 @@ export default function InvoicePreview({
                                 width: "50%",
                                 borderRight: "none",
                                 borderBottom: "none",
-                                 borderLeft:"none"
+                                borderLeft: "none",
                               }}
                             >
                               {invoiceDate}
