@@ -48,22 +48,39 @@ const Login = () => {
         }
       );
 
-      const { token, name, role, email, department } = response.data;
+      const { token, _id, name, role, email, position, department, userId } =
+        response.data;
+
       const loginExpiryHours = 10;
       const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
 
+      const userData = {
+        _id, // MongoDB ObjectId
+        name,
+        email,
+        position,
+        department,
+        userId, // Your custom username (like "Anunay")
+        role,
+      };
+
       localStorage.setItem("authToken", token);
-      const normalizedName =
-        name && name.toLowerCase() === "admin" ? "admin" : name;
-      localStorage.setItem("name", normalizedName);
-      localStorage.setItem("role", role);
-      localStorage.setItem("userId", email);
-      localStorage.setItem("department", department);
-      localStorage.setItem("triggerLoginReminder", "true");
       localStorage.setItem("loginExpiry", loginExpiryTime);
       localStorage.setItem("tokenLocal", token);
+      localStorage.setItem("triggerLoginReminder", "true");
 
-      dispatch(setAuth({ name: normalizedName, role, userId: email }));
+      // 👇 Save entire user data as JSON
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // ✅ Optional: Also save normalized short fields separately if needed
+      localStorage.setItem("name", name);
+      localStorage.setItem("role", role);
+      localStorage.setItem("userId", _id); // Use _id now for backend APIs
+
+      // Redux update (optional - adjust as needed)
+      dispatch(setAuth({ name, role, userId: _id }));
+
+      // Redirect
       window.location.href = "/";
     } catch (err) {
       alert("Failed to log in. Please check your credentials.");
