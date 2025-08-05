@@ -21,6 +21,7 @@ const Reminders = () => {
   );
 
   const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     const fetchReminders = async () => {
