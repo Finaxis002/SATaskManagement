@@ -9,7 +9,7 @@ const MainLayout = ({ children }) => {
       <Sidebar className="z-[100]" />
       <div className="flex flex-col flex-1">
         <Header />
-        <main className="flex-1 text-gray-800 overflow-hidden w-full z-0 pl-[70px]">
+        <main className="flex-1 text-gray-800 overflow-hidden w-full z-0 pl-[70px] max-w-[100vw]">
           {children}
           <ReminderAlertManager />
         </main>
