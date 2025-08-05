@@ -40,10 +40,16 @@ const Reminders = () => {
   }, [userId]); // Rerun when userId changes
 
   const handleDeleteReminder = async (id) => {
+    const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
+
     try {
-      await fetch(`https://taskbe.sharda.co.in/api/reminders/${id}`, {
-        method: "DELETE",
-      });
+      // Pass userId as a query parameter in the DELETE request
+      await fetch(
+        `https://taskbe.sharda.co.in/api/reminders/${id}?userId=${userId}`,
+        {
+          method: "DELETE",
+        }
+      );
       setReminders((prev) => prev.filter((r) => r._id !== id));
     } catch (err) {
       console.error("❌ Failed to delete:", err);
