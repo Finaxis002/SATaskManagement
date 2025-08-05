@@ -101,7 +101,7 @@ const AllTasks = () => {
 
   return (
     <>
-      <div className="px-4 py-6 w-[202vh]  overflow-auto">
+      <div className="px-4 py-6  overflow-auto">
         <div className="flex justify-between items-center mb-4">
           <h2
             className="text-xl font-semibold"
@@ -163,48 +163,7 @@ const AllTasks = () => {
         )}
         </div>
       </div>
-      {/* <div className="flex flex-col h-full w-full">
-   
-        <div className="flex justify-between items-center p-4 md:p-6">
-          <h2 className="text-xl font-semibold">Task Manager</h2>
-          <div className="flex gap-4">
-            <button
-              onClick={handleCreateClick}
-              className="bg-green-600 text-white px-4 py-2 rounded-4xl hover:bg-green-700"
-            >
-              + Create Task
-            </button>
-            {role === "admin" && (
-              <button
-                onClick={handleRemoveCompletedTasks}
-                className="bg-[#fbd9d9] hover:bg-[#f1c7c7] text-sm text-red-700 font-semibold px-4 py-2 rounded-full shadow"
-              >
-                Remove Completed
-              </button>
-            )}
-          </div>
-        </div>
-
-        
-        <div className="flex-1 min-h-0">
-          <TaskList
-            refreshTrigger={refreshTrigger}
-            onEdit={handleEdit}
-            setTaskListExternally={setTasks}
-            tasksOverride={tasks}
-            hideCompleted={hideCompleted}
-          />
-        </div>
-
-        {showForm && (
-          <TaskFormModal
-            onClose={() => setShowForm(false)}
-            onSave={handleSaveTask}
-            initialData={editingTask}
-          />
-        )}
-      
-    </div> */}
+    
     </>
   );
 };
