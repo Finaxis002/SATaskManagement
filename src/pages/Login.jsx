@@ -24,6 +24,55 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const subscribeToPushNotifications = async (userId, token) => {
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      console.log("Notification permission granted.");
+
+      // Register service worker
+      await navigator.serviceWorker.register("/service-worker.js");
+
+      // Wait for the service worker to be ready
+      const swRegistration = await navigator.serviceWorker.ready;
+
+      // Subscribe to push notifications
+      const subscription = await swRegistration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey:
+          "BFiAnzKqV9C437P10UIT5_daMne46XuJiVuSn4zQh2MQBjUIwMP9PMgk2TFQL9LOSiQy17eie7XRYZcJ0NE7jMs", // Replace with your VAPID public key
+      });
+
+      console.log("Sending subscription to backend:", { userId, subscription });
+      console.log("Subscription object:", subscription);
+
+      try {
+        // Send the subscription object to your backend to save it
+        const response = await fetch(
+          "https://taskbe.sharda.co.in/api/push-notification/save-subscription", // Backend URL for saving the subscription
+          {
+            method: "POST",
+            body: JSON.stringify({
+              userId,
+              subscription,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to save subscription");
+        }
+        console.log("Subscription saved.");
+      } catch (error) {
+        console.error("Failed to save subscription:", error);
+      }
+    } else {
+      console.error("Notification permission denied.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -80,8 +129,11 @@ const Login = () => {
       // Redux update (optional - adjust as needed)
       dispatch(setAuth({ name, role, userId: _id }));
 
-      // Redirect
-      window.location.href = "/";
+      // Wait for push subscription to finish if needed, then:
+      subscribeToPushNotifications(_id, token).finally(() => {
+        // Force full reload to guarantee all state is fresh, or use navigate as needed
+         window.location.href = "/";
+      });
     } catch (err) {
       alert("Failed to log in. Please check your credentials.");
       console.error(err);
