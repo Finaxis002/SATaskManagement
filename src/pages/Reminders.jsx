@@ -20,10 +20,15 @@ const Reminders = () => {
     localStorage.getItem("googleEmail") || null
   );
 
+  const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
+
   useEffect(() => {
     const fetchReminders = async () => {
       try {
-        const res = await fetch("https://taskbe.sharda.co.in/api/reminders");
+        // Send userId instead of email for fetching reminders
+        const res = await fetch(
+          `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
+        );
         const data = await res.json();
         setReminders(data);
       } catch (err) {
@@ -31,7 +36,7 @@ const Reminders = () => {
       }
     };
     fetchReminders();
-  }, []);
+  }, [userId]); // Rerun when userId changes
 
   const handleDeleteReminder = async (id) => {
     try {
@@ -44,43 +49,46 @@ const Reminders = () => {
     }
   };
 
-const saveReminder = async () => {
-  const combinedDateTime = new Date(
-    `${newReminder.date}T${newReminder.time}`
-  ).toISOString();
+  const saveReminder = async () => {
+    const combinedDateTime = new Date(
+      `${newReminder.date}T${newReminder.time}`
+    ).toISOString();
 
-  const reminderPayload = {
-    text: newReminder.text,
-    datetime: combinedDateTime,
-    snoozeBefore: parseInt(newReminder.snoozeBefore),
-    userEmail: linkedEmail, // ✅ Pass the email here
+    const reminderPayload = {
+      text: newReminder.text,
+      datetime: combinedDateTime,
+      snoozeBefore: parseInt(newReminder.snoozeBefore),
+      userEmail: linkedEmail, // ✅ Pass the email here
+      userId: user.userId,
+    };
+
+    if (editId) {
+      const res = await fetch(
+        `https://taskbe.sharda.co.in/api/reminders/${editId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reminderPayload),
+        }
+      );
+      const data = await res.json();
+      setReminders((prev) =>
+        prev.map((r) => (r._id === editId ? data.reminder : r))
+      );
+    } else {
+      const res = await fetch("https://taskbe.sharda.co.in/api/reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reminderPayload),
+      });
+      const data = await res.json();
+      setReminders((prev) => [...prev, data.reminder]);
+    }
+
+    setNewReminder({ text: "", date: "", time: "", snoozeBefore: "1" });
+    setEditId(null);
+    setShowPopup(false);
   };
-
-  if (editId) {
-    const res = await fetch(`https://taskbe.sharda.co.in/api/reminders/${editId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reminderPayload),
-    });
-    const data = await res.json();
-    setReminders((prev) =>
-      prev.map((r) => (r._id === editId ? data.reminder : r))
-    );
-  } else {
-    const res = await fetch("https://taskbe.sharda.co.in/api/reminders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reminderPayload),
-    });
-    const data = await res.json();
-    setReminders((prev) => [...prev, data.reminder]);
-  }
-
-  setNewReminder({ text: "", date: "", time: "", snoozeBefore: "1" });
-  setEditId(null);
-  setShowPopup(false);
-};
-
 
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(reminders));
@@ -162,7 +170,10 @@ const saveReminder = async () => {
 
               <button
                 onClick={() =>
-                  window.open("https://taskbe.sharda.co.in/auth/google", "_blank")
+                  window.open(
+                    "https://taskbe.sharda.co.in/auth/google",
+                    "_blank"
+                  )
                 }
                 className="flex items-center gap-1.5 bg-white text-gray-700 px-3 py-1.5 text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
               >
