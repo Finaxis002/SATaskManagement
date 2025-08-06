@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { isToday, isBefore, isTomorrow, parseISO, format } from "date-fns";
 import bgImage from "../assets/bg.png";
-import { FaCalendarAlt, FaClock, FaPen, FaPlus, FaTimes } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaCalendarTimes,
+  FaClock,
+  FaHourglassStart,
+  FaHourglassEnd,
+  FaAlignLeft,
+  FaUserFriends,
+  FaTimes,
+  FaPen,
+  FaPlus
+} from "react-icons/fa";
+import EventSection from "../Components/EventSection";
+
 
 const Reminders = () => {
   const [reminders, setReminders] = useState(() => {
     const saved = localStorage.getItem("reminders");
     return saved ? JSON.parse(saved) : [];
   });
+  const [events, setEvents] = useState([]);
+
   const [showPopup, setShowPopup] = useState(false);
   const [newReminder, setNewReminder] = useState({
     text: "",
@@ -16,10 +31,20 @@ const Reminders = () => {
     snoozeBefore: "1", // default value in minutes
   });
   const [editId, setEditId] = useState(null);
-  const [linkedEmail, setLinkedEmail] = useState(() => {
-    const storedReminders = JSON.parse(localStorage.getItem("reminders"));
-    return storedReminders?.[0]?.userEmail || null;
+  const [linkedEmail, setLinkedEmail] = useState(
+    localStorage.getItem("googleEmail") || null
+  );
+
+  const [showEventPopup, setShowEventPopup] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    description: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    guests: [""],
   });
+  const [saving, setSaving] = useState(false);
 
   const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
@@ -31,7 +56,7 @@ const Reminders = () => {
       try {
         // Send userId instead of email for fetching reminders
         const res = await fetch(
-          `http://localhost:1100/api/reminders?userId=${userId}`
+          `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
         );
         const data = await res.json();
         setReminders(data);
@@ -42,13 +67,37 @@ const Reminders = () => {
     fetchReminders();
   }, [userId]); // Rerun when userId changes
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Reminders
+        const reminderRes = await fetch(
+          `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
+        );
+        const reminderData = await reminderRes.json();
+        setReminders(reminderData);
+
+        // Events
+        const eventRes = await fetch(
+          `https://taskbe.sharda.co.in/api/events?userId=${userId}`
+        );
+        const eventData = await eventRes.json();
+        setEvents(eventData);
+      } catch (err) {
+        console.error("❌ Failed to load reminders or events:", err);
+      }
+    };
+
+    fetchData();
+  }, [userId]);
+
   const handleDeleteReminder = async (id) => {
     const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
 
     try {
       // Pass userId as a query parameter in the DELETE request
       await fetch(
-        `http://localhost:1100/api/reminders/${id}?userId=${userId}`,
+        `https://taskbe.sharda.co.in/api/reminders/${id}?userId=${userId}`,
         {
           method: "DELETE",
         }
@@ -60,41 +109,91 @@ const Reminders = () => {
   };
 
   const saveReminder = async () => {
-    const combinedDateTime = new Date(
-      `${newReminder.date}T${newReminder.time}`
-    ).toISOString();
+    if (saving) return; // prevent multiple submissions
+    setSaving(true); // block until finished
+    try {
+      const combinedDateTime = new Date(
+        `${newReminder.date}T${newReminder.time}`
+      ).toISOString();
 
-    const reminderPayload = {
-      text: newReminder.text,
-      datetime: combinedDateTime,
-      snoozeBefore: parseInt(newReminder.snoozeBefore),
-      userEmail: linkedEmail, // ✅ Pass the email here
+      const reminderPayload = {
+        text: newReminder.text,
+        datetime: combinedDateTime,
+        snoozeBefore: parseInt(newReminder.snoozeBefore),
+        userEmail: linkedEmail, // ✅ Pass the email here
+        userId: user.userId,
+      };
+
+      if (editId) {
+        const res = await fetch(
+          `https://taskbe.sharda.co.in/api/reminders/${editId}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(reminderPayload),
+          }
+        );
+        const data = await res.json();
+        setReminders((prev) =>
+          prev.map((r) => (r._id === editId ? data.reminder : r))
+        );
+      } else {
+        const res = await fetch("https://taskbe.sharda.co.in/api/reminders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reminderPayload),
+        });
+        const data = await res.json();
+        setReminders((prev) => [...prev, data.reminder]);
+      }
+
+      setNewReminder({ text: "", date: "", time: "", snoozeBefore: "1" });
+      setEditId(null);
+      setShowPopup(false);
+    } finally {
+      setSaving(false); // reset after save
+    }
+  };
+
+  const saveEvent = async () => {
+    const startDateTime = `${newEvent.date}T${newEvent.startTime}`;
+    const endDateTime = `${newEvent.date}T${newEvent.endTime}`;
+
+    const eventPayload = {
+      summary: newEvent.title,
+      description: newEvent.description,
+      startDateTime,
+      endDateTime,
+      userEmail: linkedEmail,
       userId: user.userId,
+      guestEmails: newEvent.guests.filter((email) => email.trim() !== ""),
     };
 
-    if (editId) {
-      const res = await fetch(`http://localhost:1100/api/reminders/${editId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reminderPayload),
-      });
-      const data = await res.json();
-      setReminders((prev) =>
-        prev.map((r) => (r._id === editId ? data.reminder : r))
-      );
-    } else {
-      const res = await fetch("http://localhost:1100/api/reminders", {
+    try {
+      const res = await fetch("https://taskbe.sharda.co.in/api/events/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reminderPayload),
+        body: JSON.stringify(eventPayload),
       });
-      const data = await res.json();
-      setReminders((prev) => [...prev, data.reminder]);
-    }
 
-    setNewReminder({ text: "", date: "", time: "", snoozeBefore: "1" });
-    setEditId(null);
-    setShowPopup(false);
+      const data = await res.json();
+      console.log("✅ Event created:", data);
+
+      setShowEventPopup(false);
+      setNewEvent({
+        title: "",
+        description: "",
+        date: "",
+        startTime: "",
+        endTime: "",
+        guests: [""],
+      });
+
+      alert("Event created and guests invited!");
+    } catch (err) {
+      console.error("❌ Failed to create event:", err);
+      alert("Something went wrong!");
+    }
   };
 
   useEffect(() => {
@@ -179,13 +278,22 @@ const Reminders = () => {
               >
                 <FaPlus className="text-xs" /> Add Reminder
               </button>
+              <button
+                onClick={() => setShowEventPopup(true)}
+                className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-purple-700 transition"
+              >
+                <FaPlus className="text-xs" /> Add Event
+              </button>
 
               <button
                 onClick={() => {
-                  document.cookie = `redirect_url=${window.location.origin}; path=/;`;
-                  const loggedInUser = JSON.parse(localStorage.getItem("user"));
-                  document.cookie = `user_id=${loggedInUser.userId}; path=/;`; // <-- set userId cookie
-                  window.open("http://localhost:1100/auth/google", "_blank");
+                  // ✅ Save redirect URL to cookie before OAuth
+                  document.cookie = `redirect_url=${encodeURIComponent(
+                    window.location.href
+                  )}; path=/`;
+
+                  // ✅ Then open Google OAuth login
+                  window.open("https://taskbe.sharda.co.in/auth/google", "_blank");
                 }}
                 className="flex items-center gap-1.5 bg-white text-gray-700 px-3 py-1.5 text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
               >
@@ -285,6 +393,8 @@ const Reminders = () => {
               setShowPopup(true);
             }}
           />
+
+          <EventSection title="My Events" color="bg-indigo-100" data={events} />
         </div>
 
         {/* Reminder Modal */}
@@ -357,11 +467,132 @@ const Reminders = () => {
 
               <button
                 onClick={saveReminder}
-                className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
+                disabled={saving}
+                className={`w-full ${
+                  saving
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
+                } text-white py-2 rounded-md transition`}
               >
-                {editId ? "Update Reminder" : "Save Reminder"}
+                {editId
+                  ? "Update Reminder"
+                  : saving
+                  ? "Saving..."
+                  : "Save Reminder"}
               </button>
             </div>
+          </div>
+        )}
+
+        {showEventPopup && (
+          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md bg-white p-6 rounded shadow-md">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500"
+              onClick={() => setShowEventPopup(false)}
+            >
+              <FaTimes size={18} />
+            </button>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              📅 Create Event
+            </h3>
+
+            <input
+              type="text"
+              placeholder="Event Title"
+              value={newEvent.title}
+              onChange={(e) =>
+                setNewEvent({ ...newEvent, title: e.target.value })
+              }
+              className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm"
+            />
+
+            <textarea
+              placeholder="Event Description"
+              value={newEvent.description}
+              onChange={(e) =>
+                setNewEvent({ ...newEvent, description: e.target.value })
+              }
+              className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm"
+            />
+
+            <div className="flex items-center mb-4 gap-2 text-sm text-gray-600">
+              <FaCalendarAlt />
+              <input
+                type="date"
+                value={newEvent.date}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, date: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2"
+              />
+              <FaClock />
+              <input
+                type="time"
+                value={newEvent.startTime}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, startTime: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2"
+              />
+              <span>to</span>
+              <input
+                type="time"
+                value={newEvent.endTime}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, endTime: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2"
+              />
+            </div>
+
+            {/* Guest Emails */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Add Guests
+              </label>
+              {newEvent.guests.map((guest, index) => (
+                <div key={index} className="flex items-center gap-2 mb-2">
+                  <input
+                    type="email"
+                    placeholder="guest@example.com"
+                    value={guest}
+                    onChange={(e) => {
+                      const updated = [...newEvent.guests];
+                      updated[index] = e.target.value;
+                      setNewEvent({ ...newEvent, guests: updated });
+                    }}
+                    className="w-full border border-gray-300 rounded p-2"
+                  />
+                  <button
+                    onClick={() => {
+                      const updated = newEvent.guests.filter(
+                        (_, i) => i !== index
+                      );
+                      setNewEvent({ ...newEvent, guests: updated });
+                    }}
+                    className="text-red-500"
+                    title="Remove Guest"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  setNewEvent({ ...newEvent, guests: [...newEvent.guests, ""] })
+                }
+                className="text-sm text-blue-600 hover:underline"
+              >
+                + Add Another Guest
+              </button>
+            </div>
+
+            <button
+              onClick={saveEvent}
+              className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition"
+            >
+              Save Event
+            </button>
           </div>
         )}
       </div>
@@ -407,5 +638,6 @@ const ReminderSection = ({ title, color, data, onDelete, onEdit }) => (
     )}
   </div>
 );
+
 
 export default Reminders;
