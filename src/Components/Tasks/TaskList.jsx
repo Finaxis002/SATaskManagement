@@ -48,7 +48,7 @@ const TaskList = ({
 
   // Get user role and email from localStorage
   const role = localStorage.getItem("role");
-  const userEmail = localStorage.getItem("userId");
+  const userEmail = JSON.parse(localStorage.getItem("user"))?.email;
   const users = useSelector((state) => state.users.list); // Assuming `list` stores users in Redux
 
   const dispatch = useDispatch();
@@ -641,9 +641,6 @@ const TaskList = ({
     }
   };
 
-  const hideCompletedTasks = useSelector(
-    (state) => state.tasks.hideCompletedTasks
-  );
 
   const renderTaskRow = (task, index) => (
     <tr

@@ -7,7 +7,10 @@ const TaskOverview = () => {
   const [activeTab, setActiveTab] = useState("today"); // Track active tab (today, tomorrow, etc.)
 
   // ✅ Get logged-in user info from Redux state
-  const { role, userId } = useSelector((state) => state.auth);
+  const role = localStorage.getItem("role");
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userEmail = user?.email;
+
   const [justCompleted, setJustCompleted] = useState(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -31,16 +34,15 @@ const TaskOverview = () => {
 
   // Filter tasks based on user role (only show tasks assigned to the logged-in user if not an admin)
   const filteredTasks = tasks.filter((task) => {
-    // Exclude hidden completed tasks no matter what
     if (task.status === "Completed" && task.isHidden) return false;
 
-    if (role === "admin") return true; // Admin sees all non-hidden tasks
+    if (role === "admin") return true;
 
-    // Show tasks assigned to the user
     return task.assignees?.some(
-      (assignee) => assignee.email.toLowerCase() === userId?.toLowerCase()
+      (assignee) => assignee.email.toLowerCase() === userEmail?.toLowerCase()
     );
   });
+  console.log("Logged-in user email:", userEmail);
 
   // Categorize tasks based on due date (Today, Tomorrow, Overdue, etc.)
   const categorizedTasks = {
