@@ -30,7 +30,7 @@ const Reminders = () => {
       try {
         // Send userId instead of email for fetching reminders
         const res = await fetch(
-          `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
+          `http://localhost:1100/api/reminders?userId=${userId}`
         );
         const data = await res.json();
         setReminders(data);
@@ -47,7 +47,7 @@ const Reminders = () => {
     try {
       // Pass userId as a query parameter in the DELETE request
       await fetch(
-        `https://taskbe.sharda.co.in/api/reminders/${id}?userId=${userId}`,
+        `http://localhost:1100/api/reminders/${id}?userId=${userId}`,
         {
           method: "DELETE",
         }
@@ -72,20 +72,17 @@ const Reminders = () => {
     };
 
     if (editId) {
-      const res = await fetch(
-        `https://taskbe.sharda.co.in/api/reminders/${editId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(reminderPayload),
-        }
-      );
+      const res = await fetch(`http://localhost:1100/api/reminders/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reminderPayload),
+      });
       const data = await res.json();
       setReminders((prev) =>
         prev.map((r) => (r._id === editId ? data.reminder : r))
       );
     } else {
-      const res = await fetch("https://taskbe.sharda.co.in/api/reminders", {
+      const res = await fetch("http://localhost:1100/api/reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reminderPayload),
@@ -183,12 +180,10 @@ const Reminders = () => {
               </button>
 
               <button
-                onClick={() =>
-                  window.open(
-                    "https://taskbe.sharda.co.in/auth/google",
-                    "_blank"
-                  )
-                }
+                onClick={() => {
+                  document.cookie = `redirect_url=${window.location.origin}; path=/;`;
+                  window.open("http://localhost:1100/auth/google", "_blank");
+                }}
                 className="flex items-center gap-1.5 bg-white text-gray-700 px-3 py-1.5 text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
               >
                 <img
