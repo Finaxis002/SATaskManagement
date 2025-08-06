@@ -126,23 +126,26 @@ const Login = () => {
       dispatch(setAuth({ name, role, userId: _id }));
 
       // ✅ Fetch reminders to get linked Google email
+      // ✅ Fetch linked email directly from linkedemails collection
       try {
-        const loggedInUser = JSON.parse(localStorage.getItem("user"));
-
-        const remindersResponse = await axios.get(
-          `https://taskbe.sharda.co.in/api/reminders?userId=${loggedInUser.userId}`
+        const linkedEmailResponse = await axios.get(
+          "https://taskbe.sharda.co.in/api/linkedemails"
         );
 
-        if (remindersResponse.data && remindersResponse.data.length > 0) {
-          const googleEmail = remindersResponse.data[0].userEmail;
-          localStorage.setItem("googleEmail", googleEmail);
-          console.log("✅ Google email saved to local storage:", googleEmail);
+        const linkedData = linkedEmailResponse.data?.data || [];
+        const match = linkedData.find((item) =>
+          item.linkedUserIds.includes(userId)
+        );
+
+        if (match && match.email) {
+          localStorage.setItem("googleEmail", match.email);
+          console.log("✅ Linked Google email saved:", match.email);
         } else {
           localStorage.removeItem("googleEmail");
-          console.log("⚠️ No reminders found for user, cleared googleEmail");
+          console.log("⚠️ No linked email found for user, cleared googleEmail");
         }
-      } catch (reminderErr) {
-        console.error("❌ Failed fetching reminders:", reminderErr);
+      } catch (linkedErr) {
+        console.error("❌ Failed fetching linked emails:", linkedErr);
         localStorage.removeItem("googleEmail");
       }
 
