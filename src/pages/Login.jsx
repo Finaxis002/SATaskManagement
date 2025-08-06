@@ -82,7 +82,7 @@ const Login = () => {
         icon: "warning",
         title: "reCAPTCHA Required",
         text: "Please verify the reCAPTCHA before signing in.",
-        confirmButtonColor: "#6366F1", // Indigo color to match your theme
+        confirmButtonColor: "#6366F1",
       });
       setLoading(false);
       return;
@@ -93,7 +93,7 @@ const Login = () => {
         "https://taskbe.sharda.co.in/api/employees/login",
         {
           ...formData,
-          captchaToken, // ✅ corrected key name
+          captchaToken,
         }
       );
 
@@ -104,12 +104,12 @@ const Login = () => {
       const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
 
       const userData = {
-        _id, // MongoDB ObjectId
+        _id,
         name,
         email,
         position,
         department,
-        userId, // Your custom username (like "Anunay")
+        userId,
         role,
       };
 
@@ -118,26 +118,41 @@ const Login = () => {
       localStorage.setItem("tokenLocal", token);
       localStorage.setItem("triggerLoginReminder", "true");
 
-      // 👇 Save entire user data as JSON
       localStorage.setItem("user", JSON.stringify(userData));
-
-      // ✅ Optional: Also save normalized short fields separately if needed
       localStorage.setItem("name", name);
       localStorage.setItem("role", role);
-      localStorage.setItem("userId", _id); // Use _id now for backend APIs
+      localStorage.setItem("userId", _id);
 
-      // Redux update (optional - adjust as needed)
       dispatch(setAuth({ name, role, userId: _id }));
 
-      // Wait for push subscription to finish if needed, then:
+      // ✅ Fetch reminders to get linked Google email
+      try {
+        const loggedInUser = JSON.parse(localStorage.getItem("user"));
+
+        const remindersResponse = await axios.get(
+          `https://taskbe.sharda.co.in/api/reminders?userId=${loggedInUser.userId}`
+        );
+
+        if (remindersResponse.data && remindersResponse.data.length > 0) {
+          const googleEmail = remindersResponse.data[0].userEmail;
+          localStorage.setItem("googleEmail", googleEmail);
+          console.log("✅ Google email saved to local storage:", googleEmail);
+        } else {
+          localStorage.removeItem("googleEmail");
+          console.log("⚠️ No reminders found for user, cleared googleEmail");
+        }
+      } catch (reminderErr) {
+        console.error("❌ Failed fetching reminders:", reminderErr);
+        localStorage.removeItem("googleEmail");
+      }
+
       subscribeToPushNotifications(_id, token).finally(() => {
-        // Force full reload to guarantee all state is fresh, or use navigate as needed
-         window.location.href = "/";
+        window.location.href = "/";
       });
     } catch (err) {
       alert("Failed to log in. Please check your credentials.");
       console.error(err);
-      setCaptchaToken(null); // ✅ optional: clear captcha state
+      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }

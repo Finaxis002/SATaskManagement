@@ -16,9 +16,10 @@ const Reminders = () => {
     snoozeBefore: "1", // default value in minutes
   });
   const [editId, setEditId] = useState(null);
-  const [linkedEmail, setLinkedEmail] = useState(
-    localStorage.getItem("googleEmail") || null
-  );
+  const [linkedEmail, setLinkedEmail] = useState(() => {
+    const storedReminders = JSON.parse(localStorage.getItem("reminders"));
+    return storedReminders?.[0]?.userEmail || null;
+  });
 
   const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
@@ -182,6 +183,8 @@ const Reminders = () => {
               <button
                 onClick={() => {
                   document.cookie = `redirect_url=${window.location.origin}; path=/;`;
+                  const loggedInUser = JSON.parse(localStorage.getItem("user"));
+                  document.cookie = `user_id=${loggedInUser.userId}; path=/;`; // <-- set userId cookie
                   window.open("http://localhost:1100/auth/google", "_blank");
                 }}
                 className="flex items-center gap-1.5 bg-white text-gray-700 px-3 py-1.5 text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
