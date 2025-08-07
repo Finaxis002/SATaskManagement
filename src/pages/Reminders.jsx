@@ -175,15 +175,29 @@ const Reminders = () => {
     };
 
     try {
-      const res = await fetch("https://taskbe.sharda.co.in/api/events/create", {
-        method: "POST",
+      const url = editId
+        ? `https://taskbe.sharda.co.in/api/events/${editId}`
+        : "https://taskbe.sharda.co.in/api/events/create";
+
+      const method = editId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(eventPayload),
       });
 
       const data = await res.json();
-      console.log("✅ Event created:", data);
-      setEvents((prev) => [...prev, data.event || data]);
+
+      if (editId) {
+        // Update existing event in state
+        setEvents((prev) =>
+          prev.map((e) => (e._id === editId ? data.event : e))
+        );
+      } else {
+        // Add new event to state
+        setEvents((prev) => [...prev, data.event || data]);
+      }
 
       setShowEventPopup(false);
       setNewEvent({
@@ -194,15 +208,18 @@ const Reminders = () => {
         endTime: "",
         guests: [""],
       });
+      setEditId(null); // Reset editId after save
 
       Swal.fire({
         icon: "success",
-        title: "Event Created 🎉",
-        text: "Event created and guests invited successfully!",
-        confirmButtonColor: "#6366f1", // optional: matches Tailwind indigo
+        title: editId ? "Event Updated" : "Event Created 🎉",
+        text: editId
+          ? "Event updated successfully!"
+          : "Event created and guests invited successfully!",
+        confirmButtonColor: "#6366f1",
       });
     } catch (err) {
-      console.error("❌ Failed to create event:", err);
+      console.error("❌ Failed to save event:", err);
       alert("Something went wrong!");
     }
   };
