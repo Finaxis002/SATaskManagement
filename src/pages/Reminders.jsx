@@ -11,10 +11,13 @@ import {
   FaUserFriends,
   FaTimes,
   FaPen,
-  FaPlus
+  FaPlus,
+  FaSun,
+  FaExclamationTriangle,
+  FaCalendarDay,
 } from "react-icons/fa";
-import EventSection from "../Components/EventSection";
-
+import EventSection from "../Components/events/EventSection";
+import Swal from "sweetalert2";
 
 const Reminders = () => {
   const [reminders, setReminders] = useState(() => {
@@ -34,6 +37,7 @@ const Reminders = () => {
   const [linkedEmail, setLinkedEmail] = useState(
     localStorage.getItem("googleEmail") || null
   );
+  const [guestInput, setGuestInput] = useState("");
 
   const [showEventPopup, setShowEventPopup] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -59,6 +63,7 @@ const Reminders = () => {
           `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
         );
         const data = await res.json();
+
         setReminders(data);
       } catch (err) {
         console.error("❌ Failed to load reminders:", err);
@@ -178,6 +183,7 @@ const Reminders = () => {
 
       const data = await res.json();
       console.log("✅ Event created:", data);
+      setEvents((prev) => [...prev, data.event || data]);
 
       setShowEventPopup(false);
       setNewEvent({
@@ -189,10 +195,53 @@ const Reminders = () => {
         guests: [""],
       });
 
-      alert("Event created and guests invited!");
+      Swal.fire({
+        icon: "success",
+        title: "Event Created 🎉",
+        text: "Event created and guests invited successfully!",
+        confirmButtonColor: "#6366f1", // optional: matches Tailwind indigo
+      });
     } catch (err) {
       console.error("❌ Failed to create event:", err);
       alert("Something went wrong!");
+    }
+  };
+
+  const handleEditEvent = (event) => {
+    setEditId(event._id); // 🛠️ Used in saveEvent
+    setNewEvent({
+      title: event.title || event.summary,
+      description: event.description || "",
+      date: event.startDateTime.split("T")[0],
+      startTime: event.startDateTime.split("T")[1].slice(0, 5),
+      endTime: event.endDateTime.split("T")[1].slice(0, 5),
+      guests: event.guestEmails || [""],
+    });
+    setShowEventPopup(true); // Open the modal
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    const userId = JSON.parse(localStorage.getItem("user")).userId;
+
+    try {
+      const res = await fetch(
+        `https://taskbe.sharda.co.in/api/events/${eventId}?userId=${userId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to delete event");
+      }
+
+      // ✅ Don't call res.json() unless needed
+
+      setEvents((prevEvents) =>
+        prevEvents.filter((event) => event._id !== eventId)
+      );
+    } catch (err) {
+      console.error("❌ Error deleting event:", err);
     }
   };
 
@@ -257,14 +306,8 @@ const Reminders = () => {
   }, []);
 
   return (
-    <div className="h-screen p-4 relative bg-gradient-to-br from-blue-50 to-purple-100 overflow-hidden">
-      <img
-        src={bgImage}
-        alt="Background"
-        className="absolute top-0 left-0 w-full h-full object-cover z-0"
-      />
-
-      <div className="max-w-5xl relative mx-auto">
+    <div className="h-screen  overflow-y-auto p-4 relative overflow-hidden">
+      <div className=" relative mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
             <span>📅</span> My Reminders
@@ -287,13 +330,27 @@ const Reminders = () => {
 
               <button
                 onClick={() => {
-                  // ✅ Save redirect URL to cookie before OAuth
+                  const user = JSON.parse(localStorage.getItem("user"));
+                  const userId = user?.userId;
+
+                  if (!userId) {
+                    alert("User not logged in");
+                    return;
+                  }
+
+                  // Save cookies BEFORE starting OAuth
                   document.cookie = `redirect_url=${encodeURIComponent(
                     window.location.href
                   )}; path=/`;
+                  document.cookie = `user_id=${encodeURIComponent(
+                    userId
+                  )}; path=/`;
 
-                  // ✅ Then open Google OAuth login
-                  window.open("https://taskbe.sharda.co.in/auth/google", "_blank");
+                  // Now start the Google login in a new tab
+                  window.open(
+                    "https://taskbe.sharda.co.in/auth/google",
+                    "_blank"
+                  );
                 }}
                 className="flex items-center gap-1.5 bg-white text-gray-700 px-3 py-1.5 text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
               >
@@ -342,17 +399,19 @@ const Reminders = () => {
             )}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Today */}
           <ReminderSection
             title="Today"
-            color="bg-blue-300"
+            icon={<FaSun className="text-amber-400" />}
+            className="border-l-4 border-blue-500 bg-blue-50"
             data={todayReminders}
             onDelete={handleDeleteReminder}
             onEdit={(reminder) => {
               setNewReminder({
                 text: reminder.text,
-                date: reminder.datetime.slice(0, 10), // extract yyyy-mm-dd
-                time: reminder.datetime.slice(11, 16), // extract hh:mm
+                date: reminder.datetime.slice(0, 10),
+                time: reminder.datetime.slice(11, 16),
                 snoozeBefore: reminder.snoozeBefore.toString(),
               });
               setEditId(reminder._id);
@@ -360,9 +419,11 @@ const Reminders = () => {
             }}
           />
 
+          {/* Upcoming */}
           <ReminderSection
-            title="Later"
-            color="bg-green-300"
+            title="Upcoming"
+            icon={<FaCalendarAlt className="text-emerald-500" />}
+            className="border-l-4 border-emerald-500 bg-gradient-to-br from-emerald-50 to-white"
             data={laterReminders}
             onDelete={handleDeleteReminder}
             onEdit={(reminder) => {
@@ -377,9 +438,11 @@ const Reminders = () => {
             }}
           />
 
+          {/* Overdue */}
           <ReminderSection
             title="Overdue"
-            color="bg-red-300"
+            icon={<FaExclamationTriangle className="text-rose-500" />}
+            className="border-l-4 border-rose-500 bg-gradient-to-br from-rose-50 to-white"
             data={outdatedReminders}
             onDelete={handleDeleteReminder}
             onEdit={(reminder) => {
@@ -394,7 +457,15 @@ const Reminders = () => {
             }}
           />
 
-          <EventSection title="My Events" color="bg-indigo-100" data={events} />
+          {/* Events */}
+          <EventSection
+            title="My Events"
+            icon={<FaCalendarDay className="text-indigo-500" />}
+            className="border-l-4 border-indigo-500 "
+            data={events}
+            onDelete={handleDeleteEvent}
+            onEdit={handleEditEvent}
+          />
         </div>
 
         {/* Reminder Modal */}
@@ -546,7 +617,7 @@ const Reminders = () => {
             </div>
 
             {/* Guest Emails */}
-            <div className="mb-4">
+            <div className="mb-4 max-h-[20vh] overflow-y-auto">
               <label className="text-sm font-medium text-gray-700 mb-2 block">
                 Add Guests
               </label>
@@ -602,7 +673,9 @@ const Reminders = () => {
 
 // 👇 Reminder Card Display with Time
 const ReminderSection = ({ title, color, data, onDelete, onEdit }) => (
-  <div className={`rounded-xl relative p-4 shadow-sm ${color}`}>
+  <div
+    className={`rounded-xl relative p-4 shadow-sm bg-gray-200  max-h-[70vh] overflow-y-auto ${color}`}
+  >
     <h4 className="text-lg font-semibold mb-3 text-gray-700">{title}</h4>
     {data.length === 0 ? (
       <p className="text-sm text-gray-500">No reminders</p>
@@ -611,33 +684,44 @@ const ReminderSection = ({ title, color, data, onDelete, onEdit }) => (
         {data.map((reminder, index) => (
           <li
             key={index}
-            className="bg-white p-3 rounded shadow text-sm text-gray-800 border border-gray-200 relative"
+            className="bg-white p-4 rounded-lg shadow-xs hover:shadow-sm border border-gray-100 transition-all duration-200 hover:border-blue-100 relative group"
           >
-            <div className="font-medium pr-6">{reminder.text}</div>
-            <div className="text-xs text-gray-500">
-              ⏰ {format(parseISO(reminder.datetime), "dd MMM yyyy, hh:mm a")}
+            {/* Reminder Content */}
+            <div className="pr-8">
+              <div className="font-medium text-gray-800 flex items-start">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                <span className="leading-snug">{reminder.text}</span>
+              </div>
+              <div className="flex items-center text-xs text-gray-500 mt-2 ml-4">
+                <FaClock className="mr-1.5 text-gray-400" />
+                <span>
+                  {format(parseISO(reminder.datetime), "EEE, MMM d, h:mm a")}
+                </span>
+              </div>
             </div>
-            <button
-              onClick={() => onEdit(reminder)}
-              className="absolute top-2 right-6 text-blue-500 hover:text-blue-700"
-              title="Edit"
-            >
-              <FaPen size={12} />
-            </button>
 
-            <button
-              onClick={() => onDelete(reminder._id)}
-              className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
-              title="Delete"
-            >
-              <FaTimes size={12} />
-            </button>
+            {/* Action Buttons */}
+            <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <button
+                onClick={() => onEdit(reminder)}
+                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-150"
+                title="Edit"
+              >
+                <FaPen size={12} />
+              </button>
+              <button
+                onClick={() => onDelete(reminder._id)}
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-150"
+                title="Delete"
+              >
+                <FaTimes size={12} />
+              </button>
+            </div>
           </li>
         ))}
       </ul>
     )}
   </div>
 );
-
 
 export default Reminders;
