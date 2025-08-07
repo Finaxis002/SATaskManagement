@@ -8,6 +8,7 @@ import {
   FaUserFriends,
   FaTimes,
   FaPen,
+  FaUser
 } from "react-icons/fa";
 import { parseISO, format } from "date-fns";
 
