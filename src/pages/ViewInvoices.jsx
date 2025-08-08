@@ -26,6 +26,8 @@ export default function ViewInvoices() {
   const [filterByFirm, setFilterByFirm] = useState([])
   
    const [selectedFirm, setSelectedFirm] = useState(null); 
+   const [dateError, setDateError] = useState('');
+
 
  
   useEffect(() => {
@@ -368,10 +370,22 @@ export default function ViewInvoices() {
     setFilteredInvoices(filtered);
   }, [selectedFirm, invoices]);
 
+  const handleFromDateChange = (e) => {
+  const newFromDate = e.target.value;
+  setFromDate(newFromDate);
+  setDateError('');
+  
+  if (toDate && new Date(toDate) < new Date(newFromDate)) {
+    setToDate('');
+    setDateError('To Date was reset to ensure it comes after From Date');
+  }
+};
+
+
   return (
     <div style={{ padding: 20 }}>
       <h2>View Invoices</h2>
-      <Select
+      {/* <Select
         options={clientOptions}
         onChange={setSelectedClient}
         placeholder="Select client to filter invoices"
@@ -409,7 +423,63 @@ export default function ViewInvoices() {
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           />
         </div>
-      </div>
+      </div> */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* Client Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client
+              </label>
+              <Select
+                options={clientOptions}
+                onChange={setSelectedClient}
+                placeholder="All Clients"
+                isClearable
+                className="text-sm"
+              />
+            </div>
+
+            {/* Firm Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Firm
+              </label>
+              <Select
+                options={firmOptions}
+                onChange={setSelectedFirm}
+                placeholder="All Firms"
+                isClearable
+                className="text-sm"
+              />
+            </div>
+
+            {/* Date Range */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </div>
 
       <div
         style={{
