@@ -355,19 +355,12 @@ const Reminders = () => {
                     return;
                   }
 
-                  // Save cookies BEFORE starting OAuth
-                  document.cookie = `redirect_url=${encodeURIComponent(
-                    window.location.href
-                  )}; path=/`;
-                  document.cookie = `user_id=${encodeURIComponent(
-                    userId
-                  )}; path=/`;
+                  // Directly pass redirect_url and user_id as query params
+                  const backendUrl = `https://taskbe.sharda.co.in/auth/google?redirect_url=${encodeURIComponent(
+                    "https://tasks.sharda.co.in/reminders"
+                  )}&user_id=${encodeURIComponent(userId)}`;
 
-                  // Now start the Google login in a new tab
-                  window.open(
-                    "https://taskbe.sharda.co.in/auth/google",
-                    "_blank"
-                  );
+                  window.open(backendUrl, "_blank");
                 }}
                 className="flex items-center gap-1.5 bg-white text-gray-700 px-3 py-1.5 text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
               >
