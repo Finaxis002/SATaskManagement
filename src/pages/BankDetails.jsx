@@ -259,6 +259,141 @@ const BankDetails = () => {
   const [editingBank, setEditingBank] = useState(null);
   const [showEditFirmModal, setShowEditFirmModal] = useState(false);
   const [showEditBankModal, setShowEditBankModal] = useState(false);
+  //new
+  const [isFirmModalOpen, setIsFirmModalOpen] = useState(false);
+  const [firmModalMode, setFirmModalMode] = useState("add"); // 'add' | 'edit'
+  const [formFirm, setFormFirm] = useState({
+    _id: "",
+    name: "",
+    address: "",
+    gstin: "",
+    phone: "",
+  });
+
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+const [bankModalMode, setBankModalMode] = useState("add"); // 'add' | 'edit'
+const [formBank, setFormBank] = useState({
+  _id: "",
+  bankName: "",
+  accountName: "",
+  accountNumber: "",
+  ifsc: "",
+  upiIdName: "",
+  upiMobile: "",
+  upiId: "",
+});
+  // helpers
+  const openAddFirm = () => {
+    setFirmModalMode("add");
+    setFormFirm({ _id: "", name: "", address: "", gstin: "", phone: "" });
+    setIsFirmModalOpen(true);
+  };
+
+  const openEditFirm = (firm) => {
+    setFirmModalMode("edit");
+    setFormFirm({
+      _id: firm._id,
+      name: firm.name || "",
+      address: firm.address || "",
+      gstin: firm.gstin || "",
+      phone: firm.phone || "",
+    });
+    setIsFirmModalOpen(true);
+  };
+
+  const closeFirmModal = () => {
+    setIsFirmModalOpen(false);
+  };
+
+  // submit
+  const submitFirm = async () => {
+    if (firmModalMode === "add") {
+      await axios.post("https://taskbe.sharda.co.in/firms", {
+        name: formFirm.name,
+        address: formFirm.address,
+        gstin: formFirm.gstin,
+        phone: formFirm.phone,
+      });
+    } else {
+      await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, {
+        name: formFirm.name,
+        address: formFirm.address,
+        gstin: formFirm.gstin,
+        phone: formFirm.phone,
+      });
+    }
+    closeFirmModal();
+    fetchFirms();
+  };
+
+
+  // open/close
+const openAddBank = (firmId) => {
+  setActiveFirmId(firmId);
+  setBankModalMode("add");
+  setFormBank({
+    _id: "",
+    bankName: "",
+    accountName: "",
+    accountNumber: "",
+    ifsc: "",
+    upiIdName: "",
+    upiMobile: "",
+    upiId: "",
+  });
+  setIsBankModalOpen(true);
+};
+
+const openEditBank = (firmId, bank) => {
+  setActiveFirmId(firmId);
+  setBankModalMode("edit");
+  setFormBank({
+    _id: bank._id,
+    bankName: bank.bankName || "",
+    accountName: bank.accountName || "",
+    accountNumber: bank.accountNumber || "",
+    ifsc: bank.ifsc || "",
+    upiIdName: bank.upiIdName || "",
+    upiMobile: bank.upiMobile || "",
+    upiId: bank.upiId || "",
+  });
+  setIsBankModalOpen(true);
+};
+
+const closeBankModal = () => setIsBankModalOpen(false);
+
+// submit (decide POST vs PUT)
+const submitBank = async () => {
+  if (!activeFirmId) return;
+  if (bankModalMode === "add") {
+    await axios.post(`https://taskbe.sharda.co.in/firms/${activeFirmId}/banks`, {
+      bankName: formBank.bankName,
+      accountName: formBank.accountName,
+      accountNumber: formBank.accountNumber,
+      ifsc: formBank.ifsc,
+      upiIdName: formBank.upiIdName,
+      upiMobile: formBank.upiMobile,
+      upiId: formBank.upiId,
+    });
+  } else {
+    await axios.put(
+      `https://taskbe.sharda.co.in/firms/${activeFirmId}/banks/${formBank._id}`,
+      {
+        bankName: formBank.bankName,
+        accountName: formBank.accountName,
+        accountNumber: formBank.accountNumber,
+        ifsc: formBank.ifsc,
+        upiIdName: formBank.upiIdName,
+        upiMobile: formBank.upiMobile,
+        upiId: formBank.upiId,
+      }
+    );
+  }
+  closeBankModal();
+  fetchFirms();
+};
+
+  //new
 
   useEffect(() => {
     fetchFirms();
@@ -364,6 +499,15 @@ const BankDetails = () => {
     }
   };
 
+  const confirmDelete = (type, onConfirm) => {
+    const isConfirmed = window.confirm(
+      `Are you sure you want to delete this ${type}?`
+    );
+    if (isConfirmed) {
+      onConfirm();
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
       <div className="px-4 pt-4">
@@ -373,7 +517,8 @@ const BankDetails = () => {
           </h1>
           <button
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-colors flex items-center gap-2"
-            onClick={() => setShowFirmModal(true)}
+            // onClick={() => setShowFirmModal(true)}
+            onClick={openAddFirm}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -446,11 +591,12 @@ const BankDetails = () => {
                     </span>
                     <button
                       className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center gap-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveFirmId(firm._id);
-                        setShowBankModal(true);
-                      }}
+                      // onClick={(e) => {
+                      //   e.stopPropagation();
+                      //   setActiveFirmId(firm._id);
+                      //   setShowBankModal(true);
+                      // }}
+                      onClick={(e) => { e.stopPropagation(); openAddBank(firm._id); }}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -468,10 +614,11 @@ const BankDetails = () => {
                     </button>
 
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditFirm(firm);
-                      }}
+                      // onClick={(e) => {
+                      //   e.stopPropagation();
+                      //   handleUpdateFirm(firm);
+                      // }}
+                      onClick={(e) => { e.stopPropagation(); openEditFirm(firm); }}
                       className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors"
                     >
                       Edit
@@ -544,8 +691,8 @@ const BankDetails = () => {
                                 UPI Details
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-        Actions
-      </th>
+                                Actions
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -574,19 +721,26 @@ const BankDetails = () => {
                                   <div>ID: {bank.upiId || "-"}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-          <button
-            onClick={() => handleEditBank(firm._id, bank)}
-            className="mr-2 text-blue-600 hover:text-blue-800"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => confirmDelete('bank', () => handleDeleteBank(firm._id, bank._id))}
-            className="text-red-600 hover:text-red-800"
-          >
-            Delete
-          </button>
-        </td>
+                                  <button
+                                    // onClick={() =>
+                                    //   handleUpdateBank(firm._id, bank)
+                                    // }
+                                      onClick={() => openEditBank(firm._id, bank)}
+                                    className="mr-2 text-blue-600 hover:text-blue-800"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      confirmDelete("bank", () =>
+                                        handleDeleteBank(firm._id, bank._id)
+                                      )
+                                    }
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    Delete
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -632,266 +786,192 @@ const BankDetails = () => {
           </div>
         )}
       </div>
+
       {/* Add Firm Modal */}
-      {showFirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Add New Firm
-                </h2>
-                <button
-                  onClick={() => setShowFirmModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Firm Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newFirm.name}
-                    onChange={(e) =>
-                      setNewFirm({ ...newFirm, name: e.target.value })
-                    }
-                    placeholder="Enter firm name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newFirm.address}
-                    onChange={(e) =>
-                      setNewFirm({ ...newFirm, address: e.target.value })
-                    }
-                    placeholder="Enter firm address"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    GSTIN
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newFirm.gstin}
-                    onChange={(e) =>
-                      setNewFirm({ ...newFirm, gstin: e.target.value })
-                    }
-                    placeholder="Enter firm GSTIN"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newFirm.phone}
-                    onChange={(e) =>
-                      setNewFirm({ ...newFirm, phone: e.target.value })
-                    }
-                    placeholder="Enter phone number"
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowFirmModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddFirm}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                >
-                  Add Firm
-                </button>
-              </div>
-            </div>
+      
+      {isFirmModalOpen && (
+  <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            {firmModalMode === "add" ? "Add New Firm" : "Edit Firm"}
+          </h2>
+          <button onClick={closeFirmModal} className="text-gray-400 hover:text-gray-500">✕</button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Firm Name</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+              value={formFirm.name}
+              onChange={(e) => setFormFirm({ ...formFirm, name: e.target.value })}
+              placeholder="Enter firm name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+              value={formFirm.address}
+              onChange={(e) => setFormFirm({ ...formFirm, address: e.target.value })}
+              placeholder="Enter firm address"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">GSTIN</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+              value={formFirm.gstin}
+              onChange={(e) => setFormFirm({ ...formFirm, gstin: e.target.value })}
+              placeholder="Enter GSTIN"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+              value={formFirm.phone}
+              onChange={(e) => setFormFirm({ ...formFirm, phone: e.target.value })}
+              placeholder="Enter phone number"
+            />
           </div>
         </div>
-      )}
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button onClick={closeFirmModal} className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button onClick={submitFirm} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">
+            {firmModalMode === "add" ? "Add Firm" : "Update Firm"}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Add Bank Modal */}
-      {showBankModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Add Bank Account
-                </h2>
-                <button
-                  onClick={() => setShowBankModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+     
+      {isBankModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            {bankModalMode === "add" ? "Add Bank Account" : "Edit Bank Account"}
+          </h2>
+          <button onClick={closeBankModal} className="text-gray-400 hover:text-gray-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formBank.bankName}
+              onChange={(e) => setFormBank({ ...formBank, bankName: e.target.value })}
+              placeholder="Enter bank name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formBank.accountName}
+              onChange={(e) => setFormBank({ ...formBank, accountName: e.target.value })}
+              placeholder="Enter account name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formBank.accountNumber}
+              onChange={(e) => setFormBank({ ...formBank, accountNumber: e.target.value })}
+              placeholder="Enter account number"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">IFSC Code</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formBank.ifsc}
+              onChange={(e) => setFormBank({ ...formBank, ifsc: e.target.value })}
+              placeholder="Enter IFSC code"
+            />
+          </div>
+
+          <div className="md:col-span-2 border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-800 mb-3">UPI Details (Optional)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">UPI ID Name</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formBank.upiIdName}
+                  onChange={(e) => setFormBank({ ...formBank, upiIdName: e.target.value })}
+                  placeholder="Enter UPI ID name"
+                />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bank Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newBank.bankName}
-                    onChange={(e) =>
-                      setNewBank({ ...newBank, bankName: e.target.value })
-                    }
-                    placeholder="Enter bank name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Account Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newBank.accountName}
-                    onChange={(e) =>
-                      setNewBank({ ...newBank, accountName: e.target.value })
-                    }
-                    placeholder="Enter account name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Account Number
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newBank.accountNumber}
-                    onChange={(e) =>
-                      setNewBank({ ...newBank, accountNumber: e.target.value })
-                    }
-                    placeholder="Enter account number"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    IFSC Code
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newBank.ifsc}
-                    onChange={(e) =>
-                      setNewBank({ ...newBank, ifsc: e.target.value })
-                    }
-                    placeholder="Enter IFSC code"
-                  />
-                </div>
-                <div className="md:col-span-2 border-t pt-4">
-                  <h3 className="text-lg font-medium text-gray-800 mb-3">
-                    UPI Details (Optional)
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        UPI ID Name
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={newBank.upiIdName}
-                        onChange={(e) =>
-                          setNewBank({ ...newBank, upiIdName: e.target.value })
-                        }
-                        placeholder="Enter UPI ID name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        UPI Mobile
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={newBank.upiMobile}
-                        onChange={(e) =>
-                          setNewBank({ ...newBank, upiMobile: e.target.value })
-                        }
-                        placeholder="Enter mobile number"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        UPI ID
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={newBank.upiId}
-                        onChange={(e) =>
-                          setNewBank({ ...newBank, upiId: e.target.value })
-                        }
-                        placeholder="Enter UPI ID"
-                      />
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">UPI Mobile</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formBank.upiMobile}
+                  onChange={(e) => setFormBank({ ...formBank, upiMobile: e.target.value })}
+                  placeholder="Enter mobile number"
+                />
               </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowBankModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddBank}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                >
-                  Add Bank Account
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">UPI ID</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formBank.upiId}
+                  onChange={(e) => setFormBank({ ...formBank, upiId: e.target.value })}
+                  placeholder="Enter UPI ID"
+                />
               </div>
             </div>
           </div>
         </div>
-      )}
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button onClick={closeBankModal} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button onClick={submitBank} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">
+            {bankModalMode === "add" ? "Add Bank Account" : "Update Bank Account"}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
