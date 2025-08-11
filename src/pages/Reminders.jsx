@@ -161,14 +161,19 @@ const Reminders = () => {
   };
 
   const saveEvent = async () => {
-    const startDateTime = `${newEvent.date}T${newEvent.startTime}`;
-    const endDateTime = `${newEvent.date}T${newEvent.endTime}`;
+    const timezoneOffset = new Date().getTimezoneOffset() * 60000; // in milliseconds
+    const startDateTime = new Date(
+      `${newEvent.date}T${newEvent.startTime}`
+    ).toISOString(); // => correct UTC
+    const endDateTime = new Date(
+      `${newEvent.date}T${newEvent.endTime}`
+    ).toISOString();
 
     const eventPayload = {
       summary: newEvent.title,
       description: newEvent.description,
-      startDateTime,
-      endDateTime,
+      startDateTime: new Date(startDateTime).toISOString(),
+      endDateTime: new Date(endDateTime).toISOString(),
       userEmail: linkedEmail,
       userId: user.userId,
       guestEmails: newEvent.guests.filter((email) => email.trim() !== ""),
