@@ -30,11 +30,13 @@ export default function InvoicePage({
   numberToWordsIndian,
   showGSTIN,
 }) {
-  console.log("{showGSTIN :", showGSTIN);
+ 
   const isLocalSupply = () => {
     const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
     return place === "mp" || place === "madhyapradesh";
   };
+  const isFirm = (name) =>
+    (selectedFirm?.name || "").toLowerCase() === name.toLowerCase();
 
   // const headerStyle = {
   //   width: "100%",
@@ -55,47 +57,79 @@ export default function InvoicePage({
 
   const ITEMS_PER_PAGE = 8;
 
-  const getWalletInfo = () => {
-  if (selectedFirm.name === "Sharda Associates") {
-    const label = selectedFirm.bank?.label?.toLowerCase() || "";
-    if (label.includes("sbi") && label.includes("anugrah")) {
-      return (
-        <>
-          <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
-          <br />
-          Name - Anugrah Sharda <br />
-          Mobile Number – 9713330373 <br/>
-          UPI ID - 9713330373@ybl <br/>
-        </>
-      );
-    } else if (label.includes("kotak") && label.includes("anunay")) {
-      return (
-        <>
-          <strong>For Online Wallets - Paytm, GPay and PhonePe.</strong>
-          <br />
-          Name - Anunay Sharda <br />
-          Mobile Number - 7869777747 <br />
-          UPI ID - 7869777747@ybl
-        </>
-      );
-    }
-  }
+  const bank = selectedFirm?.bank || {};
+  const bankName = bank.bankName || bank.name || "";
+  const accountName = bank.accountName || "";
+  const accountNumber = bank.accountNumber || bank.account || "";
+  const ifsc = bank.ifsc || "";
+  // UPI/wallet info from DB (your BankDetails screen already saves these)
+  const upiIdName = bank.upiIdName || "";
+  const upiMobile = bank.upiMobile || "";
+  const upiId = bank.upiId || "";
 
-  if (selectedFirm.name === "Finaxis Business Consultancy Pvt. Ltd.") {
+  //   const getWalletInfo = () => {
+  //   if (selectedFirm.name === "Sharda Associates") {
+  //     const label = selectedFirm.bank?.label?.toLowerCase() || "";
+  //     if (label.includes("sbi") && label.includes("anugrah")) {
+  //       return (
+  //         <>
+  //           <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
+  //           <br />
+  //           Name - Anugrah Sharda <br />
+  //           Mobile Number – 9713330373 <br/>
+  //           UPI ID - 9713330373@ybl <br/>
+  //         </>
+  //       );
+  //     } else if (label.includes("kotak") && label.includes("anunay")) {
+  //       return (
+  //         <>
+  //           <strong>For Online Wallets - Paytm, GPay and PhonePe.</strong>
+  //           <br />
+  //           Name - Anunay Sharda <br />
+  //           Mobile Number - 7869777747 <br />
+  //           UPI ID - 7869777747@ybl
+  //         </>
+  //       );
+  //     }
+  //   }
+
+  //   if (selectedFirm.name === "Finaxis Business Consultancy Pvt. Ltd.") {
+  //     return (
+  //       <>
+  //         <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
+  //         <br />
+  //         Name : Finaxis Business Consultancy <br />
+  //         Mobile Number - 9425008997 <br />
+  //         UPI ID - 9425008997@kotak
+  //       </>
+  //     );
+  //   }
+
+  //   return null;
+  // };
+
+  const getWalletInfo = () => {
+    if (!upiIdName && !upiMobile && !upiId) return null;
     return (
       <>
-        <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
+        <strong>For Online Wallets - Paytm, Google Pay and PhonePe.</strong>
         <br />
-        Name : Finaxis Business Consultancy <br />
-        Mobile Number - 9425008997 <br />
-        UPI ID - 9425008997@kotak
+        {upiIdName ? (
+          <>
+            Name - {upiIdName}
+            <br />
+          </>
+        ) : null}
+        {upiMobile ? (
+          <>
+            Mobile Number - {upiMobile}
+            <br />
+          </>
+        ) : null}
+        {upiId ? <>UPI ID - {upiId}</> : null}
       </>
     );
-  }
-
-  return null;
-};
-
+  };
 
   return (
     <div
@@ -321,7 +355,7 @@ export default function InvoicePage({
                           borderRight: "none",
                         }}
                       >
-                        GSTIN: {selectedFirm.gstin}
+                        GSTIN: {selectedFirm?.gstin}
                       </th>
                     )}
                     <th
@@ -1255,11 +1289,10 @@ export default function InvoicePage({
                                 fontStyle: "normal",
                               }}
                             >
-                              Bank Name: {selectedFirm?.bank?.name} <br />
-                              Account Name :{selectedFirm?.bank?.accountName}{" "}
-                              <br />
-                              Account Number: {selectedFirm?.bank?.account} <br />
-                              IFSC Code: {selectedFirm?.bank?.ifsc}
+                              Bank Name: {bankName} <br />
+                              Account Name :{accountName} <br />
+                              Account Number: {accountNumber} <br />
+                              IFSC Code: {ifsc}
                             </td>
                           </tr>
                           {/* {isSharda && (
@@ -1284,13 +1317,15 @@ export default function InvoicePage({
                             </tr>
                           )} */}
                           {getWalletInfo() && (
-  <tr>
-    <td className="normal-text" style={{ padding: 6, fontSize: 10 }}>
-      {getWalletInfo()}
-    </td>
-  </tr>
-)}
-
+                            <tr>
+                              <td
+                                className="normal-text"
+                                style={{ padding: 6, fontSize: 10 }}
+                              >
+                                {getWalletInfo()}
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </td>

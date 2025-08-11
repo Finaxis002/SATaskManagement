@@ -9,142 +9,187 @@ import { FaTrash } from "react-icons/fa";
 import { FiSave, FiDownload } from "react-icons/fi";
 import InvoicePage from "../Components/invoice/InvoicePage";
 const ITEMS_PER_PAGE = 8;
-const firms = [
-  {
-    name: "Finaxis Business Consultancy Pvt. Ltd.",
-    subtitle: "Business Consultancy",
-    gstin: "GST5454",
-    address: "Vidya Nagar, Hoshangabad Road, Bhopal- 462026",
-    email: "finaxis.in@gmail.com",
-    phone: "+91-7987021896",
-    bank: {
-      name: "Kotak Mahindra",
-      accountName: "Anugrah Sharda",
-      account: "9425008997",
-      ifsc: "KKBK0005945",
-    },
-  },
-  {
-    name: "Sharda Associates",
-    subtitle: "Associates",
-    gstin: "GST9876",
-    address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
-    email: "sharda@gmail.com",
-    phone: "7894561230",
-    banks: [
-      // <-- instead of single `bank` object
-      {
-        label: "SBI Anugrah Sharda",
-        name: "State Bank of India",
-        accountName: "Anugrah Sharda",
-        account: "20410532258",
-        ifsc: "SBIN0030390",
-      },
-      {
-        label: "Kotak Mahindra Anunay Sharda",
-        name: "Kotak Mahindra",
-        accountName: "Anunay Sharda",
-        account: "5811615757",
-        ifsc: "KKBK0005945",
-      },
-      {
-        label: "HDFC",
-        name: "HDFC",
-        accountName: "Anunay Sharda",
-        account: "5555555555",
-        ifsc: "ICIC0005678",
-      },
-      {
-        label: "Axis Bank",
-        name: "Axis Bank",
-        accountName: "Anunay Sharda",
-        account: "5555555555",
-        ifsc: "ICIC0005678",
-      },
-    ],
-  },
-  {
-    name: "Kailash Real Estate",
-    subtitle: "Real Estate",
-    address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
-    email: "kailashre@gmail.com",
-    phone: "7569341285",
-    bank: { name: "ICICI", account: "0987654321", ifsc: "ICIC0005678" },
-  },
-  // {
-  //   name: "Bhojpal Realities",
-  //   subtitle: "Realities",
-  //   gstin: "GST3344",
-  //   address: "Arera Colony, Bhopal",
-  //   email: "bhojpalr@gmail.com",
-  //   phone: "8652349871",
-  //   bank: { name: "Axis", account: "111222333", ifsc: "UTIB0000123" },
-  // },
-  {
-    name: "Anunay Sharda & Associates",
-    subtitle: "Realities",
-    gstin: "GST3344",
-    address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
-    email: "anunaysharda@gmail.com",
-    phone: "+91-7987021896",
-    bank: { name: "Axis", account: "111222333", ifsc: "UTIB0000123" },
-  },
-  //  {
-  //   name: "Finaxis Business Consultancy Private Limited",
-  //   gstin: "GST3344",
-  //   address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
-  //   email: "bhojpalr@gmail.com",
-  //   phone: "8652349871",
-  //   bank: { name: "Axis", account: "111222333", ifsc: "UTIB0000123" },
-  // },
-];
+// const firms = [
+//   {
+//     name: "Finaxis Business Consultancy Pvt. Ltd.",
+//     subtitle: "Business Consultancy",
+//     gstin: "GST5454",
+//     address: "Vidya Nagar, Hoshangabad Road, Bhopal- 462026",
+//     email: "finaxis.in@gmail.com",
+//     phone: "+91-7987021896",
+//     bank: {
+//       name: "Kotak Mahindra",
+//       accountName: "Anugrah Sharda",
+//       account: "9425008997",
+//       ifsc: "KKBK0005945",
+//     },
+//   },
+//   {
+//     name: "Sharda Associates",
+//     subtitle: "Associates",
+//     gstin: "GST9876",
+//     address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
+//     email: "sharda@gmail.com",
+//     phone: "7894561230",
+//     banks: [
+//       // <-- instead of single `bank` object
+//       {
+//         label: "SBI Anugrah Sharda",
+//         name: "State Bank of India",
+//         accountName: "Anugrah Sharda",
+//         account: "20410532258",
+//         ifsc: "SBIN0030390",
+//       },
+//       {
+//         label: "Kotak Mahindra Anunay Sharda",
+//         name: "Kotak Mahindra",
+//         accountName: "Anunay Sharda",
+//         account: "5811615757",
+//         ifsc: "KKBK0005945",
+//       },
+//       {
+//         label: "HDFC",
+//         name: "HDFC",
+//         accountName: "Anunay Sharda",
+//         account: "5555555555",
+//         ifsc: "ICIC0005678",
+//       },
+//       {
+//         label: "Axis Bank",
+//         name: "Axis Bank",
+//         accountName: "Anunay Sharda",
+//         account: "5555555555",
+//         ifsc: "ICIC0005678",
+//       },
+//     ],
+//   },
+//   {
+//     name: "Kailash Real Estate",
+//     subtitle: "Real Estate",
+//     address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
+//     email: "kailashre@gmail.com",
+//     phone: "7569341285",
+//     bank: { name: "ICICI", account: "0987654321", ifsc: "ICIC0005678" },
+//   },
+
+//   {
+//     name: "Anunay Sharda & Associates",
+//     subtitle: "Realities",
+//     gstin: "GST3344",
+//     address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
+//     email: "anunaysharda@gmail.com",
+//     phone: "+91-7987021896",
+//     bank: { name: "Axis", account: "111222333", ifsc: "UTIB0000123" },
+//   },
+
+// ];
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
-// const generateInvoiceNumber = () => {
-//   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-//   let id = "FN";
-//   for (let i = 0; i < 6; i++) {
-//     id += chars.charAt(Math.floor(Math.random() * chars.length));
-//   }
-//   return id;
-// };
-
 export default function InvoiceForm() {
+  const [firms, setFirms] = useState([]);
+  const [selectedFirmId, setSelectedFirmId] = useState("");
+  // const [selectedFirm, setSelectedFirm] = useState(null);
+  const [firmsLoading, setFirmsLoading] = useState(true);
+  const [firmsError, setFirmsError] = useState("");
+
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
   const [isFinalized, setIsFinalized] = useState(false);
   const [selectedBankIndex, setSelectedBankIndex] = useState(0);
+  // remove: const firms = [ ... ]
 
-  // Preview invoice number - does not change DB
-  const previewInvoiceNumber = async () => {
-    const year = new Date().getFullYear().toString().slice(-2);
-    const month = String(new Date().getMonth() + 1).padStart(2, "0");
+  //new
 
-    try {
-      const res = await axios.get("/invoices/preview-serial", {
-        params: {
-          firm: selectedFirm.name,
-          type: invoiceType,
-          year,
-          month,
-        },
-      });
-      setInvoiceNumber(res.data.invoiceNumber);
-    } catch (error) {
-      console.error("Error previewing invoice number", error);
+  useEffect(() => {
+    const loadFirms = async () => {
+      try {
+        setFirmsLoading(true);
+        const res = await axios.get("https://taskbe.sharda.co.in/firms"); // baseURL in secureAxios handles domain
+        setFirms(res.data || []);
+        if ((res.data || []).length) {
+          setSelectedFirmId(res.data[0]._id);
+          setSelectedFirm(res.data[0]);
+        }
+      } catch (e) {
+        setFirmsError("Failed to load firms");
+        console.error(e);
+      } finally {
+        setFirmsLoading(false);
+      }
+    };
+    loadFirms();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedFirmId) {
+      setSelectedFirm(null);
+      return;
     }
-  };
+    const f = firms.find((x) => x._id === selectedFirmId) || null;
+    setSelectedFirm(f);
+    setSelectedBankIndex(0);
+  }, [selectedFirmId, firms]);
+
+  //new
+  // Preview invoice number - does not change DB
+  // const previewInvoiceNumber = async () => {
+  //   if (!selectedFirm) return;
+  //   const year = new Date().getFullYear().toString().slice(-2);
+  //   const month = String(new Date().getMonth() + 1).padStart(2, "0");
+
+  //   try {
+  //     const res = await axios.get("/invoices/preview-serial", {
+  //       params: {
+  //         firm: selectedFirm.name,
+  //         type: invoiceType,
+  //         year,
+  //         month,
+  //       },
+  //     });
+  //     setInvoiceNumber(res.data.invoiceNumber);
+  //   } catch (error) {
+  //     console.error("Error previewing invoice number", error);
+  //   }
+  // };
+  useEffect(() => {
+  setInvoiceNumber("");
+  setIsFinalized(false);
+  if (selectedFirm && invoiceType) previewInvoiceNumber();
+}, [selectedFirmId, invoiceType]);
+
+const previewInvoiceNumber = async () => {
+  if (!selectedFirm) return;
+  const year = new Date().getFullYear().toString().slice(-2);
+  const month = String(new Date().getMonth() + 1).padStart(2, "0");
+
+  try {
+    const res = await axios.get("https://taskbe.sharda.co.in/api/invoices/preview-serial", {
+      params: {
+        firm: (selectedFirm.name || "").trim(),
+        type: invoiceType,
+        year,
+        month,
+      },
+    });
+    setInvoiceNumber(res.data?.invoiceNumber || "");
+  } catch (err) {
+    console.error("preview-serial failed:", err);
+    setInvoiceNumber(""); // <-- important
+    Swal.fire("Couldn’t preview invoice number", "Check API URL/Network.", "warning");
+  }
+};
 
   // Finalize invoice number - increments DB (call only when saving)
   const finalizeInvoiceNumber = async () => {
     if (isFinalized && invoiceNumber) return invoiceNumber;
+    if (!selectedFirm) throw new Error("No firm selected");
     const year = new Date().getFullYear().toString().slice(-2);
     const month = String(new Date().getMonth() + 1).padStart(2, "0");
 
     try {
-      const res = await axios.post("/invoices/finalize-serial", {
+      const res = await axios.post("https://taskbe.sharda.co.in/api/invoices/finalize-serial", {
         firm: selectedFirm.name,
         type: invoiceType,
         year,
@@ -158,6 +203,10 @@ export default function InvoiceForm() {
       throw error;
     }
   };
+
+  useEffect(() => {
+    if (selectedFirm && invoiceType) previewInvoiceNumber();
+  }, [selectedFirm, invoiceType]);
 
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const today = new Date();
@@ -203,9 +252,9 @@ export default function InvoiceForm() {
   const [imagesReady, setImagesReady] = useState(false);
 
   const invoiceRef = useRef();
-  const isSharda = selectedFirm.name === "Sharda Associates";
+  const isSharda = selectedFirm?.name === "Sharda Associates";
 
-  const showGSTIN = !!selectedFirm.gstin;
+  const showGSTIN = !!selectedFirm?.gstin;
 
   const offsetPage1 = 0;
   const offsetPage2 = ITEMS_PER_PAGE;
@@ -581,6 +630,13 @@ export default function InvoiceForm() {
     }
   };
 
+
+  // after selectedFirm & selectedBankIndex are set
+const activeBank =
+  selectedFirm?.banks?.[selectedBankIndex] ??
+  selectedFirm?.bank ?? // backward compat
+  null;
+
   return (
     <div
       className="invoice-page"
@@ -650,7 +706,7 @@ export default function InvoiceForm() {
           </div>
 
           {/* Firm Selection */}
-          <div>
+          {/* <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
               Your Details
             </h2>
@@ -669,10 +725,36 @@ export default function InvoiceForm() {
                 <option key={f.name}>{f.name}</option>
               ))}
             </select>
+          </div> */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              Your Details
+            </h2>
+            <label className="block text-sm font-medium text-gray-700">
+              Select Firm
+            </label>
+
+            {firmsLoading ? (
+              <div className="mt-1 text-sm text-gray-500">Loading firms…</div>
+            ) : firmsError ? (
+              <div className="mt-1 text-sm text-red-600">{firmsError}</div>
+            ) : (
+              <select
+                value={selectedFirmId}
+                onChange={(e) => setSelectedFirmId(e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {firms.map((f) => (
+                  <option key={f._id} value={f._id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Sharda Bank Dropdown */}
-          {selectedFirm.name === "Sharda Associates" && selectedFirm.banks && (
+          {/* {selectedFirm.name === "Sharda Associates" && selectedFirm.banks && (
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Select Bank Account
@@ -685,6 +767,28 @@ export default function InvoiceForm() {
                 {selectedFirm.banks.map((bank, idx) => (
                   <option key={idx} value={idx}>
                     {bank.label || `${bank.name} - ${bank.account}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )} */}
+
+          {selectedFirm?.banks?.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Select Bank Account
+              </label>
+              <select
+                value={selectedBankIndex}
+                onChange={(e) => setSelectedBankIndex(parseInt(e.target.value))}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {selectedFirm?.banks?.map((bank, idx) => (
+                  <option key={bank._id || idx} value={idx}>
+                    {bank.label ||
+                      `${bank.bankName || bank.name} - ${
+                        bank.accountNumber || bank.account
+                      }`}
                   </option>
                 ))}
               </select>
@@ -879,13 +983,14 @@ export default function InvoiceForm() {
             offset={offsetPage1}
             isLastPage={page2Items.length === 0}
             customer={customer}
-            selectedFirm={{
-              ...selectedFirm,
-              bank:
-                selectedFirm.name === "Sharda Associates"
-                  ? selectedFirm.banks[selectedBankIndex]
-                  : selectedFirm.bank,
-            }}
+            // selectedFirm={{
+            //   ...selectedFirm,
+            //   bank:
+            //     selectedFirm?.name === "Sharda Associates"
+            //       ? selectedFirm?.banks[selectedBankIndex]
+            //       : selectedFirm?.bank,
+            // }}
+            selectedFirm={{ ...selectedFirm, bank: activeBank }}  
             invoiceType={invoiceType}
             invoiceNumber={invoiceNumber}
             invoiceDate={invoiceDate}
@@ -909,7 +1014,8 @@ export default function InvoiceForm() {
               offset={offsetPage2}
               isLastPage={true}
               customer={customer}
-              selectedFirm={selectedFirm}
+              // selectedFirm={selectedFirm}
+              selectedFirm={{ ...selectedFirm, bank: activeBank }}  
               invoiceType={invoiceType}
               invoiceNumber={invoiceNumber}
               invoiceDate={invoiceDate}
