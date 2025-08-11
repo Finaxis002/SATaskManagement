@@ -37,7 +37,7 @@ const Reminders = () => {
   const [linkedEmail, setLinkedEmail] = useState(
     localStorage.getItem("googleEmail") || null
   );
-  const [guestInput, setGuestInput] = useState("");
+  const [editingEventId, setEditingEventId] = useState(null); // null = creating
 
   const [showEventPopup, setShowEventPopup] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -47,6 +47,7 @@ const Reminders = () => {
     startTime: "",
     endTime: "",
     guests: [""],
+    snoozeBefore: "30",
   });
   const [saving, setSaving] = useState(false);
 
@@ -161,10 +162,9 @@ const Reminders = () => {
   };
 
   const saveEvent = async () => {
-    const timezoneOffset = new Date().getTimezoneOffset() * 60000; // in milliseconds
     const startDateTime = new Date(
       `${newEvent.date}T${newEvent.startTime}`
-    ).toISOString(); // => correct UTC
+    ).toISOString();
     const endDateTime = new Date(
       `${newEvent.date}T${newEvent.endTime}`
     ).toISOString();
@@ -172,19 +172,20 @@ const Reminders = () => {
     const eventPayload = {
       summary: newEvent.title,
       description: newEvent.description,
-      startDateTime: new Date(startDateTime).toISOString(),
-      endDateTime: new Date(endDateTime).toISOString(),
+      startDateTime,
+      endDateTime,
       userEmail: linkedEmail,
       userId: user.userId,
       guestEmails: newEvent.guests.filter((email) => email.trim() !== ""),
+      snoozeBefore: parseInt(newEvent.snoozeBefore, 10),
     };
 
     try {
-      const url = editId
-        ? `https://taskbe.sharda.co.in/api/events/${editId}`
+      const url = editingEventId
+        ? `https://taskbe.sharda.co.in/api/events/${editingEventId}`
         : "https://taskbe.sharda.co.in/api/events/create";
 
-      const method = editId ? "PUT" : "POST";
+      const method = editingEventId ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
@@ -194,13 +195,11 @@ const Reminders = () => {
 
       const data = await res.json();
 
-      if (editId) {
-        // Update existing event in state
+      if (editingEventId) {
         setEvents((prev) =>
-          prev.map((e) => (e._id === editId ? data.event : e))
+          prev.map((e) => (e._id === editingEventId ? data.event : e))
         );
       } else {
-        // Add new event to state
         setEvents((prev) => [...prev, data.event || data]);
       }
 
@@ -212,17 +211,9 @@ const Reminders = () => {
         startTime: "",
         endTime: "",
         guests: [""],
+        snoozeBefore: "30",
       });
-      setEditId(null); // Reset editId after save
-
-      Swal.fire({
-        icon: "success",
-        title: editId ? "Event Updated" : "Event Created 🎉",
-        text: editId
-          ? "Event updated successfully!"
-          : "Event created and guests invited successfully!",
-        confirmButtonColor: "#6366f1",
-      });
+      setEditingEventId(null); // reset
     } catch (err) {
       console.error("❌ Failed to save event:", err);
       alert("Something went wrong!");
@@ -230,16 +221,30 @@ const Reminders = () => {
   };
 
   const handleEditEvent = (event) => {
-    setEditId(event._id); // 🛠️ Used in saveEvent
+    setEditingEventId(event._id);
+    const toLocalParts = (iso) => {
+      const d = new Date(iso);
+      const pad = (n) => String(n).padStart(2, "0");
+      return {
+        date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+      };
+    };
+
+    const { date: sDate, time: sTime } = toLocalParts(event.startDateTime);
+    const { time: eTime } = toLocalParts(event.endDateTime);
+
     setNewEvent({
       title: event.title || event.summary,
       description: event.description || "",
-      date: event.startDateTime.split("T")[0],
-      startTime: event.startDateTime.split("T")[1].slice(0, 5),
-      endTime: event.endDateTime.split("T")[1].slice(0, 5),
+      date: sDate, // local
+      startTime: sTime, // local
+      endTime: eTime, // local
       guests: event.guestEmails || [""],
+      snoozeBefore: String(event.snoozeBefore ?? 30), // <-- NEW
     });
-    setShowEventPopup(true); // Open the modal
+
+    setShowEventPopup(true);
   };
 
   const handleDeleteEvent = async (eventId) => {
@@ -344,7 +349,19 @@ const Reminders = () => {
                 <FaPlus className="text-xs" /> Add Reminder
               </button>
               <button
-                onClick={() => setShowEventPopup(true)}
+                onClick={() => {
+                  setEditingEventId(null); // <-- important
+                  setNewEvent({
+                    title: "",
+                    description: "",
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    guests: [""],
+                    snoozeBefore: "30",
+                  });
+                  setShowEventPopup(true);
+                }}
                 className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-purple-700 transition"
               >
                 <FaPlus className="text-xs" /> Add Event
@@ -423,11 +440,12 @@ const Reminders = () => {
             data={todayReminders}
             onDelete={handleDeleteReminder}
             onEdit={(reminder) => {
+              const { date, time } = toLocalParts(reminder.datetime);
               setNewReminder({
                 text: reminder.text,
-                date: reminder.datetime.slice(0, 10),
-                time: reminder.datetime.slice(11, 16),
-                snoozeBefore: reminder.snoozeBefore.toString(),
+                date, // ✅ local date
+                time, // ✅ local time
+                snoozeBefore: String(reminder.snoozeBefore ?? 1),
               });
               setEditId(reminder._id);
               setShowPopup(true);
@@ -442,11 +460,12 @@ const Reminders = () => {
             data={laterReminders}
             onDelete={handleDeleteReminder}
             onEdit={(reminder) => {
+              const { date, time } = toLocalParts(reminder.datetime);
               setNewReminder({
                 text: reminder.text,
-                date: reminder.datetime.slice(0, 10),
-                time: reminder.datetime.slice(11, 16),
-                snoozeBefore: reminder.snoozeBefore.toString(),
+                date, // ✅ local date
+                time, // ✅ local time
+                snoozeBefore: String(reminder.snoozeBefore ?? 1),
               });
               setEditId(reminder._id);
               setShowPopup(true);
@@ -461,11 +480,12 @@ const Reminders = () => {
             data={outdatedReminders}
             onDelete={handleDeleteReminder}
             onEdit={(reminder) => {
+              const { date, time } = toLocalParts(reminder.datetime);
               setNewReminder({
                 text: reminder.text,
-                date: reminder.datetime.slice(0, 10),
-                time: reminder.datetime.slice(11, 16),
-                snoozeBefore: reminder.snoozeBefore.toString(),
+                date, // ✅ local date
+                time, // ✅ local time
+                snoozeBefore: String(reminder.snoozeBefore ?? 1),
               });
               setEditId(reminder._id);
               setShowPopup(true);
@@ -631,6 +651,26 @@ const Reminders = () => {
               />
             </div>
 
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+              <label htmlFor="event-snooze" className="text-gray-700">
+                ⏳ Snooze Before:
+              </label>
+              <select
+                id="event-snooze"
+                value={newEvent.snoozeBefore}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, snoozeBefore: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2"
+              >
+                {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map((m) => (
+                  <option key={m} value={m}>
+                    {m} minutes
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Guest Emails */}
             <div className="mb-4 max-h-[20vh] overflow-y-auto">
               <label className="text-sm font-medium text-gray-700 mb-2 block">
@@ -675,9 +715,18 @@ const Reminders = () => {
 
             <button
               onClick={saveEvent}
-              className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition"
+              disabled={saving}
+              className={`w-full ${
+                saving
+                  ? "bg-purple-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700"
+              } text-white py-2 rounded-md transition`}
             >
-              Save Event
+              {saving
+                ? "Saving..."
+                : editingEventId
+                ? "Save Changes"
+                : "Create Event"}
             </button>
           </div>
         )}
