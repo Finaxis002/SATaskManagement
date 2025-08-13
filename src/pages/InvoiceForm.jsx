@@ -215,7 +215,7 @@ const previewInvoiceNumber = async () => {
     const dd = String(today.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   });
-  const [placeOfSupply, setPlaceOfSupply] = useState("Gujarat");
+  const [placeOfSupply, setPlaceOfSupply] = useState("Madhya Pradesh");
   const isLocalSupply = () => {
     const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
     return place === "mp" || place === "madhyapradesh";
