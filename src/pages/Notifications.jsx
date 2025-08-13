@@ -5,6 +5,18 @@ import { FaRegBell, FaCheckCircle, FaClock } from "react-icons/fa";
 import { MdUpdate } from "react-icons/md";
 import { BsFillCircleFill } from "react-icons/bs";
 
+// ===== Add this once under imports =====
+const api = axios.create({
+  baseURL: "https://taskbe.sharda.co.in",
+  withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+  const token =
+    localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
 const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
@@ -137,7 +149,6 @@ const socket = io("https://taskbe.sharda.co.in", {
 //   }
 // );
 
-
 const NotificationItem = React.memo(
   ({
     notification,
@@ -226,9 +237,12 @@ const NotificationItem = React.memo(
             Object.keys(notification.details).length > 0 && (
               <ul className="text-sm text-gray-700 inline-flex gap-2 flex-wrap">
                 {Object.entries(notification.details).map(([key, value]) => (
-                  <li key={key} className="bg-blue-100 text-gray-700 border border-blue-300 p-2 rounded-2xl max-w-max">
+                  <li
+                    key={key}
+                    className="bg-blue-100 text-gray-700 border border-blue-300 p-2 rounded-2xl max-w-max"
+                  >
                     <span className="font-medium capitalize">{key}:</span>{" "}
-                    {value}
+                    {String(value)}
                   </li>
                 ))}
               </ul>
@@ -268,12 +282,46 @@ const NotificationItem = React.memo(
   }
 );
 
+  const getUserContext = () => {
+    const userStr = localStorage.getItem("user");
+    let userObj = {};
+    try {
+      userObj = JSON.parse(userStr || "{}");
+    } catch {}
+
+    const token =
+      localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
+    let tokenPayload = {};
+    try {
+      tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
+    } catch {}
+
+    const email =
+      userObj.email || tokenPayload.email || localStorage.getItem("email");
+    const mongoId = userObj._id || localStorage.getItem("userId");
+    const shortId = tokenPayload.userId; // "113"
+
+    return {
+      role: localStorage.getItem("role") || userObj.role || tokenPayload.role,
+      email,
+      mongoId,
+      shortId,
+      allKeys: new Set([email, mongoId, shortId].filter(Boolean)),
+    };
+  };
+
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const userRole = localStorage.getItem("role");
+  const {
+    role: userRole,
+    email,
+    mongoId,
+    shortId,
+    allKeys,
+  } = useMemo(getUserContext, []);
   const [notificationCount, setNotificationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNotifications, setSelectedNotifications] = useState([]);
@@ -288,13 +336,12 @@ const Notifications = () => {
 
   const limit = 20;
 
+
+
   const handleMarkAsRead = useCallback(
     async (id) => {
       try {
-        await axios.patch(
-          `https://taskbe.sharda.co.in/api/notifications/${id}`,
-          { read: true }
-        );
+        await api.patch(`/api/notifications/${id}`, { read: true });
 
         setNotifications((prev) =>
           prev.map((notif) =>
@@ -322,42 +369,45 @@ const Notifications = () => {
       let response;
 
       if (userRole === "admin") {
-        response = await axios.get(
-          `https://taskbe.sharda.co.in/api/notifications?page=${page}&limit=${limit}`
+        response = await api.get(
+          `/api/notifications?page=${page}&limit=${limit}`
         );
       } else {
-        const emailToFetch = localStorage.getItem("userId");
-        if (!emailToFetch) {
-          console.error("No userId found in localStorage.");
-          return setLoading(false);
+        // For users: GET by EMAIL (most common on your backend)
+        if (!email) {
+          console.error("No email found for current user");
+          setLoading(false);
+          return;
         }
-
-        response = await axios.get(
-          `https://taskbe.sharda.co.in/api/notifications/${emailToFetch}?page=${page}&limit=${limit}`
+        response = await api.get(
+          `/api/notifications/${encodeURIComponent(
+            email
+          )}?page=${page}&limit=${limit}`
         );
       }
 
       const newNotifications = response.data;
 
-      const filteredNotifications = newNotifications.filter((notification) => {
-        const currentEmail = localStorage.getItem("userId");
-
+      // Server returns mixed data; filter client-side but DON'T over-restrict
+      const filteredNotifications = newNotifications.filter((n) => {
         if (userRole === "admin") {
-          return notification.type === "admin";
+          return n.type === "admin";
         }
 
         if (userRole === "user") {
-          const updatedBy = notification.updatedBy
-            ? JSON.parse(notification.updatedBy)
-            : null;
+          // Accept match by any known recipient field
+          const recipientKey =
+            n.recipientEmail || n.recipientId || n.recipient || n.userId;
 
-          return (
-            notification.type === "user" &&
-            notification.recipientEmail === currentEmail &&
-            (notification.action === "task-created" ||
-              notification.action === "task-updated") &&
-            updatedBy?.email !== currentEmail
-          );
+          const matchesRecipient = recipientKey
+            ? allKeys.has(String(recipientKey))
+            : false;
+
+          // Allow if action is not set OR is one of these
+          const actionAllowed =
+            !n.action || ["task-created", "task-updated"].includes(n.action);
+
+          return n.type === "user" && matchesRecipient && actionAllowed;
         }
 
         return false;
@@ -366,11 +416,13 @@ const Notifications = () => {
       setNotifications((prev) =>
         page === 1 ? filteredNotifications : [...prev, ...filteredNotifications]
       );
+
       setNotificationCount((prev) =>
         page === 1
           ? filteredNotifications.filter((n) => !n.read).length
           : prev + filteredNotifications.filter((n) => !n.read).length
       );
+
       setHasMore(newNotifications.length === limit);
     } catch (error) {
       console.error("Error fetching notifications", error);
@@ -482,10 +534,7 @@ const Notifications = () => {
 
       await Promise.all(
         unreadNotifications.map((notif) =>
-          axios.patch(
-            `https://taskbe.sharda.co.in/api/notifications/${notif._id}`,
-            { read: true }
-          )
+          api.patch(`/api/notifications/${notif._id}`, { read: true })
         )
       );
 
@@ -507,10 +556,9 @@ const Notifications = () => {
     try {
       await Promise.all(
         selectedNotifications.map((id) =>
-          axios.patch(
-            `https://taskbe.sharda.co.in/api/notifications/${id}`,
-            { read: true }
-          )
+          axios.patch(`https://taskbe.sharda.co.in/api/notifications/${id}`, {
+            read: true,
+          })
         )
       );
 
@@ -695,14 +743,15 @@ const Notifications = () => {
             </div>
           ) : (
             Object.entries(filteredNotifications)
-              .sort(([dateA], [dateB]) => {
-                // Convert DD/MM/YYYY to Date object
+              .sort(([a], [b]) => {
+                if (groupBy === "none") return 0; // don't try to parse "All Notifications" as a date
                 const toDate = (str) => {
-                  const [day, month, year] = str.split("/").map(Number);
-                  return new Date(year, month - 1, day);
+                  const [d, m, y] = (str || "").split("/").map(Number);
+                  return new Date(y, m - 1, d).getTime() || 0;
                 };
-                return toDate(dateB) - toDate(dateA); // Descending order
+                return toDate(b) - toDate(a);
               })
+
               .map(([group, groupNotifications]) => (
                 <div key={group}>
                   {groupBy !== "none" && (
