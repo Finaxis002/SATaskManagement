@@ -167,7 +167,7 @@ const previewInvoiceNumber = async () => {
   try {
     const res = await axios.get("https://taskbe.sharda.co.in/api/invoices/preview-serial", {
       params: {
-        firm: (selectedFirm.name || "").trim(),
+       firmId: selectedFirm?._id,
         type: invoiceType,
         year,
         month,
@@ -190,7 +190,7 @@ const previewInvoiceNumber = async () => {
 
     try {
       const res = await axios.post("https://taskbe.sharda.co.in/api/invoices/finalize-serial", {
-        firm: selectedFirm.name,
+        firmId: selectedFirm?._id,
         type: invoiceType,
         year,
         month,
@@ -567,12 +567,32 @@ const previewInvoiceNumber = async () => {
       const finalNo = await finalizeInvoiceNumber();
       setInvoiceNumber(finalNo);
 
+       const firmSnapshot = {
+      _id: selectedFirm?._id,
+      name: selectedFirm?.name,
+      address: selectedFirm?.address,
+      phone: selectedFirm?.phone,
+      gstin: selectedFirm?.gstin,
+      bank: activeBank
+        ? {
+            _id: activeBank._id,
+            label: activeBank.label || "",
+            bankName: activeBank.bankName || activeBank.name || "",
+            accountName: activeBank.accountName || "",
+            accountNumber: activeBank.accountNumber || activeBank.account || "",
+            ifsc: activeBank.ifsc || "",
+            upiIdName: activeBank.upiIdName || "",
+            upiMobile: activeBank.upiMobile || "",
+            upiId: activeBank.upiId || "",
+          }
+        : null,
+    };
       // Save the invoice to the backend
       const invoiceData = {
         invoiceNumber: finalNo,
         invoiceDate,
         invoiceType,
-        selectedFirm,
+        selectedFirm: firmSnapshot,
         placeOfSupply,
         customer,
         items,

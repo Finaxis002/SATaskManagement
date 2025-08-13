@@ -7,6 +7,7 @@ import Swal from "sweetalert2";
 import InvoicePreview from "../Components/InvoicePreview";
 import { FaTrash } from "react-icons/fa";
 export default function ViewInvoices() {
+  
    const [firms] = useState([
     { name: "Finaxis Business Consultancy", gstin: "GST5454" },
     { name: "Sharda Associates", gstin: "GST9876" },
@@ -27,7 +28,7 @@ export default function ViewInvoices() {
   
    const [selectedFirm, setSelectedFirm] = useState(null); 
    const [dateError, setDateError] = useState('');
-
+const [exporting, setExporting] = useState(false);
 
  
   useEffect(() => {
@@ -83,29 +84,6 @@ export default function ViewInvoices() {
     fetchInitialData();
   }, []);
 
-  // Fetch filtered invoices when client is selected
-  // useEffect(() => {
-  //    console.log("useEffect called. selectedClient:", selectedClient);
-  //   if (!selectedClient) return; // do nothing if no client
-
-  //   const fetchInvoicesByClient = async () => {
-  //     try {
-  //       console.log("Fetching invoices for client:", selectedClient);
-  //       const res = await axios.get(
-  //         `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
-  //       );
-  //       const filteredInvoices = res.data || [];
-  //       const sortedInvoices = [...filteredInvoices].sort(
-  //         (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
-  //       );
-  //       setInvoices(sortedInvoices);
-  //     } catch (error) {
-  //       console.error("Error fetching invoices for client:", error);
-  //       setInvoices([]);
-  //     }
-  //   };
-  //   fetchInvoicesByClient();
-  // }, [selectedClient]);
 
   useEffect(() => {
     console.log("Selected client changed:", selectedClient);
@@ -382,6 +360,63 @@ export default function ViewInvoices() {
 };
 
 
+const exportInvoices = async () => {
+  try {
+    setExporting(true);
+
+    // 1) Send OTP
+    await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice");
+
+    // 2) Ask user
+    const { value: otp, isConfirmed } = await Swal.fire({
+      title: "Verify OTP",
+      text: "Enter the 6-digit OTP sent to your email",
+      input: "text",
+      inputAttributes: { inputmode: "numeric", autocomplete: "one-time-code" },
+      inputValidator: (v) => (!v ? "Please enter OTP" : undefined),
+      showCancelButton: true,
+      confirmButtonText: "Verify"
+    });
+    if (!isConfirmed) return;
+
+    // 3) Build filters
+    const params = {};
+    if (fromDate) params.fromDate = fromDate;
+    if (toDate) params.toDate = toDate;
+    if (selectedClient?.value) params.clientId = selectedClient.value;
+
+    // 4) Call export with x-otp header
+    const res = await axios.get("https://taskbe.sharda.co.in/api/invoices/export.xlsx", {
+      params,
+      responseType: "blob",
+      headers: { "x-otp": String(otp).trim() },
+    });
+
+    const dispo = res.headers["content-disposition"] || "";
+    const m = dispo.match(/filename="?(.*)"?$/);
+    const filename = (m && m[1]) || `invoices_${new Date().toISOString().slice(0,10)}.xlsx`;
+
+    const blob = new Blob([res.data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Export failed", err);
+    Swal.fire("Export failed", err?.response?.data?.error || "Could not export invoices.", "error");
+  } finally {
+    setExporting(false);
+  }
+};
+
+
+
   return (
     <div style={{ padding: 20 }}>
       <h2>View Invoices</h2>
@@ -478,6 +513,17 @@ export default function ViewInvoices() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+
+            <button
+  onClick={exportInvoices}
+  disabled={exporting}
+  className={`px-4 py-2 rounded-md text-white text-sm font-medium shadow-sm transition
+    ${exporting ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
+  title="Export filtered invoices to Excel"
+>
+  {exporting ? "Exporting…" : "Export to Excel"}
+</button>
+
           </div>
         </div>
 
