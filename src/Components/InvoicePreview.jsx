@@ -17,6 +17,23 @@ export default function InvoicePreview({
   customer,
   items,
 }) {
+  // normalize bank for both shapes
+  const firm = selectedFirm || {};
+  const bank =
+    firm.bank || (Array.isArray(firm.banks) ? firm.banks[0] : {}) || {};
+
+  const bankName = bank.bankName || bank.name || "";
+  const accountName = bank.accountName || "";
+  const accountNumber = bank.accountNumber || bank.account || "";
+  const ifsc = (bank.ifsc || "").trim();
+
+  console.log("bank", bank);
+  console.log("bankName ", bankName);
+  // if you want to show wallet info when present
+  const upiIdName = bank.upiIdName || "";
+  const upiMobile = bank.upiMobile || "";
+  const upiId = bank.upiId || "";
+
   if (!selectedFirm || !customer || !items) return null;
 
   const isSharda = selectedFirm.name === "Sharda Associates";
@@ -1176,13 +1193,36 @@ export default function InvoicePreview({
                           fontStyle: "normal",
                         }}
                       >
-                        Bank Name: {selectedFirm?.bank?.name} <br />
-                        Account Name :{selectedFirm?.bank?.accountName} <br />
-                        Account Number: {selectedFirm?.bank?.account} <br />
-                        IFSC Code: {selectedFirm?.bank?.ifsc}
+                        Bank Name: {bankName} <br />
+                        Account Name: {accountName} <br />
+                        Account Number: {accountNumber} <br />
+                        IFSC Code: {ifsc}
+                        <br />
+                        {(upiIdName || upiMobile || upiId) && (
+                          <>
+                          <br />
+                          <strong>For Online Wallets - Paytm, Google Pay and PhonePe.</strong>
+                            
+                           
+                            <br />
+                            {upiIdName && (
+                              <>
+                                Name: {upiIdName}
+                                <br />
+                              </>
+                            )}
+                            {upiMobile && (
+                              <>
+                                Mobile Number: {upiMobile}
+                                <br />
+                              </>
+                            )}
+                            {upiId && <>UPI ID: {upiId}</>}
+                          </>
+                        )}
                       </td>
                     </tr>
-                    {isSharda && (
+                    {/* {isSharda && (
                       <tr>
                         <td
                           className="normal-text "
@@ -1201,7 +1241,7 @@ export default function InvoicePreview({
                           Mobile Number : 7869777747
                         </td>
                       </tr>
-                    )}
+                    )} */}
                   </tbody>
                 </table>
               </td>
