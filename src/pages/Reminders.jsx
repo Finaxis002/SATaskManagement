@@ -19,6 +19,18 @@ import {
 import EventSection from "../Components/events/EventSection";
 import Swal from "sweetalert2";
 
+
+// put this near the top of the file, outside any component
+const toLocalParts = (iso) => {
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+};
+
+
 const Reminders = () => {
   const [reminders, setReminders] = useState(() => {
     const saved = localStorage.getItem("reminders");
@@ -222,14 +234,7 @@ const Reminders = () => {
 
   const handleEditEvent = (event) => {
     setEditingEventId(event._id);
-    const toLocalParts = (iso) => {
-      const d = new Date(iso);
-      const pad = (n) => String(n).padStart(2, "0");
-      return {
-        date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-      };
-    };
+
 
     const { date: sDate, time: sTime } = toLocalParts(event.startDateTime);
     const { time: eTime } = toLocalParts(event.endDateTime);
@@ -439,17 +444,18 @@ const Reminders = () => {
             className="border-l-4 border-blue-500 bg-blue-50"
             data={todayReminders}
             onDelete={handleDeleteReminder}
-            onEdit={(reminder) => {
-              const { date, time } = toLocalParts(reminder.datetime);
-              setNewReminder({
-                text: reminder.text,
-                date, // ✅ local date
-                time, // ✅ local time
-                snoozeBefore: String(reminder.snoozeBefore ?? 1),
-              });
-              setEditId(reminder._id);
-              setShowPopup(true);
-            }}
+           onEdit={(reminder) => {
+  const { date, time } = toLocalParts(reminder.datetime);
+  setNewReminder({
+    text: reminder.text,
+    date,
+    time,
+    snoozeBefore: String(reminder.snoozeBefore ?? 1),
+  });
+  setEditId(reminder._id);
+  setShowPopup(true);
+}}
+
           />
 
           {/* Upcoming */}
@@ -459,17 +465,18 @@ const Reminders = () => {
             className="border-l-4 border-emerald-500 bg-gradient-to-br from-emerald-50 to-white"
             data={laterReminders}
             onDelete={handleDeleteReminder}
-            onEdit={(reminder) => {
-              const { date, time } = toLocalParts(reminder.datetime);
-              setNewReminder({
-                text: reminder.text,
-                date, // ✅ local date
-                time, // ✅ local time
-                snoozeBefore: String(reminder.snoozeBefore ?? 1),
-              });
-              setEditId(reminder._id);
-              setShowPopup(true);
-            }}
+           onEdit={(reminder) => {
+  const { date, time } = toLocalParts(reminder.datetime);
+  setNewReminder({
+    text: reminder.text,
+    date,
+    time,
+    snoozeBefore: String(reminder.snoozeBefore ?? 1),
+  });
+  setEditId(reminder._id);
+  setShowPopup(true);
+}}
+
           />
 
           {/* Overdue */}
@@ -479,17 +486,18 @@ const Reminders = () => {
             className="border-l-4 border-rose-500 bg-gradient-to-br from-rose-50 to-white"
             data={outdatedReminders}
             onDelete={handleDeleteReminder}
-            onEdit={(reminder) => {
-              const { date, time } = toLocalParts(reminder.datetime);
-              setNewReminder({
-                text: reminder.text,
-                date, // ✅ local date
-                time, // ✅ local time
-                snoozeBefore: String(reminder.snoozeBefore ?? 1),
-              });
-              setEditId(reminder._id);
-              setShowPopup(true);
-            }}
+           onEdit={(reminder) => {
+  const { date, time } = toLocalParts(reminder.datetime);
+  setNewReminder({
+    text: reminder.text,
+    date,
+    time,
+    snoozeBefore: String(reminder.snoozeBefore ?? 1),
+  });
+  setEditId(reminder._id);
+  setShowPopup(true);
+}}
+
           />
 
           {/* Events */}
