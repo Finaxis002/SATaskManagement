@@ -18,6 +18,7 @@ import {
   FaPen,
   FaPlus,
   FaBell,
+  FaUser
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 
