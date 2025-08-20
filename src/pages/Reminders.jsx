@@ -10,7 +10,7 @@ import {
   FaTimes,
   FaPen,
   FaPlus,
-  FaBell
+  FaBell,
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 
@@ -357,6 +357,15 @@ const Reminders = () => {
     }
   }, []);
 
+  // put near other handlers
+  const DEFAULT_REMINDER = { text: "", date: "", time: "", snoozeBefore: "1" };
+
+  const openCreateReminder = () => {
+    setEditId(null); // ✅ clear edit mode
+    setNewReminder(DEFAULT_REMINDER); // ✅ blank form
+    setShowPopup(true);
+  };
+
   return (
     <div className="h-screen  overflow-y-auto p-4 relative overflow-hidden">
       <div className=" relative mx-auto">
@@ -368,11 +377,12 @@ const Reminders = () => {
           <div className="flex flex-col w-full sm:w-auto gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={() => setShowPopup(true)}
+                onClick={openCreateReminder}
                 className="flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-indigo-700 transition"
               >
                 <FaPlus className="text-xs" /> Add Reminder
               </button>
+
               <button
                 onClick={() => {
                   setEditingEventId(null); // <-- important
@@ -535,7 +545,7 @@ const Reminders = () => {
                 <FaTimes size={18} />
               </button>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                📝 Create Reminder
+                📝 {editId ? "Update Reminder" : "Create Reminder"}
               </h3>
 
               <input
@@ -620,7 +630,7 @@ const Reminders = () => {
               <FaTimes size={18} />
             </button>
             <h3 className="text-xl font-semibold text-gray-800 mb-4">
-              📅 Create Event
+              📅 {editingEventId?"Update Event" : "Create Event"}
             </h3>
 
             <input
@@ -785,12 +795,14 @@ const BucketSection = ({
           >
             <div className="pr-8">
               <div className="mb-2">
-  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
-                    bg-blue-50 text-blue-700 ring-1 ring-blue-200">
-    <FaBell className="text-[10px]" />
-    Reminder
-  </span>
-</div>
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
+                    bg-blue-50 text-blue-700 ring-1 ring-blue-200"
+                >
+                  <FaBell className="text-[10px]" />
+                  Reminder
+                </span>
+              </div>
               <div className="font-medium text-gray-800 flex items-start">
                 <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                 <span className="leading-snug">{reminder.text}</span>
@@ -831,16 +843,17 @@ const BucketSection = ({
               className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 hover:border-purple-100"
             >
               {/* Type chip */}
-<div className="mb-2">
-  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
-                    bg-purple-50 text-purple-700 ring-1 ring-purple-200">
-    <FaCalendarAlt className="text-[10px]" />
-    Event
-  </span>
-</div>
+              <div className="mb-2">
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
+                    bg-purple-50 text-purple-700 ring-1 ring-purple-200"
+                >
+                  <FaCalendarAlt className="text-[10px]" />
+                  Event
+                </span>
+              </div>
 
               <div className="flex justify-between items-start mb-3">
-                
                 <h3 className="font-semibold text-gray-900 text-base flex items-center gap-2">
                   <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></span>
                   <span className="line-clamp-2">
@@ -929,6 +942,5 @@ const BucketSection = ({
     )}
   </div>
 );
-
 
 export default Reminders;
