@@ -1,22 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { isToday, isBefore, isTomorrow, parseISO, format } from "date-fns";
+import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
+
 import bgImage from "../assets/bg.png";
 import {
   FaCalendarAlt,
-  FaCalendarTimes,
   FaClock,
-  FaHourglassStart,
-  FaHourglassEnd,
   FaAlignLeft,
   FaUserFriends,
   FaTimes,
   FaPen,
   FaPlus,
-  FaSun,
-  FaExclamationTriangle,
-  FaCalendarDay,
+  FaBell
 } from "react-icons/fa";
-import EventSection from "../Components/events/EventSection";
 import Swal from "sweetalert2";
 
 // put this near the top of the file, outside any component
@@ -315,6 +310,34 @@ const Reminders = () => {
     return date < now;
   });
 
+  // ---- Event buckets (same three columns as reminders) ----
+  const startToday = startOfToday();
+  const endToday = endOfToday();
+
+  // extra safety: only well-formed events
+  const validEvents = (events || []).filter(
+    (e) => e && e.startDateTime && e.endDateTime
+  );
+
+  // An event is "Today" if it overlaps the [startToday, endToday] window
+  const todayEvents = validEvents.filter((e) => {
+    const s = parseISO(e.startDateTime);
+    const en = parseISO(e.endDateTime);
+    return s <= endToday && en >= startToday;
+  });
+
+  // Starts after today -> Upcoming
+  const upcomingEvents = validEvents.filter((e) => {
+    const s = parseISO(e.startDateTime);
+    return s > endToday;
+  });
+
+  // Ended before today -> Overdue (missed)
+  const overdueEvents = validEvents.filter((e) => {
+    const en = parseISO(e.endDateTime);
+    return en < startToday;
+  });
+
   useEffect(() => {
     localStorage.setItem("reminders", JSON.stringify(updatedReminders));
   }, [updatedReminders]);
@@ -433,15 +456,15 @@ const Reminders = () => {
             )}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Today */}
-          <ReminderSection
+          <BucketSection
             title="Today"
-            icon={<FaSun className="text-amber-400" />}
             className="border-l-4 border-blue-500 bg-blue-50"
-            data={todayReminders}
-            onDelete={handleDeleteReminder}
-            onEdit={(reminder) => {
+            reminders={todayReminders}
+            events={todayEvents}
+            onDeleteReminder={handleDeleteReminder}
+            onEditReminder={(reminder) => {
               const { date, time } = toLocalParts(reminder.datetime);
               setNewReminder({
                 text: reminder.text,
@@ -452,16 +475,18 @@ const Reminders = () => {
               setEditId(reminder._id);
               setShowPopup(true);
             }}
+            onDeleteEvent={handleDeleteEvent}
+            onEditEvent={handleEditEvent}
           />
 
           {/* Upcoming */}
-          <ReminderSection
+          <BucketSection
             title="Upcoming"
-            icon={<FaCalendarAlt className="text-emerald-500" />}
             className="border-l-4 border-emerald-500 bg-gradient-to-br from-emerald-50 to-white"
-            data={laterReminders}
-            onDelete={handleDeleteReminder}
-            onEdit={(reminder) => {
+            reminders={laterReminders}
+            events={upcomingEvents}
+            onDeleteReminder={handleDeleteReminder}
+            onEditReminder={(reminder) => {
               const { date, time } = toLocalParts(reminder.datetime);
               setNewReminder({
                 text: reminder.text,
@@ -472,16 +497,18 @@ const Reminders = () => {
               setEditId(reminder._id);
               setShowPopup(true);
             }}
+            onDeleteEvent={handleDeleteEvent}
+            onEditEvent={handleEditEvent}
           />
 
           {/* Overdue */}
-          <ReminderSection
+          <BucketSection
             title="Overdue"
-            icon={<FaExclamationTriangle className="text-rose-500" />}
             className="border-l-4 border-rose-500 bg-gradient-to-br from-rose-50 to-white"
-            data={outdatedReminders}
-            onDelete={handleDeleteReminder}
-            onEdit={(reminder) => {
+            reminders={outdatedReminders}
+            events={overdueEvents}
+            onDeleteReminder={handleDeleteReminder}
+            onEditReminder={(reminder) => {
               const { date, time } = toLocalParts(reminder.datetime);
               setNewReminder({
                 text: reminder.text,
@@ -492,16 +519,8 @@ const Reminders = () => {
               setEditId(reminder._id);
               setShowPopup(true);
             }}
-          />
-
-          {/* Events */}
-          <EventSection
-            title="My Events"
-            icon={<FaCalendarDay className="text-indigo-500" />}
-            className="border-l-4 border-indigo-500 "
-            data={events}
-            onDelete={handleDeleteEvent}
-            onEdit={handleEditEvent}
+            onDeleteEvent={handleDeleteEvent}
+            onEditEvent={handleEditEvent}
           />
         </div>
 
@@ -738,22 +757,40 @@ const Reminders = () => {
 };
 
 // 👇 Reminder Card Display with Time
-const ReminderSection = ({ title, color, data, onDelete, onEdit }) => (
+// One column that shows BOTH reminders and events with their existing card UIs
+const BucketSection = ({
+  title,
+  className = "",
+  reminders = [],
+  events = [],
+  onDeleteReminder,
+  onEditReminder,
+  onDeleteEvent,
+  onEditEvent,
+}) => (
   <div
-    className={`rounded-xl relative p-4 shadow-sm bg-gray-200  max-h-[70vh] overflow-y-auto ${color}`}
+    className={`rounded-xl relative p-4 shadow-sm bg-gray-200 max-h-[70vh] overflow-y-auto ${className}`}
   >
     <h4 className="text-lg font-semibold mb-3 text-gray-700">{title}</h4>
-    {data.length === 0 ? (
-      <p className="text-sm text-gray-500">No reminders</p>
+
+    {reminders.length === 0 && events.length === 0 ? (
+      <p className="text-sm text-gray-500">No reminders or events</p>
     ) : (
       <ul className="space-y-3">
-        {data.map((reminder, index) => (
+        {/* ---- Reminders (existing UI) ---- */}
+        {reminders.map((reminder, index) => (
           <li
-            key={index}
+            key={`r-${reminder._id || index}`}
             className="bg-white p-4 rounded-lg shadow-xs hover:shadow-sm border border-gray-100 transition-all duration-200 hover:border-blue-100 relative group"
           >
-            {/* Reminder Content */}
             <div className="pr-8">
+              <div className="mb-2">
+  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
+                    bg-blue-50 text-blue-700 ring-1 ring-blue-200">
+    <FaBell className="text-[10px]" />
+    Reminder
+  </span>
+</div>
               <div className="font-medium text-gray-800 flex items-start">
                 <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                 <span className="leading-snug">{reminder.text}</span>
@@ -766,17 +803,16 @@ const ReminderSection = ({ title, color, data, onDelete, onEdit }) => (
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
-                onClick={() => onEdit(reminder)}
+                onClick={() => onEditReminder(reminder)}
                 className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-150"
                 title="Edit"
               >
                 <FaPen size={12} />
               </button>
               <button
-                onClick={() => onDelete(reminder._id)}
+                onClick={() => onDeleteReminder(reminder._id)}
                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-150"
                 title="Delete"
               >
@@ -785,9 +821,114 @@ const ReminderSection = ({ title, color, data, onDelete, onEdit }) => (
             </div>
           </li>
         ))}
+
+        {/* ---- Events (existing UI) ---- */}
+        {events
+          .filter((e) => e && (e.title || e.summary))
+          .map((event, index) => (
+            <li
+              key={`e-${event._id || index}`}
+              className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 hover:border-purple-100"
+            >
+              {/* Type chip */}
+<div className="mb-2">
+  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
+                    bg-purple-50 text-purple-700 ring-1 ring-purple-200">
+    <FaCalendarAlt className="text-[10px]" />
+    Event
+  </span>
+</div>
+
+              <div className="flex justify-between items-start mb-3">
+                
+                <h3 className="font-semibold text-gray-900 text-base flex items-center gap-2">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></span>
+                  <span className="line-clamp-2">
+                    {event.title || event.summary}
+                  </span>
+                </h3>
+                <button
+                  onClick={() => onDeleteEvent(event._id)}
+                  className="text-gray-300 hover:text-red-500 p-1 transition-colors duration-200"
+                  aria-label="Delete event"
+                >
+                  <FaTimes size={16} />
+                </button>
+              </div>
+
+              <div className="flex gap-4 mb-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <FaCalendarAlt className="text-purple-400 flex-shrink-0" />
+                    <span className="font-medium text-gray-700">
+                      {format(parseISO(event.startDateTime), "EEE, MMM d")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <FaClock className="text-purple-400 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-gray-700">
+                        {format(parseISO(event.startDateTime), "h:mm a")}
+                      </span>
+                      <span className="text-gray-400">-</span>
+                      <span className="font-medium text-gray-700">
+                        {format(parseISO(event.endDateTime), "h:mm a")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {event.description && (
+                <div className="mb-4">
+                  <div className="flex items-start gap-3 text-sm text-gray-600">
+                    <FaAlignLeft className="text-purple-400 mt-0.5 flex-shrink-0" />
+                    <p className="whitespace-pre-line text-gray-700">
+                      {event.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {event.guestEmails?.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <FaUserFriends className="text-purple-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-700 mb-2">
+                        Invited Guests
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {event.guestEmails.map((email, i) => (
+                          <span
+                            key={i}
+                            className="bg-gray-50 px-3 py-1.5 rounded-full text-xs text-gray-700 border border-gray-200 flex items-center gap-1"
+                          >
+                            <FaUser className="text-gray-400 text-xs" />
+                            {email}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-gray-100 flex justify-end">
+                <button
+                  onClick={() => onEditEvent(event)}
+                  className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors duration-200"
+                >
+                  <FaPen size={12} />
+                  <span>Edit Event</span>
+                </button>
+              </div>
+            </li>
+          ))}
       </ul>
     )}
   </div>
 );
+
 
 export default Reminders;
