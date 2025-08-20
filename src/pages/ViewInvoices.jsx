@@ -1,18 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
 import Select from "react-select";
 // import axios from "axios";
-import axios from '../utils/secureAxios'
+import axios from "../utils/secureAxios";
 import html2pdf from "html2pdf.js";
 import Swal from "sweetalert2";
 import InvoicePreview from "../Components/InvoicePreview";
 import { FaTrash } from "react-icons/fa";
 export default function ViewInvoices() {
-  
-   const [firms] = useState([
+  const [firms] = useState([
     { name: "Finaxis Business Consultancy", gstin: "GST5454" },
     { name: "Sharda Associates", gstin: "GST9876" },
-    { name : "Kailash Real Estate", gstin: "GST9855"},
-    { name : "Bhojpal Realities", gstin: "GST9878"}
+    { name: "Kailash Real Estate", gstin: "GST9855" },
+    { name: "Bhojpal Realities", gstin: "GST9878" },
   ]);
   console.log("ViewInvoices component rendered");
   const [clients, setClients] = useState([]);
@@ -24,13 +23,12 @@ export default function ViewInvoices() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [filteredInvoices, setFilteredInvoices] = useState([]);
-  const [filterByFirm, setFilterByFirm] = useState([])
-  
-   const [selectedFirm, setSelectedFirm] = useState(null); 
-   const [dateError, setDateError] = useState('');
-const [exporting, setExporting] = useState(false);
+  const [filterByFirm, setFilterByFirm] = useState([]);
 
- 
+  const [selectedFirm, setSelectedFirm] = useState(null);
+  const [dateError, setDateError] = useState("");
+  const [exporting, setExporting] = useState(false);
+
   useEffect(() => {
     axios
       .get("/clients/details")
@@ -41,13 +39,10 @@ const [exporting, setExporting] = useState(false);
       .catch(console.error);
   }, []);
 
-  
-
   const clientOptions = clients.map((client) => ({
     value: client._id,
     label: client.name,
   }));
-
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -56,24 +51,20 @@ const [exporting, setExporting] = useState(false);
         console.log("Fetching initial data...");
 
         // Fetch clients
-        const clientsRes = await axios.get(
-          "/clients/details"
-        );
+        const clientsRes = await axios.get("/clients/details");
         console.log("Clients fetched:", clientsRes.data);
         setClients(clientsRes.data);
 
         // Fetch all invoices
-        const invoicesRes = await axios.get(
-          "/invoices"
-        );
+        const invoicesRes = await axios.get("/invoices");
         console.log("All invoices fetched:", invoicesRes.data);
-        
+
         const sortedInvoices = [...(invoicesRes.data || [])].sort(
           (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
         );
         console.log("Sorted invoices:", sortedInvoices);
         setInvoices(sortedInvoices);
-         setFilteredInvoices(sortedInvoices);
+        setFilteredInvoices(sortedInvoices);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -84,7 +75,6 @@ const [exporting, setExporting] = useState(false);
     fetchInitialData();
   }, []);
 
-
   useEffect(() => {
     console.log("Selected client changed:", selectedClient);
 
@@ -93,9 +83,7 @@ const [exporting, setExporting] = useState(false);
       const fetchAllInvoices = async () => {
         try {
           console.log("Fetching all invoices...");
-          const res = await axios.get(
-            "/invoices"
-          );
+          const res = await axios.get("/invoices");
           const sortedInvoices = [...(res.data || [])].sort(
             (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
           );
@@ -153,7 +141,6 @@ const [exporting, setExporting] = useState(false);
     setInvoiceToView(invoice);
     setShowInvoiceModal(true);
   };
-
 
   const handleGeneratePDF = () => {
     const element = document.getElementById("invoice-to-print");
@@ -241,9 +228,7 @@ const [exporting, setExporting] = useState(false);
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(
-          `/invoices/${invoiceNumber}`
-        );
+        await axios.delete(`/invoices/${invoiceNumber}`);
         setInvoices((prev) =>
           prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
         );
@@ -255,8 +240,6 @@ const [exporting, setExporting] = useState(false);
     }
   };
 
-  
-  
   function numberToWordsIndian(num) {
     const a = [
       "",
@@ -349,73 +332,81 @@ const [exporting, setExporting] = useState(false);
   }, [selectedFirm, invoices]);
 
   const handleFromDateChange = (e) => {
-  const newFromDate = e.target.value;
-  setFromDate(newFromDate);
-  setDateError('');
-  
-  if (toDate && new Date(toDate) < new Date(newFromDate)) {
-    setToDate('');
-    setDateError('To Date was reset to ensure it comes after From Date');
-  }
-};
+    const newFromDate = e.target.value;
+    setFromDate(newFromDate);
+    setDateError("");
 
+    if (toDate && new Date(toDate) < new Date(newFromDate)) {
+      setToDate("");
+      setDateError("To Date was reset to ensure it comes after From Date");
+    }
+  };
 
-const exportInvoices = async () => {
-  try {
-    setExporting(true);
+  const exportInvoices = async () => {
+    try {
+      setExporting(true);
 
-    // 1) Send OTP
-    await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice");
+      // 1) Send OTP
+      await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice");
 
-    // 2) Ask user
-    const { value: otp, isConfirmed } = await Swal.fire({
-      title: "Verify OTP",
-      text: "Enter the 6-digit OTP sent to your email",
-      input: "text",
-      inputAttributes: { inputmode: "numeric", autocomplete: "one-time-code" },
-      inputValidator: (v) => (!v ? "Please enter OTP" : undefined),
-      showCancelButton: true,
-      confirmButtonText: "Verify"
-    });
-    if (!isConfirmed) return;
+      // 2) Ask user
+      const { value: otp, isConfirmed } = await Swal.fire({
+        title: "Verify OTP",
+        text: "Enter the 6-digit OTP sent to your email",
+        input: "text",
+        inputAttributes: {
+          inputmode: "numeric",
+          autocomplete: "one-time-code",
+        },
+        inputValidator: (v) => (!v ? "Please enter OTP" : undefined),
+        showCancelButton: true,
+        confirmButtonText: "Verify",
+      });
+      if (!isConfirmed) return;
 
-    // 3) Build filters
-    const params = {};
-    if (fromDate) params.fromDate = fromDate;
-    if (toDate) params.toDate = toDate;
-    if (selectedClient?.value) params.clientId = selectedClient.value;
+      // 3) Build filters
+      const params = {};
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
+      if (selectedClient?.value) params.clientId = selectedClient.value;
 
-    // 4) Call export with x-otp header
-    const res = await axios.get("https://taskbe.sharda.co.in/api/invoices/export.xlsx", {
-      params,
-      responseType: "blob",
-      headers: { "x-otp": String(otp).trim() },
-    });
+      // 4) Call export with x-otp header
+      const res = await axios.get(
+        "https://taskbe.sharda.co.in/api/invoices/export.xlsx",
+        {
+          params,
+          responseType: "blob",
+          headers: { "x-otp": String(otp).trim() },
+        }
+      );
 
-    const dispo = res.headers["content-disposition"] || "";
-    const m = dispo.match(/filename="?(.*)"?$/);
-    const filename = (m && m[1]) || `invoices_${new Date().toISOString().slice(0,10)}.xlsx`;
+      const dispo = res.headers["content-disposition"] || "";
+      const m = dispo.match(/filename="?(.*)"?$/);
+      const filename =
+        (m && m[1]) || `invoices_${new Date().toISOString().slice(0, 10)}.xlsx`;
 
-    const blob = new Blob([res.data], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("Export failed", err);
-    Swal.fire("Export failed", err?.response?.data?.error || "Could not export invoices.", "error");
-  } finally {
-    setExporting(false);
-  }
-};
-
-
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      Swal.fire(
+        "Export failed",
+        err?.response?.data?.error || "Could not export invoices.",
+        "error"
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div style={{ padding: 20 }}>
@@ -460,72 +451,75 @@ const exportInvoices = async () => {
         </div>
       </div> */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            {/* Client Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Client
-              </label>
-              <Select
-                options={clientOptions}
-                onChange={setSelectedClient}
-                placeholder="All Clients"
-                isClearable
-                className="text-sm"
-              />
-            </div>
-
-            {/* Firm Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Firm
-              </label>
-              <Select
-                options={firmOptions}
-                onChange={setSelectedFirm}
-                placeholder="All Firms"
-                isClearable
-                className="text-sm"
-              />
-            </div>
-
-            {/* Date Range */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                From Date
-              </label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                To Date
-              </label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <button
-  onClick={exportInvoices}
-  disabled={exporting}
-  className={`px-4 py-2 rounded-md text-white text-sm font-medium shadow-sm transition
-    ${exporting ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
-  title="Export filtered invoices to Excel"
->
-  {exporting ? "Exporting…" : "Export to Excel"}
-</button>
-
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          {/* Client Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Client
+            </label>
+            <Select
+              options={clientOptions}
+              onChange={setSelectedClient}
+              placeholder="All Clients"
+              isClearable
+              className="text-sm"
+            />
           </div>
+
+          {/* Firm Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Firm
+            </label>
+            <Select
+              options={firmOptions}
+              onChange={setSelectedFirm}
+              placeholder="All Firms"
+              isClearable
+              className="text-sm"
+            />
+          </div>
+
+          {/* Date Range */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              From Date
+            </label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              To Date
+            </label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <button
+            onClick={exportInvoices}
+            disabled={exporting}
+            className={`px-4 py-2 rounded-md text-white text-sm font-medium shadow-sm transition
+    ${
+      exporting
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-emerald-600 hover:bg-emerald-700"
+    }`}
+            title="Export filtered invoices to Excel"
+          >
+            {exporting ? "Exporting…" : "Export to Excel"}
+          </button>
         </div>
+      </div>
 
       <div
         style={{
@@ -536,16 +530,16 @@ const exportInvoices = async () => {
       >
         {isLoading ? (
           <div className="space-y-4 mt-6">
-    {[...Array(5)].map((_, index) => (
-      <div key={index} className="animate-pulse flex space-x-6">
-        <div className="rounded bg-gray-200 h-10 w-32"></div>
-        <div className="rounded bg-gray-200 h-10 w-32"></div>
-        <div className="rounded bg-gray-200 h-10 w-40"></div>
-        <div className="rounded bg-gray-200 h-10 w-28"></div>
-        <div className="rounded bg-gray-200 h-10 w-40"></div>
-      </div>
-    ))}
-  </div>
+            {[...Array(5)].map((_, index) => (
+              <div key={index} className="animate-pulse flex space-x-6">
+                <div className="rounded bg-gray-200 h-10 w-32"></div>
+                <div className="rounded bg-gray-200 h-10 w-32"></div>
+                <div className="rounded bg-gray-200 h-10 w-40"></div>
+                <div className="rounded bg-gray-200 h-10 w-28"></div>
+                <div className="rounded bg-gray-200 h-10 w-40"></div>
+              </div>
+            ))}
+          </div>
         ) : (
           <table
             border="1"
@@ -642,8 +636,7 @@ const exportInvoices = async () => {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-               paddingBottom:"20px"
-                
+              paddingBottom: "20px",
             }}
           >
             <div
@@ -656,7 +649,6 @@ const exportInvoices = async () => {
                 fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                 fontSize: 12,
                 color: "#000",
-               
               }}
             >
               {/* <InvoicePreview invoice={invoiceToView} /> */}
@@ -668,6 +660,7 @@ const exportInvoices = async () => {
                 placeOfSupply={invoiceToView.placeOfSupply}
                 customer={invoiceToView.customer}
                 items={invoiceToView.items}
+                notes={invoiceToView.notes} 
               />
             </div>
 

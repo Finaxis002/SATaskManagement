@@ -29,8 +29,8 @@ export default function InvoicePage({
   sgstAmount,
   numberToWordsIndian,
   showGSTIN,
+  notes,
 }) {
- 
   const isLocalSupply = () => {
     const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
     return place === "mp" || place === "madhyapradesh";
@@ -67,47 +67,6 @@ export default function InvoicePage({
   const upiMobile = bank.upiMobile || "";
   const upiId = bank.upiId || "";
 
-  //   const getWalletInfo = () => {
-  //   if (selectedFirm.name === "Sharda Associates") {
-  //     const label = selectedFirm.bank?.label?.toLowerCase() || "";
-  //     if (label.includes("sbi") && label.includes("anugrah")) {
-  //       return (
-  //         <>
-  //           <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
-  //           <br />
-  //           Name - Anugrah Sharda <br />
-  //           Mobile Number – 9713330373 <br/>
-  //           UPI ID - 9713330373@ybl <br/>
-  //         </>
-  //       );
-  //     } else if (label.includes("kotak") && label.includes("anunay")) {
-  //       return (
-  //         <>
-  //           <strong>For Online Wallets - Paytm, GPay and PhonePe.</strong>
-  //           <br />
-  //           Name - Anunay Sharda <br />
-  //           Mobile Number - 7869777747 <br />
-  //           UPI ID - 7869777747@ybl
-  //         </>
-  //       );
-  //     }
-  //   }
-
-  //   if (selectedFirm.name === "Finaxis Business Consultancy Pvt. Ltd.") {
-  //     return (
-  //       <>
-  //         <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
-  //         <br />
-  //         Name : Finaxis Business Consultancy <br />
-  //         Mobile Number - 9425008997 <br />
-  //         UPI ID - 9425008997@kotak
-  //       </>
-  //     );
-  //   }
-
-  //   return null;
-  // };
-
   const getWalletInfo = () => {
     if (!upiIdName && !upiMobile && !upiId) return null;
     return (
@@ -130,6 +89,18 @@ export default function InvoicePage({
       </>
     );
   };
+
+  const notesToShow = Array.isArray(notes)
+  ? notes
+      .map(n => (typeof n === "string" ? { text: n } : n))
+      .map(n => ({ ...n, text: (n?.text || "").trim() }))
+      .filter(n => n.text.length)
+  : typeof notes === "string"
+  ? notes
+      .split("\n")
+      .map(s => ({ text: s.trim() }))
+      .filter(n => n.text.length)
+  : [];
 
   return (
     <div
@@ -1093,6 +1064,101 @@ export default function InvoicePage({
                 );
               })}
 
+              {isLastPage && notesToShow.length > 0 && (
+                <tr>
+                  {/* Sr. No. cell (empty to keep grid) */}
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      padding: 6,
+                      textAlign: "center",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+
+                  {/* Description cell with Times New Roman + italic notes */}
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      fontFamily: "'Times New Roman', Times, serif",
+                      fontStyle: "italic",
+                      whiteSpace: "pre-wrap",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    <strong
+                      style={{
+                        fontFamily: "'Times New Roman', Times, serif",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Notes:
+                    </strong>
+                    {notesToShow.map((n, i) => (
+                      <div key={n.id || i} style={{ marginTop: 4 }}>
+                        • {n.text}
+                      </div>
+                    ))}
+                  </td>
+
+                  {/* Keep remaining columns blank but bordered to preserve the grid */}
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "right",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "right",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                </tr>
+              )}
               {/* On first page, if more pages exist, add "To be continued..." */}
               {!isLastPage && (
                 <tr>
@@ -1110,7 +1176,7 @@ export default function InvoicePage({
               )}
 
               {/* On last page, fill empty rows to make 8 rows */}
-              {isLastPage &&
+              {/* {isLastPage &&
                 Array.from({
                   length: Math.max(0, ITEMS_PER_PAGE - itemsOnPage.length),
                 }).map((_, idx) => (
@@ -1187,7 +1253,90 @@ export default function InvoicePage({
                       &nbsp;
                     </td>
                   </tr>
-                ))}
+                ))} */}
+              {isLastPage &&
+                (() => {
+                  const extraRows = notesToShow.length > 0 ? 1 : 0; // notes row occupies one
+                  const fill = Math.max(
+                    0,
+                    ITEMS_PER_PAGE - itemsOnPage.length - extraRows
+                  );
+                  return Array.from({ length: fill }).map((_, idx) => (
+                    <tr key={`empty-${idx}`} style={{ border: "none" }}>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          height: 30,
+                          textAlign: "center",
+                          borderTop: "none",
+                          borderBottom: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "center",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "center",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "right",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "right",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                    </tr>
+                  ));
+                })()}
 
               {/* Totals and bank details only on last page */}
               {isLastPage && (
