@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
+import {
+  isToday,
+  parseISO,
+  format,
+  startOfToday,
+  endOfToday,
+  isValid,
+} from "date-fns";
 
 import bgImage from "../assets/bg.png";
 import {
@@ -56,12 +63,21 @@ const Reminders = () => {
   });
   const [saving, setSaving] = useState(false);
 
-  const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
-  const user = JSON.parse(localStorage.getItem("user"));
+  const rawUser = localStorage.getItem("user");
+  let user = null;
+  try {
+    user = rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    user = null;
+  }
+
+  // Prefer user.userId, else fallback to standalone userId saved elsewhere
+  const userId = user?.userId || localStorage.getItem("userId") || null;
 
   console.log("linkedemail :", linkedEmail);
 
   useEffect(() => {
+    if (!userId) return;
     const fetchReminders = async () => {
       try {
         // Send userId instead of email for fetching reminders
@@ -79,6 +95,7 @@ const Reminders = () => {
   }, [userId]); // Rerun when userId changes
 
   useEffect(() => {
+    if (!userId) return;
     const fetchData = async () => {
       try {
         // Reminders
@@ -279,7 +296,10 @@ const Reminders = () => {
     }
   }, []);
 
-  const updatedReminders = reminders.map((reminder) => {
+  // SAFETY: if API ever returns null instead of [], avoid crashes
+  const remindersSafe = Array.isArray(reminders) ? reminders : [];
+
+  const updatedReminders = remindersSafe.map((reminder) => {
     const parsedDate = parseISO(reminder.datetime);
     const isOutdated = parsedDate < new Date() && !isToday(parsedDate);
 
@@ -289,7 +309,6 @@ const Reminders = () => {
         text: `${reminder.text} ⏰ Missed`,
       };
     }
-
     return reminder;
   });
 
@@ -315,9 +334,12 @@ const Reminders = () => {
   const endToday = endOfToday();
 
   // extra safety: only well-formed events
-  const validEvents = (events || []).filter(
-    (e) => e && e.startDateTime && e.endDateTime
-  );
+  const validEvents = (Array.isArray(events) ? events : []).filter((e) => {
+    if (!e || !e.startDateTime || !e.endDateTime) return false;
+    const s = parseISO(e.startDateTime);
+    const en = parseISO(e.endDateTime);
+    return isValid(s) && isValid(en);
+  });
 
   // An event is "Today" if it overlaps the [startToday, endToday] window
   const todayEvents = validEvents.filter((e) => {
@@ -359,6 +381,16 @@ const Reminders = () => {
 
   // put near other handlers
   const DEFAULT_REMINDER = { text: "", date: "", time: "", snoozeBefore: "1" };
+
+  const DEFAULT_EVENT = {
+    title: "",
+    description: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    guests: [""],
+    snoozeBefore: "30",
+  };
 
   const openCreateReminder = () => {
     setEditId(null); // ✅ clear edit mode
@@ -540,7 +572,11 @@ const Reminders = () => {
             <div className="w-full max-w-md p-6 rounded-2xl  relative animate-fadeIn">
               <button
                 className="absolute top-4 right-4 text-gray-400 hover:text-red-500"
-                onClick={() => setShowPopup(false)}
+                onClick={() => {
+                  setShowPopup(false);
+                  setEditId(null); // leave edit mode
+                  setNewReminder(DEFAULT_REMINDER); // reset fields
+                }}
               >
                 <FaTimes size={18} />
               </button>
@@ -625,12 +661,16 @@ const Reminders = () => {
           <div className="absolute top-10 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md bg-white p-6 rounded shadow-md">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-red-500"
-              onClick={() => setShowEventPopup(false)}
+              onClick={() => {
+                setShowEventPopup(false);
+                setEditingEventId(null); // leave edit mode
+                setNewEvent(DEFAULT_EVENT); // reset fields
+              }}
             >
               <FaTimes size={18} />
             </button>
             <h3 className="text-xl font-semibold text-gray-800 mb-4">
-              📅 {editingEventId?"Update Event" : "Create Event"}
+              📅 {editingEventId ? "Update Event" : "Create Event"}
             </h3>
 
             <input
