@@ -16,6 +16,7 @@ export default function InvoicePreview({
   placeOfSupply,
   customer,
   items,
+  notes,
 }) {
   // normalize bank for both shapes
   const firm = selectedFirm || {};
@@ -129,6 +130,18 @@ export default function InvoicePreview({
       paise !== "00" ? ` and ${numberToWords(parseInt(paise))} Paise` : "";
     return rupeeWords + paiseWords + " Rupees Only";
   }
+
+  const notesToShow = Array.isArray(notes)
+    ? notes
+        .map(n => (typeof n === "string" ? n : (n?.text || "")))
+        .map(s => s.trim())
+        .filter(Boolean)
+    : typeof notes === "string"
+    ? notes
+        .split("\n")
+        .map(s => s.trim())
+        .filter(Boolean)
+    : [];
 
   return (
     <div
@@ -1033,6 +1046,47 @@ export default function InvoicePreview({
                 </tr>
               );
             })}
+
+            {notesToShow.length > 0 && (
+          <tr>
+            <td
+              style={{
+                border: "1px solid black",
+                borderTop: "none",
+                borderBottom: "none",
+                padding: 6,
+                textAlign: "center",
+              }}
+            >
+              &nbsp;
+            </td>
+            <td
+              style={{
+                border: "1px solid black",
+                padding: 6,
+                borderTop: "none",
+                borderBottom: "none",
+                borderLeft: "none",
+                fontFamily: "'Times New Roman', Times, serif",
+                fontStyle: "italic",
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.35,
+              }}
+            >
+              <strong style={{ fontFamily: "'Times New Roman', Times, serif", fontStyle: "italic" }}>
+                Notes:
+              </strong>
+              {notesToShow.map((line, i) => (
+                <div key={i} style={{ marginTop: 4 }}>• {line}</div>
+              ))}
+            </td>
+            {/* keep remaining columns blank with borders */}
+            <td style={{ border: "1px solid black", padding: 6, textAlign: "center", borderTop: "none", borderBottom: "none", borderLeft: "none" }}>&nbsp;</td>
+            <td style={{ border: "1px solid black", padding: 6, textAlign: "center", borderTop: "none", borderBottom: "none", borderLeft: "none" }}>&nbsp;</td>
+            <td style={{ border: "1px solid black", padding: 6, textAlign: "right",  borderTop: "none", borderBottom: "none", borderLeft: "none" }}>&nbsp;</td>
+            <td style={{ border: "1px solid black", padding: 6, textAlign: "right",  borderTop: "none", borderBottom: "none", borderLeft: "none" }}>&nbsp;</td>
+          </tr>
+        )}
 
             {/* Fill empty rows if less than 6 items */}
             {Array.from({ length: Math.max(0, 8 - items.length) }).map(

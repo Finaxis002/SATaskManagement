@@ -9,80 +9,6 @@ import { FaTrash } from "react-icons/fa";
 import { FiSave, FiDownload } from "react-icons/fi";
 import InvoicePage from "../Components/invoice/InvoicePage";
 const ITEMS_PER_PAGE = 8;
-// const firms = [
-//   {
-//     name: "Finaxis Business Consultancy Pvt. Ltd.",
-//     subtitle: "Business Consultancy",
-//     gstin: "GST5454",
-//     address: "Vidya Nagar, Hoshangabad Road, Bhopal- 462026",
-//     email: "finaxis.in@gmail.com",
-//     phone: "+91-7987021896",
-//     bank: {
-//       name: "Kotak Mahindra",
-//       accountName: "Anugrah Sharda",
-//       account: "9425008997",
-//       ifsc: "KKBK0005945",
-//     },
-//   },
-//   {
-//     name: "Sharda Associates",
-//     subtitle: "Associates",
-//     gstin: "GST9876",
-//     address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
-//     email: "sharda@gmail.com",
-//     phone: "7894561230",
-//     banks: [
-//       // <-- instead of single `bank` object
-//       {
-//         label: "SBI Anugrah Sharda",
-//         name: "State Bank of India",
-//         accountName: "Anugrah Sharda",
-//         account: "20410532258",
-//         ifsc: "SBIN0030390",
-//       },
-//       {
-//         label: "Kotak Mahindra Anunay Sharda",
-//         name: "Kotak Mahindra",
-//         accountName: "Anunay Sharda",
-//         account: "5811615757",
-//         ifsc: "KKBK0005945",
-//       },
-//       {
-//         label: "HDFC",
-//         name: "HDFC",
-//         accountName: "Anunay Sharda",
-//         account: "5555555555",
-//         ifsc: "ICIC0005678",
-//       },
-//       {
-//         label: "Axis Bank",
-//         name: "Axis Bank",
-//         accountName: "Anunay Sharda",
-//         account: "5555555555",
-//         ifsc: "ICIC0005678",
-//       },
-//     ],
-//   },
-//   {
-//     name: "Kailash Real Estate",
-//     subtitle: "Real Estate",
-//     address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
-//     email: "kailashre@gmail.com",
-//     phone: "7569341285",
-//     bank: { name: "ICICI", account: "0987654321", ifsc: "ICIC0005678" },
-//   },
-
-//   {
-//     name: "Anunay Sharda & Associates",
-//     subtitle: "Realities",
-//     gstin: "GST3344",
-//     address: "HIG B-59, Sector A, Vidhya Nagar, Bhopal, Madhya Pradesh 462026",
-//     email: "anunaysharda@gmail.com",
-//     phone: "+91-7987021896",
-//     bank: { name: "Axis", account: "111222333", ifsc: "UTIB0000123" },
-//   },
-
-// ];
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
@@ -98,6 +24,7 @@ export default function InvoiceForm() {
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
   const [isFinalized, setIsFinalized] = useState(false);
   const [selectedBankIndex, setSelectedBankIndex] = useState(0);
+  const [notes, setNotes] = useState([]);
   // remove: const firms = [ ... ]
 
   //new
@@ -154,32 +81,39 @@ export default function InvoiceForm() {
   //   }
   // };
   useEffect(() => {
-  setInvoiceNumber("");
-  setIsFinalized(false);
-  if (selectedFirm && invoiceType) previewInvoiceNumber();
-}, [selectedFirmId, invoiceType]);
+    setInvoiceNumber("");
+    setIsFinalized(false);
+    if (selectedFirm && invoiceType) previewInvoiceNumber();
+  }, [selectedFirmId, invoiceType]);
 
-const previewInvoiceNumber = async () => {
-  if (!selectedFirm) return;
-  const year = new Date().getFullYear().toString().slice(-2);
-  const month = String(new Date().getMonth() + 1).padStart(2, "0");
+  const previewInvoiceNumber = async () => {
+    if (!selectedFirm) return;
+    const year = new Date().getFullYear().toString().slice(-2);
+    const month = String(new Date().getMonth() + 1).padStart(2, "0");
 
-  try {
-    const res = await axios.get("https://taskbe.sharda.co.in/api/invoices/preview-serial", {
-      params: {
-       firmId: selectedFirm?._id,
-        type: invoiceType,
-        year,
-        month,
-      },
-    });
-    setInvoiceNumber(res.data?.invoiceNumber || "");
-  } catch (err) {
-    console.error("preview-serial failed:", err);
-    setInvoiceNumber(""); // <-- important
-    Swal.fire("Couldn’t preview invoice number", "Check API URL/Network.", "warning");
-  }
-};
+    try {
+      const res = await axios.get(
+        "https://taskbe.sharda.co.in/api/invoices/preview-serial",
+        {
+          params: {
+            firmId: selectedFirm?._id,
+            type: invoiceType,
+            year,
+            month,
+          },
+        }
+      );
+      setInvoiceNumber(res.data?.invoiceNumber || "");
+    } catch (err) {
+      console.error("preview-serial failed:", err);
+      setInvoiceNumber(""); // <-- important
+      Swal.fire(
+        "Couldn’t preview invoice number",
+        "Check API URL/Network.",
+        "warning"
+      );
+    }
+  };
 
   // Finalize invoice number - increments DB (call only when saving)
   const finalizeInvoiceNumber = async () => {
@@ -189,12 +123,15 @@ const previewInvoiceNumber = async () => {
     const month = String(new Date().getMonth() + 1).padStart(2, "0");
 
     try {
-      const res = await axios.post("https://taskbe.sharda.co.in/api/invoices/finalize-serial", {
-        firmId: selectedFirm?._id,
-        type: invoiceType,
-        year,
-        month,
-      });
+      const res = await axios.post(
+        "https://taskbe.sharda.co.in/api/invoices/finalize-serial",
+        {
+          firmId: selectedFirm?._id,
+          type: invoiceType,
+          year,
+          month,
+        }
+      );
       setInvoiceNumber(res.data.invoiceNumber);
       setIsFinalized(true);
       return res.data.invoiceNumber;
@@ -338,12 +275,6 @@ const previewInvoiceNumber = async () => {
     }
   }, [selectedFirm, invoiceType]);
 
-  // Handle client selection
-
-  // useEffect(() => {
-  //   setInvoiceNumber(generateInvoiceNumber());
-  // }, [selectedFirm]);
-
   const updateItem = (index, field, value) => {
     setItems((prevItems) => {
       const updated = [...prevItems];
@@ -393,98 +324,122 @@ const previewInvoiceNumber = async () => {
   const totalTax = igstAmount + cgstAmount + sgstAmount;
   const totalAmountWithTax = taxableValue + totalTax;
 
-  const handleDownloadPDF = async () => {
-    try {
-      const finalNo = await finalizeInvoiceNumber(); // if you want locking
-      setInvoiceNumber(finalNo);
-      if (!invoiceRef.current) return;
-      const element = invoiceRef.current;
-      // Temporarily remove scale before PDF generation
-      element.style.transform = "scale(1)";
-      element.style.transformOrigin = "top left";
-      element.style.width = `${element.scrollWidth}px`;
+  const addNote = () => {
+    setNotes((prev) => [...prev, { id: uuidv4(), text: "" }]);
+  };
 
-      // Make sure element is attached to DOM and visible
-      if (!document.body.contains(element)) {
-        document.body.appendChild(element);
+  const updateNote = (id, text) => {
+    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, text } : n)));
+  };
+
+  const deleteNote = (id) => {
+    Swal.fire({
+      title: "Delete note?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setNotes((prev) => prev.filter((n) => n.id !== id));
+        Swal.fire("Deleted!", "Note removed.", "success");
       }
-      // Add CSS for page margins
-
-      const opt = {
-        margin: 0,
-        padding: 0,
-        filename: `${invoiceNumber}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          dpi: 300,
-          letterRendering: true,
-          useCORS: true,
-          width: element.scrollWidth, // Explicitly set width
-          windowWidth: element.scrollWidth, // Match window width
-        },
-        jsPDF: {
-          unit: "px",
-          // format: "a4",
-          orientation: "portrait",
-          format: [794, 1122],
-        },
-        pagebreak: { mode: "css" },
-      };
-
-      // Add this to ensure proper scaling
-      element.style.width = `${element.scrollWidth}px`;
-
-      // html2pdf().set(opt).from(element).save();
-      html2pdf()
-        .set(opt)
-        .from(element)
-        .save()
-        .then(() => {
-          // Restore scale after PDF is generated
-
-          element.style.transform = "scale(0.75)";
-          element.style.transformOrigin = "top left";
-          element.style.width = "";
-        });
-
-      // Reset the width after PDF generation if needed
-      setTimeout(() => {
-        element.style.width = "";
-      }, 2000);
-    } catch (error) {
-      alert("Could not finalize invoice number.");
-    }
+    });
   };
 
-  const saveInvoice = async () => {
-    try {
-      const finalNo = await finalizeInvoiceNumber();
+  // const handleDownloadPDF = async () => {
+  //   try {
+  //     const finalNo = await finalizeInvoiceNumber(); // if you want locking
+  //     setInvoiceNumber(finalNo);
+  //     if (!invoiceRef.current) return;
+  //     const element = invoiceRef.current;
+  //     // Temporarily remove scale before PDF generation
+  //     element.style.transform = "scale(1)";
+  //     element.style.transformOrigin = "top left";
+  //     element.style.width = `${element.scrollWidth}px`;
 
-      const invoiceData = {
-        invoiceNumber: finalNo,
-        invoiceDate,
-        invoiceType,
-        selectedFirm,
-        placeOfSupply,
-        customer,
-        items,
-        totalAmount: totalAmountWithTax,
-      };
-      await axios.post("/invoices", invoiceData);
-      // Display an alert once the invoice is saved successfully
-      Swal.fire({
-        icon: "success",
-        title: "Invoice Saved",
-        text: `Invoice ${invoiceNumber} has been successfully saved.`,
-        confirmButtonColor: "#3085d6",
-        confirmButtonText: "Ok",
-      });
-    } catch (error) {
-      console.error("Failed to save invoice", error);
-      alert("Failed to save invoice");
-    }
-  };
+  //     // Make sure element is attached to DOM and visible
+  //     if (!document.body.contains(element)) {
+  //       document.body.appendChild(element);
+  //     }
+  //     // Add CSS for page margins
+
+  //     const opt = {
+  //       margin: 0,
+  //       padding: 0,
+  //       filename: `${invoiceNumber}.pdf`,
+  //       image: { type: "jpeg", quality: 0.98 },
+  //       html2canvas: {
+  //         scale: 2,
+  //         dpi: 300,
+  //         letterRendering: true,
+  //         useCORS: true,
+  //         width: element.scrollWidth, // Explicitly set width
+  //         windowWidth: element.scrollWidth, // Match window width
+  //       },
+  //       jsPDF: {
+  //         unit: "px",
+  //         // format: "a4",
+  //         orientation: "portrait",
+  //         format: [794, 1122],
+  //       },
+  //       pagebreak: { mode: "css" },
+  //     };
+
+  //     // Add this to ensure proper scaling
+  //     element.style.width = `${element.scrollWidth}px`;
+
+  //     // html2pdf().set(opt).from(element).save();
+  //     html2pdf()
+  //       .set(opt)
+  //       .from(element)
+  //       .save()
+  //       .then(() => {
+  //         // Restore scale after PDF is generated
+
+  //         element.style.transform = "scale(0.75)";
+  //         element.style.transformOrigin = "top left";
+  //         element.style.width = "";
+  //       });
+
+  //     // Reset the width after PDF generation if needed
+  //     setTimeout(() => {
+  //       element.style.width = "";
+  //     }, 2000);
+  //   } catch (error) {
+  //     alert("Could not finalize invoice number.");
+  //   }
+  // };
+
+  // const saveInvoice = async () => {
+  //   try {
+  //     const finalNo = await finalizeInvoiceNumber();
+
+  //     const invoiceData = {
+  //       invoiceNumber: finalNo,
+  //       invoiceDate,
+  //       invoiceType,
+  //       selectedFirm,
+  //       placeOfSupply,
+  //       customer,
+  //       items,
+  //       totalAmount: totalAmountWithTax,
+  //     };
+  //     await axios.post("/invoices", invoiceData);
+  //     // Display an alert once the invoice is saved successfully
+  //     Swal.fire({
+  //       icon: "success",
+  //       title: "Invoice Saved",
+  //       text: `Invoice ${invoiceNumber} has been successfully saved.`,
+  //       confirmButtonColor: "#3085d6",
+  //       confirmButtonText: "Ok",
+  //     });
+  //   } catch (error) {
+  //     console.error("Failed to save invoice", error);
+  //     alert("Failed to save invoice");
+  //   }
+  // };
 
   function numberToWordsIndian(num) {
     const a = [
@@ -567,26 +522,27 @@ const previewInvoiceNumber = async () => {
       const finalNo = await finalizeInvoiceNumber();
       setInvoiceNumber(finalNo);
 
-       const firmSnapshot = {
-      _id: selectedFirm?._id,
-      name: selectedFirm?.name,
-      address: selectedFirm?.address,
-      phone: selectedFirm?.phone,
-      gstin: selectedFirm?.gstin,
-      bank: activeBank
-        ? {
-            _id: activeBank._id,
-            label: activeBank.label || "",
-            bankName: activeBank.bankName || activeBank.name || "",
-            accountName: activeBank.accountName || "",
-            accountNumber: activeBank.accountNumber || activeBank.account || "",
-            ifsc: activeBank.ifsc || "",
-            upiIdName: activeBank.upiIdName || "",
-            upiMobile: activeBank.upiMobile || "",
-            upiId: activeBank.upiId || "",
-          }
-        : null,
-    };
+      const firmSnapshot = {
+        _id: selectedFirm?._id,
+        name: selectedFirm?.name,
+        address: selectedFirm?.address,
+        phone: selectedFirm?.phone,
+        gstin: selectedFirm?.gstin,
+        bank: activeBank
+          ? {
+              _id: activeBank._id,
+              label: activeBank.label || "",
+              bankName: activeBank.bankName || activeBank.name || "",
+              accountName: activeBank.accountName || "",
+              accountNumber:
+                activeBank.accountNumber || activeBank.account || "",
+              ifsc: activeBank.ifsc || "",
+              upiIdName: activeBank.upiIdName || "",
+              upiMobile: activeBank.upiMobile || "",
+              upiId: activeBank.upiId || "",
+            }
+          : null,
+      };
       // Save the invoice to the backend
       const invoiceData = {
         invoiceNumber: finalNo,
@@ -597,6 +553,7 @@ const previewInvoiceNumber = async () => {
         customer,
         items,
         totalAmount: totalAmountWithTax,
+        notes
       };
 
       await axios.post("/invoices", invoiceData);
@@ -650,12 +607,11 @@ const previewInvoiceNumber = async () => {
     }
   };
 
-
   // after selectedFirm & selectedBankIndex are set
-const activeBank =
-  selectedFirm?.banks?.[selectedBankIndex] ??
-  selectedFirm?.bank ?? // backward compat
-  null;
+  const activeBank =
+    selectedFirm?.banks?.[selectedBankIndex] ??
+    selectedFirm?.bank ?? // backward compat
+    null;
 
   return (
     <div
@@ -969,7 +925,7 @@ const activeBank =
             })}
 
             {/* Add Item Button */}
-            <div className="mt-4 sticky bottom-4 bg-white py-2">
+            <div className="mt-4 sticky bottom-4 bg-white py-2 text-center">
               <button
                 onClick={addItem}
                 className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
@@ -977,6 +933,54 @@ const activeBank =
                 + Add Item
               </button>
             </div>
+          </div>
+
+          {/* Notes Section */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Notes</h2>
+
+            {notes.length === 0 && (
+              <div className="text-sm text-gray-500 mb-2">
+                Add your first note for this invoice.
+              </div>
+            )}
+
+            {notes.map((n, idx) => (
+              <div
+                key={n.id}
+                className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm"
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Note {idx + 1}
+                </label>
+                <textarea
+                  value={n.text}
+                  onChange={(e) => updateNote(n.id, e.target.value)}
+                  rows={2}
+                  placeholder="Write a remark or note for this invoice..."
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => deleteNote(n.id)}
+                    className="text-red-500 hover:text-red-700 text-sm flex items-center gap-2"
+                    title="Delete Note"
+                  >
+                    <FaTrash />
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Add Note button BELOW the notes list */}
+            <button
+              onClick={addNote}
+              className="w-50  bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium text-sm transition pt-0.5 text-center"
+            >
+              + Add Note
+            </button>
           </div>
         </div>
       </div>
@@ -1010,7 +1014,7 @@ const activeBank =
             //       ? selectedFirm?.banks[selectedBankIndex]
             //       : selectedFirm?.bank,
             // }}
-            selectedFirm={{ ...selectedFirm, bank: activeBank }}  
+            selectedFirm={{ ...selectedFirm, bank: activeBank }}
             invoiceType={invoiceType}
             invoiceNumber={invoiceNumber}
             invoiceDate={invoiceDate}
@@ -1025,6 +1029,7 @@ const activeBank =
             numberToWordsIndian={numberToWordsIndian}
             onImagesLoaded={() => setImagesReady(true)}
             showGSTIN={showGSTIN}
+            notes={notes}
           />
 
           {page2Items.length > 0 && (
@@ -1035,7 +1040,7 @@ const activeBank =
               isLastPage={true}
               customer={customer}
               // selectedFirm={selectedFirm}
-              selectedFirm={{ ...selectedFirm, bank: activeBank }}  
+              selectedFirm={{ ...selectedFirm, bank: activeBank }}
               invoiceType={invoiceType}
               invoiceNumber={invoiceNumber}
               invoiceDate={invoiceDate}
@@ -1049,6 +1054,7 @@ const activeBank =
               sgstAmount={sgstAmount}
               numberToWordsIndian={numberToWordsIndian}
               onImagesLoaded={() => setImagesReady(true)}
+              notes={notes}
             />
           )}
         </div>
