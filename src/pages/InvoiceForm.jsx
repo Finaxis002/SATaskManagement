@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import html2pdf from "html2pdf.js";
+import CreatableSelect from "react-select/creatable";
 import "../css/InvoiceForm.css";
 import axios from "../utils/secureAxios";
 import Select from "react-select";
@@ -8,6 +9,8 @@ import Swal from "sweetalert2";
 import { FaTrash } from "react-icons/fa";
 import { FiSave, FiDownload } from "react-icons/fi";
 import InvoicePage from "../Components/invoice/InvoicePage";
+import CreateClientModal from "../Components/client/CreateClientModal";
+
 const ITEMS_PER_PAGE = 8;
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
@@ -25,9 +28,9 @@ export default function InvoiceForm() {
   const [isFinalized, setIsFinalized] = useState(false);
   const [selectedBankIndex, setSelectedBankIndex] = useState(0);
   const [notes, setNotes] = useState([]);
-  // remove: const firms = [ ... ]
-
-  //new
+  const [selectedClientOption, setSelectedClientOption] = useState(null); // keep
+  const [createClientOpen, setCreateClientOpen] = useState(false);
+  const [draftClient, setDraftClient] = useState(null); // { name?: string, ... }
 
   useEffect(() => {
     const loadFirms = async () => {
@@ -59,27 +62,6 @@ export default function InvoiceForm() {
     setSelectedBankIndex(0);
   }, [selectedFirmId, firms]);
 
-  //new
-  // Preview invoice number - does not change DB
-  // const previewInvoiceNumber = async () => {
-  //   if (!selectedFirm) return;
-  //   const year = new Date().getFullYear().toString().slice(-2);
-  //   const month = String(new Date().getMonth() + 1).padStart(2, "0");
-
-  //   try {
-  //     const res = await axios.get("/invoices/preview-serial", {
-  //       params: {
-  //         firm: selectedFirm.name,
-  //         type: invoiceType,
-  //         year,
-  //         month,
-  //       },
-  //     });
-  //     setInvoiceNumber(res.data.invoiceNumber);
-  //   } catch (error) {
-  //     console.error("Error previewing invoice number", error);
-  //   }
-  // };
   useEffect(() => {
     setInvoiceNumber("");
     setIsFinalized(false);
@@ -213,7 +195,7 @@ export default function InvoiceForm() {
     fetchClients();
   }, []);
 
-  const [selectedClientOption, setSelectedClientOption] = useState(null);
+  // const [selectedClientOption, setSelectedClientOption] = useState(null);
 
   useEffect(() => {
     if (!selectedClientOption) {
@@ -553,7 +535,7 @@ export default function InvoiceForm() {
         customer,
         items,
         totalAmount: totalAmountWithTax,
-        notes
+        notes,
       };
 
       await axios.post("/invoices", invoiceData);
@@ -612,6 +594,55 @@ export default function InvoiceForm() {
     selectedFirm?.banks?.[selectedBankIndex] ??
     selectedFirm?.bank ?? // backward compat
     null;
+
+  // Open the modal with the typed name prefilled
+  const openCreateClientModal = (inputValue) => {
+    setDraftClient({ name: inputValue }); // prefill modal
+    setCreateClientOpen(true);
+  };
+
+  const handleCreateClient = async (formData) => {
+    try {
+      // POST to your existing API
+      const res = await axios.post("/clients", formData);
+      const newClient = res.data?.client;
+
+      // add to local list so it appears in options
+      setClients((prev) => [...prev, newClient]);
+
+      // select it in the dropdown
+      const label = `${newClient.name}${
+        newClient.businessName ? ` (${newClient.businessName})` : ""
+      }`;
+      const option = { value: newClient._id, label };
+      setSelectedClientOption(option);
+
+      // also sync the `customer` snapshot used in the invoice (instant UX)
+      setCustomer({
+        _id: newClient._id,
+        name: newClient.name,
+        address: newClient.address || "",
+        GSTIN: newClient.GSTIN || "",
+        mobile: newClient.mobile || "",
+        emailId: newClient.emailId || "",
+      });
+
+      setCreateClientOpen(false);
+      setDraftClient(null);
+      Swal.fire("Client created", `"${newClient.name}" added.`, "success");
+    } catch (err) {
+      if (err?.response?.status === 409) {
+        Swal.fire(
+          "Already exists",
+          "A client with this name already exists.",
+          "warning"
+        );
+      } else {
+        console.error(err);
+        Swal.fire("Error", "Could not create client.", "error");
+      }
+    }
+  };
 
   return (
     <div
@@ -682,26 +713,7 @@ export default function InvoiceForm() {
           </div>
 
           {/* Firm Selection */}
-          {/* <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              Your Details
-            </h2>
-            <label className="block text-sm font-medium text-gray-700">
-              Select Firm
-            </label>
-            <select
-              value={selectedFirm.name}
-              onChange={(e) => {
-                const firm = firms.find((f) => f.name === e.target.value);
-                if (firm) setSelectedFirm(firm);
-              }}
-              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {firms.map((f) => (
-                <option key={f.name}>{f.name}</option>
-              ))}
-            </select>
-          </div> */}
+
           <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
               Your Details
@@ -728,26 +740,6 @@ export default function InvoiceForm() {
               </select>
             )}
           </div>
-
-          {/* Sharda Bank Dropdown */}
-          {/* {selectedFirm.name === "Sharda Associates" && selectedFirm.banks && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Select Bank Account
-              </label>
-              <select
-                value={selectedBankIndex}
-                onChange={(e) => setSelectedBankIndex(parseInt(e.target.value))}
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {selectedFirm.banks.map((bank, idx) => (
-                  <option key={idx} value={idx}>
-                    {bank.label || `${bank.name} - ${bank.account}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )} */}
 
           {selectedFirm?.banks?.length > 0 && (
             <div>
@@ -805,7 +797,7 @@ export default function InvoiceForm() {
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
               Customer Details
             </h2>
-            <Select
+            {/* <Select
               options={clientOptions}
               value={clientOptions.find(
                 (option) => option.value === customer._id
@@ -832,6 +824,29 @@ export default function InvoiceForm() {
                   ...theme.colors,
                   primary: "#1a73e8",
                 },
+              })}
+            /> */}
+            <CreatableSelect
+              options={clientOptions}
+              value={selectedClientOption}
+              onChange={(option) => setSelectedClientOption(option)}
+              onCreateOption={openCreateClientModal} // 👈 shows “+ Add client …”
+              formatCreateLabel={(inputValue) => `+ Add client "${inputValue}"`}
+              placeholder="Search or select client..."
+              isClearable
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  marginBottom: "10px",
+                  minHeight: "40px",
+                  borderRadius: "0.375rem",
+                  borderColor: "#d1d5db",
+                }),
+                menu: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+              theme={(theme) => ({
+                ...theme,
+                colors: { ...theme.colors, primary: "#1a73e8" },
               })}
             />
           </div>
@@ -984,6 +999,7 @@ export default function InvoiceForm() {
           </div>
         </div>
       </div>
+
       {/* Right side invoice preview */}
 
       <div
@@ -1059,6 +1075,17 @@ export default function InvoiceForm() {
           )}
         </div>
       </div>
+      {/* create client modal */}
+      {createClientOpen && (
+        <CreateClientModal
+          client={draftClient} // prefill name
+          onClose={() => {
+            setCreateClientOpen(false);
+            setDraftClient(null);
+          }}
+          onCreate={handleCreateClient} // receives full formData
+        />
+      )}
     </div>
   );
 }
