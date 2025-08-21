@@ -8,11 +8,19 @@ import {
   FaEye,
   FaEyeSlash,
   FaLock,
+  FaCalendarAlt,
+  FaIdCard,
 } from "react-icons/fa";
 import bgImage from "../assets/bg.png";
 
 import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
-import { showAlert } from "../utils/alert"; // Import the showAlert function
+import { showAlert } from "../utils/alert";
+// Function to convert relative URL to absolute URL
+const toAbsoluteUrl = (path) => {
+  if (!path) return "";
+  const API_BASE = "https://taskbe.sharda.co.in"; // Your API base URL
+  return `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+};
 
 const AddEmployee = ({
   showEditModal,
@@ -24,10 +32,13 @@ const AddEmployee = ({
     name: "",
     email: "",
     position: "",
-    department: [], // changed from departments to department
+    department: [],   
     userId: "",
     password: "",
     role: "user",
+    birthdate: "",
+    address: "",
+    aadhaar: "",
   });
   const [department, setDepartment] = useState([]);
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -41,6 +52,8 @@ const AddEmployee = ({
     { value: "Administrator", label: "Administrator" },
   ];
 
+  const [aadhaarFile, setAadhaarFile] = useState(null);
+  const [existingAadhaarFileUrl, setExistingAadhaarFileUrl] = useState("");
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -53,26 +66,132 @@ const AddEmployee = ({
     setPasswordVisible(!passwordVisible);
   };
 
-  // const handleCheckboxChange = (e) => {
-  //   setFormData((prevData) => ({
-  //     ...prevData,
-  //     role: e.target.checked ? "admin" : "user", // Assign role based on checkbox
-  //   }));
-  // };
-
   useEffect(() => {
     if (employeeToEdit) {
       setFormData({
         name: employeeToEdit.name,
         email: employeeToEdit.email,
         position: employeeToEdit.position,
-        department: employeeToEdit.department || [],
+        // department: employeeToEdit.department || [],
+          department: Array.isArray(employeeToEdit.department)
+        ? employeeToEdit.department
+        : JSON.parse(employeeToEdit.department || "[]"),
         userId: employeeToEdit.userId,
         role: employeeToEdit.role,
+        birthdate: employeeToEdit.birthdate
+          ? new Date(employeeToEdit.birthdate).toISOString().slice(0, 10)
+          : "",
+        address: employeeToEdit.address || "",
+        aadhaar: employeeToEdit.aadhaar || employeeToEdit.aadhaarNumber || "",
       });
       setDepartment(employeeToEdit.department || []);
+ const rawPath =
+        employeeToEdit.aadhaarFileUrl || employeeToEdit.aadhaarFile || "";
+      setExistingAadhaarFileUrl(toAbsoluteUrl(rawPath));
+
+      setAadhaarFile(null); 
+      
     }
   }, [employeeToEdit]);
+
+
+
+  // useEffect(() => {
+  //   if (employeeToEdit) {
+  //     setFormData({
+  //       name: employeeToEdit.name,
+  //       email: employeeToEdit.email,
+  //       position: employeeToEdit.position,
+  //       department: employeeToEdit.department || [],
+  //       userId: employeeToEdit.userId,
+  //       role: employeeToEdit.role,
+  //       birthdate: employeeToEdit.birthdate
+  //         ? new Date(employeeToEdit.birthdate).toISOString().slice(0, 10)
+  //         : "",
+  //       address: employeeToEdit.address || "",
+  //       aadhaar: employeeToEdit.aadhaar || employeeToEdit.aadhaarNumber || "",
+  //     });
+  //     setDepartment(employeeToEdit.department || []);
+
+  //     // convert stored relative path to absolute URL for the link/preview
+  //     const rawPath =
+  //       employeeToEdit.aadhaarFileUrl || employeeToEdit.aadhaarFile || "";
+  //     setExistingAadhaarFileUrl(toAbsoluteUrl(rawPath));
+
+  //     setAadhaarFile(null); // clear new file selection on open
+  //   } else {
+  //     setExistingAadhaarFileUrl("");
+  //     setAadhaarFile(null);
+  //   }
+  // }, [employeeToEdit]);
+
+////////////////////////////////////
+//   useEffect(() => {
+//   if (employeeToEdit) {
+//     // Fix for department data format issue
+//     let employeeDepartments = [];
+    
+//     if (Array.isArray(employeeToEdit.department)) {
+//       // Handle the case where departments are stored as stringified arrays
+//       employeeDepartments = employeeToEdit.department.map(dept => {
+//         try {
+//           // Try to parse if it's a stringified array
+//           if (typeof dept === 'string' && dept.startsWith('[')) {
+//             const parsed = JSON.parse(dept);
+//             return Array.isArray(parsed) ? parsed[0] : parsed;
+//           }
+//           return dept;
+//         } catch (e) {
+//           console.error("Error parsing department:", e);
+//           return dept;
+//         }
+//       }).filter(dept => dept); // Remove any empty values
+//     } else if (employeeToEdit.department) {
+//       // Handle case where it's a single department (not an array)
+//       employeeDepartments = [employeeToEdit.department];
+//     }
+
+//     setFormData({
+//       name: employeeToEdit.name || "",
+//       email: employeeToEdit.email || "",
+//       position: employeeToEdit.position || "",
+//       department: employeeDepartments,
+//       userId: employeeToEdit.userId || "",
+//       role: employeeToEdit.role || "user",
+//       birthdate: employeeToEdit.birthdate
+//         ? new Date(employeeToEdit.birthdate).toISOString().slice(0, 10)
+//         : "",
+//       address: employeeToEdit.address || "",
+//       aadhaar: employeeToEdit.aadhaar || employeeToEdit.aadhaarNumber || "",
+//     });
+    
+//     // Set department state for the DepartmentSelector
+//     setDepartment(employeeDepartments);
+
+//     // Convert stored relative path to absolute URL for the link/preview
+//     const rawPath = employeeToEdit.aadhaarFileUrl || employeeToEdit.aadhaarFile || "";
+//     setExistingAadhaarFileUrl(toAbsoluteUrl(rawPath));
+//     setAadhaarFile(null);
+//   } else {
+//     // Reset form for new employee
+//     setFormData({
+//       name: "",
+//       email: "",
+//       position: "",
+//       department: [],
+//       userId: "",
+//       password: "",
+//       role: "user",
+//       birthdate: "",
+//       address: "",
+//       aadhaar: "",
+//     });
+//     setDepartment([]);
+//     setExistingAadhaarFileUrl("");
+//     setAadhaarFile(null);
+//   }
+// }, [employeeToEdit]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,32 +202,74 @@ const AddEmployee = ({
     }
 
     try {
-      const dataToSend = {
-        ...formData,
-        department: department, // changed from departments to department
-      };
+      // Build multipart body
+      const fd = new FormData();
+      fd.append("name", formData.name);
+      fd.append("email", formData.email);
+      fd.append("position", formData.position);
+
+      // Send department as JSON string (parse it on the server)
+      fd.append("department", department); 
+      fd.append("userId", formData.userId);
+      fd.append("role", formData.role);
+      fd.append("birthdate", formData.birthdate || "");
+      fd.append("address", formData.address || "");
+      fd.append("aadhaar", formData.aadhaar || "");
+
+      // Only send password on create
+      if (!employeeToEdit) {
+        fd.append("password", formData.password);
+      }
+
+      // Attach Aadhaar file if selected
+      if (aadhaarFile) {
+        // field name MUST match upload.single("aadhaarFile")
+        fd.append("aadhaarFile", aadhaarFile);
+      }
+
+      const config = { headers: { "Content-Type": "multipart/form-data" } };
 
       if (employeeToEdit) {
-        // Update existing employee
         await axios.put(
           `https://taskbe.sharda.co.in/api/employees/${employeeToEdit._id}`,
-          dataToSend
+          fd,
+          config
         );
         showAlert("Employee updated successfully!");
       } else {
-        // Add new employee
         await axios.post(
           "https://taskbe.sharda.co.in/api/employees",
-          dataToSend
+          fd,
+          config
         );
         showAlert("Employee added successfully!");
       }
 
-      handleCloseModal(); // Close the modal after submit
+      handleCloseModal();
     } catch (err) {
-      // alert("Failed to save employee!");
       console.error(err);
+      showAlert("Failed to save employee!");
     }
+  };
+
+  const handleAadhaarFileChange = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) {
+      setAadhaarFile(null);
+      return;
+    }
+    const okType = f.type.startsWith("image/") || f.type === "application/pdf";
+    if (!okType) {
+      showAlert("Only image or PDF allowed for Aadhaar.");
+      e.target.value = "";
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      showAlert("File must be 5 MB or less.");
+      e.target.value = "";
+      return;
+    }
+    setAadhaarFile(f);
   };
 
   return (
@@ -180,25 +341,6 @@ const AddEmployee = ({
 
           {/* Department */}
 
-          {/* Department Dropdown */}
-          {/* <div className="relative">
-            <FaBuilding className="absolute top-4 left-4 text-gray-400" />
-            <select
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              required
-              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled>Select Department</option> 
-              <option value="Marketing">Marketing</option>
-              <option value="Sales">Sales</option>
-              <option value="Operations">Operations</option>
-              <option value="IT/Software">IT/Software</option>
-              <option value="HR">HR</option>
-              <option value="Administrator">Administrator</option>
-            </select>
-          </div> */}
           <DepartmentSelector
             selectedDepartments={department}
             setSelectedDepartments={setDepartment}
@@ -218,7 +360,6 @@ const AddEmployee = ({
             />
           </div>
 
-          {/* Password */}
           {/* Password (Only show on Add User) */}
           {!employeeToEdit && (
             <div className="relative">
@@ -242,34 +383,103 @@ const AddEmployee = ({
             </div>
           )}
 
-          {/* Admin Checkbox */}
-          {/* <div className="md:col-span-2">
-            <label className="inline-flex items-center">
-              <input
-                type="checkbox"
-                name="role"
-                checked={formData.role === "admin"}
-                onChange={handleCheckboxChange}
-                className="form-checkbox h-5 w-5 text-blue-500"
-              />
-              <span className="ml-2 text-sm text-gray-900">Is this Admin?</span>
-            </label>
-          </div> */}
-          {/* Role Dropdown */}
-          <div className="relative md:col-span-2">
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Select Role
-            </label>
+          {/* Birthdate (half width) */}
+          <div className="relative">
+            <FaCalendarAlt className="absolute top-4 left-4 text-gray-400" />
+            <input
+              type="date"
+              name="birthdate"
+              value={formData.birthdate}
+              onChange={handleChange}
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Role (half width) */}
+          <div className="relative">
             <select
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="w-40 py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
               <option value="manager">Manager</option>
             </select>
+          </div>
+
+          {/* Address */}
+          <div className="relative md:col-span-2">
+            <FaBuilding className="absolute top-4 left-4 text-gray-400" />
+            <textarea
+              name="address"
+              rows={2}
+              placeholder="Address"
+              value={formData.address}
+              onChange={handleChange}
+              className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Aadhaar File (image/pdf) */}
+          <div className="relative md:col-span-2">
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              Aadhaar File (image/PDF)
+            </label>
+
+            {/* Existing file (edit mode) */}
+            {existingAadhaarFileUrl && !aadhaarFile && (
+              <div className="mb-2 text-sm">
+                Current file:{" "}
+                <a
+                  href={existingAadhaarFileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  View / Download
+                </a>
+              </div>
+            )}
+
+            {/* Custom file input styling */}
+            <div className="relative">
+              <input
+                type="file"
+                id="aadhaarFile"
+                accept="image/*,.pdf"
+                onChange={handleAadhaarFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="flex items-center justify-between bg-gray-100 border border-gray-300 rounded-md p-2">
+                <span className="text-gray-500 truncate mr-2">
+                  {aadhaarFile
+                    ? aadhaarFile.name
+                    : existingAadhaarFileUrl
+                    ? "Current file attached"
+                    : "Choose file"}
+                </span>
+                <button
+                  type="button"
+                  className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm"
+                  onClick={() => document.getElementById("aadhaarFile").click()}
+                >
+                  Browse
+                </button>
+              </div>
+            </div>
+
+            {/* Preview if image selected */}
+            {aadhaarFile && aadhaarFile.type.startsWith("image/") && (
+              <div className="mt-2">
+                <img
+                  alt="Aadhaar preview"
+                  src={URL.createObjectURL(aadhaarFile)}
+                  className="h-24 rounded border"
+                />
+              </div>
+            )}
           </div>
 
           {/* Submit Button (Full Width) */}

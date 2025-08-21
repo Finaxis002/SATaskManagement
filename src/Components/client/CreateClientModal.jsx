@@ -12,9 +12,36 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
     GSTIN: "",
   });
 
+  const isEdit = Boolean(client && client._id);
+
    // Initialize form with client data when in edit mode
-  useEffect(() => {
-    if (client) {
+  // useEffect(() => {
+  //   if (client) {
+  //     setFormData({
+  //       name: client.name || "",
+  //       contactPerson: client.contactPerson || "",
+  //       businessName: client.businessName || "",
+  //       address: client.address || "",
+  //       mobile: client.mobile || "",
+  //       emailId: client.emailId || "",
+  //       GSTIN: client.GSTIN || "",
+  //     });
+  //   } else {
+  //     // Reset form when creating new client
+  //     setFormData({
+  //       name: "",
+  //       contactPerson: "",
+  //       businessName: "",
+  //       address: "",
+  //       mobile: "",
+  //       emailId: "",
+  //       GSTIN: "",
+  //     });
+  //   }
+  // }, [client]);
+
+   useEffect(() => {
+    if (isEdit) {
       setFormData({
         name: client.name || "",
         contactPerson: client.contactPerson || "",
@@ -25,9 +52,8 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
         GSTIN: client.GSTIN || "",
       });
     } else {
-      // Reset form when creating new client
       setFormData({
-        name: "",
+        name: client?.name || "", // prefill typed name from invoice search
         contactPerson: "",
         businessName: "",
         address: "",
@@ -36,7 +62,7 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
         GSTIN: "",
       });
     }
-  }, [client]);
+  }, [client, isEdit]);
 
 
   const handleChange = (e) => {
@@ -54,7 +80,7 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
       <div className="bg-white p-6 rounded-lg w-96">
         <div className="flex justify-between items-center mb-4">
          <h3 className="text-xl font-semibold">
-            {client ? "Update Client" : "Create New Client"}
+            {isEdit ? "Update Client" : "Create New Client"}
           </h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <FaTimes />
@@ -90,7 +116,7 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
             onClick={handleSubmit}
             className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
           >
-            {client ? "Update" : "Create"}
+            {isEdit ? "Update" : "Create"}
           </button>
         </div>
       </div>
