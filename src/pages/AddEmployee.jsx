@@ -96,106 +96,21 @@ const AddEmployee = ({
 
 
 
-  // useEffect(() => {
-  //   if (employeeToEdit) {
-  //     setFormData({
-  //       name: employeeToEdit.name,
-  //       email: employeeToEdit.email,
-  //       position: employeeToEdit.position,
-  //       department: employeeToEdit.department || [],
-  //       userId: employeeToEdit.userId,
-  //       role: employeeToEdit.role,
-  //       birthdate: employeeToEdit.birthdate
-  //         ? new Date(employeeToEdit.birthdate).toISOString().slice(0, 10)
-  //         : "",
-  //       address: employeeToEdit.address || "",
-  //       aadhaar: employeeToEdit.aadhaar || employeeToEdit.aadhaarNumber || "",
-  //     });
-  //     setDepartment(employeeToEdit.department || []);
-
-  //     // convert stored relative path to absolute URL for the link/preview
-  //     const rawPath =
-  //       employeeToEdit.aadhaarFileUrl || employeeToEdit.aadhaarFile || "";
-  //     setExistingAadhaarFileUrl(toAbsoluteUrl(rawPath));
-
-  //     setAadhaarFile(null); // clear new file selection on open
-  //   } else {
-  //     setExistingAadhaarFileUrl("");
-  //     setAadhaarFile(null);
-  //   }
-  // }, [employeeToEdit]);
-
-////////////////////////////////////
-//   useEffect(() => {
-//   if (employeeToEdit) {
-//     // Fix for department data format issue
-//     let employeeDepartments = [];
-    
-//     if (Array.isArray(employeeToEdit.department)) {
-//       // Handle the case where departments are stored as stringified arrays
-//       employeeDepartments = employeeToEdit.department.map(dept => {
-//         try {
-//           // Try to parse if it's a stringified array
-//           if (typeof dept === 'string' && dept.startsWith('[')) {
-//             const parsed = JSON.parse(dept);
-//             return Array.isArray(parsed) ? parsed[0] : parsed;
-//           }
-//           return dept;
-//         } catch (e) {
-//           console.error("Error parsing department:", e);
-//           return dept;
-//         }
-//       }).filter(dept => dept); // Remove any empty values
-//     } else if (employeeToEdit.department) {
-//       // Handle case where it's a single department (not an array)
-//       employeeDepartments = [employeeToEdit.department];
-//     }
-
-//     setFormData({
-//       name: employeeToEdit.name || "",
-//       email: employeeToEdit.email || "",
-//       position: employeeToEdit.position || "",
-//       department: employeeDepartments,
-//       userId: employeeToEdit.userId || "",
-//       role: employeeToEdit.role || "user",
-//       birthdate: employeeToEdit.birthdate
-//         ? new Date(employeeToEdit.birthdate).toISOString().slice(0, 10)
-//         : "",
-//       address: employeeToEdit.address || "",
-//       aadhaar: employeeToEdit.aadhaar || employeeToEdit.aadhaarNumber || "",
-//     });
-    
-//     // Set department state for the DepartmentSelector
-//     setDepartment(employeeDepartments);
-
-//     // Convert stored relative path to absolute URL for the link/preview
-//     const rawPath = employeeToEdit.aadhaarFileUrl || employeeToEdit.aadhaarFile || "";
-//     setExistingAadhaarFileUrl(toAbsoluteUrl(rawPath));
-//     setAadhaarFile(null);
-//   } else {
-//     // Reset form for new employee
-//     setFormData({
-//       name: "",
-//       email: "",
-//       position: "",
-//       department: [],
-//       userId: "",
-//       password: "",
-//       role: "user",
-//       birthdate: "",
-//       address: "",
-//       aadhaar: "",
-//     });
-//     setDepartment([]);
-//     setExistingAadhaarFileUrl("");
-//     setAadhaarFile(null);
-//   }
-// }, [employeeToEdit]);
-
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (formData.birthdate) {
+    const picked = new Date(formData.birthdate);
+    const today = new Date();
+    picked.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    if (picked > today) {
+      showAlert("Birthdate cannot be in the future.");
+      return;
+    }
+  }
     if (department.length === 0) {
       showAlert("Please select at least one department.");
       return;
@@ -246,6 +161,8 @@ const AddEmployee = ({
       }
 
       handleCloseModal();
+    console.log("Department on frontend:", department); // Before sending to backend
+
     } catch (err) {
       console.error(err);
       showAlert("Failed to save employee!");
@@ -271,6 +188,8 @@ const AddEmployee = ({
     }
     setAadhaarFile(f);
   };
+
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="relative w-full max-h-screen text-gray-800  py-14 px-6">
@@ -340,7 +259,6 @@ const AddEmployee = ({
           </div>
 
           {/* Department */}
-
           <DepartmentSelector
             selectedDepartments={department}
             setSelectedDepartments={setDepartment}
@@ -391,6 +309,7 @@ const AddEmployee = ({
               name="birthdate"
               value={formData.birthdate}
               onChange={handleChange}
+               max={todayStr}       
               className="pl-10 w-full py-3 px-4 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

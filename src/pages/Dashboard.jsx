@@ -6,6 +6,7 @@ import UserGrid from "../Components/UserGrid";
 import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
+import axios from "axios";
 
 function getTimeBasedGreeting() {
   const hour = new Date().getHours();
@@ -17,9 +18,23 @@ function getTimeBasedGreeting() {
 const Dashboard = () => {
   const [greeting, setGreeting] = useState("");
   const [currentDate, setCurrentDate] = useState("");
+  const [todaysBirthdays, setTodaysBirthdays] = useState([]);
+  const [showBirthdayBanner, setShowBirthdayBanner] = useState(false);
+
   useSocketSetup();
 
-  const { name, role, loading } = useSelector((state) => state.auth);
+  const { name, role, loading, isBirthdayToday, birthdate, userId } =
+    useSelector((state) => state.auth);
+
+  const computeIsToday = (iso) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    const t = new Date();
+    return d.getDate() === t.getDate() && d.getMonth() === t.getMonth();
+  };
+
+  const showUserBirthday =
+    role !== "admin" && (isBirthdayToday ?? computeIsToday(birthdate));
 
   const { notes: latestNotes, loading: notesLoading } = useStickyNotes(3);
 
@@ -62,6 +77,56 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  useEffect(() => {
+    if (role === "admin") {
+      axios
+        .get(`https://taskbe.sharda.co.in/api/employees/birthdays/today`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        })
+        .then((res) => setTodaysBirthdays(res.data.birthdays || []))
+        .catch(() => setTodaysBirthdays([]));
+    }
+  }, [role]);
+
+  useEffect(() => {
+    // compute fallback if backend flag missing
+    const computeIsToday = (iso) => {
+      if (!iso) return false;
+      const d = new Date(iso),
+        t = new Date();
+      return d.getDate() === t.getDate() && d.getMonth() === t.getMonth();
+    };
+
+    // user banner shows only for non-admins
+    const shouldShowByDate =
+      role !== "admin" &&
+      ((isBirthdayToday ?? false) || computeIsToday(birthdate));
+
+    const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const storageKey = `birthdayBannerDismissed:${userId || "anon"}`;
+
+    if (!shouldShowByDate) {
+      setShowBirthdayBanner(false);
+      return;
+    }
+
+    const lastDismissed = localStorage.getItem(storageKey);
+    setShowBirthdayBanner(lastDismissed !== todayKey);
+  }, [role, isBirthdayToday, birthdate, userId]);
+
+  // normalize departments → array of strings
+  const toDeptArray = (d) =>
+    Array.isArray(d)
+      ? d
+      : typeof d === "string"
+      ? d
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
 
   return (
     <div className="relative w-full pb-5 h-[90vh] overflow-y-auto px-6 text-gray-800 bg-gray-50">
@@ -130,6 +195,135 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      {/* {role === "admin" && (
+        <div className="mt-4 p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+          <h3 className="font-semibold">🎂 Today’s Birthdays</h3>
+          {todaysBirthdays.length === 0 ? (
+            <p>No birthdays today.</p>
+          ) : (
+            <ul className="mt-2">
+              {todaysBirthdays.map((emp) => (
+                <li key={emp._id}>
+                  {emp.name} — {emp.department?.join(", ")}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )} */}
+      {role === "admin" && (
+        <div className="mt-4">
+          <div className="rounded-2xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50 to-indigo-100 p-0.5">
+            <div className="rounded-2xl bg-white/60 backdrop-blur-sm">
+              {/* Header */}
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-indigo-100/70">
+                <span className="text-xl">🎂</span>
+                <h3 className="text-indigo-900 font-semibold">
+                  Today’s Birthdays
+                </h3>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-4">
+                {todaysBirthdays.length === 0 ? (
+                  <div className="text-sm text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                    No birthdays today.
+                  </div>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {todaysBirthdays.map((emp) => (
+                      <li
+                        key={emp._id}
+                        className="group flex flex-wrap items-center gap-2 rounded-lg px-3  hover:bg-white transition"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                        <span className="font-medium text-gray-900">
+                          {emp.name}
+                        </span>
+                        <span className="text-gray-400">—</span>
+
+                        {/* departments as subtle chips */}
+                        <span className="flex flex-wrap gap-1.5">
+                          {toDeptArray(emp.department).map((dep, i) => (
+                            <span
+                              key={i}
+                              className="text-[11px] leading-5 px-2 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
+                            >
+                              {dep}
+                            </span>
+                          ))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUserBirthday && (
+        <div className="mt-4 relative">
+          {/* tiny CSS for animations */}
+          <style>{`
+      @keyframes float {
+        0%,100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-4px) rotate(3deg); }
+      }
+      @keyframes fall {
+        0%   { transform: translateY(-10px) rotate(0deg); opacity: .9; }
+        100% { transform: translateY(140%) rotate(720deg); opacity: .9; }
+      }
+      .confetti {
+        position:absolute; top:-10px;
+        width:8px; height:8px; border-radius:2px;
+        animation: fall 3.8s linear infinite;
+        opacity:.9;
+      }
+      .confetti:nth-child(odd)  { width:6px; height:10px; border-radius:1px; }
+    `}</style>
+
+          <div className="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 shadow-sm ring-1 ring-amber-100">
+            {/* confetti pieces */}
+            <div className="pointer-events-none absolute inset-0">
+              {Array.from({ length: 16 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="confetti"
+                  style={{
+                    left: `${(i + 1) * (100 / 17)}%`,
+                    background: `hsl(${i * 24}, 90%, 60%)`,
+                    animationDelay: `${-i * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center gap-4 px-5 py-4 relative">
+              {/* animated emoji (no file) */}
+              <div
+                className="text-3xl select-none"
+                style={{ animation: "float 2.5s ease-in-out infinite" }}
+                aria-hidden="true"
+              >
+                🎉
+              </div>
+
+              <div className="flex-1">
+                <div className="text-lg md:text-xl font-semibold">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-700 to-yellow-700">
+                    Happy Birthday {name}!
+                  </span>
+                </div>
+                <p className="text-sm text-amber-800/90 mt-0.5">
+                  Wishing you a wonderful year ahead.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Task Container */}
 
@@ -151,7 +345,7 @@ const Dashboard = () => {
         </div>
 
         {/* Sticky Notes - 30% width on medium screens and up */}
-        <div className= "w-full md:w-[30%]  w-full">
+        <div className="w-full md:w-[30%]  w-full">
           <StickyNotesDashboard />
         </div>
       </div>
