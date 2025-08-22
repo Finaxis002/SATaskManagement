@@ -84,6 +84,13 @@ const Login = () => {
       return;
     }
 
+     const computeIsToday = (iso) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    const t = new Date();
+    return d.getDate() === t.getDate() && d.getMonth() === t.getMonth();
+  };
+
     try {
       const response = await axios.post(
         "https://taskbe.sharda.co.in/api/employees/login",
@@ -93,20 +100,29 @@ const Login = () => {
         }
       );
 
-      const { token, _id, name, role, email, position, department, userId } =
+      const { token, _id, name, role, email, position, department, userId , birthdate,
+      isBirthdayToday, } =
         response.data;
+
+         const birthdayFlag =
+      typeof isBirthdayToday === "boolean"
+        ? isBirthdayToday
+        : computeIsToday(birthdate);
 
       const loginExpiryHours = 10;
       const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
 
       const userData = {
         _id,
+        
         name,
         email,
         position,
         department,
         userId,
         role,
+        birthdate: birthdate || "",
+      isBirthdayToday: birthdayFlag,
       };
 
       localStorage.setItem("authToken", token);
@@ -118,8 +134,11 @@ const Login = () => {
       localStorage.setItem("name", name);
       localStorage.setItem("role", role);
       localStorage.setItem("userId", _id);
+      localStorage.setItem("birthdate", birthdate || "");
+    localStorage.setItem("isBirthdayToday", JSON.stringify(!!birthdayFlag));
 
-      dispatch(setAuth({ name, role, userId: _id }));
+      dispatch(setAuth({ name, role, userId: _id, birthdate: birthdate || "",
+        isBirthdayToday: !!birthdayFlag, }));
 
       // ✅ Fetch reminders to get linked Google email
       // ✅ Fetch linked email directly from linkedemails collection
