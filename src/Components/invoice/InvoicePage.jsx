@@ -31,20 +31,30 @@ export default function InvoicePage({
   showGSTIN,
   notes,
 }) {
-  const isLocalSupply = () => {
-    const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
-    return place === "mp" || place === "madhyapradesh";
-  };
+  // const isLocalSupply = () => {
+  //   const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
+  //   return place === "mp" || place === "madhyapradesh";
+  // };
   const isFirm = (name) =>
     (selectedFirm?.name || "").toLowerCase() === name.toLowerCase();
 
-  // const headerStyle = {
-  //   width: "100%",
-  //   display: "block",
-  //   height: pageNumber === 1 ? "auto" : "20px",  // shrink on 2nd page
-  //   marginBottom: pageNumber === 1 ? "20px" : "5px",
-  //   marginTop: pageNumber === 1 ? "0px" : "0px",
-  // };
+
+  // Treat as GST invoice only if you actually want to show GST *and* the firm has a GSTIN
+const isGSTFirm = !!(showGSTIN && selectedFirm?.gstin);
+
+// Use total + tax when GST applies, otherwise just the plain total
+const finalTotal = isGSTFirm ? totalAmountWithTax : totalAmount;
+
+// Amount in words should follow what you finally charge
+const amountInWords = numberToWordsIndian(finalTotal);
+
+// Guard for placeOfSupply when GST is on
+const isLocalSupply = () => {
+  if (!isGSTFirm) return false; // doesn't matter if GST not applicable
+  const place = (placeOfSupply || "").toLowerCase().replace(/\s+/g, "");
+  return place === "mp" || place === "madhyapradesh";
+};
+
   const headerStyle =
     pageNumber === 1
       ? { width: "100%", display: "block", height: "auto", marginBottom: 20 }
@@ -1412,7 +1422,8 @@ export default function InvoicePage({
                                 textAlign: "center",
                               }}
                             >
-                              {numberToWordsIndian(totalAmountWithTax)}
+                              {/* {numberToWordsIndian(totalAmountWithTax)} */}
+                              {amountInWords}
                             </td>
                           </tr>
                           <tr>
@@ -1478,7 +1489,7 @@ export default function InvoicePage({
                         </tbody>
                       </table>
                     </td>
-                    {!isSharda && (
+                    {isGSTFirm && (
                       <td
                         colSpan={3}
                         style={{ border: "1px solid black", padding: 0 }}
