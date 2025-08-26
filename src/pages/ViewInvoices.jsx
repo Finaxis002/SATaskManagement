@@ -408,48 +408,38 @@ export default function ViewInvoices() {
     }
   };
 
+  // Is this invoice a GST invoice?
+const isGSTInvoice = (inv) => !!(inv?.selectedFirm?.gstin);
+
+// Compute the number you want to SHOW in the table
+const displayTotal = (inv) => {
+  // Prefer fields saved on the invoice if present
+  const subtotal =
+    typeof inv?.totalAmount === "number"
+      ? inv.totalAmount
+      : Array.isArray(inv?.items)
+      ? inv.items.reduce((s, it) => s + Number(it.qty) * Number(it.rate), 0)
+      : 0;
+
+  if (!isGSTInvoice(inv)) return subtotal;
+
+  // If GST invoice: prefer a precomputed totalAmountWithTax if saved,
+  // else sum tax parts, else fall back to fixed 18% on subtotal
+  const partsTotal =
+    (inv?.igstAmount || 0) + (inv?.cgstAmount || 0) + (inv?.sgstAmount || 0);
+
+  if (typeof inv?.totalAmountWithTax === "number") return inv.totalAmountWithTax;
+  if (partsTotal > 0) return subtotal + partsTotal;
+
+  // last-resort calculation if nothing saved
+  return subtotal * 1.18;
+};
+
+
   return (
     <div style={{ padding: 20 }}>
       <h2>View Invoices</h2>
-      {/* <Select
-        options={clientOptions}
-        onChange={setSelectedClient}
-        placeholder="Select client to filter invoices"
-        isClearable
-      />
-
-       <Select
-        options={firmOptions}
-        onChange={setSelectedFirm}
-        placeholder="Select firm to filter invoices"
-        isClearable
-      />
-
-      <div className="flex flex-wrap items-center gap-6 mt-4 mb-6">
-        <div className="flex flex-col">
-          <label className="text-sm font-medium text-gray-700 mb-1">
-            From Date
-          </label>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <label className="text-sm font-medium text-gray-700 mb-1">
-            To Date
-          </label>
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
-        </div>
-      </div> */}
+      
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           {/* Client Filter */}
@@ -587,7 +577,7 @@ export default function ViewInvoices() {
                     {inv.customer.name}
                   </td>
                   <td className="py-3 px-4 border-b border-gray-200">
-                    ₹{Number(inv.totalAmount).toFixed(2)}
+                   ₹{displayTotal(inv).toFixed(2)}
                   </td>
                   <td>
                     <button
@@ -660,7 +650,7 @@ export default function ViewInvoices() {
                 placeOfSupply={invoiceToView.placeOfSupply}
                 customer={invoiceToView.customer}
                 items={invoiceToView.items}
-                notes={invoiceToView.notes} 
+                notes={invoiceToView.notes}
               />
             </div>
 

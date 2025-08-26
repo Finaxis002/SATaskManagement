@@ -12,11 +12,13 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
     GSTIN: "",
   });
 
-  const isEdit = Boolean(client && client._id);
+  // const isEdit = Boolean(client && client._id);
+    const isEdit = !!(client && (client._id || client.id));
 
-   // Initialize form with client data when in edit mode
-  // useEffect(() => {
-  //   if (client) {
+   
+
+  //  useEffect(() => {
+  //   if (isEdit) {
   //     setFormData({
   //       name: client.name || "",
   //       contactPerson: client.contactPerson || "",
@@ -27,9 +29,8 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
   //       GSTIN: client.GSTIN || "",
   //     });
   //   } else {
-  //     // Reset form when creating new client
   //     setFormData({
-  //       name: "",
+  //       name: client?.name || "", // prefill typed name from invoice search
   //       contactPerson: "",
   //       businessName: "",
   //       address: "",
@@ -38,32 +39,51 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
   //       GSTIN: "",
   //     });
   //   }
-  // }, [client]);
+  // }, [client, isEdit]);
 
-   useEffect(() => {
-    if (isEdit) {
-      setFormData({
-        name: client.name || "",
-        contactPerson: client.contactPerson || "",
-        businessName: client.businessName || "",
-        address: client.address || "",
-        mobile: client.mobile || "",
-        emailId: client.emailId || "",
-        GSTIN: client.GSTIN || "",
-      });
-    } else {
-      setFormData({
-        name: client?.name || "", // prefill typed name from invoice search
-        contactPerson: "",
-        businessName: "",
-        address: "",
-        mobile: "",
-        emailId: "",
-        GSTIN: "",
-      });
-    }
-  }, [client, isEdit]);
+  //  useEffect(() => {
+  //   // normalize incoming client fields (handles different backends)
+  //   const c = client || {};
+  //   setFormData({
+  //     name: c.name || "",
+  //     contactPerson: c.contactPerson || c.contact || "",
+  //     businessName: c.businessName || c.company || "",
+  //     address: c.address || "",
+  //     mobile: c.mobile || c.phone || c.contactNo || "",
+  //     emailId: c.emailId || c.email || "",
+  //     GSTIN: c.GSTIN || c.gstin || "",
+  //   });
+  // // re-run when the actual record changes
+  // }, [client && (client._id || client.id)]);
 
+  useEffect(() => {
+  const c = client || {};
+  // normalize possible field names from different backends
+  const normalized = {
+    name: c.name || "",
+    contactPerson: c.contactPerson || c.contact || "",
+    businessName: c.businessName || c.company || "",
+    address: c.address || "",
+    mobile: c.mobile || c.phone || c.contactNo || "",
+    emailId: c.emailId || c.email || "",
+    GSTIN: c.GSTIN || c.gstin || "",
+  };
+
+  setFormData(
+    isEdit
+      ? normalized
+      : {
+          // for "create", keep only the name (e.g., typed from invoice search)
+          name: normalized.name,
+          contactPerson: "",
+          businessName: "",
+          address: "",
+          mobile: "",
+          emailId: "",
+          GSTIN: "",
+        }
+  );
+}, [isEdit, client?._id, client?.id, client?.name]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
