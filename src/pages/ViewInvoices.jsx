@@ -30,27 +30,34 @@ export default function ViewInvoices() {
   const [dateError, setDateError] = useState("");
   const [exporting, setExporting] = useState(false);
   // state
-const [showEditModal, setShowEditModal] = useState(false);
-const [invoiceToEdit, setInvoiceToEdit] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [invoiceToEdit, setInvoiceToEdit] = useState(null);
 
-// const openEdit = (inv) => { setInvoiceToEdit(inv); setShowEditModal(true); };
-const openEdit = async (inv) => {
-   setShowEditModal(true);
-   setInvoiceToEdit(null); // show a spinner if you want
-   try {
-     const { data } = await axios.get(`https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(inv.invoiceNumber)}`);
-     setInvoiceToEdit(data);           // always DB truth
-   } catch (e) {
-     setShowEditModal(false);
-     Swal.fire("Error", "Could not load invoice.", "error");
-   }
- };
+  // const openEdit = (inv) => { setInvoiceToEdit(inv); setShowEditModal(true); };
+  const openEdit = async (inv) => {
+    setShowEditModal(true);
+    setInvoiceToEdit(null); // show a spinner if you want
+    try {
+      const { data } = await axios.get(
+        `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
+          inv.invoiceNumber
+        )}`
+      );
+      setInvoiceToEdit(data); // always DB truth
+    } catch (e) {
+      setShowEditModal(false);
+      Swal.fire("Error", "Could not load invoice.", "error");
+    }
+  };
 
-const handleEdited = (updated) => {
-  setInvoices(prev => prev.map(x => x.invoiceNumber === updated.invoiceNumber ? updated : x));
-  setFilteredInvoices(prev => prev.map(x => x.invoiceNumber === updated.invoiceNumber ? updated : x));
-};
-
+  const handleEdited = (updated) => {
+    setInvoices((prev) =>
+      prev.map((x) => (x.invoiceNumber === updated.invoiceNumber ? updated : x))
+    );
+    setFilteredInvoices((prev) =>
+      prev.map((x) => (x.invoiceNumber === updated.invoiceNumber ? updated : x))
+    );
+  };
 
   useEffect(() => {
     axios
@@ -432,37 +439,37 @@ const handleEdited = (updated) => {
   };
 
   // Is this invoice a GST invoice?
-const isGSTInvoice = (inv) => !!(inv?.selectedFirm?.gstin);
+  const isGSTInvoice = (inv) => !!inv?.selectedFirm?.gstin;
 
-// Compute the number you want to SHOW in the table
-const displayTotal = (inv) => {
-  // Prefer fields saved on the invoice if present
-  const subtotal =
-    typeof inv?.totalAmount === "number"
-      ? inv.totalAmount
-      : Array.isArray(inv?.items)
-      ? inv.items.reduce((s, it) => s + Number(it.qty) * Number(it.rate), 0)
-      : 0;
+  // Compute the number you want to SHOW in the table
+  const displayTotal = (inv) => {
+    // Prefer fields saved on the invoice if present
+    const subtotal =
+      typeof inv?.totalAmount === "number"
+        ? inv.totalAmount
+        : Array.isArray(inv?.items)
+        ? inv.items.reduce((s, it) => s + Number(it.qty) * Number(it.rate), 0)
+        : 0;
 
-  if (!isGSTInvoice(inv)) return subtotal;
+    if (!isGSTInvoice(inv)) return subtotal;
 
-  // If GST invoice: prefer a precomputed totalAmountWithTax if saved,
-  // else sum tax parts, else fall back to fixed 18% on subtotal
-  const partsTotal =
-    (inv?.igstAmount || 0) + (inv?.cgstAmount || 0) + (inv?.sgstAmount || 0);
+    // If GST invoice: prefer a precomputed totalAmountWithTax if saved,
+    // else sum tax parts, else fall back to fixed 18% on subtotal
+    const partsTotal =
+      (inv?.igstAmount || 0) + (inv?.cgstAmount || 0) + (inv?.sgstAmount || 0);
 
-  if (typeof inv?.totalAmountWithTax === "number") return inv.totalAmountWithTax;
-  if (partsTotal > 0) return subtotal + partsTotal;
+    if (typeof inv?.totalAmountWithTax === "number")
+      return inv.totalAmountWithTax;
+    if (partsTotal > 0) return subtotal + partsTotal;
 
-  // last-resort calculation if nothing saved
-  return subtotal * 1.18;
-};
-
+    // last-resort calculation if nothing saved
+    return subtotal * 1.18;
+  };
 
   return (
     <div style={{ padding: 20 }}>
       <h2>View Invoices</h2>
-      
+
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           {/* Client Filter */}
@@ -600,7 +607,7 @@ const displayTotal = (inv) => {
                     {inv.customer.name}
                   </td>
                   <td className="py-3 px-4 border-b border-gray-200">
-                   ₹{displayTotal(inv).toFixed(2)}
+                    ₹{displayTotal(inv).toFixed(2)}
                   </td>
                   <td>
                     <button
@@ -610,24 +617,27 @@ const displayTotal = (inv) => {
                       Download PDF
                     </button>
                     <button
-  onClick={() => openEdit(inv)}
-  className="ml-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
->
-  Edit
-</button>
+                      onClick={() => openEdit(inv)}
+                      className="ml-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
+                    >
+                      Edit
+                    </button>
 
-{showEditModal && invoiceToEdit && (
-  <div className="fixed inset-0 z-[1001] bg-black/50 flex items-center justify-center">
-    <div className="bg-white rounded-md shadow-xl w-[95vw] max-w-[1200px] max-h-[92vh] overflow-auto p-3">
-      <InvoiceForm
-        key={invoiceToEdit.invoiceNumber}
-        initialInvoice={invoiceToEdit}
-        onSaved={handleEdited}
-        onClose={() => { setShowEditModal(false); setInvoiceToEdit(null); }}
-      />
-    </div>
-  </div>
-)}
+                    {showEditModal && invoiceToEdit && (
+                      <div className="fixed inset-0 z-[1001] bg-black/50 flex items-center justify-center">
+                        <div className="bg-white rounded-md shadow-xl w-[95vw] max-w-[1300px] max-h-[92vh] overflow-auto p-3">
+                          <InvoiceForm
+                            key={invoiceToEdit.invoiceNumber}
+                            initialInvoice={invoiceToEdit}
+                            onSaved={handleEdited}
+                            onClose={() => {
+                              setShowEditModal(false);
+                              setInvoiceToEdit(null);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     <button
                       onClick={() => handleDeleteInvoice(inv.invoiceNumber)}

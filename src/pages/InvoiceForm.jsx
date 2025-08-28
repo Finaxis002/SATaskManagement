@@ -3,7 +3,6 @@ import html2pdf from "html2pdf.js";
 import CreatableSelect from "react-select/creatable";
 import "../css/InvoiceForm.css";
 import axios from "../utils/secureAxios";
-import Select from "react-select";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
 import { FaTrash } from "react-icons/fa";
@@ -16,18 +15,16 @@ const ITEMS_PER_PAGE = 8;
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
-// Reusable classes for locked/read-only fields
-// Reusable field styles
-const INPUT_BASE = "w-full border rounded-md px-3 py-2 shadow-sm";
-const ENABLED =
-  "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500";
-const LOCKED = "bg-yellow-50 border-gray-300 text-gray-700 cursor-not-allowed";
+
+// Use the function
+
 
 export default function InvoiceForm({
   initialInvoice = null,
   onSaved,
   onClose,
 }) {
+  
   const PREVIEW_W = 794;
   const PREVIEW_H = 1122;
   const PREVIEW_SCALE = 0.9;
@@ -71,19 +68,13 @@ export default function InvoiceForm({
   const [selectedClientOption, setSelectedClientOption] = useState(null); // keep
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(null);
-  const LockedBadge = () =>
-    isEdit ? (
-      <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-red-600">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500"></span>
-        locked
-      </span>
-    ) : null;
+  
 
   useEffect(() => {
     const loadFirms = async () => {
       try {
         setFirmsLoading(true);
-        const res = await axios.get("https://taskbe.sharda.co.in/firms"); // baseURL in secureAxios handles domain
+        const res = await axios.get("https://taskbe.sharda.co.in/firms");
         setFirms(res.data || []);
         if (!isEdit && (res.data || []).length) {
           setSelectedFirmId(res.data[0]._id);
@@ -108,12 +99,6 @@ export default function InvoiceForm({
     setSelectedFirm(f);
     setSelectedBankIndex(0);
   }, [selectedFirmId, firms]);
-
-  // useEffect(() => {
-  //   setInvoiceNumber("");
-  //   setIsFinalized(false);
-  //   if (selectedFirm && invoiceType) previewInvoiceNumber();
-  // }, [selectedFirmId, invoiceType]);
 
   const previewInvoiceNumber = async () => {
     if (isEdit) return;
@@ -170,10 +155,6 @@ export default function InvoiceForm({
       throw error;
     }
   };
-
-  // useEffect(() => {
-  //   if (selectedFirm && invoiceType) previewInvoiceNumber();
-  // }, [selectedFirm, invoiceType]);
 
   useEffect(() => {
     if (isEdit) return; // ⛔ no preview while editing
@@ -251,7 +232,6 @@ export default function InvoiceForm({
     fetchClients();
   }, []);
 
-  // const [selectedClientOption, setSelectedClientOption] = useState(null);
 
   useEffect(() => {
     if (!selectedClientOption) {
@@ -307,11 +287,7 @@ export default function InvoiceForm({
     fetchTasks();
   }, [selectedClientOption, fromDate, toDate]);
 
-  // useEffect(() => {
-  //   if (selectedFirm && invoiceType) {
-  //     previewInvoiceNumber();
-  //   }
-  // }, [selectedFirm, invoiceType]);
+
 
   const updateItem = (index, field, value) => {
     setItems((prevItems) => {
@@ -385,99 +361,6 @@ export default function InvoiceForm({
       }
     });
   };
-
-  // const handleDownloadPDF = async () => {
-  //   try {
-  //     const finalNo = await finalizeInvoiceNumber(); // if you want locking
-  //     setInvoiceNumber(finalNo);
-  //     if (!invoiceRef.current) return;
-  //     const element = invoiceRef.current;
-  //     // Temporarily remove scale before PDF generation
-  //     element.style.transform = "scale(1)";
-  //     element.style.transformOrigin = "top left";
-  //     element.style.width = `${element.scrollWidth}px`;
-
-  //     // Make sure element is attached to DOM and visible
-  //     if (!document.body.contains(element)) {
-  //       document.body.appendChild(element);
-  //     }
-  //     // Add CSS for page margins
-
-  //     const opt = {
-  //       margin: 0,
-  //       padding: 0,
-  //       filename: `${invoiceNumber}.pdf`,
-  //       image: { type: "jpeg", quality: 0.98 },
-  //       html2canvas: {
-  //         scale: 2,
-  //         dpi: 300,
-  //         letterRendering: true,
-  //         useCORS: true,
-  //         width: element.scrollWidth, // Explicitly set width
-  //         windowWidth: element.scrollWidth, // Match window width
-  //       },
-  //       jsPDF: {
-  //         unit: "px",
-  //         // format: "a4",
-  //         orientation: "portrait",
-  //         format: [794, 1122],
-  //       },
-  //       pagebreak: { mode: "css" },
-  //     };
-
-  //     // Add this to ensure proper scaling
-  //     element.style.width = `${element.scrollWidth}px`;
-
-  //     // html2pdf().set(opt).from(element).save();
-  //     html2pdf()
-  //       .set(opt)
-  //       .from(element)
-  //       .save()
-  //       .then(() => {
-  //         // Restore scale after PDF is generated
-
-  //         element.style.transform = "scale(0.75)";
-  //         element.style.transformOrigin = "top left";
-  //         element.style.width = "";
-  //       });
-
-  //     // Reset the width after PDF generation if needed
-  //     setTimeout(() => {
-  //       element.style.width = "";
-  //     }, 2000);
-  //   } catch (error) {
-  //     alert("Could not finalize invoice number.");
-  //   }
-  // };
-
-  // const saveInvoice = async () => {
-  //   try {
-  //     const finalNo = await finalizeInvoiceNumber();
-
-  //     const invoiceData = {
-  //       invoiceNumber: finalNo,
-  //       invoiceDate,
-  //       invoiceType,
-  //       selectedFirm,
-  //       placeOfSupply,
-  //       customer,
-  //       items,
-  //       totalAmount: totalAmountWithTax,
-  //     };
-  //     await axios.post("/invoices", invoiceData);
-  //     // Display an alert once the invoice is saved successfully
-  //     Swal.fire({
-  //       icon: "success",
-  //       title: "Invoice Saved",
-  //       text: `Invoice ${invoiceNumber} has been successfully saved.`,
-  //       confirmButtonColor: "#3085d6",
-  //       confirmButtonText: "Ok",
-  //     });
-  //   } catch (error) {
-  //     console.error("Failed to save invoice", error);
-  //     alert("Failed to save invoice");
-  //   }
-  // };
 
   function numberToWordsIndian(num) {
     const a = [
@@ -630,7 +513,8 @@ export default function InvoiceForm({
           orientation: "portrait",
           format: [794, 1122],
         },
-        pagebreak: { mode: "css" },
+        pagebreak: { mode: ['css', 'legacy'],
+    avoid: '.invoice-note'},
       };
 
       await html2pdf().set(opt).from(element).save();
@@ -764,8 +648,62 @@ export default function InvoiceForm({
     if (selectedFirm && invoiceType) previewInvoiceNumber();
   }, [isEdit, selectedFirm, invoiceType]);
 
-  const updateInvoice = async () => {
+  // const updateInvoice = async () => {
+  //   try {
+  //     const firmSnapshot = {
+  //       _id: selectedFirm?._id,
+  //       name: selectedFirm?.name,
+  //       address: selectedFirm?.address,
+  //       phone: selectedFirm?.phone,
+  //       gstin: selectedFirm?.gstin,
+  //       bank: activeBank
+  //         ? {
+  //             _id: activeBank._id,
+  //             label: activeBank.label || "",
+  //             bankName: activeBank.bankName || activeBank.name || "",
+  //             accountName: activeBank.accountName || "",
+  //             accountNumber:
+  //               activeBank.accountNumber || activeBank.account || "",
+  //             ifsc: activeBank.ifsc || "",
+  //             upiIdName: activeBank.upiIdName || "",
+  //             upiMobile: activeBank.upiMobile || "",
+  //             upiId: activeBank.upiId || "",
+  //           }
+  //         : null,
+  //     };
+
+  //     const payload = {
+  //       invoiceNumber,
+  //       invoiceDate,
+  //       invoiceType, // ignored if changed (server freezes)
+  //       selectedFirm: firmSnapshot, // bank allowed; rest frozen server-side
+  //       placeOfSupply,
+  //       customer, // frozen server-side
+  //       items,
+  //       notes,
+  //       totalAmount: totalAmountWithTax,
+  //     };
+
+  //     // const { data } = await axios.put(`https://taskbe.sharda.co.in/api/invoices/${invoiceNumber}`, payload);
+  //     const idForUpdate = isEdit ? originalInvNoRef.current : invoiceNumber;
+  //     const { data } = await axios.put(
+  //       `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
+  //         idForUpdate
+  //       )}`,
+  //       payload
+  //     );
+  //     await Swal.fire("Updated", "Invoice saved successfully.", "success");
+  //     onSaved && onSaved(data);
+  //     onClose && onClose();
+  //   } catch (e) {
+  //     console.error(e);
+  //     Swal.fire("Error", "Could not update the invoice.", "error");
+  //   }
+  // };
+
+  const handleUpdateAndDownloadPDF = async () => {
     try {
+      // 1) UPDATE the invoice in DB (no finalize here)
       const firmSnapshot = {
         _id: selectedFirm?._id,
         name: selectedFirm?.name,
@@ -791,8 +729,8 @@ export default function InvoiceForm({
       const payload = {
         invoiceNumber,
         invoiceDate,
-        invoiceType, // ignored if changed (server freezes)
-        selectedFirm: firmSnapshot, // bank allowed; rest frozen server-side
+        invoiceType, // server freezes type if changed
+        selectedFirm: firmSnapshot,
         placeOfSupply,
         customer, // frozen server-side
         items,
@@ -800,22 +738,107 @@ export default function InvoiceForm({
         totalAmount: totalAmountWithTax,
       };
 
-      // const { data } = await axios.put(`https://taskbe.sharda.co.in/api/invoices/${invoiceNumber}`, payload);
       const idForUpdate = isEdit ? originalInvNoRef.current : invoiceNumber;
-      const { data } = await axios.put(
+      await axios.put(
         `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
           idForUpdate
         )}`,
         payload
       );
-      await Swal.fire("Updated", "Invoice saved successfully.", "success");
-      onSaved && onSaved(data);
-      onClose && onClose();
-    } catch (e) {
-      console.error(e);
-      Swal.fire("Error", "Could not update the invoice.", "error");
+
+      // Optional toast
+      await Swal.fire({
+        icon: "success",
+        title: "Invoice Updated",
+        text: `Invoice ${invoiceNumber} has been updated. Generating PDF...`,
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "Ok",
+      });
+
+      // 2) GENERATE the PDF (do NOT finalize/increment in edit mode)
+      if (!invoiceRef.current) return;
+
+      const element = invoiceRef.current;
+
+      // remember current styles and temporarily un-scale
+      const prevTransform = element.style.transform;
+      const prevTransformOrigin = element.style.transformOrigin;
+      const prevWidth = element.style.width;
+
+      element.style.transform = "scale(1)";
+      element.style.transformOrigin = "top left";
+      element.style.width = `${element.scrollWidth}px`;
+
+      const opt = {
+        margin: 0,
+        padding: 0,
+        filename: `${invoiceNumber}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          dpi: 300,
+          letterRendering: true,
+          useCORS: true,
+          width: element.scrollWidth,
+          windowWidth: element.scrollWidth,
+        },
+        jsPDF: {
+          unit: "px",
+          orientation: "portrait",
+          format: [794, 1122],
+        },
+        pagebreak: { mode: "css" },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+
+      // restore preview styles
+      element.style.transform = prevTransform || `scale(${previewScale})`;
+      element.style.transformOrigin = prevTransformOrigin || "top left";
+      element.style.width = prevWidth || "";
+
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Error", "Could not update or generate the invoice.", "error");
     }
   };
+
+  const calculateNotesPages = () => {
+  if (notes.length === 0) return 0;
+  
+  // Simple estimation - you might need to adjust this based on your actual layout
+  const approxLinesPerPage = 40;
+  let totalLines = 0;
+  
+  notes.forEach(note => {
+    // Estimate lines based on character count (assuming ~60 chars per line)
+    const lines = Math.ceil(note.text.length / 60) + 1; // +1 for the number prefix
+    totalLines += lines;
+  });
+  
+  return Math.ceil(totalLines / approxLinesPerPage);
+};
+
+// Add this function inside your InvoiceForm component, before the return statement
+// const splitNotesForPages = () => {
+//   if (notes.length === 0) return [[], []];
+//   return [notes, []];
+// };
+const splitNotesForPages = (notes, maxNotesPerPage = 5) => {
+  if (notes.length === 0) return [[], []];
+  
+  // If all notes fit on one page, return them all
+  if (notes.length <= maxNotesPerPage) return [notes, []];
+  
+  // Otherwise, split notes between pages
+  return [notes.slice(0, maxNotesPerPage), notes.slice(maxNotesPerPage)];
+};
+
+
+// Then use it inside the component
+const [notesPage1, notesPage2] = splitNotesForPages(notes);
+// Calculate pages needed
+const notesPages = calculateNotesPages();
 
   return (
     <>
@@ -853,20 +876,35 @@ export default function InvoiceForm({
   .asa-right {
     flex: 0 0 auto !important;
   }
+    @media print {
+    .invoice-note {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .notes-container {
+      break-inside: auto;
+    }
+  }
+  
+  .invoice-note {
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px dotted #eee;
+  }
+  
+  .note-number {
+    font-weight: bold;
+    margin-right: 5px;
+  }
+  
+  .note-text {
+    white-space: pre-line;
+  }
 `}</style>
       ;
       <div
         className="invoice-page "
-        // style={{
-        //   display: "flex",
-        //   gap: 20,
-        //   padding: 20,
-        //   flexWrap: "nowrap", // keep them in one row
-        //   justifyContent: "flex-start", // <— was "center"
-        //   alignItems: "flex-start",
-        //   background: "#f9f9f9",
-        //   overflowX: "auto",
-        // }}
+      
         style={{
           display: "flex",
           flexDirection: "row", // This ensures side-by-side layout
@@ -876,6 +914,9 @@ export default function InvoiceForm({
           height: "calc(100vh - 40px)",
           overflowX: "auto",
           alignItems: "flex-start",
+          overflow: "hidden",
+          width: "100%", // Make it take full available width
+          maxWidth: "none", // Remove any max-width constraints
         }}
       >
         {/* Left form side */}
@@ -886,9 +927,9 @@ export default function InvoiceForm({
             maxWidth: "520px",
             minWidth: "520px",
             boxSizing: "border-box",
-            height: "100%", 
-            overflowY: "auto", 
-            paddingRight: "8px", 
+            height: "100%",
+            overflowY: "auto",
+            paddingRight: "8px",
           }}
         >
           {/* ... Your left side inputs and controls ... */}
@@ -902,17 +943,8 @@ export default function InvoiceForm({
               marginBottom: "16px",
             }}
           >
-            {/* <button
-            onClick={handleSaveAndDownloadPDF}
-            title="Save and Download PDF"
-            className="group mb-3 relative px-4 py-2.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-          >
-            <FiSave className="w-4 h-4 transition-transform group-hover:scale-110" />
-            <span>Save & Generate PDF</span>
-            <FiDownload className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-1" />
-          </button> */}
             <div className="flex gap-2 justify-center items-center mb-3">
-              {isEdit ? (
+              {/* {isEdit ? (
                 <button
                   onClick={updateInvoice}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
@@ -927,7 +959,23 @@ export default function InvoiceForm({
                 >
                   Save & Generate PDF
                 </button>
-              )}
+              )} */}
+              <button
+                onClick={
+                  isEdit ? handleUpdateAndDownloadPDF : handleSaveAndDownloadPDF
+                }
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                title={
+                  isEdit ? "Update and Download PDF" : "Save and Download PDF"
+                }
+              >
+                <FiSave className="w-4 h-4" />
+                <span>
+                  {isEdit ? "Update & Download PDF" : "Save & Download PDF"}
+                </span>
+                <FiDownload className="w-4 h-4" />
+              </button>
+
               {onClose && (
                 <button onClick={onClose} className="px-4 py-2 border rounded">
                   Close
@@ -1016,11 +1064,11 @@ export default function InvoiceForm({
                   disabled={isEdit}
                   // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
-   ${
-     isEdit
-       ? "locked-field locked-cursor"
-       : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-   }`}
+                    ${
+                      isEdit
+                        ? "locked-field locked-cursor"
+                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    }`}
                   aria-disabled={isEdit}
                   onMouseDown={(e) => {
                     if (isEdit) e.preventDefault();
@@ -1261,7 +1309,7 @@ export default function InvoiceForm({
             </div>
 
             {/* Notes Section */}
-            <div className="mb-4">
+            <div className="mb-4 notes-section">
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
                 Notes
               </h2>
@@ -1275,7 +1323,7 @@ export default function InvoiceForm({
               {notes.map((n, idx) => (
                 <div
                   key={n.id}
-                  className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm"
+                  className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm invoice-note"
                 >
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Note {idx + 1}
@@ -1388,13 +1436,6 @@ export default function InvoiceForm({
                   offset={offsetPage1}
                   isLastPage={page2Items.length === 0}
                   customer={customer}
-                  // selectedFirm={{
-                  //   ...selectedFirm,
-                  //   bank:
-                  //     selectedFirm?.name === "Sharda Associates"
-                  //       ? selectedFirm?.banks[selectedBankIndex]
-                  //       : selectedFirm?.bank,
-                  // }}
                   selectedFirm={{ ...selectedFirm, bank: activeBank }}
                   invoiceType={invoiceType}
                   invoiceNumber={invoiceNumber}
@@ -1409,8 +1450,8 @@ export default function InvoiceForm({
                   sgstAmount={sgstAmount}
                   numberToWordsIndian={numberToWordsIndian}
                   onImagesLoaded={() => setImagesReady(true)}
-                  showGSTIN={showGSTIN}
-                  notes={notes}
+                  showGSTIN={showGSTIN}                  
+                  notes={notesPage1}
                 />
 
                 {page2Items.length > 0 && (
@@ -1435,7 +1476,7 @@ export default function InvoiceForm({
                     sgstAmount={sgstAmount}
                     numberToWordsIndian={numberToWordsIndian}
                     onImagesLoaded={() => setImagesReady(true)}
-                    notes={notes}
+                    notes={notesPage2}
                   />
                 )}
               </div>

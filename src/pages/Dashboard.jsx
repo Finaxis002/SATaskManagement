@@ -195,23 +195,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      {/* {role === "admin" && (
-        <div className="mt-4 p-4 rounded-lg bg-indigo-50 border border-indigo-200">
-          <h3 className="font-semibold">🎂 Today’s Birthdays</h3>
-          {todaysBirthdays.length === 0 ? (
-            <p>No birthdays today.</p>
-          ) : (
-            <ul className="mt-2">
-              {todaysBirthdays.map((emp) => (
-                <li key={emp._id}>
-                  {emp.name} — {emp.department?.join(", ")}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )} */}
-      {role === "admin" && (
+      
+      {role === "admin" && todaysBirthdays.length > 0 && (
         <div className="mt-4">
           <div className="rounded-2xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50 to-indigo-100 p-0.5">
             <div className="rounded-2xl bg-white/60 backdrop-blur-sm">
