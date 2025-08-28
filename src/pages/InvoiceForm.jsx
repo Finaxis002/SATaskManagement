@@ -10,12 +10,52 @@ import { FaTrash } from "react-icons/fa";
 import { FiSave, FiDownload } from "react-icons/fi";
 import InvoicePage from "../Components/invoice/InvoicePage";
 import CreateClientModal from "../Components/client/CreateClientModal";
+// import axios from "axios";
 
 const ITEMS_PER_PAGE = 8;
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
-export default function InvoiceForm() {
+// Reusable classes for locked/read-only fields
+// Reusable field styles
+const INPUT_BASE = "w-full border rounded-md px-3 py-2 shadow-sm";
+const ENABLED =
+  "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500";
+const LOCKED = "bg-yellow-50 border-gray-300 text-gray-700 cursor-not-allowed";
+
+export default function InvoiceForm({
+  initialInvoice = null,
+  onSaved,
+  onClose,
+}) {
+  const PREVIEW_W = 794;
+  const PREVIEW_H = 1122;
+  const PREVIEW_SCALE = 0.9;
+  const [previewScale, setPreviewScale] = useState(0.9);
+  const previewWrapRef = useRef(null);
+
+  useEffect(() => {
+    const update = () => {
+      const el = previewWrapRef.current;
+      if (!el) return;
+      const avail = el.clientWidth - 16; // padding
+      setPreviewScale(Math.min(1, avail / PREVIEW_W));
+    };
+
+    update();
+
+    const ro = new ResizeObserver(update);
+    const el = previewWrapRef.current;
+    if (el) ro.observe(el); // <-- guard!
+
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  const isEdit = !!initialInvoice;
   const [firms, setFirms] = useState([]);
   const [selectedFirmId, setSelectedFirmId] = useState("");
   // const [selectedFirm, setSelectedFirm] = useState(null);
@@ -30,7 +70,14 @@ export default function InvoiceForm() {
   const [notes, setNotes] = useState([]);
   const [selectedClientOption, setSelectedClientOption] = useState(null); // keep
   const [createClientOpen, setCreateClientOpen] = useState(false);
-  const [draftClient, setDraftClient] = useState(null); // { name?: string, ... }
+  const [draftClient, setDraftClient] = useState(null);
+  const LockedBadge = () =>
+    isEdit ? (
+      <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-red-600">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500"></span>
+        locked
+      </span>
+    ) : null;
 
   useEffect(() => {
     const loadFirms = async () => {
@@ -38,7 +85,7 @@ export default function InvoiceForm() {
         setFirmsLoading(true);
         const res = await axios.get("https://taskbe.sharda.co.in/firms"); // baseURL in secureAxios handles domain
         setFirms(res.data || []);
-        if ((res.data || []).length) {
+        if (!isEdit && (res.data || []).length) {
           setSelectedFirmId(res.data[0]._id);
           setSelectedFirm(res.data[0]);
         }
@@ -62,13 +109,14 @@ export default function InvoiceForm() {
     setSelectedBankIndex(0);
   }, [selectedFirmId, firms]);
 
-  useEffect(() => {
-    setInvoiceNumber("");
-    setIsFinalized(false);
-    if (selectedFirm && invoiceType) previewInvoiceNumber();
-  }, [selectedFirmId, invoiceType]);
+  // useEffect(() => {
+  //   setInvoiceNumber("");
+  //   setIsFinalized(false);
+  //   if (selectedFirm && invoiceType) previewInvoiceNumber();
+  // }, [selectedFirmId, invoiceType]);
 
   const previewInvoiceNumber = async () => {
+    if (isEdit) return;
     if (!selectedFirm) return;
     const year = new Date().getFullYear().toString().slice(-2);
     const month = String(new Date().getMonth() + 1).padStart(2, "0");
@@ -123,9 +171,16 @@ export default function InvoiceForm() {
     }
   };
 
+  // useEffect(() => {
+  //   if (selectedFirm && invoiceType) previewInvoiceNumber();
+  // }, [selectedFirm, invoiceType]);
+
   useEffect(() => {
+    if (isEdit) return; // ⛔ no preview while editing
+    setInvoiceNumber("");
+    setIsFinalized(false);
     if (selectedFirm && invoiceType) previewInvoiceNumber();
-  }, [selectedFirm, invoiceType]);
+  }, [isEdit, selectedFirmId, selectedFirm, invoiceType]);
 
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const today = new Date();
@@ -177,6 +232,7 @@ export default function InvoiceForm() {
 
   const offsetPage1 = 0;
   const offsetPage2 = ITEMS_PER_PAGE;
+  const originalInvNoRef = useRef("");
 
   // Fetch clients on component mount
   useEffect(() => {
@@ -251,11 +307,11 @@ export default function InvoiceForm() {
     fetchTasks();
   }, [selectedClientOption, fromDate, toDate]);
 
-  useEffect(() => {
-    if (selectedFirm && invoiceType) {
-      previewInvoiceNumber();
-    }
-  }, [selectedFirm, invoiceType]);
+  // useEffect(() => {
+  //   if (selectedFirm && invoiceType) {
+  //     previewInvoiceNumber();
+  //   }
+  // }, [selectedFirm, invoiceType]);
 
   const updateItem = (index, field, value) => {
     setItems((prevItems) => {
@@ -644,35 +700,209 @@ export default function InvoiceForm() {
     }
   };
 
+  // Preload on edit
+  useEffect(() => {
+    if (!isEdit || !initialInvoice) return;
+
+    const inv = initialInvoice;
+    originalInvNoRef.current = inv.invoiceNumber;
+    setInvoiceNumber(inv.invoiceNumber);
+    setIsFinalized(true);
+
+    setInvoiceType(inv.invoiceType || invoiceTypes[0]);
+
+    const d = inv.invoiceDate ? new Date(inv.invoiceDate) : new Date();
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getDate()).padStart(2, "0")}`;
+    setInvoiceDate(ymd);
+
+    setPlaceOfSupply(inv.placeOfSupply || "");
+    setCustomer(inv.customer || {});
+
+    setItems(
+      (inv.items || []).map((it) => ({
+        id: uuidv4(),
+        description: it.description || "",
+        hsn: it.hsn || "9971",
+        qty: Number(it.qty) || 1,
+        rate: Number(it.rate) || 0,
+        gst: Number(it.gst) || 0,
+      }))
+    );
+
+    const notesArr =
+      typeof inv.notes === "string"
+        ? inv.notes
+            .split("\n")
+            .filter(Boolean)
+            .map((t) => ({ id: uuidv4(), text: t }))
+        : (inv.notes || []).map((n) => ({
+            id: uuidv4(),
+            text: typeof n === "string" ? n : n?.text || "",
+          }));
+    setNotes(notesArr);
+
+    const f = inv.selectedFirm || null;
+    setSelectedFirmId(f?._id || "");
+    setSelectedFirm(f || null);
+
+    const invBank = f?.bank;
+    const idx = (f?.banks || []).findIndex(
+      (b) =>
+        (b?._id && invBank?._id && b._id === invBank._id) ||
+        (b.accountNumber || b.account) ===
+          (invBank?.accountNumber || invBank?.account)
+    );
+    setSelectedBankIndex(idx >= 0 ? idx : 0);
+  }, [isEdit, initialInvoice]);
+
+  // Skip preview number in edit mode
+  useEffect(() => {
+    if (isEdit) return;
+    if (selectedFirm && invoiceType) previewInvoiceNumber();
+  }, [isEdit, selectedFirm, invoiceType]);
+
+  const updateInvoice = async () => {
+    try {
+      const firmSnapshot = {
+        _id: selectedFirm?._id,
+        name: selectedFirm?.name,
+        address: selectedFirm?.address,
+        phone: selectedFirm?.phone,
+        gstin: selectedFirm?.gstin,
+        bank: activeBank
+          ? {
+              _id: activeBank._id,
+              label: activeBank.label || "",
+              bankName: activeBank.bankName || activeBank.name || "",
+              accountName: activeBank.accountName || "",
+              accountNumber:
+                activeBank.accountNumber || activeBank.account || "",
+              ifsc: activeBank.ifsc || "",
+              upiIdName: activeBank.upiIdName || "",
+              upiMobile: activeBank.upiMobile || "",
+              upiId: activeBank.upiId || "",
+            }
+          : null,
+      };
+
+      const payload = {
+        invoiceNumber,
+        invoiceDate,
+        invoiceType, // ignored if changed (server freezes)
+        selectedFirm: firmSnapshot, // bank allowed; rest frozen server-side
+        placeOfSupply,
+        customer, // frozen server-side
+        items,
+        notes,
+        totalAmount: totalAmountWithTax,
+      };
+
+      // const { data } = await axios.put(`https://taskbe.sharda.co.in/api/invoices/${invoiceNumber}`, payload);
+      const idForUpdate = isEdit ? originalInvNoRef.current : invoiceNumber;
+      const { data } = await axios.put(
+        `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
+          idForUpdate
+        )}`,
+        payload
+      );
+      await Swal.fire("Updated", "Invoice saved successfully.", "success");
+      onSaved && onSaved(data);
+      onClose && onClose();
+    } catch (e) {
+      console.error(e);
+      Swal.fire("Error", "Could not update the invoice.", "error");
+    }
+  };
+
   return (
-    <div
-      className="invoice-page"
-      style={{
-        display: "flex",
-        gap: 20,
-        padding: 20,
-        flexWrap: "wrap",
-        justifyContent: "center",
-        background: "#f9f9f9",
-      }}
-    >
-      {/* Left form side */}
+    <>
+      <style>{`
+  .locked-field { 
+    background-color: #fff7d6 !important; 
+    border-color: #d1d5db !important; 
+    color: #374151 !important;
+  }
+  .locked-cursor, .locked-cursor * { 
+    cursor: not-allowed !important;
+  }
+`}</style>
+      <style>{`
+  /* force two columns and prevent wrapping */
+  .asa-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    gap: 20px !important;
+    padding: 20px !important;
+    background: #f9f9f9 !important;
+    overflow-x: auto !important; /* horizontal scroll if needed */
+  }
+
+  /* lock the left panel to a fixed column width (override width:100%) */
+  .asa-left {
+    flex: 0 0 520px !important;
+    width: 520px !important;
+    max-width: 520px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* right side is content-sized; never wraps */
+  .asa-right {
+    flex: 0 0 auto !important;
+  }
+`}</style>
+      ;
       <div
-        className="invoice-left scrollable-panel "
-        style={{ flex: "1 1 550px", maxWidth: 500 }}
+        className="invoice-page "
+        // style={{
+        //   display: "flex",
+        //   gap: 20,
+        //   padding: 20,
+        //   flexWrap: "nowrap", // keep them in one row
+        //   justifyContent: "flex-start", // <— was "center"
+        //   alignItems: "flex-start",
+        //   background: "#f9f9f9",
+        //   overflowX: "auto",
+        // }}
+        style={{
+          display: "flex",
+          flexDirection: "row", // This ensures side-by-side layout
+          gap: "20px",
+          padding: "20px",
+          background: "#f9f9f9",
+          height: "calc(100vh - 40px)",
+          overflowX: "auto",
+          alignItems: "flex-start",
+        }}
       >
-        {/* ... Your left side inputs and controls ... */}
+        {/* Left form side */}
         <div
+          className="invoice-left scrollable-panel"
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "10px",
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: "16px",
+            flex: "0 0 520px",
+            maxWidth: "520px",
+            minWidth: "520px",
+            boxSizing: "border-box",
+            height: "100%", 
+            overflowY: "auto", 
+            paddingRight: "8px", 
           }}
         >
-          <button
+          {/* ... Your left side inputs and controls ... */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "10px",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
+            {/* <button
             onClick={handleSaveAndDownloadPDF}
             title="Save and Download PDF"
             className="group mb-3 relative px-4 py-2.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
@@ -680,412 +910,551 @@ export default function InvoiceForm() {
             <FiSave className="w-4 h-4 transition-transform group-hover:scale-110" />
             <span>Save & Generate PDF</span>
             <FiDownload className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-1" />
-          </button>
-        </div>
-
-        <div className="space-y-1">
-          {/* Date Range */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                From Date
-              </label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                max={toDate || undefined}
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                To Date
-              </label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                min={fromDate || undefined}
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Firm Selection */}
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              Your Details
-            </h2>
-            <label className="block text-sm font-medium text-gray-700">
-              Select Firm
-            </label>
-
-            {firmsLoading ? (
-              <div className="mt-1 text-sm text-gray-500">Loading firms…</div>
-            ) : firmsError ? (
-              <div className="mt-1 text-sm text-red-600">{firmsError}</div>
-            ) : (
-              <select
-                value={selectedFirmId}
-                onChange={(e) => setSelectedFirmId(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {firms.map((f) => (
-                  <option key={f._id} value={f._id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {selectedFirm?.banks?.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Select Bank Account
-              </label>
-              <select
-                value={selectedBankIndex}
-                onChange={(e) => setSelectedBankIndex(parseInt(e.target.value))}
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {selectedFirm?.banks?.map((bank, idx) => (
-                  <option key={bank._id || idx} value={idx}>
-                    {bank.label ||
-                      `${bank.bankName || bank.name} - ${
-                        bank.accountNumber || bank.account
-                      }`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Invoice Type */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Invoice Type
-              </label>
-              <select
-                value={invoiceType}
-                onChange={(e) => setInvoiceType(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {invoiceTypes.map((type) => (
-                  <option key={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Invoice Date
-              </label>
-              <input
-                type="date"
-                value={invoiceDate}
-                onChange={(e) => setInvoiceDate(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Client Selection */}
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              Customer Details
-            </h2>
-            {/* <Select
-              options={clientOptions}
-              value={clientOptions.find(
-                (option) => option.value === customer._id
-              )}
-              onChange={(option) => setSelectedClientOption(option)}
-              placeholder="Search or select client..."
-              isClearable
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  marginBottom: "10px",
-                  minHeight: "40px",
-                  borderRadius: "0.375rem",
-                  borderColor: "#d1d5db",
-                }),
-                menu: (base) => ({
-                  ...base,
-                  zIndex: 9999,
-                }),
-              }}
-              theme={(theme) => ({
-                ...theme,
-                colors: {
-                  ...theme.colors,
-                  primary: "#1a73e8",
-                },
-              })}
-            /> */}
-            <CreatableSelect
-              options={clientOptions}
-              value={selectedClientOption}
-              onChange={(option) => setSelectedClientOption(option)}
-              onCreateOption={openCreateClientModal} // 👈 shows “+ Add client …”
-              formatCreateLabel={(inputValue) => `+ Add client "${inputValue}"`}
-              placeholder="Search or select client..."
-              isClearable
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  marginBottom: "10px",
-                  minHeight: "40px",
-                  borderRadius: "0.375rem",
-                  borderColor: "#d1d5db",
-                }),
-                menu: (base) => ({ ...base, zIndex: 9999 }),
-              }}
-              theme={(theme) => ({
-                ...theme,
-                colors: { ...theme.colors, primary: "#1a73e8" },
-              })}
-            />
-          </div>
-
-          {/* Place of Supply */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Place of Supply
-            </label>
-            <input
-              placeholder="Place of Supply"
-              value={placeOfSupply}
-              onChange={(e) => setPlaceOfSupply(e.target.value)}
-              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Items Section */}
-          <div className="relative max-h-[60vh] overflow-y-auto pr-2">
-            <h2 className="text-lg font-semibold text-gray-800">Items</h2>
-            {items.map((item, idx) => {
-              const amount = (item.qty * item.rate).toFixed(2);
-              return (
-                <div
-                  key={idx}
-                  className="border border-gray-300 rounded-lg p-4 mb-2 bg-white shadow-sm"
+          </button> */}
+            <div className="flex gap-2 justify-center items-center mb-3">
+              {isEdit ? (
+                <button
+                  onClick={updateInvoice}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                 >
+                  Update Invoice
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveAndDownloadPDF}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  title="Save and Download PDF"
+                >
+                  Save & Generate PDF
+                </button>
+              )}
+              {onClose && (
+                <button onClick={onClose} className="px-4 py-2 border rounded">
+                  Close
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {/* Date Range */}
+            {!isEdit && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Description
+                    From Date
                   </label>
                   <input
-                    value={item.description}
-                    onChange={(e) =>
-                      updateItem(idx, "description", e.target.value)
-                    }
-                    placeholder="Description"
-                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    max={toDate || undefined}
+                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    min={fromDate || undefined}
+                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            )}
 
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Qty
-                      </label>
-                      <input
-                        type="number"
-                        value={item.qty}
-                        onChange={(e) =>
-                          updateItem(idx, "qty", Number(e.target.value))
-                        }
-                        min={1}
-                        className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Rate
-                      </label>
-                      <input
-                        type="number"
-                        value={item.rate}
-                        onChange={(e) =>
-                          updateItem(idx, "rate", Number(e.target.value))
-                        }
-                        step="0.01"
-                        className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Amount
-                      </label>
-                      <input
-                        readOnly
-                        value={`₹${amount}`}
-                        className="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700"
-                      />
-                    </div>
+            {isEdit && (
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-600">
+                    Invoice No.
+                  </label>
+                  <input
+                    readOnly
+                    value={invoiceNumber}
+                    className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
+                      ${
+                        isEdit
+                          ? "locked-field locked-cursor"
+                          : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      }`}
+                    aria-disabled={isEdit}
+                    onMouseDown={(e) => {
+                      if (isEdit) e.preventDefault();
+                    }}
+                    onKeyDown={(e) => {
+                      if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                        e.preventDefault();
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
+            {/* Firm Selection */}
+
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Your Details
+              </h2>
+              <label className="block text-sm font-medium text-gray-700">
+                Select Firm
+              </label>
+
+              {firmsLoading ? (
+                <div className="mt-1 text-sm text-gray-500">Loading firms…</div>
+              ) : firmsError ? (
+                <div className="mt-1 text-sm text-red-600">{firmsError}</div>
+              ) : (
+                <select
+                  value={selectedFirmId}
+                  onChange={(e) => setSelectedFirmId(e.target.value)}
+                  disabled={isEdit}
+                  // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
+   ${
+     isEdit
+       ? "locked-field locked-cursor"
+       : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+   }`}
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                >
+                  {firms.map((f) => (
+                    <option key={f._id} value={f._id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {selectedFirm?.banks?.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Select Bank Account
+                </label>
+                <select
+                  value={selectedBankIndex}
+                  onChange={(e) =>
+                    setSelectedBankIndex(parseInt(e.target.value))
+                  }
+                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {selectedFirm?.banks?.map((bank, idx) => (
+                    <option key={bank._id || idx} value={idx}>
+                      {bank.label ||
+                        `${bank.bankName || bank.name} - ${
+                          bank.accountNumber || bank.account
+                        }`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Invoice Type */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Invoice Type
+                </label>
+                <select
+                  value={invoiceType}
+                  onChange={(e) => setInvoiceType(e.target.value)}
+                  disabled={isEdit}
+                  // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
+                  ${
+                    isEdit
+                      ? "locked-field locked-cursor"
+                      : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  }`}
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                >
+                  {invoiceTypes.map((type) => (
+                    <option key={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Invoice Date
+                </label>
+                <input
+                  type="date"
+                  value={invoiceDate}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
+                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Client Selection */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Customer Details
+              </h2>
+              {isEdit ? (
+                <input
+                  readOnly
+                  value={customer?.name || ""}
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
+                   ${
+                     isEdit
+                       ? "locked-field locked-cursor"
+                       : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   }`}
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                  title="Client is locked for existing invoice"
+                />
+              ) : (
+                <CreatableSelect
+                  options={clientOptions}
+                  value={selectedClientOption}
+                  onChange={(option) => setSelectedClientOption(option)}
+                  onCreateOption={openCreateClientModal} // 👈 shows “+ Add client …”
+                  formatCreateLabel={(inputValue) =>
+                    `+ Add client "${inputValue}"`
+                  }
+                  placeholder="Search or select client..."
+                  isClearable
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      marginBottom: "10px",
+                      minHeight: "40px",
+                      borderRadius: "0.375rem",
+                      borderColor: "#d1d5db",
+                    }),
+                    menu: (base) => ({ ...base, zIndex: 9999 }),
+                  }}
+                  theme={(theme) => ({
+                    ...theme,
+                    colors: { ...theme.colors, primary: "#1a73e8" },
+                  })}
+                />
+              )}
+            </div>
+
+            {/* Place of Supply */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Place of Supply
+              </label>
+              <input
+                placeholder="Place of Supply"
+                value={placeOfSupply}
+                onChange={(e) => setPlaceOfSupply(e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Items Section */}
+            <div className="relative max-h-[60vh] overflow-y-auto pr-2">
+              <h2 className="text-lg font-semibold text-gray-800">Items</h2>
+              {items.map((item, idx) => {
+                const amount = (item.qty * item.rate).toFixed(2);
+                return (
+                  <div
+                    key={idx}
+                    className="border border-gray-300 rounded-lg p-4 mb-2 bg-white shadow-sm"
+                  >
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description
+                    </label>
+                    <input
+                      value={item.description}
+                      onChange={(e) =>
+                        updateItem(idx, "description", e.target.value)
+                      }
+                      placeholder="Description"
+                      className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Qty
+                        </label>
+                        <input
+                          type="number"
+                          value={item.qty}
+                          onChange={(e) =>
+                            updateItem(idx, "qty", Number(e.target.value))
+                          }
+                          min={1}
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Rate
+                        </label>
+                        <input
+                          type="number"
+                          value={item.rate}
+                          onChange={(e) =>
+                            updateItem(idx, "rate", Number(e.target.value))
+                          }
+                          step="0.01"
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Amount
+                        </label>
+                        <input
+                          readOnly
+                          value={`₹${amount}`}
+                          className="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => deleteItem(item.id)}
+                        className="mt-6  transition text-red-500 hover:text-red-800"
+                        title="Delete Task"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Add Item Button */}
+              <div className="mt-4 sticky bottom-4 bg-white py-2 text-center">
+                <button
+                  onClick={addItem}
+                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
+                >
+                  + Add Item
+                </button>
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Notes
+              </h2>
+
+              {notes.length === 0 && (
+                <div className="text-sm text-gray-500 mb-2">
+                  Add your first note for this invoice.
+                </div>
+              )}
+
+              {notes.map((n, idx) => (
+                <div
+                  key={n.id}
+                  className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm"
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Note {idx + 1}
+                  </label>
+                  <textarea
+                    value={n.text}
+                    onChange={(e) => updateNote(n.id, e.target.value)}
+                    rows={2}
+                    placeholder="Write a remark or note for this invoice..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex justify-end mt-2">
                     <button
                       type="button"
-                      onClick={() => deleteItem(item.id)}
-                      className="mt-6  transition text-red-500 hover:text-red-800"
-                      title="Delete Task"
+                      onClick={() => deleteNote(n.id)}
+                      className="text-red-500 hover:text-red-700 text-sm flex items-center gap-2"
+                      title="Delete Note"
                     >
                       <FaTrash />
+                      Remove
                     </button>
                   </div>
                 </div>
-              );
-            })}
+              ))}
 
-            {/* Add Item Button */}
-            <div className="mt-4 sticky bottom-4 bg-white py-2 text-center">
+              {/* Add Note button BELOW the notes list */}
               <button
-                onClick={addItem}
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
+                onClick={addNote}
+                className="w-50  bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium text-sm transition pt-0.5 text-center"
               >
-                + Add Item
+                + Add Note
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Notes Section */}
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">Notes</h2>
-
-            {notes.length === 0 && (
-              <div className="text-sm text-gray-500 mb-2">
-                Add your first note for this invoice.
-              </div>
-            )}
-
-            {notes.map((n, idx) => (
-              <div
-                key={n.id}
-                className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm"
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Note {idx + 1}
-                </label>
-                <textarea
-                  value={n.text}
-                  onChange={(e) => updateNote(n.id, e.target.value)}
-                  rows={2}
-                  placeholder="Write a remark or note for this invoice..."
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <div className="flex justify-end mt-2">
-                  <button
-                    type="button"
-                    onClick={() => deleteNote(n.id)}
-                    className="text-red-500 hover:text-red-700 text-sm flex items-center gap-2"
-                    title="Delete Note"
-                  >
-                    <FaTrash />
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {/* Add Note button BELOW the notes list */}
-            <button
-              onClick={addNote}
-              className="w-50  bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium text-sm transition pt-0.5 text-center"
+        {/* Right side invoice preview */}
+        {/* <div
+          ref={previewWrapRef}
+          style={{
+            flex: "1 1 0",
+            minWidth: 0,
+            overflow: "auto",
+            maxHeight: "calc(100vh - 160px)",
+            padding: 8,
+            background: "#f3f4f6",
+            borderRadius: 8,
+          }}
+        >
+          <div
+            style={{
+              width: PREVIEW_W * previewScale,
+              height: PREVIEW_H * previewScale,
+            }}
+          ></div>
+        </div> */}
+        <div
+          className="asa-right"
+          ref={previewWrapRef}
+          style={{
+            flex: "1",
+            height: "100%", // Take full height of parent
+            overflowY: "auto", // Add vertical scrolling
+            padding: "8px",
+            background: "#f3f4f6",
+            borderRadius: "8px",
+          }}
+        >
+          <div
+            style={{
+              width: PREVIEW_W * PREVIEW_SCALE,
+              height: PREVIEW_H * PREVIEW_SCALE,
+              overflow: "visible",
+            }}
+          >
+            <div
+              className="invoice-right screen-preview"
+              ref={invoiceRef}
+              // style={{
+              //   backgroundColor: "#fff",
+              //   fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+              //   fontSize: 12,
+              //   color: "#000",
+              //   // transform: "scale(0.90)",
+              //   // transformOrigin: "top left",
+              //   position: "relative",
+              //   // width: "794px",
+              //   width: PREVIEW_W,
+              //   height: PREVIEW_H,
+              //   transform: `scale(${previewScale})`,
+              //   transformOrigin: "top left",
+              //   boxShadow: "0 0 0 1px #e5e7eb",
+              // }}
+              style={{
+                backgroundColor: "#fff",
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                fontSize: 12,
+                color: "#000",
+                width: PREVIEW_W,
+                height: PREVIEW_H,
+                transform: `scale(${previewScale})`,
+                transformOrigin: "top left",
+                boxShadow: "0 0 0 1px #e5e7eb",
+              }}
             >
-              + Add Note
-            </button>
+              <div>
+                <InvoicePage
+                  pageNumber={1}
+                  itemsOnPage={page1Items}
+                  offset={offsetPage1}
+                  isLastPage={page2Items.length === 0}
+                  customer={customer}
+                  // selectedFirm={{
+                  //   ...selectedFirm,
+                  //   bank:
+                  //     selectedFirm?.name === "Sharda Associates"
+                  //       ? selectedFirm?.banks[selectedBankIndex]
+                  //       : selectedFirm?.bank,
+                  // }}
+                  selectedFirm={{ ...selectedFirm, bank: activeBank }}
+                  invoiceType={invoiceType}
+                  invoiceNumber={invoiceNumber}
+                  invoiceDate={invoiceDate}
+                  placeOfSupply={placeOfSupply}
+                  isSharda={isSharda}
+                  totalAmount={totalAmount}
+                  totalAmountWithTax={totalAmountWithTax}
+                  taxableValue={taxableValue}
+                  igstAmount={igstAmount}
+                  cgstAmount={cgstAmount}
+                  sgstAmount={sgstAmount}
+                  numberToWordsIndian={numberToWordsIndian}
+                  onImagesLoaded={() => setImagesReady(true)}
+                  showGSTIN={showGSTIN}
+                  notes={notes}
+                />
+
+                {page2Items.length > 0 && (
+                  <InvoicePage
+                    pageNumber={2}
+                    itemsOnPage={page2Items}
+                    offset={offsetPage2}
+                    isLastPage={true}
+                    customer={customer}
+                    // selectedFirm={selectedFirm}
+                    selectedFirm={{ ...selectedFirm, bank: activeBank }}
+                    invoiceType={invoiceType}
+                    invoiceNumber={invoiceNumber}
+                    invoiceDate={invoiceDate}
+                    placeOfSupply={placeOfSupply}
+                    isSharda={isSharda}
+                    totalAmount={totalAmount}
+                    totalAmountWithTax={totalAmountWithTax}
+                    taxableValue={taxableValue}
+                    igstAmount={igstAmount}
+                    cgstAmount={cgstAmount}
+                    sgstAmount={sgstAmount}
+                    numberToWordsIndian={numberToWordsIndian}
+                    onImagesLoaded={() => setImagesReady(true)}
+                    notes={notes}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Right side invoice preview */}
-
-      <div
-        className="invoice-right screen-preview"
-        ref={invoiceRef}
-        style={{
-          backgroundColor: "#fff",
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-          fontSize: 12,
-          color: "#000",
-          transform: "scale(0.90)", // visually shrink
-          transformOrigin: "top left",
-          position: "relative",
-          width: "794px",
-        }}
-      >
-        <div ref={invoiceRef}>
-          <InvoicePage
-            pageNumber={1}
-            itemsOnPage={page1Items}
-            offset={offsetPage1}
-            isLastPage={page2Items.length === 0}
-            customer={customer}
-            // selectedFirm={{
-            //   ...selectedFirm,
-            //   bank:
-            //     selectedFirm?.name === "Sharda Associates"
-            //       ? selectedFirm?.banks[selectedBankIndex]
-            //       : selectedFirm?.bank,
-            // }}
-            selectedFirm={{ ...selectedFirm, bank: activeBank }}
-            invoiceType={invoiceType}
-            invoiceNumber={invoiceNumber}
-            invoiceDate={invoiceDate}
-            placeOfSupply={placeOfSupply}
-            isSharda={isSharda}
-            totalAmount={totalAmount}
-            totalAmountWithTax={totalAmountWithTax}
-            taxableValue={taxableValue}
-            igstAmount={igstAmount}
-            cgstAmount={cgstAmount}
-            sgstAmount={sgstAmount}
-            numberToWordsIndian={numberToWordsIndian}
-            onImagesLoaded={() => setImagesReady(true)}
-            showGSTIN={showGSTIN}
-            notes={notes}
+        {/* create client modal */}
+        {createClientOpen && (
+          <CreateClientModal
+            client={draftClient} // prefill name
+            onClose={() => {
+              setCreateClientOpen(false);
+              setDraftClient(null);
+            }}
+            onCreate={handleCreateClient} // receives full formData
           />
-
-          {page2Items.length > 0 && (
-            <InvoicePage
-              pageNumber={2}
-              itemsOnPage={page2Items}
-              offset={offsetPage2}
-              isLastPage={true}
-              customer={customer}
-              // selectedFirm={selectedFirm}
-              selectedFirm={{ ...selectedFirm, bank: activeBank }}
-              invoiceType={invoiceType}
-              invoiceNumber={invoiceNumber}
-              invoiceDate={invoiceDate}
-              placeOfSupply={placeOfSupply}
-              isSharda={isSharda}
-              totalAmount={totalAmount}
-              totalAmountWithTax={totalAmountWithTax}
-              taxableValue={taxableValue}
-              igstAmount={igstAmount}
-              cgstAmount={cgstAmount}
-              sgstAmount={sgstAmount}
-              numberToWordsIndian={numberToWordsIndian}
-              onImagesLoaded={() => setImagesReady(true)}
-              notes={notes}
-            />
-          )}
-        </div>
+        )}
       </div>
-      {/* create client modal */}
-      {createClientOpen && (
-        <CreateClientModal
-          client={draftClient} // prefill name
-          onClose={() => {
-            setCreateClientOpen(false);
-            setDraftClient(null);
-          }}
-          onCreate={handleCreateClient} // receives full formData
-        />
-      )}
-    </div>
+    </>
   );
 }
