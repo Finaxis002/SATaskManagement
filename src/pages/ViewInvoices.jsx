@@ -6,6 +6,7 @@ import html2pdf from "html2pdf.js";
 import Swal from "sweetalert2";
 import InvoicePreview from "../Components/InvoicePreview";
 import { FaTrash } from "react-icons/fa";
+import InvoiceForm from "./InvoiceForm";
 export default function ViewInvoices() {
   const [firms] = useState([
     { name: "Finaxis Business Consultancy", gstin: "GST5454" },
@@ -28,6 +29,28 @@ export default function ViewInvoices() {
   const [selectedFirm, setSelectedFirm] = useState(null);
   const [dateError, setDateError] = useState("");
   const [exporting, setExporting] = useState(false);
+  // state
+const [showEditModal, setShowEditModal] = useState(false);
+const [invoiceToEdit, setInvoiceToEdit] = useState(null);
+
+// const openEdit = (inv) => { setInvoiceToEdit(inv); setShowEditModal(true); };
+const openEdit = async (inv) => {
+   setShowEditModal(true);
+   setInvoiceToEdit(null); // show a spinner if you want
+   try {
+     const { data } = await axios.get(`https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(inv.invoiceNumber)}`);
+     setInvoiceToEdit(data);           // always DB truth
+   } catch (e) {
+     setShowEditModal(false);
+     Swal.fire("Error", "Could not load invoice.", "error");
+   }
+ };
+
+const handleEdited = (updated) => {
+  setInvoices(prev => prev.map(x => x.invoiceNumber === updated.invoiceNumber ? updated : x));
+  setFilteredInvoices(prev => prev.map(x => x.invoiceNumber === updated.invoiceNumber ? updated : x));
+};
+
 
   useEffect(() => {
     axios
@@ -586,6 +609,26 @@ const displayTotal = (inv) => {
                     >
                       Download PDF
                     </button>
+                    <button
+  onClick={() => openEdit(inv)}
+  className="ml-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
+>
+  Edit
+</button>
+
+{showEditModal && invoiceToEdit && (
+  <div className="fixed inset-0 z-[1001] bg-black/50 flex items-center justify-center">
+    <div className="bg-white rounded-md shadow-xl w-[95vw] max-w-[1200px] max-h-[92vh] overflow-auto p-3">
+      <InvoiceForm
+        key={invoiceToEdit.invoiceNumber}
+        initialInvoice={invoiceToEdit}
+        onSaved={handleEdited}
+        onClose={() => { setShowEditModal(false); setInvoiceToEdit(null); }}
+      />
+    </div>
+  </div>
+)}
+
                     <button
                       onClick={() => handleDeleteInvoice(inv.invoiceNumber)}
                       className=" bg-[#f5a8a8] hover:bg-red-600 text-black px-3 py-1 rounded-md text-sm font-medium transition ml-10"
