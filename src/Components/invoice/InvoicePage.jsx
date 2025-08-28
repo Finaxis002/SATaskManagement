@@ -31,10 +31,7 @@ export default function InvoicePage({
   showGSTIN,
   notes,
 }) {
-  // const isLocalSupply = () => {
-  //   const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
-  //   return place === "mp" || place === "madhyapradesh";
-  // };
+  
   const isFirm = (name) =>
     (selectedFirm?.name || "").toLowerCase() === name.toLowerCase();
 
@@ -111,6 +108,9 @@ const isLocalSupply = () => {
       .map(s => ({ text: s.trim() }))
       .filter(n => n.text.length)
   : [];
+
+    const isLastPg = pageNumber === Math.ceil((itemsOnPage.length + offset) / ITEMS_PER_PAGE);
+
 
   return (
     <div
@@ -1074,7 +1074,7 @@ const isLocalSupply = () => {
                 );
               })}
 
-              {isLastPage && notesToShow.length > 0 && (
+              { ( notesToShow.length > 0) && (
                 <tr>
                   {/* Sr. No. cell (empty to keep grid) */}
                   <td
@@ -1090,6 +1090,7 @@ const isLocalSupply = () => {
                   </td>
 
                   {/* Description cell with Times New Roman + italic notes */}
+                  {pageNumber === 1 && notes.length > 0  && (
                   <td
                     style={{
                       border: "1px solid black",
@@ -1117,6 +1118,8 @@ const isLocalSupply = () => {
                       </div>
                     ))}
                   </td>
+                  )}
+                 
 
                   {/* Keep remaining columns blank but bordered to preserve the grid */}
                   <td
@@ -1185,85 +1188,7 @@ const isLocalSupply = () => {
                 </tr>
               )}
 
-              {/* On last page, fill empty rows to make 8 rows */}
-              {/* {isLastPage &&
-                Array.from({
-                  length: Math.max(0, ITEMS_PER_PAGE - itemsOnPage.length),
-                }).map((_, idx) => (
-                  <tr key={`empty-${idx}`} style={{ border: "none" }}>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        height: 30,
-                        textAlign: "center",
-                        borderTop: "none",
-                        borderBottom: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "center",
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "center",
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "right",
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "right",
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                  </tr>
-                ))} */}
+              
               {isLastPage &&
                 (() => {
                   const extraRows = notesToShow.length > 0 ? 1 : 0; // notes row occupies one

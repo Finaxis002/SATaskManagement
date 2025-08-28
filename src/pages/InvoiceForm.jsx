@@ -819,26 +819,24 @@ export default function InvoiceForm({
   return Math.ceil(totalLines / approxLinesPerPage);
 };
 
-// Add this function inside your InvoiceForm component, before the return statement
-// const splitNotesForPages = () => {
-//   if (notes.length === 0) return [[], []];
-//   return [notes, []];
-// };
+
+
+
+
 const splitNotesForPages = (notes, maxNotesPerPage = 5) => {
-  if (notes.length === 0) return [[], []];
-  
-  // If all notes fit on one page, return them all
+  if (notes.length === 0) return [[], []]; // Empty notes case
+
+  // If all notes fit on one page, return them all for page 1
   if (notes.length <= maxNotesPerPage) return [notes, []];
-  
+
   // Otherwise, split notes between pages
   return [notes.slice(0, maxNotesPerPage), notes.slice(maxNotesPerPage)];
 };
 
 
-// Then use it inside the component
-const [notesPage1, notesPage2] = splitNotesForPages(notes);
 // Calculate pages needed
 const notesPages = calculateNotesPages();
+const [notesPage1, notesPage2] = splitNotesForPages(notes); 
 
   return (
     <>
