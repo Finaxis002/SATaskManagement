@@ -29,20 +29,29 @@ export default function InvoicePage({
   sgstAmount,
   numberToWordsIndian,
   showGSTIN,
+  notes,
 }) {
-  console.log("{showGSTIN :", showGSTIN);
-  const isLocalSupply = () => {
-    const place = placeOfSupply.toLowerCase().replace(/\s+/g, "");
-    return place === "mp" || place === "madhyapradesh";
-  };
+  
+  const isFirm = (name) =>
+    (selectedFirm?.name || "").toLowerCase() === name.toLowerCase();
 
-  // const headerStyle = {
-  //   width: "100%",
-  //   display: "block",
-  //   height: pageNumber === 1 ? "auto" : "20px",  // shrink on 2nd page
-  //   marginBottom: pageNumber === 1 ? "20px" : "5px",
-  //   marginTop: pageNumber === 1 ? "0px" : "0px",
-  // };
+
+  // Treat as GST invoice only if you actually want to show GST *and* the firm has a GSTIN
+const isGSTFirm = !!(showGSTIN && selectedFirm?.gstin);
+
+// Use total + tax when GST applies, otherwise just the plain total
+const finalTotal = isGSTFirm ? totalAmountWithTax : totalAmount;
+
+// Amount in words should follow what you finally charge
+const amountInWords = numberToWordsIndian(finalTotal);
+
+// Guard for placeOfSupply when GST is on
+const isLocalSupply = () => {
+  if (!isGSTFirm) return false; // doesn't matter if GST not applicable
+  const place = (placeOfSupply || "").toLowerCase().replace(/\s+/g, "");
+  return place === "mp" || place === "madhyapradesh";
+};
+
   const headerStyle =
     pageNumber === 1
       ? { width: "100%", display: "block", height: "auto", marginBottom: 20 }
@@ -55,46 +64,52 @@ export default function InvoicePage({
 
   const ITEMS_PER_PAGE = 8;
 
-  const getWalletInfo = () => {
-  if (selectedFirm.name === "Sharda Associates") {
-    const label = selectedFirm.bank?.label?.toLowerCase() || "";
-    if (label.includes("sbi") && label.includes("anugrah")) {
-      return (
-        <>
-          <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
-          <br />
-          Name - Anugrah Sharda <br />
-          Mobile Number – 9713330373 <br/>
-          UPI ID - 9713330373@ybl <br/>
-        </>
-      );
-    } else if (label.includes("kotak") && label.includes("anunay")) {
-      return (
-        <>
-          <strong>For Online Wallets - Paytm, GPay and PhonePe.</strong>
-          <br />
-          Name - Anunay Sharda <br />
-          Mobile Number - 7869777747 <br />
-          UPI ID - 7869777747@ybl
-        </>
-      );
-    }
-  }
+  const bank = selectedFirm?.bank || {};
+  const bankName = bank.bankName || bank.name || "";
+  const accountName = bank.accountName || "";
+  const accountNumber = bank.accountNumber || bank.account || "";
+  const ifsc = bank.ifsc || "";
+  // UPI/wallet info from DB (your BankDetails screen already saves these)
+  const upiIdName = bank.upiIdName || "";
+  const upiMobile = bank.upiMobile || "";
+  const upiId = bank.upiId || "";
 
-  if (selectedFirm.name === "Finaxis Business Consultancy Pvt. Ltd.") {
+  const getWalletInfo = () => {
+    if (!upiIdName && !upiMobile && !upiId) return null;
     return (
       <>
-        <strong>For Online Wallets - Paytm, Google Pay and Phone Pay.</strong>
+        <strong>For Online Wallets - Paytm, Google Pay and PhonePe.</strong>
         <br />
-        Name : Finaxis Business Consultancy <br />
-        Mobile Number - 9425008997 <br />
-        UPI ID - 9425008997@kotak
+        {upiIdName ? (
+          <>
+            Name - {upiIdName}
+            <br />
+          </>
+        ) : null}
+        {upiMobile ? (
+          <>
+            Mobile Number - {upiMobile}
+            <br />
+          </>
+        ) : null}
+        {upiId ? <>UPI ID - {upiId}</> : null}
       </>
     );
-  }
+  };
 
-  return null;
-};
+  const notesToShow = Array.isArray(notes)
+  ? notes
+      .map(n => (typeof n === "string" ? { text: n } : n))
+      .map(n => ({ ...n, text: (n?.text || "").trim() }))
+      .filter(n => n.text.length)
+  : typeof notes === "string"
+  ? notes
+      .split("\n")
+      .map(s => ({ text: s.trim() }))
+      .filter(n => n.text.length)
+  : [];
+
+    const isLastPg = pageNumber === Math.ceil((itemsOnPage.length + offset) / ITEMS_PER_PAGE);
 
 
   return (
@@ -321,7 +336,7 @@ export default function InvoicePage({
                           borderRight: "none",
                         }}
                       >
-                        GSTIN: {selectedFirm.gstin}
+                        GSTIN: {selectedFirm?.gstin}
                       </th>
                     )}
                     <th
@@ -1059,6 +1074,104 @@ export default function InvoicePage({
                 );
               })}
 
+              { ( notesToShow.length > 0) && (
+                <tr>
+                  {/* Sr. No. cell (empty to keep grid) */}
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      padding: 6,
+                      textAlign: "center",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+
+                  {/* Description cell with Times New Roman + italic notes */}
+                  {pageNumber === 1 && notes.length > 0  && (
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      fontFamily: "'Times New Roman', Times, serif",
+                      fontStyle: "italic",
+                      whiteSpace: "pre-wrap",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    <strong
+                      style={{
+                        fontFamily: "'Times New Roman', Times, serif",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Notes:
+                    </strong>
+                    {notesToShow.map((n, i) => (
+                      <div key={n.id || i} style={{ marginTop: 4 }}>
+                        • {n.text}
+                      </div>
+                    ))}
+                  </td>
+                  )}
+                 
+
+                  {/* Keep remaining columns blank but bordered to preserve the grid */}
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "center",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "right",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid black",
+                      padding: 6,
+                      textAlign: "right",
+                      borderTop: "none",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </td>
+                </tr>
+              )}
               {/* On first page, if more pages exist, add "To be continued..." */}
               {!isLastPage && (
                 <tr>
@@ -1075,85 +1188,90 @@ export default function InvoicePage({
                 </tr>
               )}
 
-              {/* On last page, fill empty rows to make 8 rows */}
+              
               {isLastPage &&
-                Array.from({
-                  length: Math.max(0, ITEMS_PER_PAGE - itemsOnPage.length),
-                }).map((_, idx) => (
-                  <tr key={`empty-${idx}`} style={{ border: "none" }}>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        height: 30,
-                        textAlign: "center",
-                        borderTop: "none",
-                        borderBottom: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "center",
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "center",
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "right",
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid black",
-                        padding: 6,
-                        textAlign: "right",
-                        borderTop: "none",
-                        borderBottom: "none",
-                        borderLeft: "none",
-                      }}
-                    >
-                      &nbsp;
-                    </td>
-                  </tr>
-                ))}
+                (() => {
+                  const extraRows = notesToShow.length > 0 ? 1 : 0; // notes row occupies one
+                  const fill = Math.max(
+                    0,
+                    ITEMS_PER_PAGE - itemsOnPage.length - extraRows
+                  );
+                  return Array.from({ length: fill }).map((_, idx) => (
+                    <tr key={`empty-${idx}`} style={{ border: "none" }}>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          height: 30,
+                          textAlign: "center",
+                          borderTop: "none",
+                          borderBottom: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "center",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "center",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "right",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "right",
+                          borderTop: "none",
+                          borderBottom: "none",
+                          borderLeft: "none",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                    </tr>
+                  ));
+                })()}
 
               {/* Totals and bank details only on last page */}
               {isLastPage && (
@@ -1229,7 +1347,8 @@ export default function InvoicePage({
                                 textAlign: "center",
                               }}
                             >
-                              {numberToWordsIndian(totalAmountWithTax)}
+                              {/* {numberToWordsIndian(totalAmountWithTax)} */}
+                              {amountInWords}
                             </td>
                           </tr>
                           <tr>
@@ -1255,11 +1374,10 @@ export default function InvoicePage({
                                 fontStyle: "normal",
                               }}
                             >
-                              Bank Name: {selectedFirm?.bank?.name} <br />
-                              Account Name :{selectedFirm?.bank?.accountName}{" "}
-                              <br />
-                              Account Number: {selectedFirm?.bank?.account} <br />
-                              IFSC Code: {selectedFirm?.bank?.ifsc}
+                              Bank Name: {bankName} <br />
+                              Account Name :{accountName} <br />
+                              Account Number: {accountNumber} <br />
+                              IFSC Code: {ifsc}
                             </td>
                           </tr>
                           {/* {isSharda && (
@@ -1284,17 +1402,19 @@ export default function InvoicePage({
                             </tr>
                           )} */}
                           {getWalletInfo() && (
-  <tr>
-    <td className="normal-text" style={{ padding: 6, fontSize: 10 }}>
-      {getWalletInfo()}
-    </td>
-  </tr>
-)}
-
+                            <tr>
+                              <td
+                                className="normal-text"
+                                style={{ padding: 6, fontSize: 10 }}
+                              >
+                                {getWalletInfo()}
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </td>
-                    {!isSharda && (
+                    {isGSTFirm && (
                       <td
                         colSpan={3}
                         style={{ border: "1px solid black", padding: 0 }}

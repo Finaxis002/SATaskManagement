@@ -1,17 +1,18 @@
 import React, { useEffect, useState, useRef } from "react";
 import Select from "react-select";
 // import axios from "axios";
-import axios from '../utils/secureAxios'
+import axios from "../utils/secureAxios";
 import html2pdf from "html2pdf.js";
 import Swal from "sweetalert2";
 import InvoicePreview from "../Components/InvoicePreview";
 import { FaTrash } from "react-icons/fa";
+import InvoiceForm from "./InvoiceForm";
 export default function ViewInvoices() {
-   const [firms] = useState([
+  const [firms] = useState([
     { name: "Finaxis Business Consultancy", gstin: "GST5454" },
     { name: "Sharda Associates", gstin: "GST9876" },
-    { name : "Kailash Real Estate", gstin: "GST9855"},
-    { name : "Bhojpal Realities", gstin: "GST9878"}
+    { name: "Kailash Real Estate", gstin: "GST9855" },
+    { name: "Bhojpal Realities", gstin: "GST9878" },
   ]);
   console.log("ViewInvoices component rendered");
   const [clients, setClients] = useState([]);
@@ -23,11 +24,41 @@ export default function ViewInvoices() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [filteredInvoices, setFilteredInvoices] = useState([]);
-  const [filterByFirm, setFilterByFirm] = useState([])
-  
-   const [selectedFirm, setSelectedFirm] = useState(null); 
+  const [filterByFirm, setFilterByFirm] = useState([]);
 
- 
+  const [selectedFirm, setSelectedFirm] = useState(null);
+  const [dateError, setDateError] = useState("");
+  const [exporting, setExporting] = useState(false);
+  // state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [invoiceToEdit, setInvoiceToEdit] = useState(null);
+
+  // const openEdit = (inv) => { setInvoiceToEdit(inv); setShowEditModal(true); };
+  const openEdit = async (inv) => {
+    setShowEditModal(true);
+    setInvoiceToEdit(null); // show a spinner if you want
+    try {
+      const { data } = await axios.get(
+        `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
+          inv.invoiceNumber
+        )}`
+      );
+      setInvoiceToEdit(data); // always DB truth
+    } catch (e) {
+      setShowEditModal(false);
+      Swal.fire("Error", "Could not load invoice.", "error");
+    }
+  };
+
+  const handleEdited = (updated) => {
+    setInvoices((prev) =>
+      prev.map((x) => (x.invoiceNumber === updated.invoiceNumber ? updated : x))
+    );
+    setFilteredInvoices((prev) =>
+      prev.map((x) => (x.invoiceNumber === updated.invoiceNumber ? updated : x))
+    );
+  };
+
   useEffect(() => {
     axios
       .get("/clients/details")
@@ -38,13 +69,10 @@ export default function ViewInvoices() {
       .catch(console.error);
   }, []);
 
-  
-
   const clientOptions = clients.map((client) => ({
     value: client._id,
     label: client.name,
   }));
-
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -53,24 +81,20 @@ export default function ViewInvoices() {
         console.log("Fetching initial data...");
 
         // Fetch clients
-        const clientsRes = await axios.get(
-          "/clients/details"
-        );
+        const clientsRes = await axios.get("/clients/details");
         console.log("Clients fetched:", clientsRes.data);
         setClients(clientsRes.data);
 
         // Fetch all invoices
-        const invoicesRes = await axios.get(
-          "/invoices"
-        );
+        const invoicesRes = await axios.get("/invoices");
         console.log("All invoices fetched:", invoicesRes.data);
-        
+
         const sortedInvoices = [...(invoicesRes.data || [])].sort(
           (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
         );
         console.log("Sorted invoices:", sortedInvoices);
         setInvoices(sortedInvoices);
-         setFilteredInvoices(sortedInvoices);
+        setFilteredInvoices(sortedInvoices);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -81,30 +105,6 @@ export default function ViewInvoices() {
     fetchInitialData();
   }, []);
 
-  // Fetch filtered invoices when client is selected
-  // useEffect(() => {
-  //    console.log("useEffect called. selectedClient:", selectedClient);
-  //   if (!selectedClient) return; // do nothing if no client
-
-  //   const fetchInvoicesByClient = async () => {
-  //     try {
-  //       console.log("Fetching invoices for client:", selectedClient);
-  //       const res = await axios.get(
-  //         `http://localhost:5000/api/invoices?clientId=${selectedClient.value}`
-  //       );
-  //       const filteredInvoices = res.data || [];
-  //       const sortedInvoices = [...filteredInvoices].sort(
-  //         (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
-  //       );
-  //       setInvoices(sortedInvoices);
-  //     } catch (error) {
-  //       console.error("Error fetching invoices for client:", error);
-  //       setInvoices([]);
-  //     }
-  //   };
-  //   fetchInvoicesByClient();
-  // }, [selectedClient]);
-
   useEffect(() => {
     console.log("Selected client changed:", selectedClient);
 
@@ -113,9 +113,7 @@ export default function ViewInvoices() {
       const fetchAllInvoices = async () => {
         try {
           console.log("Fetching all invoices...");
-          const res = await axios.get(
-            "/invoices"
-          );
+          const res = await axios.get("/invoices");
           const sortedInvoices = [...(res.data || [])].sort(
             (a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate)
           );
@@ -173,7 +171,6 @@ export default function ViewInvoices() {
     setInvoiceToView(invoice);
     setShowInvoiceModal(true);
   };
-
 
   const handleGeneratePDF = () => {
     const element = document.getElementById("invoice-to-print");
@@ -261,9 +258,7 @@ export default function ViewInvoices() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(
-          `/invoices/${invoiceNumber}`
-        );
+        await axios.delete(`/invoices/${invoiceNumber}`);
         setInvoices((prev) =>
           prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
         );
@@ -275,8 +270,6 @@ export default function ViewInvoices() {
     }
   };
 
-  
-  
   function numberToWordsIndian(num) {
     const a = [
       "",
@@ -368,46 +361,183 @@ export default function ViewInvoices() {
     setFilteredInvoices(filtered);
   }, [selectedFirm, invoices]);
 
+  const handleFromDateChange = (e) => {
+    const newFromDate = e.target.value;
+    setFromDate(newFromDate);
+    setDateError("");
+
+    if (toDate && new Date(toDate) < new Date(newFromDate)) {
+      setToDate("");
+      setDateError("To Date was reset to ensure it comes after From Date");
+    }
+  };
+
+  const exportInvoices = async () => {
+    try {
+      setExporting(true);
+
+      // 1) Send OTP
+      await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice");
+
+      // 2) Ask user
+      const { value: otp, isConfirmed } = await Swal.fire({
+        title: "Verify OTP",
+        text: "Enter the 6-digit OTP sent to your email",
+        input: "text",
+        inputAttributes: {
+          inputmode: "numeric",
+          autocomplete: "one-time-code",
+        },
+        inputValidator: (v) => (!v ? "Please enter OTP" : undefined),
+        showCancelButton: true,
+        confirmButtonText: "Verify",
+      });
+      if (!isConfirmed) return;
+
+      // 3) Build filters
+      const params = {};
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
+      if (selectedClient?.value) params.clientId = selectedClient.value;
+
+      // 4) Call export with x-otp header
+      const res = await axios.get(
+        "https://taskbe.sharda.co.in/api/invoices/export.xlsx",
+        {
+          params,
+          responseType: "blob",
+          headers: { "x-otp": String(otp).trim() },
+        }
+      );
+
+      const dispo = res.headers["content-disposition"] || "";
+      const m = dispo.match(/filename="?(.*)"?$/);
+      const filename =
+        (m && m[1]) || `invoices_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      Swal.fire(
+        "Export failed",
+        err?.response?.data?.error || "Could not export invoices.",
+        "error"
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Is this invoice a GST invoice?
+  const isGSTInvoice = (inv) => !!inv?.selectedFirm?.gstin;
+
+  // Compute the number you want to SHOW in the table
+  const displayTotal = (inv) => {
+    // Prefer fields saved on the invoice if present
+    const subtotal =
+      typeof inv?.totalAmount === "number"
+        ? inv.totalAmount
+        : Array.isArray(inv?.items)
+        ? inv.items.reduce((s, it) => s + Number(it.qty) * Number(it.rate), 0)
+        : 0;
+
+    if (!isGSTInvoice(inv)) return subtotal;
+
+    // If GST invoice: prefer a precomputed totalAmountWithTax if saved,
+    // else sum tax parts, else fall back to fixed 18% on subtotal
+    const partsTotal =
+      (inv?.igstAmount || 0) + (inv?.cgstAmount || 0) + (inv?.sgstAmount || 0);
+
+    if (typeof inv?.totalAmountWithTax === "number")
+      return inv.totalAmountWithTax;
+    if (partsTotal > 0) return subtotal + partsTotal;
+
+    // last-resort calculation if nothing saved
+    return subtotal * 1.18;
+  };
+
   return (
     <div style={{ padding: 20 }}>
       <h2>View Invoices</h2>
-      <Select
-        options={clientOptions}
-        onChange={setSelectedClient}
-        placeholder="Select client to filter invoices"
-        isClearable
-      />
 
-       <Select
-        options={firmOptions}
-        onChange={setSelectedFirm}
-        placeholder="Select firm to filter invoices"
-        isClearable
-      />
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          {/* Client Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Client
+            </label>
+            <Select
+              options={clientOptions}
+              onChange={setSelectedClient}
+              placeholder="All Clients"
+              isClearable
+              className="text-sm"
+            />
+          </div>
 
-      <div className="flex flex-wrap items-center gap-6 mt-4 mb-6">
-        <div className="flex flex-col">
-          <label className="text-sm font-medium text-gray-700 mb-1">
-            From Date
-          </label>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
-        </div>
+          {/* Firm Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Firm
+            </label>
+            <Select
+              options={firmOptions}
+              onChange={setSelectedFirm}
+              placeholder="All Firms"
+              isClearable
+              className="text-sm"
+            />
+          </div>
 
-        <div className="flex flex-col">
-          <label className="text-sm font-medium text-gray-700 mb-1">
-            To Date
-          </label>
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
+          {/* Date Range */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              From Date
+            </label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              To Date
+            </label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <button
+            onClick={exportInvoices}
+            disabled={exporting}
+            className={`px-4 py-2 rounded-md text-white text-sm font-medium shadow-sm transition
+    ${
+      exporting
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-emerald-600 hover:bg-emerald-700"
+    }`}
+            title="Export filtered invoices to Excel"
+          >
+            {exporting ? "Exporting…" : "Export to Excel"}
+          </button>
         </div>
       </div>
 
@@ -420,16 +550,16 @@ export default function ViewInvoices() {
       >
         {isLoading ? (
           <div className="space-y-4 mt-6">
-    {[...Array(5)].map((_, index) => (
-      <div key={index} className="animate-pulse flex space-x-6">
-        <div className="rounded bg-gray-200 h-10 w-32"></div>
-        <div className="rounded bg-gray-200 h-10 w-32"></div>
-        <div className="rounded bg-gray-200 h-10 w-40"></div>
-        <div className="rounded bg-gray-200 h-10 w-28"></div>
-        <div className="rounded bg-gray-200 h-10 w-40"></div>
-      </div>
-    ))}
-  </div>
+            {[...Array(5)].map((_, index) => (
+              <div key={index} className="animate-pulse flex space-x-6">
+                <div className="rounded bg-gray-200 h-10 w-32"></div>
+                <div className="rounded bg-gray-200 h-10 w-32"></div>
+                <div className="rounded bg-gray-200 h-10 w-40"></div>
+                <div className="rounded bg-gray-200 h-10 w-28"></div>
+                <div className="rounded bg-gray-200 h-10 w-40"></div>
+              </div>
+            ))}
+          </div>
         ) : (
           <table
             border="1"
@@ -477,7 +607,7 @@ export default function ViewInvoices() {
                     {inv.customer.name}
                   </td>
                   <td className="py-3 px-4 border-b border-gray-200">
-                    ₹{Number(inv.totalAmount).toFixed(2)}
+                    ₹{displayTotal(inv).toFixed(2)}
                   </td>
                   <td>
                     <button
@@ -486,6 +616,29 @@ export default function ViewInvoices() {
                     >
                       Download PDF
                     </button>
+                    <button
+                      onClick={() => openEdit(inv)}
+                      className="ml-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
+                    >
+                      Edit
+                    </button>
+
+                    {showEditModal && invoiceToEdit && (
+                      <div className="fixed inset-0 z-[1001] bg-black/50 flex items-center justify-center">
+                        <div className="bg-white rounded-md shadow-xl w-[95vw] max-w-[1300px] max-h-[92vh] overflow-auto p-3">
+                          <InvoiceForm
+                            key={invoiceToEdit.invoiceNumber}
+                            initialInvoice={invoiceToEdit}
+                            onSaved={handleEdited}
+                            onClose={() => {
+                              setShowEditModal(false);
+                              setInvoiceToEdit(null);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <button
                       onClick={() => handleDeleteInvoice(inv.invoiceNumber)}
                       className=" bg-[#f5a8a8] hover:bg-red-600 text-black px-3 py-1 rounded-md text-sm font-medium transition ml-10"
@@ -526,8 +679,7 @@ export default function ViewInvoices() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-               paddingBottom:"20px"
-                
+              paddingBottom: "20px",
             }}
           >
             <div
@@ -540,7 +692,6 @@ export default function ViewInvoices() {
                 fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                 fontSize: 12,
                 color: "#000",
-               
               }}
             >
               {/* <InvoicePreview invoice={invoiceToView} /> */}
@@ -552,6 +703,7 @@ export default function ViewInvoices() {
                 placeOfSupply={invoiceToView.placeOfSupply}
                 customer={invoiceToView.customer}
                 items={invoiceToView.items}
+                notes={invoiceToView.notes}
               />
             </div>
 

@@ -16,7 +16,25 @@ export default function InvoicePreview({
   placeOfSupply,
   customer,
   items,
+  notes,
 }) {
+  // normalize bank for both shapes
+  const firm = selectedFirm || {};
+  const bank =
+    firm.bank || (Array.isArray(firm.banks) ? firm.banks[0] : {}) || {};
+
+  const bankName = bank.bankName || bank.name || "";
+  const accountName = bank.accountName || "";
+  const accountNumber = bank.accountNumber || bank.account || "";
+  const ifsc = (bank.ifsc || "").trim();
+
+  console.log("bank", bank);
+  console.log("bankName ", bankName);
+  // if you want to show wallet info when present
+  const upiIdName = bank.upiIdName || "";
+  const upiMobile = bank.upiMobile || "";
+  const upiId = bank.upiId || "";
+
   if (!selectedFirm || !customer || !items) return null;
 
   const isSharda = selectedFirm.name === "Sharda Associates";
@@ -112,6 +130,34 @@ export default function InvoicePreview({
       paise !== "00" ? ` and ${numberToWords(parseInt(paise))} Paise` : "";
     return rupeeWords + paiseWords + " Rupees Only";
   }
+
+  const notesToShow = Array.isArray(notes)
+    ? notes
+        .map((n) => (typeof n === "string" ? n : n?.text || ""))
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : typeof notes === "string"
+    ? notes
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+
+  const isGSTFirm = !!selectedFirm?.gstin; // generic GST check
+  const finalTotal = isGSTFirm ? totalAmountWithTax : totalAmount;
+  const amountInWords = numberToWordsIndian(finalTotal);
+  const formatDateYMD = (value) => {
+    if (!value) return "";
+    // if it's already YYYY-MM-DD, keep it
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value))
+      return value;
+
+    const d = new Date(value); // handles Date or ISO string
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`; // local timezone-safe Y-M-D
+  };
 
   return (
     <div
@@ -532,7 +578,7 @@ export default function InvoicePreview({
                               borderBottom: "none",
                             }}
                           >
-                            {invoiceDate}
+                            {formatDateYMD(invoiceDate)}
                           </td>
                         </tr>
                       </tbody>
@@ -777,7 +823,7 @@ export default function InvoicePreview({
                                 borderLeft: "none",
                               }}
                             >
-                              {invoiceDate}
+                              {formatDateYMD(invoiceDate)}
                             </td>
                           </tr>
                         </tbody>
@@ -849,7 +895,7 @@ export default function InvoicePreview({
                                 borderLeft: "none",
                               }}
                             >
-                              {invoiceDate}
+                              {formatDateYMD(invoiceDate)}
                             </td>
                           </tr>
                         </tbody>
@@ -1017,6 +1063,98 @@ export default function InvoicePreview({
               );
             })}
 
+            {notesToShow.length > 0 && (
+              <tr>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    borderTop: "none",
+                    borderBottom: "none",
+                    padding: 6,
+                    textAlign: "center",
+                  }}
+                >
+                  &nbsp;
+                </td>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    borderTop: "none",
+                    borderBottom: "none",
+                    borderLeft: "none",
+                    fontFamily: "'Times New Roman', Times, serif",
+                    fontStyle: "italic",
+                    whiteSpace: "pre-wrap",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  <strong
+                    style={{
+                      fontFamily: "'Times New Roman', Times, serif",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    Notes:
+                  </strong>
+                  {notesToShow.map((line, i) => (
+                    <div key={i} style={{ marginTop: 4 }}>
+                      • {line}
+                    </div>
+                  ))}
+                </td>
+                {/* keep remaining columns blank with borders */}
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    textAlign: "center",
+                    borderTop: "none",
+                    borderBottom: "none",
+                    borderLeft: "none",
+                  }}
+                >
+                  &nbsp;
+                </td>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    textAlign: "center",
+                    borderTop: "none",
+                    borderBottom: "none",
+                    borderLeft: "none",
+                  }}
+                >
+                  &nbsp;
+                </td>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    textAlign: "right",
+                    borderTop: "none",
+                    borderBottom: "none",
+                    borderLeft: "none",
+                  }}
+                >
+                  &nbsp;
+                </td>
+                <td
+                  style={{
+                    border: "1px solid black",
+                    padding: 6,
+                    textAlign: "right",
+                    borderTop: "none",
+                    borderBottom: "none",
+                    borderLeft: "none",
+                  }}
+                >
+                  &nbsp;
+                </td>
+              </tr>
+            )}
+
             {/* Fill empty rows if less than 6 items */}
             {Array.from({ length: Math.max(0, 8 - items.length) }).map(
               (_, idx) => (
@@ -1125,7 +1263,34 @@ export default function InvoicePreview({
                     tableLayout: "fixed",
                   }}
                 >
-                  <tbody>
+                  {/* <tbody>
+                    <tr>
+                      <td
+                        colSpan={5}
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          textAlign: "left",
+                          paddingLeft: "60px",
+                          borderBottom: "none",
+                          borderRight: "none",
+                        }}
+                      >
+                        Total in Rupees
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          padding: 6,
+                          textAlign: "right",
+                          fontWeight: "bold",
+                          borderBottom: "none",
+                        }}
+                      >
+                        ₹{totalAmount.toFixed(2)}
+                      </td>
+                    </tr>
                     <tr>
                       <td
                         style={{
@@ -1176,36 +1341,160 @@ export default function InvoicePreview({
                           fontStyle: "normal",
                         }}
                       >
-                        Bank Name: {selectedFirm?.bank?.name} <br />
-                        Account Name :{selectedFirm?.bank?.accountName} <br />
-                        Account Number: {selectedFirm?.bank?.account} <br />
-                        IFSC Code: {selectedFirm?.bank?.ifsc}
+                        Bank Name: {bankName} <br />
+                        Account Name: {accountName} <br />
+                        Account Number: {accountNumber} <br />
+                        IFSC Code: {ifsc}
+                        <br />
+                        {(upiIdName || upiMobile || upiId) && (
+                          <>
+                            <br />
+                            <strong>
+                              For Online Wallets - Paytm, Google Pay and
+                              PhonePe.
+                            </strong>
+
+                            <br />
+                            {upiIdName && (
+                              <>
+                                Name: {upiIdName}
+                                <br />
+                              </>
+                            )}
+                            {upiMobile && (
+                              <>
+                                Mobile Number: {upiMobile}
+                                <br />
+                              </>
+                            )}
+                            {upiId && <>UPI ID: {upiId}</>}
+                          </>
+                        )}
                       </td>
                     </tr>
-                    {isSharda && (
-                      <tr>
-                        <td
-                          className="normal-text "
-                          style={{
-                            padding: 6,
-                            fontSize: 10,
-                            fontWeight: "normal",
-                            fontStyle: "normal",
-                          }}
-                        >
-                          <strong>
-                            Online Wallets - Paytm, Google Pay & Phone Pay
-                          </strong>
-                          <br />
-                          Name : Anunay Sharda <br />
-                          Mobile Number : 7869777747
-                        </td>
-                      </tr>
-                    )}
+                  </tbody> */}
+                  <tbody>
+                    {/* Total in Rupees (2 columns) */}
+                    <tr>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          borderTop: "none",
+                          borderRight: "none", // ← remove inner right border
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontWeight: "bold",
+                          textAlign: "left",
+                          paddingLeft: 60,
+                        }}
+                      >
+                        Total in Rupees
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          borderTop: "none",
+                          borderLeft: "none", // ← remove inner left border
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          textAlign: "right",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        ₹{totalAmount.toFixed(2)}
+                      </td>
+                    </tr>
+
+                    {/* Amount in words (full width -> colSpan=2) */}
+                    <tr>
+                      <td
+                        colSpan={2}
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontWeight: "lighter",
+                          fontSize: 10,
+                          textAlign: "center",
+                        }}
+                      >
+                        Total Amount in Words
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        colSpan={2}
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          fontWeight: "bold",
+                          textAlign: "center",
+                        }}
+                      >
+                        {amountInWords}
+                      </td>
+                    </tr>
+
+                    {/* Bank Details (title full width) */}
+                    <tr>
+                      <td
+                        colSpan={2}
+                        style={{
+                          borderBottom: "1px solid black",
+                          padding: 6,
+                          fontSize: 10,
+                          fontWeight: "bold",
+                          textAlign: "center",
+                        }}
+                      >
+                        Bank Details
+                      </td>
+                    </tr>
+
+                    {/* Bank details content (full width) */}
+                    <tr>
+                      <td
+                        colSpan={2}
+                        className="normal-text"
+                        style={{ padding: "20px 6px", fontSize: 10 }}
+                      >
+                        Bank Name: {bankName}
+                        <br />
+                        Account Name: {accountName}
+                        <br />
+                        Account Number: {accountNumber}
+                        <br />
+                        IFSC Code: {ifsc}
+                        {(upiIdName || upiMobile || upiId) && (
+                          <>
+                            <br />
+                            <br />
+                            <strong>
+                              For Online Wallets - Paytm, Google Pay and
+                              PhonePe.
+                            </strong>
+                            <br />
+                            {upiIdName && (
+                              <>
+                                Name: {upiIdName}
+                                <br />
+                              </>
+                            )}
+                            {upiMobile && (
+                              <>
+                                Mobile Number: {upiMobile}
+                                <br />
+                              </>
+                            )}
+                            {upiId && <>UPI ID: {upiId}</>}
+                          </>
+                        )}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </td>
-              {!isSharda && (
+              {!isSharda && isGSTFirm && (
                 <td
                   colSpan={3}
                   style={{ border: "1px solid black", padding: 0 }}

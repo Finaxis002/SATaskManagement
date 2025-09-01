@@ -14,6 +14,7 @@ import CreateClientModal from "../Components/client/CreateClientModal";
 import MailCreation from "./MailCreation";
 import LeaveManagement from "./LeaveManagement";
 import socket from "../socket";
+import BankDetails from "./BankDetails";
 
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
@@ -398,6 +399,8 @@ const Departments = () => {
       ),
     },
     { key: "mail", label: "Mail User Creation" },
+    { key: "bank", label: "Bank Details" },
+
   ];
 
   return (
@@ -663,6 +666,7 @@ const Departments = () => {
 
           {activeTab === "report" && role === "admin" && <ReportGeneration />}
 
+
           {activeTab === "manageleave" && role === "admin" && (
             <LeaveManagement />
           )}
@@ -670,6 +674,8 @@ const Departments = () => {
           <div className="max-h-[20vh]">
             {activeTab === "mail" && role === "admin" && <MailCreation />}
           </div>
+
+          {activeTab === "bank" && role === "admin" && <BankDetails />}
         </>
       )}
 
@@ -782,6 +788,7 @@ const Departments = () => {
           }}
         />
       )}
+
     </div>
   );
 };

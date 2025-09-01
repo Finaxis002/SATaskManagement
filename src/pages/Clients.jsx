@@ -25,6 +25,10 @@ const Clients = () => {
             name: client.name,
             contactPerson: client.contactPerson || "-",
             businessName: client.businessName || "-",
+            address: client.address || "",
+            mobile: client.mobile || "",
+            emailId: client.emailId || "",
+            GSTIN: client.GSTIN || "",
           }))
         : [];
 
