@@ -940,45 +940,7 @@ export default function InvoiceForm({
       if (!invoiceRef.current) return;
       const element = invoiceRef.current;
 
-      // const opt = {
-      //   margin: 0,
-      //   padding: 0,
-      //   filename: `${finalNo}.pdf`,
-      //   image: { type: "jpeg", quality: 0.98 },
-      //   html2canvas: {
-      //     scale: 2,
-      //     dpi: 300,
-      //     letterRendering: true,
-      //     useCORS: true,
-      //     width: element.scrollWidth,
-      //     windowWidth: element.scrollWidth,
-      //   },
-      //   jsPDF: {
-      //     unit: "px",
-      //     orientation: "portrait",
-      //     format: [794, 1122],
-      //   },
-      //   pagebreak: { mode: "css", before: ".page-break" },
-      // };
-
-      // const pageHeightPx = 1122; // Must match your jsPDF format height
-      // const expectedPages = Math.max(1, Math.ceil(element.scrollHeight / pageHeightPx));
-
-      // await html2pdf()
-      //   .set(opt)
-      //   .from(element)
-      //   .toPdf()
-      //   .get('pdf')
-      //   .then((pdf) => {
-      //     const actual = pdf.internal.getNumberOfPages();
-      //     // Remove any trailing blank pages that html2pdf sometimes adds
-      //     for (let i = actual; i > expectedPages; i--) {
-      //       pdf.deletePage(i);
-      //     }
-      //   })
-      //   .save();
-
-      // Swal.fire("Success", "Invoice generated as PDF.", "success");
+      
 
       const prevTransform = element.style.transform;
       const prevTransformOrigin = element.style.transformOrigin;
@@ -1026,6 +988,8 @@ export default function InvoiceForm({
       Swal.fire("Error", "Could not generate the invoice PDF.", "error");
     }
   };
+
+
 
   const calculateNotesPages = () => {
     if (notes.length === 0) return 0;
