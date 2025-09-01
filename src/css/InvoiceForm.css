@@ -640,3 +640,15 @@
     overflow-x: auto !important;
   }
 }
+
+@media print {
+  .pdf-page {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+/* html2pdf fallback */
+.pdf-page {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}

@@ -5,7 +5,7 @@ import axios from "../utils/secureAxios";
 import html2pdf from "html2pdf.js";
 import Swal from "sweetalert2";
 import InvoicePreview from "../Components/InvoicePreview";
-import { FaTrash } from "react-icons/fa";
+import { FaEdit, FaEye, FaTrash } from "react-icons/fa";
 import InvoiceForm from "./InvoiceForm";
 export default function ViewInvoices() {
   const [firms] = useState([
@@ -610,17 +610,17 @@ export default function ViewInvoices() {
                     ₹{displayTotal(inv).toFixed(2)}
                   </td>
                   <td>
-                    <button
+                    {/* <button
                       onClick={() => downloadInvoice(inv)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
                     >
                       Download PDF
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => openEdit(inv)}
-                      className="ml-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-md text-sm font-medium transition"
+                      className="ml-2 bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-md text-sm font-medium transition"
                     >
-                      Edit
+                      <FaEye />
                     </button>
 
                     {showEditModal && invoiceToEdit && (
@@ -641,7 +641,7 @@ export default function ViewInvoices() {
 
                     <button
                       onClick={() => handleDeleteInvoice(inv.invoiceNumber)}
-                      className=" bg-[#f5a8a8] hover:bg-red-600 text-black px-3 py-1 rounded-md text-sm font-medium transition ml-10"
+                      className=" bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium transition ml-10"
                     >
                       <FaTrash className="text-xs" />
                     </button>

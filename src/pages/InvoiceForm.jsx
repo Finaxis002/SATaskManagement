@@ -15,16 +15,13 @@ const ITEMS_PER_PAGE = 8;
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
-
 // Use the function
-
 
 export default function InvoiceForm({
   initialInvoice = null,
   onSaved,
   onClose,
 }) {
-  
   const PREVIEW_W = 794;
   const PREVIEW_H = 1122;
   const PREVIEW_SCALE = 0.9;
@@ -68,7 +65,6 @@ export default function InvoiceForm({
   const [selectedClientOption, setSelectedClientOption] = useState(null); // keep
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(null);
-  
 
   useEffect(() => {
     const loadFirms = async () => {
@@ -232,7 +228,6 @@ export default function InvoiceForm({
     fetchClients();
   }, []);
 
-
   useEffect(() => {
     if (!selectedClientOption) {
       setCustomer({
@@ -286,8 +281,6 @@ export default function InvoiceForm({
 
     fetchTasks();
   }, [selectedClientOption, fromDate, toDate]);
-
-
 
   const updateItem = (index, field, value) => {
     setItems((prevItems) => {
@@ -438,6 +431,29 @@ export default function InvoiceForm({
   const page2Items = items.slice(ITEMS_PER_PAGE);
 
   const handleSaveAndDownloadPDF = async () => {
+    // Validation check
+    const missingFields = [];
+
+    if (!selectedFirmId) missingFields.push("Firm");
+    if (!invoiceType) missingFields.push("Invoice Type");
+    if (!invoiceDate) missingFields.push("Invoice Date");
+    if (!customer.name) missingFields.push("Customer Name");
+    if (!placeOfSupply) missingFields.push("Place of Supply");
+    if (items.length === 0) missingFields.push("and at least one Item");
+
+    if (missingFields.length > 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Validation Error",
+        text: `Please fill out the following required fields: ${missingFields.join(
+          ", "
+        )}`,
+        confirmButtonColor: "#d33",
+        confirmButtonText: "Okay",
+      });
+      return;
+    }
+
     try {
       // Finalize the invoice number and mark it as finalized
       const finalNo = await finalizeInvoiceNumber();
@@ -491,9 +507,24 @@ export default function InvoiceForm({
       // Now generate PDF
       if (!invoiceRef.current) return;
       const element = invoiceRef.current;
+      // element.style.transform = "scale(1)";
+      // element.style.transformOrigin = "top left";
+      // element.style.width = `${element.scrollWidth}px`;
+      // Remember previous styles
+      const prevTransform = element.style.transform;
+      const prevTransformOrigin = element.style.transformOrigin;
+      const prevWidth = element.style.width;
+      const prevHeight = element.style.height;
+      const prevMaxHeight = element.style.maxHeight;
+      const prevOverflow = element.style.overflow;
+
+      // Unscale + let wrapper grow to full content height
       element.style.transform = "scale(1)";
       element.style.transformOrigin = "top left";
       element.style.width = `${element.scrollWidth}px`;
+      element.style.height = "auto";
+      element.style.maxHeight = "none";
+      element.style.overflow = "visible";
 
       const opt = {
         margin: 0,
@@ -507,22 +538,51 @@ export default function InvoiceForm({
           useCORS: true,
           width: element.scrollWidth,
           windowWidth: element.scrollWidth,
+          windowHeight: element.scrollHeight,
         },
         jsPDF: {
           unit: "px",
           orientation: "portrait",
           format: [794, 1122],
         },
-        pagebreak: { mode: ['css', 'legacy'],
-    avoid: '.invoice-note'},
+        //     pagebreak: { mode: ['css', 'legacy'],
+        // avoid: '.invoice-note'},
+        // pagebreak: { mode: ['css', 'legacy'], before: '.html2pdf__page-break', avoid: '.invoice-note' },
+        pagebreak: { mode: "css" },
       };
 
-      await html2pdf().set(opt).from(element).save();
+      // await html2pdf().set(opt).from(element).save();
+      const pageHeightPx = 1122; // must match your jsPDF format height
+      const expectedPages = Math.max(
+        1,
+        Math.ceil(element.scrollHeight / pageHeightPx)
+      );
+
+      await html2pdf()
+        .set(opt)
+        .from(element)
+        .toPdf()
+        .get("pdf")
+        .then((pdf) => {
+          const actual = pdf.internal.getNumberOfPages();
+          // Remove any trailing blank pages that html2pdf sometimes adds
+          for (let i = actual; i > expectedPages; i--) {
+            pdf.deletePage(i);
+          }
+        })
+        .save();
 
       // Reset styles
-      element.style.transform = "scale(0.90)";
-      element.style.transformOrigin = "top left";
-      element.style.width = "";
+      // element.style.transform = "scale(0.90)";
+      // element.style.transformOrigin = "top left";
+      // element.style.width = "";
+      // Restore preview styles
+      element.style.transform = prevTransform || `scale(${previewScale})`;
+      element.style.transformOrigin = prevTransformOrigin || "top left";
+      element.style.width = prevWidth || "";
+      element.style.height = prevHeight || "";
+      element.style.maxHeight = prevMaxHeight || "";
+      element.style.overflow = prevOverflow || "";
     } catch (error) {
       console.error("Failed to save or generate PDF:", error);
       Swal.fire("Error", "Could not save or generate the invoice.", "error");
@@ -648,8 +708,9 @@ export default function InvoiceForm({
     if (selectedFirm && invoiceType) previewInvoiceNumber();
   }, [isEdit, selectedFirm, invoiceType]);
 
-  // const updateInvoice = async () => {
+  // const handleUpdateAndDownloadPDF = async () => {
   //   try {
+  //     // 1) UPDATE the invoice in DB (no finalize here)
   //     const firmSnapshot = {
   //       _id: selectedFirm?._id,
   //       name: selectedFirm?.name,
@@ -675,8 +736,8 @@ export default function InvoiceForm({
   //     const payload = {
   //       invoiceNumber,
   //       invoiceDate,
-  //       invoiceType, // ignored if changed (server freezes)
-  //       selectedFirm: firmSnapshot, // bank allowed; rest frozen server-side
+  //       invoiceType, // server freezes type if changed
+  //       selectedFirm: firmSnapshot,
   //       placeOfSupply,
   //       customer, // frozen server-side
   //       items,
@@ -684,26 +745,81 @@ export default function InvoiceForm({
   //       totalAmount: totalAmountWithTax,
   //     };
 
-  //     // const { data } = await axios.put(`https://taskbe.sharda.co.in/api/invoices/${invoiceNumber}`, payload);
   //     const idForUpdate = isEdit ? originalInvNoRef.current : invoiceNumber;
-  //     const { data } = await axios.put(
+  //     await axios.put(
   //       `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
   //         idForUpdate
   //       )}`,
   //       payload
   //     );
-  //     await Swal.fire("Updated", "Invoice saved successfully.", "success");
-  //     onSaved && onSaved(data);
-  //     onClose && onClose();
-  //   } catch (e) {
-  //     console.error(e);
-  //     Swal.fire("Error", "Could not update the invoice.", "error");
+
+  //     // Optional toast
+  //     await Swal.fire({
+  //       icon: "success",
+  //       title: "Invoice Updated",
+  //       text: `Invoice ${invoiceNumber} has been updated. Generating PDF...`,
+  //       confirmButtonColor: "#3085d6",
+  //       confirmButtonText: "Ok",
+  //     });
+
+  //     // 2) GENERATE the PDF (do NOT finalize/increment in edit mode)
+  //     if (!invoiceRef.current) return;
+
+  //     const element = invoiceRef.current;
+
+  //     // remember current styles and temporarily un-scale
+  //     const prevTransform = element.style.transform;
+  //     const prevTransformOrigin = element.style.transformOrigin;
+  //     const prevWidth = element.style.width;
+  //     const prevHeight = element.style.height;
+  //     const prevMaxHeight = element.style.maxHeight;
+
+  //     element.style.transform = "scale(1)";
+  //     element.style.transformOrigin = "top left";
+  //     element.style.width = `${element.scrollWidth}px`;
+  //     element.style.height = "auto";
+  //     element.style.maxHeight = "none";
+
+  //     const opt = {
+  //       margin: 0,
+  //       padding: 0,
+  //       filename: `${invoiceNumber}.pdf`,
+  //       image: { type: "jpeg", quality: 0.98 },
+  //       html2canvas: {
+  //         scale: 2,
+  //         dpi: 300,
+  //         letterRendering: true,
+  //         useCORS: true,
+  //         width: element.scrollWidth,
+  //         windowWidth: element.scrollWidth,
+  //       },
+  //       jsPDF: {
+  //         unit: "px",
+  //         orientation: "portrait",
+  //         format: [794, 1122],
+  //       },
+  //       pagebreak: { mode: "css" },
+  //     };
+
+  //     await html2pdf().set(opt).from(element).save();
+  //     element.style.height = prevHeight || "";
+  //     element.style.maxHeight = prevMaxHeight || "";
+
+  //     // restore preview styles
+  //     element.style.transform = prevTransform || `scale(${previewScale})`;
+  //     element.style.transformOrigin = prevTransformOrigin || "top left";
+  //     element.style.width = prevWidth || "";
+
+  //   } catch (error) {
+  //     console.error(error);
+  //     Swal.fire("Error", "Could not update or generate the invoice.", "error");
   //   }
   // };
 
-  const handleUpdateAndDownloadPDF = async () => {
+  // Update Invoice Handler (Only saves the invoice)
+  const handleUpdateInvoice = async () => {
     try {
-      // 1) UPDATE the invoice in DB (no finalize here)
+      // Perform the update logic here (saving invoice to DB)
       const firmSnapshot = {
         _id: selectedFirm?._id,
         name: selectedFirm?.name,
@@ -726,48 +842,155 @@ export default function InvoiceForm({
           : null,
       };
 
-      const payload = {
+      const invoiceData = {
         invoiceNumber,
         invoiceDate,
-        invoiceType, // server freezes type if changed
+        invoiceType,
         selectedFirm: firmSnapshot,
         placeOfSupply,
-        customer, // frozen server-side
+        customer,
         items,
-        notes,
         totalAmount: totalAmountWithTax,
+        notes,
       };
 
-      const idForUpdate = isEdit ? originalInvNoRef.current : invoiceNumber;
-      await axios.put(
-        `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
-          idForUpdate
-        )}`,
-        payload
-      );
+      await axios.put(`/invoices/${invoiceNumber}`, invoiceData);
 
-      // Optional toast
-      await Swal.fire({
+      // Show success message
+      Swal.fire({
         icon: "success",
         title: "Invoice Updated",
-        text: `Invoice ${invoiceNumber} has been updated. Generating PDF...`,
+        text: `Invoice ${invoiceNumber} has been updated successfully.`,
         confirmButtonColor: "#3085d6",
         confirmButtonText: "Ok",
       });
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      Swal.fire("Error", "Could not update the invoice.", "error");
+    }
+  };
 
-      // 2) GENERATE the PDF (do NOT finalize/increment in edit mode)
+  // Download PDF Handler (Only generates and downloads the PDF)
+  const handleDownloadPDF = async () => {
+    try {
+      // Validate form fields before proceeding
+      const missingFields = [];
+      if (!selectedFirmId) missingFields.push("Firm");
+      if (!invoiceType) missingFields.push("Invoice Type");
+      if (!invoiceDate) missingFields.push("Invoice Date");
+      if (!customer.name) missingFields.push("Customer Name");
+      if (!placeOfSupply) missingFields.push("Place of Supply");
+      if (items.length === 0) missingFields.push("At least one Item");
+
+      if (missingFields.length > 0) {
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: `Please fill out the following required fields: ${missingFields.join(
+            ", "
+          )}`,
+          confirmButtonColor: "#d33",
+          confirmButtonText: "Okay",
+        });
+        return;
+      }
+
+      // Generate PDF logic here (same as your existing PDF generation logic)
+      const finalNo = await finalizeInvoiceNumber();
+      setInvoiceNumber(finalNo);
+
+      const firmSnapshot = {
+        _id: selectedFirm?._id,
+        name: selectedFirm?.name,
+        address: selectedFirm?.address,
+        phone: selectedFirm?.phone,
+        gstin: selectedFirm?.gstin,
+        bank: activeBank
+          ? {
+              _id: activeBank._id,
+              label: activeBank.label || "",
+              bankName: activeBank.bankName || activeBank.name || "",
+              accountName: activeBank.accountName || "",
+              accountNumber:
+                activeBank.accountNumber || activeBank.account || "",
+              ifsc: activeBank.ifsc || "",
+              upiIdName: activeBank.upiIdName || "",
+              upiMobile: activeBank.upiMobile || "",
+              upiId: activeBank.upiId || "",
+            }
+          : null,
+      };
+
+      // Save the invoice to the backend (optional)
+      const invoiceData = {
+        invoiceNumber: finalNo,
+        invoiceDate,
+        invoiceType,
+        selectedFirm: firmSnapshot,
+        placeOfSupply,
+        customer,
+        items,
+        totalAmount: totalAmountWithTax,
+        notes,
+      };
+
+      await axios.post("/invoices", invoiceData);
+
+      // Now generate the PDF
       if (!invoiceRef.current) return;
-
       const element = invoiceRef.current;
 
-      // remember current styles and temporarily un-scale
+      // const opt = {
+      //   margin: 0,
+      //   padding: 0,
+      //   filename: `${finalNo}.pdf`,
+      //   image: { type: "jpeg", quality: 0.98 },
+      //   html2canvas: {
+      //     scale: 2,
+      //     dpi: 300,
+      //     letterRendering: true,
+      //     useCORS: true,
+      //     width: element.scrollWidth,
+      //     windowWidth: element.scrollWidth,
+      //   },
+      //   jsPDF: {
+      //     unit: "px",
+      //     orientation: "portrait",
+      //     format: [794, 1122],
+      //   },
+      //   pagebreak: { mode: "css", before: ".page-break" },
+      // };
+
+      // const pageHeightPx = 1122; // Must match your jsPDF format height
+      // const expectedPages = Math.max(1, Math.ceil(element.scrollHeight / pageHeightPx));
+
+      // await html2pdf()
+      //   .set(opt)
+      //   .from(element)
+      //   .toPdf()
+      //   .get('pdf')
+      //   .then((pdf) => {
+      //     const actual = pdf.internal.getNumberOfPages();
+      //     // Remove any trailing blank pages that html2pdf sometimes adds
+      //     for (let i = actual; i > expectedPages; i--) {
+      //       pdf.deletePage(i);
+      //     }
+      //   })
+      //   .save();
+
+      // Swal.fire("Success", "Invoice generated as PDF.", "success");
+
       const prevTransform = element.style.transform;
       const prevTransformOrigin = element.style.transformOrigin;
       const prevWidth = element.style.width;
+      const prevHeight = element.style.height;
+      const prevMaxHeight = element.style.maxHeight;
 
       element.style.transform = "scale(1)";
       element.style.transformOrigin = "top left";
       element.style.width = `${element.scrollWidth}px`;
+      element.style.height = "auto";
+      element.style.maxHeight = "none";
 
       const opt = {
         margin: 0,
@@ -791,52 +1014,48 @@ export default function InvoiceForm({
       };
 
       await html2pdf().set(opt).from(element).save();
+      element.style.height = prevHeight || "";
+      element.style.maxHeight = prevMaxHeight || "";
 
       // restore preview styles
       element.style.transform = prevTransform || `scale(${previewScale})`;
       element.style.transformOrigin = prevTransformOrigin || "top left";
       element.style.width = prevWidth || "";
-
     } catch (error) {
-      console.error(error);
-      Swal.fire("Error", "Could not update or generate the invoice.", "error");
+      console.error("Failed to generate PDF:", error);
+      Swal.fire("Error", "Could not generate the invoice PDF.", "error");
     }
   };
 
   const calculateNotesPages = () => {
-  if (notes.length === 0) return 0;
-  
-  // Simple estimation - you might need to adjust this based on your actual layout
-  const approxLinesPerPage = 40;
-  let totalLines = 0;
-  
-  notes.forEach(note => {
-    // Estimate lines based on character count (assuming ~60 chars per line)
-    const lines = Math.ceil(note.text.length / 60) + 1; // +1 for the number prefix
-    totalLines += lines;
-  });
-  
-  return Math.ceil(totalLines / approxLinesPerPage);
-};
+    if (notes.length === 0) return 0;
 
+    // Simple estimation - you might need to adjust this based on your actual layout
+    const approxLinesPerPage = 40;
+    let totalLines = 0;
 
+    notes.forEach((note) => {
+      // Estimate lines based on character count (assuming ~60 chars per line)
+      const lines = Math.ceil(note.text.length / 60) + 1; // +1 for the number prefix
+      totalLines += lines;
+    });
 
+    return Math.ceil(totalLines / approxLinesPerPage);
+  };
 
+  const splitNotesForPages = (notes, maxNotesPerPage = 5) => {
+    if (notes.length === 0) return [[], []]; // Empty notes case
 
-const splitNotesForPages = (notes, maxNotesPerPage = 5) => {
-  if (notes.length === 0) return [[], []]; // Empty notes case
+    // If all notes fit on one page, return them all for page 1
+    if (notes.length <= maxNotesPerPage) return [notes, []];
 
-  // If all notes fit on one page, return them all for page 1
-  if (notes.length <= maxNotesPerPage) return [notes, []];
+    // Otherwise, split notes between pages
+    return [notes.slice(0, maxNotesPerPage), notes.slice(maxNotesPerPage)];
+  };
 
-  // Otherwise, split notes between pages
-  return [notes.slice(0, maxNotesPerPage), notes.slice(maxNotesPerPage)];
-};
-
-
-// Calculate pages needed
-const notesPages = calculateNotesPages();
-const [notesPage1, notesPage2] = splitNotesForPages(notes); 
+  // Calculate pages needed
+  const notesPages = calculateNotesPages();
+  const [notesPage1, notesPage2] = splitNotesForPages(notes);
 
   return (
     <>
@@ -899,10 +1118,14 @@ const [notesPage1, notesPage2] = splitNotesForPages(notes);
     white-space: pre-line;
   }
 `}</style>
+      <style>{`
+  .pdf-doc { width: 794px; margin: 0; padding: 0; }
+  .pdf-page { page-break-after: always; break-after: page; }
+  .pdf-page:last-child { page-break-after: auto; break-after: auto; }
+`}</style>
       ;
       <div
         className="invoice-page "
-      
         style={{
           display: "flex",
           flexDirection: "row", // This ensures side-by-side layout
@@ -942,23 +1165,7 @@ const [notesPage1, notesPage2] = splitNotesForPages(notes);
             }}
           >
             <div className="flex gap-2 justify-center items-center mb-3">
-              {/* {isEdit ? (
-                <button
-                  onClick={updateInvoice}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                >
-                  Update Invoice
-                </button>
-              ) : (
-                <button
-                  onClick={handleSaveAndDownloadPDF}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                  title="Save and Download PDF"
-                >
-                  Save & Generate PDF
-                </button>
-              )} */}
-              <button
+              {/* <button
                 onClick={
                   isEdit ? handleUpdateAndDownloadPDF : handleSaveAndDownloadPDF
                 }
@@ -972,7 +1179,43 @@ const [notesPage1, notesPage2] = splitNotesForPages(notes);
                   {isEdit ? "Update & Download PDF" : "Save & Download PDF"}
                 </span>
                 <FiDownload className="w-4 h-4" />
-              </button>
+              </button> */}
+
+              {isEdit && (
+                <button
+                  onClick={handleUpdateInvoice} // Function to handle updating invoice
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-2"
+                  title="Update Invoice"
+                >
+                  <FiSave className="w-4 h-4" />
+                  <span>Update Invoice</span>
+                </button>
+              )}
+
+              {/* Download PDF Button (Only visible in edit mode) */}
+              {isEdit && (
+                <button
+                  onClick={handleDownloadPDF} // Function to handle downloading PDF
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                  title="Download PDF"
+                >
+                  <FiDownload className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </button>
+              )}
+
+              {/* Combined button for Save & Generate PDF in non-edit mode */}
+              {!isEdit && (
+                <button
+                  onClick={handleSaveAndDownloadPDF} // Function to save and download PDF
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                  title="Save and Download PDF"
+                >
+                  <FiSave className="w-4 h-4" />
+                  <span>Save & Generate PDF</span>
+                  <FiDownload className="w-4 h-4" />
+                </button>
+              )}
 
               {onClose && (
                 <button onClick={onClose} className="px-4 py-2 border rounded">
@@ -1154,7 +1397,7 @@ const [notesPage1, notesPage2] = splitNotesForPages(notes);
             </div>
 
             {/* Client Selection */}
-            <div>
+            {/* <div>
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
                 Customer Details
               </h2>
@@ -1205,7 +1448,174 @@ const [notesPage1, notesPage2] = splitNotesForPages(notes);
                   })}
                 />
               )}
-            </div>
+            </div> */}
+
+            {/* <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Customer Details
+              </h2>
+              {isEdit ? (
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="text"
+                    value={customer?.name || ""}
+                    onChange={(e) =>
+                      setCustomer({ ...customer, name: e.target.value })
+                    }
+                    className="mt-1 w-full border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter Customer Name"
+                  />
+                  <CreatableSelect
+                    options={clientOptions}
+                    value={selectedClientOption}
+                    onChange={(option) => {
+                      setSelectedClientOption(option);
+                      // Fetch selected client details
+                      const selectedClient = clients.find(
+                        (client) => client._id === option.value
+                      );
+                      if (selectedClient) {
+                        setCustomer(selectedClient);
+                      }
+                    }}
+                    onCreateOption={openCreateClientModal} // shows “+ Add client …”
+                    formatCreateLabel={(inputValue) =>
+                      `+ Add client "${inputValue}"`
+                    }
+                    placeholder="Search or select client..."
+                    isClearable
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        marginBottom: "10px",
+                        minHeight: "40px",
+                        borderRadius: "0.375rem",
+                        borderColor: "#d1d5db",
+                      }),
+                      menu: (base) => ({ ...base, zIndex: 9999 }),
+                    }}
+                    theme={(theme) => ({
+                      ...theme,
+                      colors: { ...theme.colors, primary: "#1a73e8" },
+                    })}
+                  />
+                </div>
+              ) : (
+                <input
+                  readOnly
+                  value={customer?.name || ""}
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
+        ${isEdit ? "border-gray-300" : "locked-field locked-cursor"}`}
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                  title="Client is locked for existing invoice"
+                />
+              )}
+            </div> */}
+
+            <div>
+  <h2 className="text-lg font-semibold text-gray-800 mb-2">
+    Customer Details
+  </h2>
+  {isEdit ? (
+    // Edit Mode: User can modify customer details
+    <div className="flex flex-col gap-2">
+      <input
+        type="text"
+        value={customer?.name || ""}
+        onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+        className="mt-1 w-full border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        placeholder="Enter Customer Name"
+      />
+      <CreatableSelect
+        options={clientOptions}
+        value={selectedClientOption}
+        onChange={(option) => {
+          setSelectedClientOption(option);
+          // Fetch selected client details
+          const selectedClient = clients.find((client) => client._id === option.value);
+          if (selectedClient) {
+            setCustomer(selectedClient);
+          }
+        }}
+        onCreateOption={openCreateClientModal} // shows “+ Add client …”
+        formatCreateLabel={(inputValue) => `+ Add client "${inputValue}"`}
+        placeholder="Search or select client..."
+        isClearable
+        styles={{
+          control: (base) => ({
+            ...base,
+            marginBottom: "10px",
+            minHeight: "40px",
+            borderRadius: "0.375rem",
+            borderColor: "#d1d5db",
+          }),
+          menu: (base) => ({ ...base, zIndex: 9999 }),
+        }}
+        theme={(theme) => ({
+          ...theme,
+          colors: { ...theme.colors, primary: "#1a73e8" },
+        })}
+      />
+    </div>
+  ) : (
+    // Non-Edit Mode: Customer details are displayed as read-only, but still editable in `CreatableSelect`
+    <div className="flex flex-col gap-2">
+      {/* <input
+        readOnly
+        value={customer?.name || ""}
+        className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm ${
+          isEdit ? "locked-field locked-cursor" : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        }`}
+        aria-disabled={isEdit}
+        onMouseDown={(e) => {
+          if (isEdit) e.preventDefault();
+        }}
+        onKeyDown={(e) => {
+          if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key)) e.preventDefault();
+        }}
+        title="Client is locked for existing invoice"
+      /> */}
+      <CreatableSelect
+        options={clientOptions}
+        value={selectedClientOption}
+        onChange={(option) => {
+          setSelectedClientOption(option);
+          // Fetch selected client details
+          const selectedClient = clients.find((client) => client._id === option.value);
+          if (selectedClient) {
+            setCustomer(selectedClient);
+          }
+        }}
+        onCreateOption={openCreateClientModal} // shows “+ Add client …”
+        formatCreateLabel={(inputValue) => `+ Add client "${inputValue}"`}
+        placeholder="Search or select client..."
+        isClearable
+        styles={{
+          control: (base) => ({
+            ...base,
+            marginBottom: "10px",
+            minHeight: "40px",
+            borderRadius: "0.375rem",
+            borderColor: "#d1d5db",
+          }),
+          menu: (base) => ({ ...base, zIndex: 9999 }),
+        }}
+        theme={(theme) => ({
+          ...theme,
+          colors: { ...theme.colors, primary: "#1a73e8" },
+        })}
+      />
+    </div>
+  )}
+</div>
+
 
             {/* Place of Supply */}
             <div>
@@ -1448,7 +1858,7 @@ const [notesPage1, notesPage2] = splitNotesForPages(notes);
                   sgstAmount={sgstAmount}
                   numberToWordsIndian={numberToWordsIndian}
                   onImagesLoaded={() => setImagesReady(true)}
-                  showGSTIN={showGSTIN}                  
+                  showGSTIN={showGSTIN}
                   notes={notesPage1}
                 />
 
