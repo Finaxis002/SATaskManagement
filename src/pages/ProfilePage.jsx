@@ -20,7 +20,7 @@ const ProfilePage = () => {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
 
-  // ---- build identity from localStorage/JWT safely ----
+ // ---- build identity from localStorage/JWT safely ----
 const userStr = localStorage.getItem("user");        // <— missing before
 
 let userObj = {};
@@ -45,6 +45,7 @@ const storedIdentifier =
   tokenPayload.userId ||
   localStorage.getItem("email") ||
   ""; // final fallback to empty string
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -295,7 +296,7 @@ const storedIdentifier =
 
         {/* Password Edit Modal */}
        {isEditingPassword && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-300">
+  <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300">
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700 transform transition-transform duration-300 scale-100 hover:scale-[1.01]">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
