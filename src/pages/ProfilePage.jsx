@@ -20,8 +20,31 @@ const ProfilePage = () => {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
 
-  const storedIdentifier = localStorage.getItem("userId");
-  const token = localStorage.getItem("authToken");
+  // ---- build identity from localStorage/JWT safely ----
+const userStr = localStorage.getItem("user");        // <— missing before
+
+let userObj = {};
+try {
+  userObj = JSON.parse(userStr || "{}");
+} catch {}
+
+// token from either key
+const token =
+  localStorage.getItem("tokenLocal") || localStorage.getItem("authToken") || "";
+
+let tokenPayload = {};
+try {
+  tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
+} catch {}
+
+// Prefer email, else ids (userId/_id) from multiple sources
+const storedIdentifier =
+  userObj.email ||
+  userObj._id ||
+  localStorage.getItem("userId") ||
+  tokenPayload.userId ||
+  localStorage.getItem("email") ||
+  ""; // final fallback to empty string
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -271,91 +294,124 @@ const ProfilePage = () => {
         </div>
 
         {/* Password Edit Modal */}
-        {isEditingPassword && (
-          <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4 text-gray-700">
-                Change Password
-              </h2>
+       {isEditingPassword && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-300">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700 transform transition-transform duration-300 scale-100 hover:scale-[1.01]">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+          Change Password
+        </h2>
+        <button
+          onClick={() => {
+            setIsEditingPassword(false);
+            setPasswordError("");
+            setPasswordSuccess("");
+          }}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-              <div className="space-y-4">
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? "text" : "password"}
-                    value={passwordForm.newPassword}
-                    onChange={(e) =>
-                      setPasswordForm({
-                        ...passwordForm,
-                        newPassword: e.target.value,
-                      })
-                    }
-                    className="border px-3 py-2 rounded w-full pr-10"
-                    placeholder="Enter new password"
-                  />
-                  <span
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 cursor-pointer"
-                  >
-                    <FontAwesomeIcon
-                      icon={showNewPassword ? faEye : faEyeSlash}
-                    />
-                  </span>
-                </div>
+      <div className="space-y-5">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            New Password
+          </label>
+          <div className="relative">
+            <input
+              type={showNewPassword ? "text" : "password"}
+              value={passwordForm.newPassword}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  newPassword: e.target.value,
+                })
+              }
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+              placeholder="Enter new password"
+            />
+            <span
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer transition-colors"
+            >
+              <FontAwesomeIcon
+                icon={showNewPassword ? faEye : faEyeSlash}
+              />
+            </span>
+          </div>
+        </div>
 
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordForm({
-                        ...passwordForm,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    className="border px-3 py-2 rounded w-full pr-10"
-                    placeholder="Confirm new password"
-                  />
-                  <span
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 cursor-pointer"
-                  >
-                    <FontAwesomeIcon
-                      icon={showNewPassword ? faEye : faEyeSlash}
-                    />
-                  </span>
-                </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Confirm Password
+          </label>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              value={passwordForm.confirmPassword}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  confirmPassword: e.target.value,
+                })
+              }
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+              placeholder="Confirm new password"
+            />
+            <span
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer transition-colors"
+            >
+              <FontAwesomeIcon
+                icon={showConfirmPassword ? faEye : faEyeSlash}
+              />
+            </span>
+          </div>
+        </div>
 
-                {passwordError && (
-                  <div className="text-red-500 text-sm">{passwordError}</div>
-                )}
-                {passwordSuccess && (
-                  <div className="text-green-500 text-sm">
-                    {passwordSuccess}
-                  </div>
-                )}
-
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => {
-                      setIsEditingPassword(false);
-                      setPasswordError("");
-                      setPasswordSuccess("");
-                    }}
-                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handlePasswordChange}
-                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
-                  >
-                    Update Password
-                  </button>
-                </div>
-              </div>
-            </div>
+        {passwordError && (
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-lg flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm">{passwordError}</span>
           </div>
         )}
+        
+        {passwordSuccess && (
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm">{passwordSuccess}</span>
+          </div>
+        )}
+
+        <div className="flex justify-end space-x-3 pt-2">
+          <button
+            onClick={() => {
+              setIsEditingPassword(false);
+              setPasswordError("");
+              setPasswordSuccess("");
+            }}
+            className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handlePasswordChange}
+            className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-sm hover:shadow-md transition-all"
+          >
+            Update Password
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
