@@ -128,6 +128,8 @@ const isLocalSupply = () => {
         justifyContent: "space-between",
         pageBreakInside: "avoid",
         breakInside: "avoid",
+
+        
       }}
     >
       {/* Header */}
