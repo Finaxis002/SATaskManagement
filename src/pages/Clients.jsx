@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "../utils/secureAxios";
-import { FaPlus, FaThLarge, FaTable } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ClientList from "../Components/client/ClientList";
 import CreateClientModal from "../Components/client/CreateClientModal";
-import ClientTableView from "../Components/client/ClientTableView";
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
-  const [viewMode, setViewMode] = useState("card");
 
   const fetchClients = async () => {
     setLoading(true);
@@ -91,52 +89,25 @@ const Clients = () => {
 
   return (
     <div className="p-5 bg-gray-100 min-h-screen">
-      <div className="flex items-center justify-between mb-6 px-1 py-3 border-b border-gray-200">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 px-1 py-3 border-b border-gray-200 gap-3">
         {/* Title with subtle decoration */}
-        <div className="flex items-center">
+        <div className="flex items-center w-full sm:w-auto">
           <h1 className="text-2xl font-semibold text-gray-800 relative pl-3">
             Client Overview
             <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-full"></span>
           </h1>
         </div>
 
-        {/* Controls container */}
-        <div className="flex items-center gap-4">
-          {/* View toggle buttons */}
-          <div className="flex bg-gray-100 p-1 rounded-lg">
-            <button
-              onClick={() => setViewMode("card")}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === "card"
-                  ? "bg-white shadow-sm text-indigo-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              title="Card View"
-            >
-              <FaThLarge size={18} />
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === "table"
-                  ? "bg-white shadow-sm text-indigo-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              title="Table View"
-            >
-              <FaTable size={18} />
-            </button>
-          </div>
-
-          {/* Add Client button */}
-          <button
-            onClick={() => setShowClientModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md"
-          >
-            <FaPlus className="text-sm" />
-            <span className="text-sm font-medium">Add Client</span>
-          </button>
-        </div>
+        {/* Add Client button */}
+        <button
+          onClick={() => setShowClientModal(true)}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 
+             transition-all duration-200 shadow-sm w-full sm:w-auto justify-center
+             transform hover:scale-105 hover:opacity-90 hover:shadow-lg"
+        >
+          <FaPlus className="text-sm" />
+          <span className="text-sm font-medium">Add Client</span>
+        </button>
       </div>
 
       {loading ? (
@@ -169,19 +140,11 @@ const Clients = () => {
         </div>
       ) : (
         <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-          {viewMode === "card" ? (
-            <ClientList
-              clients={clients}
-              onDelete={handleDeleteClient}
-              onEdit={handleEditClient}
-            />
-          ) : (
-            <ClientTableView
-              clients={clients}
-              onEdit={handleEditClient}
-              onDelete={handleDeleteClient}
-            />
-          )}
+          <ClientList
+            clients={clients}
+            onDelete={handleDeleteClient}
+            onEdit={handleEditClient}
+          />
         </div>
       )}
 
@@ -222,7 +185,6 @@ const Clients = () => {
               setShowClientModal(false);
               setEditingClient(null);
             } catch (err) {
-              // Check if error is due to duplicate client name
               if (err.response && err.response.status === 409) {
                 Swal.fire({
                   icon: "warning",
