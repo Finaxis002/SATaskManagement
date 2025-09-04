@@ -235,15 +235,29 @@ const ChatMessages = ({
   const handleCloseModal = () => {
     setShowSeenByModal(false); // Close the modal
   };
-const [popupPos, setPopupPos] = useState({ x: 0, y: 0 });
+  const [popupPos, setPopupPos] = useState({ x: 0, y: 0 });
 
-const handleSeenByClick = (msg, e) => {
-  setSelectedMessage(msg);
-  setShowSeenByModal(true);
+  const handleSeenByClick = (msg, e) => {
+    setSelectedMessage(msg);
+    setShowSeenByModal(true);
 
-  // ✅ Click position save karo
-  setPopupPos({ x: e.clientX, y: e.clientY });
-};
+    // Store the click position
+    const clickPosition = { x: e.clientX, y: e.clientY };
+
+    // Calculate the available space above the click position (use 50px as padding space)
+    const availableSpaceAbove = clickPosition.y - 50;
+    const modalHeight = 200;  // Approximate modal height
+    const shouldDisplayAbove = availableSpaceAbove > modalHeight;
+
+    // Set the popup position based on available space
+    if (shouldDisplayAbove) {
+      // If there's enough space above, position the modal above the click point
+      setPopupPos({ x: clickPosition.x, y: clickPosition.y - modalHeight });
+    } else {
+      // If no space above, position it below the click point
+      setPopupPos({ x: clickPosition.x, y: clickPosition.y + 20 });
+    }
+  };
   return (
     <>
 
@@ -251,7 +265,7 @@ const handleSeenByClick = (msg, e) => {
         ref={scrollRef}
         className="flex-1 relative overflow-y-auto p-0 bg-gray-50"
       >
-        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4 pb-28 md:pb-6">
           <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
             {Array.isArray(messages) && messages.length > 0 ? (
               <>
@@ -293,7 +307,7 @@ const handleSeenByClick = (msg, e) => {
                             : "border-2 border-gray-200 bg-gray-100 text-gray-800 mr-auto rounded-bl-none" // Light background for unread messages
                           }`}
                       >
-                        
+
                         <div className="flex items-center justify-between mb-1 pb-1" style={{ borderBottom: "1px solid rgba(156, 163, 175, 0.16)" }}>
                           <span className="text-xs font-semibold">
                             {msg.sender}
@@ -354,17 +368,17 @@ const handleSeenByClick = (msg, e) => {
                               </span>
                             </div>
                           )}
-                       {isCurrentUser &&
-  selectedGroup &&
-  msg.readBy &&
-  msg.readBy.length > 1 && (
-    <div
-      className="text-right text-xs text-gray-100 mt-auto cursor-pointer"
-      onClick={(e) => handleSeenByClick(msg, e)} // Pass event to handleSeenByClick
-    >
-      {msg.readBy.length} {msg.readBy.length === 1 ? "person" : "people"} viewed
-    </div>
-  )}
+                        {isCurrentUser &&
+                          selectedGroup &&
+                          msg.readBy &&
+                          msg.readBy.length > 1 && (
+                            <div
+                              className="text-right text-xs text-gray-100 mt-auto cursor-pointer"
+                              onClick={(e) => handleSeenByClick(msg, e)} // Pass event to handleSeenByClick
+                            >
+                              {msg.readBy.length} {msg.readBy.length === 1 ? "person" : "people"} viewed
+                            </div>
+                          )}
                       </div>
                     </React.Fragment>
                   );
@@ -387,35 +401,46 @@ const handleSeenByClick = (msg, e) => {
               </div>
             )}
           </div>
-     {/* Modal to show who has seen the message */}
-{showSeenByModal && selectedMessage && (
-  <div
-    className="fixed z-50 bg-white p-3 rounded-lg shadow-lg border w-48"
-    style={{
-      top: popupPos.y + 10,
-      left: popupPos.x,
-      transform: "translateX(-50%)",
-    }}
-  >
-    {/* Header with Close Icon */}
-    <div className="flex items-center justify-between mb-2">
-      <h3 className="text-sm font-semibold">Seen by:</h3>
-      <button
-        onClick={handleCloseModal}
-        className="text-gray-500 hover:text-red-500"
-      >
-        <FaTimes size={14} />
-      </button>
-    </div>
+          {showSeenByModal && selectedMessage && (
+            <div
+              className="fixed z-50 bg-white p-4 rounded-xl shadow-xl border border-gray-200 w-64 max-h-80 overflow-y-auto"
+              style={{
+                top: popupPos.y + 10, // Adjusted to make it appear above the message
+                left: popupPos.x,
+                transform: "translateX(-50%)", // Center the modal horizontally
+                zIndex: 9999, // Ensure modal is above everything else
+              }}
+            >
+              {/* Header with Close Icon */}
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-gray-800">Seen by:</h3>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-500 text-red-500 transition-colors"
+                >
+                  <FaTimes size={16} />
+                </button>
+              </div>
 
-    {/* List */}
-    <ul className="space-y-1 max-h-32 overflow-y-auto">
-      {selectedMessage.readBy?.map((name, idx) => (
-        <li key={idx} className="text-xs text-gray-700">{name}</li>
-      ))}
-    </ul>
-  </div>
-)}
+              {/* Line separator between Heading and Names */}
+              <div className="w-full border-t border-gray-300 mb-4"></div>
+
+              {/* List of people who have seen the message */}
+              <ul className="space-y-2 max-h-64 overflow-y-auto text-sm text-gray-700 bg-blue-50 p-2 rounded-lg">
+                {selectedMessage.readBy?.map((name, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <span className="text-xs text-gray-500">{idx + 1}</span> {/* Numbering on the left */}
+                    <span>{name}</span> {/* Name of the person */}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+
           {/* Scroll to Bottom Indicator */}
           <div ref={messageEndRef} />
         </div>
