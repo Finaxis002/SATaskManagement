@@ -1391,7 +1391,7 @@ export default function ViewInvoices() {
 
                     {showEditModal && invoiceToEdit && (
                       <div className="fixed inset-0 z-[1001] bg-black/50 flex items-center justify-center">
-                        <div className="bg-white rounded-md shadow-xl w-[95vw] max-w-[1300px] max-h-[92vh] overflow-auto p-3">
+                        <div className="bg-white rounded-md shadow-xl w-[90vw] pt-10">
                           <InvoiceForm
                             key={invoiceToEdit.invoiceNumber}
                             initialInvoice={invoiceToEdit}
