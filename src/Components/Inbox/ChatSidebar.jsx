@@ -45,6 +45,14 @@ const ChatSidebar = ({
       scrollRefGroups.current.scrollTop = scrollRefGroups.current.scrollHeight;
     }
   };
+// Add the filtered list of users based on the searchTerm
+const filteredAdmins = admins.filter((admin) =>
+  admin.name.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+const filteredRegularUsers = regularUsers.filter((user) =>
+  user.name.toLowerCase().includes(searchTerm.toLowerCase())
+);
 
   // Handle user selection
   const handleUserSelection = (user) => {
@@ -258,46 +266,87 @@ const ChatSidebar = ({
               )}
             </div>
 
-            {sortedAdmins.length > 0 && (
-              <>
-                <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2">
-                  Administrators
-                </h4>
-                {sortedAdmins.map((admin) => (
-                  <div
-                    key={admin._id || admin.userId}
-                    onClick={() => handleUserClick(admin)}
-                    className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
-                      selectedUser?._id === admin._id ||
-                      selectedUser?.userId === admin.userId
-                        ? "bg-indigo-100 border-indigo-300"
-                        : "bg-white hover:bg-gray-100 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                        {admin.name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-800 block">
-                          {admin.name}
-                        </span>
-                        {admin.position && (
-                          <span className="text-xs text-gray-500 block">
-                            {admin.position}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {userUnreadCounts[admin.name || admin.userId] > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                        {userUnreadCounts[admin.name || admin.userId]}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </>
+            {filteredAdmins.length > 0 && (
+  <>
+    <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2">
+      Administrators
+    </h4>
+    {filteredAdmins.map((admin) => (
+      <div
+        key={admin._id || admin.userId}
+        onClick={() => handleUserSelection(admin)}
+        className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+          selectedUser?._id === admin._id ||
+          selectedUser?.userId === admin.userId
+            ? "bg-indigo-100 border-indigo-300"
+            : "bg-white hover:bg-gray-100 border-gray-200"
+        }`}
+      >
+        <div className="flex items-center space-x-3">
+          <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+            {admin.name?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <span className="text-sm font-medium text-gray-800 block">
+              {admin.name}
+            </span>
+            {admin.position && (
+              <span className="text-xs text-gray-500 block">
+                {admin.position}
+              </span>
             )}
+          </div>
+        </div>
+        {userUnreadCounts[admin.name || admin.userId] > 0 && (
+          <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+            {userUnreadCounts[admin.name || admin.userId]}
+          </span>
+        )}
+      </div>
+    ))}
+  </>
+)}
+
+{filteredRegularUsers.length > 0 && (
+  <>
+    <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2 mt-4">
+      Team Members
+    </h4>
+    {filteredRegularUsers.map((user) => (
+      <div
+        key={user._id || user.userId}
+        onClick={() => handleUserSelection(user)}
+        className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
+          selectedUser?._id === user._id ||
+          selectedUser?.userId === user.userId
+            ? "bg-indigo-100 border-indigo-300"
+            : "bg-white hover:bg-gray-100 border-gray-200"
+        }`}
+      >
+        <div className="flex items-center space-x-3">
+          <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+            {user.name?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <span className="text-sm font-medium text-gray-800 block">
+              {user.name}
+            </span>
+            {user.position && (
+              <span className="text-xs text-gray-500 block">
+                {user.position}
+              </span>
+            )}
+          </div>
+        </div>
+        {userUnreadCounts[user.name] > 0 && (
+          <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+            {userUnreadCounts[user.name]}
+          </span>
+        )}
+      </div>
+    ))}
+  </>
+)}
 
             {sortedRegularUsers.length > 0 && (
               <>
