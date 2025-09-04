@@ -27,37 +27,57 @@ const MainLayout = ({ children }) => {
       </div>
 
       {/* Mobile Footer Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-300 flex justify-around py-2">
-        <MobileNavItem to="/" label="Home" icon={<FaHome className="text-xl" />} />
-        <MobileNavItem to="/all-tasks" label="Tasks" icon={<FaClipboardList className="text-xl" />} />
-        <MobileNavItem to="/clients" label="Clients" icon={<FaBriefcase className="text-xl" />} />
-        <MobileNavItem to="/leave" label="Leave" icon={<FaGolfBall className="text-xl" />} />
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around py-2">
+        <MobileNavItem
+          to="/"
+          label="Home"
+          icon={<FaHome className="text-2xl" />} // bigger icon
+        />
+        <MobileNavItem
+          to="/all-tasks"
+          label="Tasks"
+          icon={<FaClipboardList className="text-2xl" />}
+        />
+        <MobileNavItem
+          to="/clients"
+          label="Clients"
+          icon={<FaBriefcase className="text-2xl" />}
+        />
+        <MobileNavItem
+          to="/leave"
+          label="Leave"
+          icon={<FaGolfBall className="text-2xl" />}
+        />
       </div>
     </div>
   );
 };
+
 const MobileNavItem = ({ to, label, icon }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `flex flex-col items-center justify-center px-3 py-1 transition-all duration-200 relative ${
-        isActive ? "text-black font-semibold scale-105" : "text-gray-500"
-      }`
+      `flex flex-col items-center justify-center px-2 py-2 transition-all duration-200 relative 
+      ${isActive ? "text-black font-semibold scale-105" : "text-gray-500"}`
     }
   >
     {({ isActive }) => (
       <>
         {/* Top Indicator */}
         {isActive && (
-          <div className="absolute top-0 left-0 w-full h-1 bg-gray-700 rounded-b-md"></div>
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 
+                       w-7 sm:w-8 h-[3px] bg-blue-700 rounded-b-md"
+          ></div>
         )}
 
-        {icon}
-        <span className="text-xs">{label}</span>
+        {/* Icon slightly lower */}
+        <div className="mt-1">{icon}</div>
+        {/* Smaller label */}
+        <span className="text-[10px] mt-0.5">{label}</span>
       </>
     )}
   </NavLink>
 );
-
 
 export default MainLayout;

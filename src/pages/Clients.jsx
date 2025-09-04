@@ -88,10 +88,13 @@ const Clients = () => {
   };
 
   return (
-    <div className="p-5 bg-gray-100 min-h-screen">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 px-1 py-3 border-b border-gray-200 gap-3">
+    <div className="p-2 bg-gray-100 min-h-screen">
+      <div
+        className="flex flex-row flex-wrap items-center 
+  mb-3 px-1 py-1 sm:py-3 lg:py-3 gap-3"
+      >
         {/* Title with subtle decoration */}
-        <div className="flex items-center w-full sm:w-auto">
+        <div className="flex items-center">
           <h1 className="text-2xl font-semibold text-gray-800 relative pl-3">
             Client Overview
             <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-full"></span>
@@ -101,12 +104,14 @@ const Clients = () => {
         {/* Add Client button */}
         <button
           onClick={() => setShowClientModal(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 
-             transition-all duration-200 shadow-sm w-full sm:w-auto justify-center
-             transform hover:scale-105 hover:opacity-90 hover:shadow-lg"
+          className="ml-auto mr-1 sm:mr-0 bg-indigo-600 hover:bg-indigo-700 text-white 
+    px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm
+    rounded-lg flex items-center gap-1.5 sm:gap-2
+    transition-all duration-200 shadow-sm justify-center
+    transform hover:scale-105 hover:opacity-90 hover:shadow-lg"
         >
-          <FaPlus className="text-sm" />
-          <span className="text-sm font-medium">Add Client</span>
+          <FaPlus className="text-xs sm:text-sm" />
+          <span className="font-medium">Add Client</span>
         </button>
       </div>
 
@@ -139,7 +144,12 @@ const Clients = () => {
           <p className="text-center text-gray-500">No clients found.</p>
         </div>
       ) : (
-        <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
+        <div
+          className="space-y-6 mx-auto 
+  max-h-[90vh] sm:max-h-[100vh] 
+  overflow-y-auto 
+  pb-2 sm:pb-10"
+        >
           <ClientList
             clients={clients}
             onDelete={handleDeleteClient}
