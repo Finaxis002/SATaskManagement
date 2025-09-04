@@ -148,49 +148,42 @@ const ChatSidebar = ({
     });
 
   return (
-    <div className="w-1/4 bg-white p-5 rounded-xl shadow-lg border border-gray-200 flex flex-col h-full">
-      {/* Toggle Buttons for Groups and Users/Personal Chat */}
-      <div className="flex gap-4 mb-4 relative">
-        <button
-          onClick={() => setShowGroups(true)}
-          className={`relative px-4 py-2 text-sm rounded-lg ${
-            showGroups ? "bg-indigo-100" : "bg-gray-200"
-          }`}
-        >
-          Groups
-          {Object.values(groupUnreadCounts).reduce(
-            (acc, count) => acc + count,
-            0
-          ) > 0 && (
-            <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
-              {Object.values(groupUnreadCounts).reduce(
-                (acc, count) => acc + count,
-                0
-              )}
-            </span>
-          )}
-        </button>
+<div className="w-full sm:w-1/3 md:w-1/4 
+  bg-gradient-to-b from-gray-200 to-gray-100 
+  p-4 sm:p-5 rounded-2xl shadow-lg border border-gray-300
+  flex flex-col h-screen sm:h-full max-h-screen">
 
-        <button
-          onClick={() => setShowGroups(false)}
-          className={`relative px-4 py-2 text-sm rounded-lg ${
-            !showGroups ? "bg-indigo-100" : "bg-gray-200"
-          }`}
-        >
-          {currentUser.role === "user" ? "Personal Chat" : "Users"}
-          {Object.values(userUnreadCounts).reduce(
-            (acc, count) => acc + count,
-            0
-          ) > 0 && (
-            <span className="absolute top-[-6px] right-[-10px] bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow">
-              {Object.values(userUnreadCounts).reduce(
-                (acc, count) => acc + count,
-                0
-              )}
-            </span>
-          )}
-        </button>
-      </div>
+  {/* Sticky Title/Toggle container */}
+  <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border border-slate-200 rounded-xl mb-3">
+    <div className="grid grid-cols-2 gap-2 p-2">
+      <button
+        onClick={() => setShowGroups(true)}
+        className={`w-full relative px-3 py-2 text-sm rounded-lg transition-transform transform hover:scale-105 duration-200
+          ${showGroups ? "bg-white shadow-lg text-indigo-700" : "bg-gray-200 text-gray-700 hover:text-gray-900"}`}
+      >
+        Groups
+        {Object.values(groupUnreadCounts).reduce((a, c) => a + c, 0) > 0 && (
+          <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md">
+            {Object.values(groupUnreadCounts).reduce((a, c) => a + c, 0)}
+          </span>
+        )}
+      </button>
+
+      <button
+        onClick={() => setShowGroups(false)}
+        className={`w-full relative px-3 py-2 text-sm rounded-lg transition-transform transform hover:scale-105 duration-200
+          ${!showGroups ? "bg-white shadow-lg text-indigo-700" : "bg-gray-200 text-gray-700 hover:text-gray-900"}`}
+      >
+        {currentUser.role === "user" ? "Personal Chat" : "Users"}
+        {Object.values(userUnreadCounts).reduce((a, c) => a + c, 0) > 0 && (
+          <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md">
+            {Object.values(userUnreadCounts).reduce((a, c) => a + c, 0)}
+          </span>
+        )}
+      </button>
+    </div>
+  </div>
+
 
       {/* Groups/Users Section */}
       {showGroups ? (
@@ -225,6 +218,7 @@ const ChatSidebar = ({
                       </span>
                     )}
                   </div>
+                  
                   {/* Display last message timestamp */}
                   {group.lastMessageTimestamp > 0 && (
                     <span className="text-xs text-gray-500">
