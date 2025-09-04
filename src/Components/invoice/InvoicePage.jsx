@@ -6,8 +6,12 @@ import finaxisHeader from "../../assets/finaxis_header.png";
 import shardaHeader from "../../assets/ShardaHeader.png";
 import headerImageSharda from "../../assets/headerImgSharda.png";
 import footerImageSharda from "../../assets/ShardaBottom.png";
-import calogonew from "../../assets/New_CA_India_Logo.png";
+import calogonew from "../../assets/ASA_LOGO.png";
 import "../../css/InvoiceForm.css";
+import ASA_Footer from "../../assets/ASA_Footer.png";
+import ASA_header from "../../assets/ASA_header.png";
+import ASA_Name from "../../assets/ASA_Name.png";
+
 
 export default function InvoicePage({
   pageNumber,
@@ -149,7 +153,7 @@ const isLocalSupply = () => {
           />
         ) : selectedFirm.name === "Anunay Sharda & Associates" ? (
           <img
-            src={headerImageFinaxis}
+            src={ASA_header}
             alt="Anunay Sharda & Associates"
             style={headerStyle}
           />
@@ -274,6 +278,11 @@ const isLocalSupply = () => {
                   src={calogonew}
                   alt="Anunay Logo"
                   style={{ height: 100 }}
+                />
+                <img
+                  src={ASA_Name}
+                  alt="Sharda Header"
+                  style={{ height: 75, marginBottom: 8 }}
                 />
               </div>
             ) : selectedFirm.name ===
@@ -1571,11 +1580,33 @@ const isLocalSupply = () => {
       </div>
       {/* Footer */}
       <div style={{ marginLeft: "-20px", marginRight: "-20px" }}>
-        {isSharda ? (
+        {/* {isSharda ? (
           <img
             className="footer-image"
             src={footerImageSharda}
             alt="Invoice Footer"
+            style={footerStyle}
+          />
+        ) : (
+          <img
+            className="footer-image"
+            src={footerImageFinaxis}
+            alt="Invoice Footer"
+            style={footerStyle}
+          />
+        )} */}
+
+        {selectedFirm.name === "Sharda Associates" ? (
+           <img
+            className="footer-image"
+            src={footerImageSharda}
+            alt="Invoice Footer"
+            style={footerStyle}
+          />
+        ) : selectedFirm.name === "Anunay Sharda & Associates" ? (
+          <img
+            src={ASA_Footer}
+            alt="Anunay Sharda & Associates"
             style={footerStyle}
           />
         ) : (
