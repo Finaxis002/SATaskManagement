@@ -19,7 +19,9 @@ const ChatMessages = ({
   const [forwardingFile, setForwardingFile] = useState(null);
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [forwardRecipients, setForwardRecipients] = useState([]);
-
+  const [showSeenByModal, setShowSeenByModal] = useState(false); // State for modal visibility
+  const [selectedMessage, setSelectedMessage] = useState(null); // State to store the selected message
+  const modalRef = useRef(null); // Reference for modal positioning
   const [availableRecipients, setAvailableRecipients] = useState([]);
   const messageEndRef = useRef(null); // Reference for scroll position
   useEffect(() => {
@@ -229,12 +231,25 @@ const ChatMessages = ({
     }
   }, [messages, currentUser.name]);
 
+
+  const handleCloseModal = () => {
+    setShowSeenByModal(false); // Close the modal
+  };
+const [popupPos, setPopupPos] = useState({ x: 0, y: 0 });
+
+const handleSeenByClick = (msg, e) => {
+  setSelectedMessage(msg);
+  setShowSeenByModal(true);
+
+  // ✅ Click position save karo
+  setPopupPos({ x: e.clientX, y: e.clientY });
+};
   return (
     <>
-      <ChatHeader selectedGroup={selectedGroup} selectedUser={selectedUser} />
+
       <div
         ref={scrollRef}
-        className="flex-1 relative overflow-y-auto p-4 bg-gray-50"
+        className="flex-1 relative overflow-y-auto p-0 bg-gray-50"
       >
         <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
           <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
@@ -245,12 +260,12 @@ const ChatMessages = ({
                   const isCurrentUser = msg.sender === currentUser.name;
                   const filesArray =
                     msg.fileUrls &&
-                    Array.isArray(msg.fileUrls) &&
-                    msg.fileUrls.length > 0
+                      Array.isArray(msg.fileUrls) &&
+                      msg.fileUrls.length > 0
                       ? msg.fileUrls
                       : msg.fileUrl
-                      ? [msg.fileUrl]
-                      : [];
+                        ? [msg.fileUrl]
+                        : [];
 
                   // Show header just before first unread received message
                   const shouldShowHeader =
@@ -271,22 +286,21 @@ const ChatMessages = ({
                         </div>
                       )}
                       <div
-                        className={`max-w-sm p-3 rounded-xl shadow-md ${
-                          isCurrentUser
-                            ? "bg-indigo-500 text-white ml-auto rounded-br-none"
-                            : msg.readBy?.includes(currentUser.name)
-                            ? "bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
-                            : "border-2 border-gray-200 bg-gray-200 text-gray-800 mr-auto rounded-bl-none"
-                        }`}
+                        className={`max-w-sm p-3 rounded-xl shadow-md ${isCurrentUser
+                          ? "bg-indigo-500 text-white ml-auto rounded-br-none" // Dark background for current user
+                          : msg.readBy?.includes(currentUser.name)
+                            ? "bg-gray-100 text-gray-800 mr-auto rounded-bl-none" // Light background for read messages
+                            : "border-2 border-gray-200 bg-gray-100 text-gray-800 mr-auto rounded-bl-none" // Light background for unread messages
+                          }`}
                       >
-                        <div className="flex items-center justify-between mb-1">
+                        
+                        <div className="flex items-center justify-between mb-1 pb-1" style={{ borderBottom: "1px solid rgba(156, 163, 175, 0.16)" }}>
                           <span className="text-xs font-semibold">
                             {msg.sender}
                           </span>
                           <span
-                            className={`text-[10px] ${
-                              isCurrentUser ? "text-gray-50" : "text-gray-500"
-                            }`}
+                            className={`text-[10px]  ${isCurrentUser ? "text-gray-50" : "text-gray-500"
+                              }`}
                           >
                             {msg.timestamp}
                           </span>
@@ -313,11 +327,10 @@ const ChatMessages = ({
                                   href={part}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className={`underline break-all ${
-                                    isCurrentUser
-                                      ? "text-blue-200"
-                                      : "text-blue-600"
-                                  }`}
+                                  className={`underline break-all ${isCurrentUser
+                                    ? "text-blue-200"
+                                    : "text-blue-600"
+                                    }`}
                                 >
                                   {part}{" "}
                                 </a>
@@ -332,24 +345,26 @@ const ChatMessages = ({
                           selectedUser &&
                           msg.readBy?.includes(selectedUser.name) && (
                             <div className="text-right mt-1">
-                              <span className="text-xs text-gray-50 font-semibold">
+                              <span
+                                className="text-xs text-gray-50 font-semibold"
+                                style={{ fontFamily: "Courier New, monospace" }}
+                              >
                                 Seen
+
                               </span>
                             </div>
                           )}
-                        {isCurrentUser &&
-                          selectedGroup &&
-                          msg.readBy &&
-                          msg.readBy.length > 1 && (
-                            <div className="text-right mt-1">
-                              <span className="text-xs text-gray-50 font-semibold">
-                                Seen by:{" "}
-                                {msg.readBy
-                                  .filter((name) => name !== currentUser.name)
-                                  .join(", ")}
-                              </span>
-                            </div>
-                          )}
+                       {isCurrentUser &&
+  selectedGroup &&
+  msg.readBy &&
+  msg.readBy.length > 1 && (
+    <div
+      className="text-right text-xs text-gray-100 mt-auto cursor-pointer"
+      onClick={(e) => handleSeenByClick(msg, e)} // Pass event to handleSeenByClick
+    >
+      {msg.readBy.length} {msg.readBy.length === 1 ? "person" : "people"} viewed
+    </div>
+  )}
                       </div>
                     </React.Fragment>
                   );
@@ -372,7 +387,35 @@ const ChatMessages = ({
               </div>
             )}
           </div>
+     {/* Modal to show who has seen the message */}
+{showSeenByModal && selectedMessage && (
+  <div
+    className="fixed z-50 bg-white p-3 rounded-lg shadow-lg border w-48"
+    style={{
+      top: popupPos.y + 10,
+      left: popupPos.x,
+      transform: "translateX(-50%)",
+    }}
+  >
+    {/* Header with Close Icon */}
+    <div className="flex items-center justify-between mb-2">
+      <h3 className="text-sm font-semibold">Seen by:</h3>
+      <button
+        onClick={handleCloseModal}
+        className="text-gray-500 hover:text-red-500"
+      >
+        <FaTimes size={14} />
+      </button>
+    </div>
 
+    {/* List */}
+    <ul className="space-y-1 max-h-32 overflow-y-auto">
+      {selectedMessage.readBy?.map((name, idx) => (
+        <li key={idx} className="text-xs text-gray-700">{name}</li>
+      ))}
+    </ul>
+  </div>
+)}
           {/* Scroll to Bottom Indicator */}
           <div ref={messageEndRef} />
         </div>

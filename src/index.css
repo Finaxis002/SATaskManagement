@@ -269,12 +269,65 @@ main {
   padding: 1px !important;
 }
 
+/* === White Clock Theme Override === */
+.react-clock {
+  background: #fff !important;            /* White background */
+  border: 1px solid #d1d5db !important;   /* Gray-300 border */
+  border-radius: 1rem !important;
+  box-shadow: 0 6px 24px 0 rgba(20, 20, 30, 0.10);
+}
+
+.react-clock__face {
+  background: #fff !important;            /* White face */
+}
+
+.react-clock__mark__body {
+  background: #111827 !important;         /* Gray-900 ticks */
+}
+
+.react-clock__hand__body {
+  background: #111827 !important;         /* Black hands */
+}
+
+.react-clock__center {
+  background: #111827 !important;         /* Black center */
+}
+
+.react-clock__number {
+  color: #111827 !important;              /* Black numbers */
+  font-weight: bold;
+}
+
+.react-time-picker__clock {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom mobile style */
+@media (max-width: 768px) {
+  .message-input-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+  }
+}
+
+
 /* Hide scrollbar but allow scrolling */
-.scrollbar-hide::-webkit-scrollbar {
+
+
+::-webkit-scrollbar {
   display: none;
 }
 .scrollbar-hide {
   -ms-overflow-style: none; /* IE & Edge */
   scrollbar-width: none; /* Firefox */
 }
+
 
