@@ -24,12 +24,12 @@ const ChatMessages = ({
   const modalRef = useRef(null); // Reference for modal positioning
   const [availableRecipients, setAvailableRecipients] = useState([]);
   const messageEndRef = useRef(null); // Reference for scroll position
-  useEffect(() => {
+  {/*useEffect(() => {
     // Scroll to the bottom when the messages array changes (new message received)
     if (messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]); // Trigger the effect when messages change
+  }, [messages]); // Trigger the effect when messages change*/}
 
   const handleFileDownload = (fileUrl) => {
     const fileName = fileUrl.split("/").pop(); // Extract file name
@@ -237,27 +237,47 @@ const ChatMessages = ({
   };
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 });
 
-  const handleSeenByClick = (msg, e) => {
-    setSelectedMessage(msg);
-    setShowSeenByModal(true);
+const handleSeenByClick = (msg, e) => {
+  setSelectedMessage(msg);
+  setShowSeenByModal(true);
 
-    // Store the click position
-    const clickPosition = { x: e.clientX, y: e.clientY };
+  // Store the click position
+  const clickPosition = { x: e.clientX, y: e.clientY };
 
-    // Calculate the available space above the click position (use 50px as padding space)
-    const availableSpaceAbove = clickPosition.y - 50;
-    const modalHeight = 200;  // Approximate modal height
-    const shouldDisplayAbove = availableSpaceAbove > modalHeight;
+  // Calculate the available space above the click position (use 50px as padding space)
+  const availableSpaceAbove = clickPosition.y - 50;
+  const modalHeight = 200;  // Approximate modal height
+  const shouldDisplayAbove = availableSpaceAbove > modalHeight;
 
-    // Set the popup position based on available space
-    if (shouldDisplayAbove) {
-      // If there's enough space above, position the modal above the click point
-      setPopupPos({ x: clickPosition.x, y: clickPosition.y - modalHeight });
-    } else {
-      // If no space above, position it below the click point
-      setPopupPos({ x: clickPosition.x, y: clickPosition.y + 20 });
-    }
-  };
+  // Calculate the available space to the right of the screen
+  const screenWidth = window.innerWidth;
+  const modalWidth = 200;  // Approximate modal width (adjust as needed)
+  const availableSpaceRight = screenWidth - clickPosition.x;
+
+  // Set the X position based on the available space
+  let newXPosition = clickPosition.x;
+
+  // If the modal would overflow to the right, position it to the left
+  if (availableSpaceRight < modalWidth) {
+    newXPosition = screenWidth - modalWidth - 20;  // Ensure modal stays inside the screen
+  }
+
+  // Set the popup position based on available space above/below and right margin
+  let newYPosition = clickPosition.y + 20; // Default position below the click
+  if (shouldDisplayAbove) {
+    newYPosition = clickPosition.y - modalHeight - 20; // Position it above if there's space
+  }
+
+  // Ensure the modal stays within the screen's height
+  const screenHeight = window.innerHeight;
+  if (newYPosition + modalHeight > screenHeight) {
+    newYPosition = screenHeight - modalHeight - 20; // Push to the bottom if it overflows
+  }
+
+  // Set the popup position state
+  setPopupPos({ x: newXPosition, y: newYPosition });
+};
+  
   return (
     <>
 
@@ -403,7 +423,8 @@ const ChatMessages = ({
           </div>
           {showSeenByModal && selectedMessage && (
             <div
-              className="fixed z-50 bg-white p-4 rounded-xl shadow-xl border border-gray-200 w-64 max-h-80 overflow-y-auto"
+              ref={modalRef}
+              className="fixed z-50 bg-white p-4 rounded-xl shadow-xl border border-gray-200 w-64 max-h-[calc(100vh-40px)] overflow-y-auto"
               style={{
                 top: popupPos.y + 10, // Adjusted to make it appear above the message
                 left: popupPos.x,
