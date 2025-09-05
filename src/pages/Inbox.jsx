@@ -662,97 +662,99 @@ const Inbox = () => {
   const filteredAdmins = admins.filter(admin => admin.name !== currentUser.name);
   const filteredRegularUsers = regularUsers.filter(user => user.name !== currentUser.name);
 
-const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
 
-useEffect(() => {
-  const handleResize = () => setScreenWidth(window.innerWidth);
-  window.addEventListener("resize", handleResize);
-  return () => window.removeEventListener("resize", handleResize);
-}, []);
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <div className="w-full max-h-screen p-2 sm:p-4 flex bg-gray-100">
-      
+
       {/* Left column for groups (Sidebar) */}
       {(!isFullScreen || screenWidth >= 768) && (
-  <ChatSidebar
-    showGroups={showGroups}
-    groupUnreadCounts={groupUnreadCounts}
-    currentUser={currentUser}
-    userUnreadCounts={userUnreadCounts}
-    groups={groups}
-    selectedGroup={selectedGroup}
-    handleGroupClick={handleGroupClick}
-    setShowGroups={setShowGroups}
-    searchTerm={searchTerm}
-    admins={admins}
-    selectedUser={selectedUser}
-    regularUsers={regularUsers}
-    users={users}
-    handleUserClick={handleUserClick}
-    setSearchTerm={setSearchTerm}
-    messages={messages}
-  />
-)}
+        <ChatSidebar
+          showGroups={showGroups}
+          groupUnreadCounts={groupUnreadCounts}
+          currentUser={currentUser}
+          userUnreadCounts={userUnreadCounts}
+          groups={groups}
+          selectedGroup={selectedGroup}
+          handleGroupClick={handleGroupClick}
+          setShowGroups={setShowGroups}
+          searchTerm={searchTerm}
+          admins={admins}
+          selectedUser={selectedUser}
+          regularUsers={regularUsers}
+          users={users}
+          handleUserClick={handleUserClick}
+          setSearchTerm={setSearchTerm}
+          messages={messages}
+        />
+      )}
 
 
       {/* Right column for chat messages */}
       {(selectedUser || selectedGroup) && (isFullScreen || screenWidth >= 768) && (
-  <div
-    className={`${isFullScreen && screenWidth < 768
-       ? "w-full h-screen"
-      : "w-full md:w-3/4 pl-4"
-  } flex flex-col `} // Added padding-top to push content down on mobile view
+        <div
+          className={`${isFullScreen && screenWidth < 768
+            ? "w-full h-screen"
+            : "w-full md:w-3/4 pl-4"
+            } flex flex-col `} // Added padding-top to push content down on mobile view
 
-  >
-  <div className="sticky top-0 left-0 w-full z-10 bg-white shadow-md">
-  <ChatHeader 
-    selectedUser={selectedUser}
-    selectedGroup={selectedGroup}
-    setSelectedUser={setSelectedUser}
-    setSelectedGroup={setSelectedGroup}
-    isFullScreen={isFullScreen}
-    setIsFullScreen={setIsFullScreen}
-  />
-</div>
+        >
+          <div className="sticky top-0 left-0 w-full z-10 bg-white shadow-md">
+            <ChatHeader
+              selectedUser={selectedUser}
+              selectedGroup={selectedGroup}
+              setSelectedUser={setSelectedUser}
+              setSelectedGroup={setSelectedGroup}
+              isFullScreen={isFullScreen}
+              setIsFullScreen={setIsFullScreen}
+            />
+          </div>
 
 
-          <ChatMessages
-        selectedUser={selectedUser}
-        messages={messages}
-        selectedGroup={selectedGroup}
-        scrollRef={scrollRef}
-        currentUser={currentUser}
-        downloadProgress={downloadProgress}
-        downloadImage={downloadImage}
-        downloadPdf={downloadPdf}
-        handleFileDownload={handleFileDownload}
-        groups={groups}
-        users={users}
-      />
-        <MessageInput
-          dragActive={dragActive}
-          showEmojiPicker={showEmojiPicker}
-          handleFileChange={handleFileChange}
-          files={files}
-          messageInputRef={messageInputRef}
-          messageText={messageText}
-          handleChange={handleChange}
-          handleKeyPress={handleKeyPress}
-          sendMessage={sendMessage}
-          uploadProgress={uploadProgress}
-          setDragActive={setDragActive}
-          setFiles={setFiles}
-          setFilePreviews={setFilePreviews}
-          setUploadProgress={setUploadProgress}
-          setShowEmojiPicker={setShowEmojiPicker}
-          onEmojiClick={onEmojiClick}
-          filePreviews={filePreviews}
-        />
-      </div>
-    )}
-  </div>
-);
+          <div className="relative mb-4 gap-4 flex flex-col">
+            <ChatMessages
+              selectedUser={selectedUser}
+              messages={messages}
+              selectedGroup={selectedGroup}
+              scrollRef={scrollRef}
+              currentUser={currentUser}
+              downloadProgress={downloadProgress}
+              downloadImage={downloadImage}
+              downloadPdf={downloadPdf}
+              handleFileDownload={handleFileDownload}
+              groups={groups}
+              users={users}
+            />
+            <MessageInput
+              dragActive={dragActive}
+              showEmojiPicker={showEmojiPicker}
+              handleFileChange={handleFileChange}
+              files={files}
+              messageInputRef={messageInputRef}
+              messageText={messageText}
+              handleChange={handleChange}
+              handleKeyPress={handleKeyPress}
+              sendMessage={sendMessage}
+              uploadProgress={uploadProgress}
+              setDragActive={setDragActive}
+              setFiles={setFiles}
+              setFilePreviews={setFilePreviews}
+              setUploadProgress={setUploadProgress}
+              setShowEmojiPicker={setShowEmojiPicker}
+              onEmojiClick={onEmojiClick}
+              filePreviews={filePreviews}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
 };
 
