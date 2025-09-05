@@ -123,8 +123,8 @@ function NoteContainer({}) {
             ].join(" ")}
           >
             {/* Delete button (won't start drag) */}
-            <button
-              className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600"
+                        <button
+              className="absolute -top-2 -right-2 opacity-100 transition-opacity bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600 sm:opacity-0 sm:group-hover:opacity-100"
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();

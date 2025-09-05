@@ -1,58 +1,154 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
-import bgImage from "../assets/bg.png";
-import TaskOverview from "../Components/TaskOverview";
-import UserGrid from "../Components/UserGrid";
 import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
-import axios from "axios";
+import { ClipboardList, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Briefcase, CalendarDays, Receipt, UsersRound } from "lucide-react";
+import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
+import TaskOverview from "../Components/TaskOverview";
 
 function getTimeBasedGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 18) return "Good Afternoon";
+  const h = new Date().getHours();
+  if (h < 12) return "Good Morning";
+  if (h < 18) return "Good Afternoon";
   return "Good Evening";
 }
 
+const TodaysList = ({ rows = [] }) => {
+  const tagCls = (c) =>
+    ({
+      indigo: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+      emerald: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      amber: "bg-amber-50 text-amber-700 border border-amber-200",
+      rose: "bg-rose-50 text-rose-700 border border-rose-200",
+      gray: "bg-gray-100 text-gray-700 border border-gray-200",
+    }[c] || "bg-gray-100 text-gray-700 border border-gray-200");
+
+  return (
+    <div className="mt-4 mb-4 rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <svg
+              className="h-4 w-4 text-gray-500"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            Todays Event
+          </h3>
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="px-6 py-10 text-sm text-gray-500 text-center">
+          No events for today.
+        </div>
+      ) : (
+        <ul className="divide-y divide-gray-100">
+          {rows.map((row, i) => (
+            <li
+              key={i}
+              className="px-5 py-3 flex flex-col md:flex-row gap-2 md:gap-0 hover:bg-gray-50/60 transition"
+            >
+              <div className="flex items-center w-full md:w-36">
+                <span className="relative flex items-center">
+                  <span className="h-2.5 w-2.5 rounded-full bg-gray-300 mr-2" />
+                  <span className="text-xs font-medium text-gray-700">
+                    {row.time}
+                  </span>
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-900 font-medium truncate">
+                  {row.title}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {row.location || "—"}{" "}
+                  {row.duration ? `• ${row.duration}` : ""}
+                </p>
+              </div>
+              <div className="flex w-full md:w-auto justify-between items-center">
+                {row.tag && (
+                  <span
+                    className={`text-[11px] px-2 py-1 rounded-full ${tagCls(
+                      row.color
+                    )}`}
+                  >
+                    {row.tag}
+                  </span>
+                )}
+                <svg
+                  className="ml-3 h-4 w-4 text-gray-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="px-5 py-3 border-t border-gray-100 bg-white flex items-center justify-between">
+        <span className="text-xs text-gray-500">
+          {rows.length} event{rows.length > 1 ? "s" : ""} today
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
-  const [greeting, setGreeting] = useState("");
-  const [currentDate, setCurrentDate] = useState("");
-  const [todaysBirthdays, setTodaysBirthdays] = useState([]);
-  const [showBirthdayBanner, setShowBirthdayBanner] = useState(false);
-
   useSocketSetup();
+  useStickyNotes(3);
 
-  const { name, role, loading, isBirthdayToday, birthdate, userId } =
-    useSelector((state) => state.auth);
+  const { role, loading } = useSelector((s) => s.auth);
+  const [events, setEvents] = useState([]);
+  const [reminders, setReminders] = useState([]);
+  const [showStats, setShowStats] = useState(false); // State to handle filter button visibility
 
-  const computeIsToday = (iso) => {
-    if (!iso) return false;
-    const d = new Date(iso);
-    const t = new Date();
-    return d.getDate() === t.getDate() && d.getMonth() === t.getMonth();
-  };
+  const rawUser = localStorage.getItem("user");
+  const userObj = rawUser ? JSON.parse(rawUser) : null;
+  const userId = userObj?.userId || localStorage.getItem("userId") || null;
 
-  const showUserBirthday =
-    role !== "admin" && (isBirthdayToday ?? computeIsToday(birthdate));
-
-  const { notes: latestNotes, loading: notesLoading } = useStickyNotes(3);
+  // Dynamically get the user's name from localStorage
+  const name = userObj?.name || "Guest"; // Fallback to "Guest" if name is not found
 
   useEffect(() => {
-    const now = new Date();
-    const hour = now.getHours();
-
-    if (hour < 12) setGreeting("Good Morning");
-    else if (hour < 17) setGreeting("Good Afternoon");
-    else setGreeting("Good Evening");
-
-    const options = { weekday: "long", month: "long", day: "numeric" };
-    setCurrentDate(now.toLocaleDateString("en-US", options));
-  }, []);
+    if (!userId) return;
+    (async () => {
+      try {
+        const [evRes, remRes] = await Promise.all([
+          fetch(`https://taskbe.sharda.co.in/api/events?userId=${userId}`),
+          fetch(`https://taskbe.sharda.co.in/api/reminders?userId=${userId}`),
+        ]);
+        const [evData, remData] = await Promise.all([
+          evRes.json(),
+          remRes.json(),
+        ]);
+        setEvents(Array.isArray(evData) ? evData : []);
+        setReminders(Array.isArray(remData) ? remData : []);
+      } catch (e) {
+        console.error("Failed to load today's rows:", e);
+      }
+    })();
+  }, [userId]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[90vh] bg-gray-50">
+      <div className="flex items-center justify-center h-screen bg-gray-50">
         <svg
           className="animate-spin h-10 w-10 text-blue-600"
           xmlns="http://www.w3.org/2000/svg"
@@ -66,117 +162,124 @@ const Dashboard = () => {
             r="10"
             stroke="currentColor"
             strokeWidth="4"
-          ></circle>
+          />
           <path
             className="opacity-75"
             fill="currentColor"
             d="M4 12a8 8 0 018-8v8z"
-          ></path>
+          />
         </svg>
         <span className="ml-3 text-lg text-gray-600">Loading dashboard...</span>
       </div>
     );
   }
 
-  useEffect(() => {
-    if (role === "admin") {
-      axios
-        .get(`https://taskbe.sharda.co.in/api/employees/birthdays/today`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
-        })
-        .then((res) => setTodaysBirthdays(res.data.birthdays || []))
-        .catch(() => setTodaysBirthdays([]));
-    }
-  }, [role]);
+  const stats = {
+    TotalTask: 125, // -> Total
+    Completed: 125, // -> Completed
+    Progress: 5, // -> In Progress
+    Overdue: 6, // -> Overdue
+  };
 
-  useEffect(() => {
-    // compute fallback if backend flag missing
-    const computeIsToday = (iso) => {
-      if (!iso) return false;
-      const d = new Date(iso),
-        t = new Date();
-      return d.getDate() === t.getDate() && d.getMonth() === t.getMonth();
-    };
+  // StatCard component with updated icon style (no outer circle)
+  const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
+    const pill =
+      {
+        blue: "bg-indigo-100 text-indigo-700 border border-indigo-200",
+        green: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+        gray: "bg-gray-100 text-gray-700 border border-gray-200",
+        red: "bg-rose-100 text-rose-700 border border-rose-200",
+      }[variant] || "bg-gray-100 text-gray-700 border border-gray-200";
 
-    // user banner shows only for non-admins
-    const shouldShowByDate =
-      role !== "admin" &&
-      ((isBirthdayToday ?? false) || computeIsToday(birthdate));
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <span className={`text-[11px] px-2 py-1 rounded-full ${pill}`}>
+            {pillLabel}
+          </span>
+          {/* Directly render the icon without the surrounding circle */}
+          <div className="grid place-items-center">{icon}</div>
+        </div>
 
-    const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const storageKey = `birthdayBannerDismissed:${userId || "anon"}`;
+        <p className="mt-3 text-3xl font-semibold text-gray-900">{value}</p>
+        <p className="mt-1 text-xs text-gray-500">{label}</p>
+      </div>
+    );
+  };
 
-    if (!shouldShowByDate) {
-      setShowBirthdayBanner(false);
-      return;
-    }
+  const startT = startOfToday();
+  const endT = endOfToday();
 
-    const lastDismissed = localStorage.getItem(storageKey);
-    setShowBirthdayBanner(lastDismissed !== todayKey);
-  }, [role, isBirthdayToday, birthdate, userId]);
+  const todayEventRows = (events || [])
+    .filter((e) => e?.startDateTime && e?.endDateTime)
+    .filter((e) => {
+      const s = parseISO(e.startDateTime);
+      const en = parseISO(e.endDateTime);
+      return s <= endT && en >= startT;
+    })
+    .map((e) => ({
+      ts: parseISO(e.startDateTime).getTime(),
+      time: format(parseISO(e.startDateTime), "h:mm a"),
+      title: e.title || e.summary || "Event",
+      tag: "Event",
+      color: "indigo",
+      location: e.location || "—",
+    }));
 
-  // normalize departments → array of strings
-  const toDeptArray = (d) =>
-    Array.isArray(d)
-      ? d
-      : typeof d === "string"
-      ? d
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : [];
+  const todayReminderRows = (reminders || [])
+    .filter((r) => r?.datetime && isToday(parseISO(r.datetime)))
+    .map((r) => ({
+      ts: parseISO(r.datetime).getTime(),
+      time: format(parseISO(r.datetime), "h:mm a"),
+      title: r.text || "Reminder",
+      tag: "Reminder",
+      color: "amber",
+      location: "—",
+    }));
+
+  const todaysRows = useMemo(
+    () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
+    [events, reminders]
+  );
 
   return (
-    <div className="relative w-full pb-5 h-[90vh] overflow-y-auto px-6 text-gray-800 bg-gray-50">
-      {/* Centered Header */}
-
-      <div className="bg-gradient-to-r from-[#f6f9fc] to-[#eef2f5] py-5 px-8 shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Logo and Branding */}
-          <div className="flex items-center space-x-5">
-            {/* Sophisticated logo container */}
-            <div className="p-2.5 rounded-lg bg-indigo-50 shadow-xs border border-indigo-100 hover:shadow-sm transition-all duration-300">
-              <img
-                src="/SALOGO-black.png"
-                alt="ASA Logo"
-                className="h-12 w-12 object-contain"
-              />
-            </div>
-
-            {/* Elegant text with subtle divider */}
-            <div className="border-l border-indigo-200 h-16 flex items-center pl-5">
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-800 tracking-normal leading-tight">
+    <div className="relative w-full h-full bg-white pb-24 overflow-y-auto px-2 md:px-5 ">
+      <div className="py-5  md:pl-0 pl-8 ">
+        <div className=" flex flex-col md:flex-row md:justify-between  gap-6">
+          {/* Logo & Title */}
+          <div className="flex flex-col md:items-start space-x-4 md:space-x-0  ">
+            <div className="flex ">
+              <div className="p-2  rounded-lg w-16 h-16 bg-indigo-50 shadow-xs border border-indigo-100 ">
+                {" "}
+                {/* Adjusted margin-left and margin-top */}
+                <img
+                  src="/SALOGO-black.png"
+                  alt="ASA Logo"
+                  className="  object-contain"
+                />
+              </div>
+              <div className="inline-block ml-2 mt-1 md:mt-3">
+                <h1 className="text-xl font-semibold text-gray-800 tracking-normal leading-tight w-48  md:w-80">
                   Anunay Sharda & Associates
                 </h1>
-                <p className="text-[#018f95] text-sm font-light tracking-wider mt-1">
+                <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest hidden md:block">
                   Strategic Business Solutions
                 </p>
               </div>
             </div>
+            <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest md:hidden ml-1">
+              Strategic Business Solutions
+            </p>
           </div>
 
-          {/* Date and Greeting Section */}
-          <div className="text-center md:text-right space-y-2">
-            {/* Minimal date display */}
-            <div className="flex items-center justify-center md:justify-end space-x-2 text-gray-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              <p className="text-sm">
+          {/* Greeting, Date, and Name */}
+          <div className="flex flex-col  md:flex-col  space-y-0  ">
+            {/* Greeting and Date: Mobile and Desktop */}
+            <div className="flex flex-row md:flex-row  md:items-end gap-1 ">
+              <h1 className="text-m font-normal text-gray-700 md:text-left">
+                {getTimeBasedGreeting()},
+              </h1>
+              <p className="text-gray-500 text-sm text-center italic  mt-1">
                 {new Date().toLocaleDateString("en-US", {
                   weekday: "short",
                   month: "short",
@@ -185,153 +288,115 @@ const Dashboard = () => {
               </p>
             </div>
 
-            {/* Refined greeting */}
-            <h1 className="text-2xl font-normal text-gray-700 mt-1">
-              {getTimeBasedGreeting()},{" "}
-              <span className="text-[#2184A3] font-medium">
-                {name || "User"}
-              </span>
-            </h1>
+            {/* Name - Mobile view only */}
+            <span className="text-[#018f95] font-medium   ">
+              {name}
+            </span>
           </div>
         </div>
       </div>
-      
-      {role === "admin" && todaysBirthdays.length > 0 && (
-        <div className="mt-4">
-          <div className="rounded-2xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50 to-indigo-100 p-0.5">
-            <div className="rounded-2xl bg-white/60 backdrop-blur-sm">
-              {/* Header */}
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-indigo-100/70">
-                <span className="text-xl">🎂</span>
-                <h3 className="text-indigo-900 font-semibold">
-                  Today’s Birthdays
-                </h3>
-              </div>
 
-              {/* Body */}
-              <div className="px-5 py-4">
-                {todaysBirthdays.length === 0 ? (
-                  <div className="text-sm text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
-                    No birthdays today.
-                  </div>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {todaysBirthdays.map((emp) => (
-                      <li
-                        key={emp._id}
-                        className="group flex flex-wrap items-center gap-2 rounded-lg px-3  hover:bg-white transition"
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
-                        <span className="font-medium text-gray-900">
-                          {emp.name}
-                        </span>
-                        <span className="text-gray-400">—</span>
-
-                        {/* departments as subtle chips */}
-                        <span className="flex flex-wrap gap-1.5">
-                          {toDeptArray(emp.department).map((dep, i) => (
-                            <span
-                              key={i}
-                              className="text-[11px] leading-5 px-2 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
-                            >
-                              {dep}
-                            </span>
-                          ))}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showUserBirthday && (
-        <div className="mt-4 relative">
-          {/* tiny CSS for animations */}
-          <style>{`
-      @keyframes float {
-        0%,100% { transform: translateY(0) rotate(0deg); }
-        50% { transform: translateY(-4px) rotate(3deg); }
-      }
-      @keyframes fall {
-        0%   { transform: translateY(-10px) rotate(0deg); opacity: .9; }
-        100% { transform: translateY(140%) rotate(720deg); opacity: .9; }
-      }
-      .confetti {
-        position:absolute; top:-10px;
-        width:8px; height:8px; border-radius:2px;
-        animation: fall 3.8s linear infinite;
-        opacity:.9;
-      }
-      .confetti:nth-child(odd)  { width:6px; height:10px; border-radius:1px; }
-    `}</style>
-
-          <div className="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 shadow-sm ring-1 ring-amber-100">
-            {/* confetti pieces */}
-            <div className="pointer-events-none absolute inset-0">
-              {Array.from({ length: 16 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="confetti"
-                  style={{
-                    left: `${(i + 1) * (100 / 17)}%`,
-                    background: `hsl(${i * 24}, 90%, 60%)`,
-                    animationDelay: `${-i * 0.2}s`,
-                  }}
-                />
-              ))}
-            </div>
-
-            <div className="flex items-center gap-4 px-5 py-4 relative">
-              {/* animated emoji (no file) */}
-              <div
-                className="text-3xl select-none"
-                style={{ animation: "float 2.5s ease-in-out infinite" }}
-                aria-hidden="true"
-              >
-                🎉
-              </div>
-
-              <div className="flex-1">
-                <div className="text-lg md:text-xl font-semibold">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-700 to-yellow-700">
-                    Happy Birthday {name}!
-                  </span>
-                </div>
-                <p className="text-sm text-amber-800/90 mt-0.5">
-                  Wishing you a wonderful year ahead.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Task Container */}
-
-      <div className="mt-6 flex flex-col md:flex-row gap-2">
-        {/* Task Overview - 70% width on medium screens and up */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden w-full md:w-[70%]">
-          <div className="flex justify-between items-center">
-            <h2
-              className="text-xl font-semibold text-gray-800 p-6 pb-0"
-              style={{ fontFamily: "Poppins, sans-serif" }}
+      <div className="bg-white    border-gray-200">
+        <div className="w-full ">
+          {/* Filter Button for Mobile */}
+          <button
+            className="md:hidden flex items-center justify-between w-full bg-indigo-600 text-white px-6 py-3 rounded-md"
+            onClick={() => setShowStats(!showStats)}
+          >
+            <span className="text-sm">Show Statistics</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
             >
-              Task Overview
-            </h2>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+
+          {/* Desktop stats */}
+          <div className="hidden md:grid md:grid-cols-4 gap-3 mt-0">
+            <StatCard
+              pillLabel="Total Task"
+              variant="blue"
+              label="AllTasks"
+              value={stats.TotalTask}
+              icon={<ClipboardList />} // Total Task: ClipboardList icon
+            />
+            <StatCard
+              pillLabel="Completed"
+              variant="green"
+              label="Done"
+              value={stats.Completed}
+              icon={<CheckCircle />} // Completed: CheckCircle icon
+            />
+            <StatCard
+              pillLabel="Progress"
+              variant="gray"
+              label="Currently being worked on"
+              value={stats.Progress}
+              icon={<Clock />} // In Progress: Clock icon
+            />
+            <StatCard
+              pillLabel="Overdue"
+              variant="red"
+              label="Past over due"
+              value={stats.Overdue}
+              icon={<AlertCircle />} // Overdue: AlertCircle icon
+            />
           </div>
 
-          <div className="">
-            <TaskOverview />
-          </div>
+          {/* Mobile stats */}
+          {showStats && (
+            <div className="mt-4 h-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4  md:hidden">
+              <StatCard
+                pillLabel="Total Task"
+                variant="blue"
+                label="AllTasks"
+                value={stats.TotalTask}
+                icon={<ClipboardList />} // Total Task: ClipboardList icon
+              />
+              <StatCard
+                pillLabel="Completed"
+                variant="green"
+                label="Done"
+                value={stats.Completed}
+                icon={<CheckCircle />} // Completed: CheckCircle icon
+              />
+              <StatCard
+                pillLabel="Progress"
+                variant="gray"
+                label="Currently being worked on"
+                value={stats.Progress}
+                icon={<Clock />} // In Progress: Clock icon
+              />
+              <StatCard
+                pillLabel="Overdue"
+                variant="red"
+                label="Past over due"
+                value={stats.Overdue}
+                icon={<AlertCircle />} // Overdue: AlertCircle icon
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="md:mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 ">
+        <div className="sticky top-0 max-h-[90vh]">
+          <TodaysList rows={todaysRows} />
+          <TaskOverview />
         </div>
 
-        {/* Sticky Notes - 30% width on medium screens and up */}
-        <div className="w-full md:w-[30%]  w-full">
-          <StickyNotesDashboard />
+        <div className="lg:border-l lg:border-gray-200 lg:pl-6 hidden md:block max-h-[90vh] overflow-y-auto">
+          <div className="space-y-6">
+            <StickyNotesDashboard />
+          </div>
         </div>
       </div>
     </div>
