@@ -36,6 +36,8 @@ export default function InvoicePage({
   notes,
 }) {
   
+  const wrapperJustify = isLastPage ? "space-between" : "flex-start";
+
   const isFirm = (name) =>
     (selectedFirm?.name || "").toLowerCase() === name.toLowerCase();
 
@@ -129,11 +131,11 @@ const isLocalSupply = () => {
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
+        // justifyContent: "space-between",
+        justifyContent: wrapperJustify,
         pageBreakInside: "avoid",
         breakInside: "avoid",
 
-        
       }}
     >
       {/* Header */}
@@ -172,6 +174,10 @@ const isLocalSupply = () => {
         className="invoice-page-container invoice-content"
         style={{
           position: "relative",
+          flex: 1,                 // ✅ fill remaining height so the footer can sit at bottom
+      display: "flex",
+      flexDirection: "column",
+      minHeight: 0,   
         }}
       >
         {/* Watermark */}
@@ -272,12 +278,13 @@ const isLocalSupply = () => {
                   alignItems: "center",
                   gap: 12,
                   justifyContent: "center",
+                  paddingTop: "5px"
                 }}
               >
                 <img
                   src={calogonew}
                   alt="Anunay Logo"
-                  style={{ height: 100 }}
+                  style={{ height: 80 }}
                 />
                 <img
                   src={ASA_Name}
@@ -1558,7 +1565,11 @@ const isLocalSupply = () => {
         </p>
       </div>
       {/* Footer */}
-      <div style={{ marginLeft: "-20px", marginRight: "-20px" }}>
+      <div style={{ marginLeft: "-20px",
+         marginRight: "-20px",
+         marginTop: isLastPage ? 0 : "auto",  // ✅ pushes footer to bottom on page-1
+      flexShrink: 0, 
+          }}>
        
 
         {selectedFirm.name === "Sharda Associates" ? (
