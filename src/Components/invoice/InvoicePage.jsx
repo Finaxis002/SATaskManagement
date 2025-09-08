@@ -1391,27 +1391,7 @@ const isLocalSupply = () => {
                               IFSC Code: {ifsc}
                             </td>
                           </tr>
-                          {/* {isSharda && (
-                            <tr>
-                              <td
-                                className="normal-text "
-                                style={{
-                                  padding: 6,
-                                  fontSize: 10,
-                                  fontWeight: "normal",
-                                  fontStyle: "normal",
-                                }}
-                              >
-                                <strong>
-                                  Online Wallets - Paytm, Google Pay & Phone Pay
-                                </strong>
-                                <br />
-                                Name : Anunay Sharda <br />
-                                Mobile Number : 7869777747<br />
-                                UPI ID - 7869777747@ybl
-                              </td>
-                            </tr>
-                          )} */}
+                          
                           {getWalletInfo() && (
                             <tr>
                               <td
@@ -1428,14 +1408,13 @@ const isLocalSupply = () => {
                     {isGSTFirm && (
                       <td
                         colSpan={3}
-                        style={{ border: "1px solid black", padding: 0 }}
+                        style={{ border: "1px solid black", padding: 0 ,verticalAlign: "top"}}
                       >
                         <table
                           style={{
                             width: "100%",
-
                             tableLayout: "fixed",
-                            marginTop: "-37%",
+                           
                           }}
                         >
                           <tbody>
@@ -1580,21 +1559,7 @@ const isLocalSupply = () => {
       </div>
       {/* Footer */}
       <div style={{ marginLeft: "-20px", marginRight: "-20px" }}>
-        {/* {isSharda ? (
-          <img
-            className="footer-image"
-            src={footerImageSharda}
-            alt="Invoice Footer"
-            style={footerStyle}
-          />
-        ) : (
-          <img
-            className="footer-image"
-            src={footerImageFinaxis}
-            alt="Invoice Footer"
-            style={footerStyle}
-          />
-        )} */}
+       
 
         {selectedFirm.name === "Sharda Associates" ? (
            <img
