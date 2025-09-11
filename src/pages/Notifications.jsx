@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import { FaRegBell, FaCheckCircle, FaClock } from "react-icons/fa";
 import { MdUpdate } from "react-icons/md";
 import { BsFillCircleFill } from "react-icons/bs";
-
+import { motion, AnimatePresence } from "framer-motion";
 // ===== Add this once under imports =====
 const api = axios.create({
   baseURL: "https://taskbe.sharda.co.in",
@@ -150,137 +150,98 @@ const socket = io("https://taskbe.sharda.co.in", {
 // );
 
 const NotificationItem = React.memo(
-  ({
-    notification,
-    onMarkAsRead,
-    selectedNotifications,
-    toggleSelectNotification,
-  }) => {
+  ({ notification, onMarkAsRead, selectedNotifications, toggleSelectNotification }) => {
     const isUnread = !notification.read;
+
+    // 🔹 Status color map
+    const statusColors = {
+      completed: "bg-green-100 text-green-700",
+      approved: "bg-blue-100 text-blue-700",
+      "pending review": "bg-yellow-100 text-yellow-700",
+      urgent: "bg-red-100 text-red-700",
+    };
 
     return (
       <div
-        className={`relative group p-5 rounded-xl border-l-4 shadow-sm hover:shadow-md transition-all flex gap-6 ${
-          isUnread
-            ? "border-blue-500 bg-blue-50/50"
-            : "border-gray-300 bg-white"
-        }`}
+        className={`group bg-white rounded-xl shadow-sm border transition-all hover:shadow-md p-4 flex flex-col sm:flex-row sm:items-center gap-4 ${isUnread ? "border-green-400" : "border-gray-200"
+          }`}
       >
-        {/* Left: Checkbox */}
-        <div className="pt-1">
-          <input
-            type="checkbox"
-            checked={selectedNotifications.includes(notification._id)}
-            onChange={() => toggleSelectNotification(notification._id)}
-            className="h-4 w-4  accent-blue-600"
-          />
-        </div>
+        {/* Checkbox */}
+        <input
+          type="checkbox"
+          checked={selectedNotifications.includes(notification._id)}
+          onChange={() => toggleSelectNotification(notification._id)}
+          className="h-4 w-4 accent-green-600 self-start sm:self-center"
+        />
 
-        {/* Middle Content */}
-        <div className="flex-1 space-y-2">
-          {/* Top Row */}
+        {/* Dot + Message */}
+        <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             {isUnread && (
-              <BsFillCircleFill className="text-blue-500 text-xs animate-pulse" />
+              <BsFillCircleFill className="text-green-600 text-xs animate-pulse" />
             )}
-
-            <p className="text-base font-semibold text-gray-800 break-words">
+            <p className="text-sm font-medium text-gray-800">
               {notification.message}
             </p>
-
-            {notification.priority && (
-              <span
-                className={`px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${
-                  notification.priority === "high"
-                    ? "bg-red-100 text-red-700"
-                    : notification.priority === "medium"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                {notification.priority}
-              </span>
-            )}
           </div>
 
           {/* Updated By */}
-          {notification.updatedBy &&
-            (() => {
-              try {
-                if (notification.updatedBy === "System") {
-                  return (
-                    <p className="text-xs text-gray-500 italic flex items-center gap-1">
-                      <MdUpdate className="text-gray-400" />
-                      Updated by System
-                    </p>
-                  );
-                }
+          {notification.updatedBy && (
+            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <MdUpdate className="text-gray-400" />
+              {notification.updatedBy === "System"
+                ? "Updated by System"
+                : `Updated by ${typeof notification.updatedBy === "string"
+                  ? JSON.parse(notification.updatedBy)?.name || ""
+                  : notification.updatedBy?.name || ""
+                }`}
+            </p>
+          )}
 
-                const updater =
-                  typeof notification.updatedBy === "string"
-                    ? JSON.parse(notification.updatedBy)
-                    : notification.updatedBy;
-
-                return updater?.name ? (
-                  <p className="text-xs text-gray-500 italic flex items-center gap-1">
-                    <MdUpdate className="text-gray-500" />
-                    Updated by {updater.name}
-                  </p>
-                ) : null;
-              } catch {
-                return null;
-              }
-            })()}
-
-          {/* Details */}
-          {notification.details &&
-            Object.keys(notification.details).length > 0 && (
-              <ul className="text-sm text-gray-700 inline-flex gap-2 flex-wrap">
-                {Object.entries(notification.details).map(([key, value]) => (
-                  <li
-                    key={key}
-                    className="bg-blue-100 text-gray-700 border border-blue-300 p-2 rounded-2xl max-w-max"
-                  >
-                    <span className="font-medium capitalize">{key}:</span>{" "}
-                    {String(value)}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-          {/* Timestamp */}
-          <div className="text-xs text-gray-500 flex items-center gap-1 pt-1">
-            <FaClock className="text-gray-500" />
-            {new Date(notification.createdAt).toLocaleString("en-IN", {
-              timeZone: "Asia/Kolkata",
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })}
-          </div>
+          {/* 🔹 Status Badge */}
+          {notification.status && (
+            <span
+              className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full capitalize ${statusColors[notification.status.toLowerCase()] ||
+                "bg-gray-100 text-gray-700"
+                }`}
+            >
+              Status: {notification.status}
+            </span>
+          )}
         </div>
 
-        {/* Right Button */}
-        <div className="self-start">
-          <button
-            onClick={() => onMarkAsRead(notification._id)}
-            disabled={notification.read}
-            className={`text-sm px-4 py-1.5 rounded-md font-medium border transition-all ${
-              notification.read
-                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                : "bg-green-600 text-white border-green-600 hover:bg-green-700"
+        {/* Date */}
+        <div className="text-xs text-gray-500 flex items-center gap-1 whitespace-nowrap">
+          <FaClock />
+          {new Date(notification.createdAt).toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })}
+        </div>
+
+        {/* Mark as Read */}
+        <button
+          onClick={() => onMarkAsRead(notification._id)}
+          disabled={notification.read}
+          className={`text-sm px-4 py-1.5 rounded-md font-medium border ml-auto ${notification.read
+              ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+              : "bg-green-600 text-white border-green-600 hover:bg-green-700"
             }`}
-          >
-            {notification.read ? "Read" : "Mark as Read"}
-          </button>
-        </div>
+        >
+          {notification.read ? "Read" : "Mark as Read"}
+        </button>
       </div>
     );
   }
 );
+
+
+
 
   const getUserContext = () => {
     const userStr = localStorage.getItem("user");
@@ -651,7 +612,7 @@ const Notifications = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3 mb-5">
         {/* Group By Section */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-600 font-medium">Group by:</span>
@@ -736,7 +697,7 @@ const Notifications = () => {
           Loading notifications...
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 mb-5 ">
           {Object.keys(filteredNotifications).length === 0 ? (
             <div className="text-center text-gray-500 bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-200">
               🎉 No notifications match your filters
@@ -780,7 +741,7 @@ const Notifications = () => {
           )}
           {loading && page > 1 && (
             <div className="text-center text-sm text-gray-400 py-4">
-              Loading more notifications...
+              Loading more notification...
             </div>
           )}
         </div>
