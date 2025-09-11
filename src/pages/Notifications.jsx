@@ -160,39 +160,34 @@ const NotificationItem = React.memo(
 
     return (
       <div
-        className={`relative group p-5 rounded-xl border-l-4 shadow-sm hover:shadow-md transition-all flex gap-6 ${
-          isUnread
-            ? "border-blue-500 bg-blue-50/50"
-            : "border-gray-300 bg-white"
+        className={`relative group bg-white rounded-xl shadow-lg border transition-all hover:shadow-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center ${
+          isUnread ? "border-blue-400" : "border-gray-200"
         }`}
       >
-        {/* Left: Checkbox */}
-        <div className="pt-1">
+        {/* Checkbox */}
+        <div className="flex items-start sm:items-center">
           <input
             type="checkbox"
             checked={selectedNotifications.includes(notification._id)}
             onChange={() => toggleSelectNotification(notification._id)}
-            className="h-4 w-4  accent-blue-600"
+            className="h-5 w-5 accent-blue-600"
           />
         </div>
 
-        {/* Middle Content */}
-        <div className="flex-1 space-y-2">
-          {/* Top Row */}
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* Main Content */}
+        <div className="flex-1 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
             {isUnread && (
-              <BsFillCircleFill className="text-blue-500 text-xs animate-pulse" />
+              <BsFillCircleFill className="text-green-600 text-sm animate-pulse" />
             )}
-
-            <p className="text-base font-semibold text-gray-800 break-words">
+            <p className="text-lg font-semibold text-gray-800 break-words">
               {notification.message}
             </p>
-
             {notification.priority && (
               <span
-                className={`px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${
+                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
                   notification.priority === "high"
-                    ? "bg-red-100 text-red-700"
+                    ? "bg-red-100 text-red-800"
                     : notification.priority === "medium"
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-gray-100 text-gray-700"
@@ -203,13 +198,12 @@ const NotificationItem = React.memo(
             )}
           </div>
 
-          {/* Updated By */}
           {notification.updatedBy &&
             (() => {
               try {
                 if (notification.updatedBy === "System") {
                   return (
-                    <p className="text-xs text-gray-500 italic flex items-center gap-1">
+                    <p className="text-sm text-gray-500 italic flex items-center gap-1">
                       <MdUpdate className="text-gray-400" />
                       Updated by System
                     </p>
@@ -222,7 +216,7 @@ const NotificationItem = React.memo(
                     : notification.updatedBy;
 
                 return updater?.name ? (
-                  <p className="text-xs text-gray-500 italic flex items-center gap-1">
+                  <p className="text-sm text-gray-500 italic flex items-center gap-1">
                     <MdUpdate className="text-gray-500" />
                     Updated by {updater.name}
                   </p>
@@ -232,14 +226,13 @@ const NotificationItem = React.memo(
               }
             })()}
 
-          {/* Details */}
           {notification.details &&
             Object.keys(notification.details).length > 0 && (
               <ul className="text-sm text-gray-700 inline-flex gap-2 flex-wrap">
                 {Object.entries(notification.details).map(([key, value]) => (
                   <li
                     key={key}
-                    className="bg-blue-100 text-gray-700 border border-blue-300 p-2 rounded-2xl max-w-max"
+                    className="bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1 rounded-2xl"
                   >
                     <span className="font-medium capitalize">{key}:</span>{" "}
                     {String(value)}
@@ -248,9 +241,8 @@ const NotificationItem = React.memo(
               </ul>
             )}
 
-          {/* Timestamp */}
-          <div className="text-xs text-gray-500 flex items-center gap-1 pt-1">
-            <FaClock className="text-gray-500" />
+          <div className="text-xs text-gray-500 flex items-center gap-1">
+            <FaClock />
             {new Date(notification.createdAt).toLocaleString("en-IN", {
               timeZone: "Asia/Kolkata",
               day: "2-digit",
@@ -263,14 +255,14 @@ const NotificationItem = React.memo(
           </div>
         </div>
 
-        {/* Right Button */}
-        <div className="self-start">
+        {/* Mark as Read Button */}
+        <div className="self-start sm:self-auto">
           <button
             onClick={() => onMarkAsRead(notification._id)}
             disabled={notification.read}
-            className={`text-sm px-4 py-1.5 rounded-md font-medium border transition-all ${
+            className={`text-sm font-medium px-5 py-2 rounded-lg transition-all border ${
               notification.read
-                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
                 : "bg-green-600 text-white border-green-600 hover:bg-green-700"
             }`}
           >
@@ -281,6 +273,8 @@ const NotificationItem = React.memo(
     );
   }
 );
+
+
 
   const getUserContext = () => {
     const userStr = localStorage.getItem("user");
@@ -651,7 +645,7 @@ const Notifications = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3 mb-5">
         {/* Group By Section */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-600 font-medium">Group by:</span>
@@ -736,7 +730,7 @@ const Notifications = () => {
           Loading notifications...
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 mb-5 ">
           {Object.keys(filteredNotifications).length === 0 ? (
             <div className="text-center text-gray-500 bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-200">
               🎉 No notifications match your filters

@@ -118,7 +118,7 @@ function NoteContainer({}) {
             onDragStart={(e) => onDragStart(e, note._id)}
             onDragOver={(e) => onDragOver(e, note._id)}
             className={[
-              "bg-yellow-100 rounded-xl shadow-sm border border-yellow-100 hover:shadow-md transition-shadow relative group",
+              "bg-yellow-100 rounded-xl shadow-sm border border-yellow-200 hover:shadow-md transition-shadow relative group",
               isDragging ? "opacity-70 ring-2 ring-yellow-400 select-none" : "",
             ].join(" ")}
           >
@@ -137,7 +137,7 @@ function NoteContainer({}) {
             </button>
 
             {/* Editor */}
-            <div className="px-3 py-3">
+            <div className="px-3 py-3 h-48">
               <QuillEditor
                 value={note.content}
                 onChange={(content) => updateNote(note._id, content)}
