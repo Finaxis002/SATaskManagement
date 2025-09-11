@@ -7,12 +7,11 @@ const ShortcutHandler = ({ children }) => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const navigate = useNavigate();
 
-  // Example: get role (adapt this to your app)
   const role = localStorage.getItem("role"); // "admin" or "user"
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!e.altKey) return;
+      if (!e.ctrlKey) return; // ✅ now only works with Ctrl
 
       // Common shortcuts for all roles
       if (e.key.toLowerCase() === "d") {
@@ -26,7 +25,7 @@ const ShortcutHandler = ({ children }) => {
 
       // ✅ Admin-only shortcuts
       if (role === "admin") {
-        if (e.key.toLowerCase() === "t") {
+        if (e.key.toLowerCase() === "m") {
           e.preventDefault();
           navigate("/all-tasks");
         }

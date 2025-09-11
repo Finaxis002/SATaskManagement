@@ -617,7 +617,7 @@ const renderTaskCard = (task, index) => (
       </button>
 
       {/* Task Name */}
-      <h3 className="text-xl font-bold mb-3 text-gray-800">
+      <h3 className="text-xl w-72 font-bold mb-3 text-gray-800">
         {task.taskName}
       </h3>
 
@@ -769,7 +769,7 @@ const renderTaskCard = (task, index) => (
 
          {openWorkDescPopup === task._id && (
            <div
-             className="absolute top-full left-0 mt-3 w-65 rounded-2xl shadow-2xl border border-gray-300 z-50 p-6 bg-white select-text"
+             className=" top-full left-0 mt-3 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
              role="dialog"
              aria-modal="true"
              aria-labelledby="workdesc-dialog-title"
@@ -816,7 +816,7 @@ const renderTaskCard = (task, index) => (
                    }}
                    autoFocus
                  />
-                 <div className="flex justify-end mt-5 gap-4">
+                 <div className="flex justify-end  gap-4">
                    <button
                      onClick={() => setOpenWorkDescPopup(null)}
                      className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
@@ -904,13 +904,13 @@ const renderTaskCard = (task, index) => (
 
       {openRemarkPopup === task._id && (
         <div
-          className="absolute top-full left-0 h-70 w-70 rounded-2xl shadow-2xl border border-gray-300 z-50 p-6 bg-white select-text"
+          className=" top-full left-0 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4  bg-white select-text overflow-y-scroll "
           role="dialog"
           aria-modal="true"
           aria-labelledby="remark-dialog-title"
           style={{ backgroundColor: colors.surface }}
         >
-          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3 ">
             <h4
               id="remark-dialog-title"
               className="font-semibold text-base"
@@ -949,7 +949,7 @@ const renderTaskCard = (task, index) => (
                 }}
                 autoFocus
               />
-              <div className="flex justify-end mt-3 gap-3">
+              <div className="flex justify-end  gap-3">
                 <button
                   onClick={() => setOpenRemarkPopup(null)}
                   className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
@@ -996,7 +996,7 @@ const renderTaskCard = (task, index) => (
           </div>
 
           {/* Actions */}
-          <div className="flex pl-4 flex-wrap gap-3 mt-6">
+          <div className="flex pl-1 flex-wrap gap-3 mt-6">
             <button
               onClick={() => onEdit(task)}
               className="px-8 py-1 rounded-lg bg-blue-100 text-blue-700 border border-b-blue-700 hover:bg-blue-600 hover:text-white font-medium"

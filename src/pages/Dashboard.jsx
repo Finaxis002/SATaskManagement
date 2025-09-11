@@ -397,7 +397,7 @@ const TodaysList = forwardRef(function TodaysList(
             type="button"
             whileTap={{ scale: 0.98 }}
             whileHover={{ y: -1 }}
-            title="Shortcut: Alt + A"
+            title="Shortcut: Ctrl + A"
           >
             <FaPlus className="text-xs"   /> Add Event
           </motion.button>
@@ -677,7 +677,7 @@ const Dashboard = () => {
 
    useEffect(() => {
   const handleKeyDown = (e) => {
-    if (e.altKey && e.key.toLowerCase() === "a") {
+    if (e.ctrlKey && e.key.toLowerCase() === "a") {
       e.preventDefault();
       if (todaysListRef.current?.openCreateEvent) {
         todaysListRef.current.openCreateEvent(); // 👈 triggers button click

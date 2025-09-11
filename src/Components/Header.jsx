@@ -231,7 +231,7 @@ const Header = () => {
         <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full shadow-sm border border-gray-200">
           Shortcuts window:
           <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">
-            Alt
+            Ctrl
           </kbd>
           +
           <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">

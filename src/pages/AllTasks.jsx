@@ -102,9 +102,9 @@ const AllTasks = () => {
   // Added keydown event listener for Alt + N shortcut to trigger task creation
   useEffect(() => {
     const handleKeyPress = (e) => {
-      // Check for Alt + T (both lowercase and uppercase)
-      if (e.altKey && (e.key === "t" || e.key === "T")) {
-        e.preventDefault(); // Prevent default behavior for Alt + T
+      // Check for Ctrl + M (both lowercase and uppercase)
+      if (e.ctrlKey && (e.key === "m" || e.key === "M")) {
+        e.preventDefault(); // Prevent default behavior for Ctrl + M
         handleCreateClick(); // Trigger the task creation form
       }
     };
@@ -131,7 +131,7 @@ const AllTasks = () => {
             <button
               onClick={handleCreateClick}
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-cyan-500/50"
-              title="Shortcut: Alt + T" // Tooltip showing the shortcut key
+              title="Shortcut: Ctrl + M" // Tooltip showing the shortcut key
             >
               <span className="text-white text-lg">＋</span>
               Create Task
