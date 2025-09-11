@@ -204,7 +204,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 md:py-12 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className=" text-3xl  font-bold text-gray-800">My Profile</h1>
@@ -242,11 +242,11 @@ const ProfilePage = () => {
 
             {/* Right Side - Details */}
             <div className="md:w-2/3 md:p-8 sm:overflow-y-auto md:max-h-[70vh] max-h-[55vh] p-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 p-2">
+              <h3 className="text-lg font-semibold text-gray-800 md:mb-4 p-2">
                 Profile Information
               </h3>
               <hr />
-              <div className="grid mt-6 grid-cols-1 md:grid-cols-2 md:gap-8 gap-5 md:ml-1.5 ml-2">
+              <div className="grid mt-3 grid-cols-1 md:grid-cols-2 md:gap-8 gap-5 md:ml-1.5 ml-2">
                 {/* Full Name */}
                 <div>
                   <label className="block text-sm text-gray-500 md:mb-1">
@@ -283,12 +283,12 @@ const ProfilePage = () => {
               </div>
 
               {/* Departments */}
-              <div className="md:col-span-2 mt-6 space-y-4 ">
+              <div className="md:col-span-2 mt-4 space-y-4 ">
                 <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 md:ml-0 ml-2">
                   Departments
                 </h3>
                 {user.department?.length ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 pb-4">
                     {user.department.map((dept, i) => (
                       <span
                         key={i}

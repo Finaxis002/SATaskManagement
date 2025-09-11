@@ -75,6 +75,26 @@ const Reminders = () => {
   // Prefer user.userId, else fallback to standalone userId saved elsewhere
   const userId = user?.userId || localStorage.getItem("userId") || null;
 
+  console.log("linkedemail :", linkedEmail);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchReminders = async () => {
+      try {
+        // Send userId instead of email for fetching reminders
+        const res = await fetch(
+          `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
+        );
+        const data = await res.json();
+
+        setReminders(data);
+      } catch (err) {
+        console.error("❌ Failed to load reminders:", err);
+      }
+    };
+    fetchReminders();
+  }, [userId]); // Rerun when userId changes
+
   useEffect(() => {
     if (!userId) return;
     const fetchData = async () => {
@@ -84,14 +104,14 @@ const Reminders = () => {
           `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
         );
         const reminderData = await reminderRes.json();
-        setReminders(Array.isArray(reminderData) ? reminderData : []);
+        setReminders(reminderData);
 
         // Events
         const eventRes = await fetch(
           `https://taskbe.sharda.co.in/api/events?userId=${userId}`
         );
         const eventData = await eventRes.json();
-        setEvents(Array.isArray(eventData) ? eventData : []);
+        setEvents(eventData);
       } catch (err) {
         console.error("❌ Failed to load reminders or events:", err);
       }
@@ -104,9 +124,12 @@ const Reminders = () => {
     const userId = JSON.parse(localStorage.getItem("user")).userId; // Get userId from localStorage
 
     try {
+      // Pass userId as a query parameter in the DELETE request
       await fetch(
         `https://taskbe.sharda.co.in/api/reminders/${id}?userId=${userId}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+        }
       );
       setReminders((prev) => prev.filter((r) => r._id !== id));
     } catch (err) {
@@ -115,17 +138,18 @@ const Reminders = () => {
   };
 
   const saveReminder = async () => {
-    if (saving) return;
-    setSaving(true);
+    if (saving) return; // prevent multiple submissions
+    setSaving(true); // block until finished
     try {
-      // IMPORTANT: save LOCAL ISO (no Z) so Today detection is correct
-      const combinedDateTime = `${newReminder.date}T${newReminder.time}`;
+      const combinedDateTime = new Date(
+        `${newReminder.date}T${newReminder.time}`
+      ).toISOString();
 
       const reminderPayload = {
         text: newReminder.text,
         datetime: combinedDateTime,
-        snoozeBefore: parseInt(newReminder.snoozeBefore, 10),
-        userEmail: linkedEmail,
+        snoozeBefore: parseInt(newReminder.snoozeBefore),
+        userEmail: linkedEmail, // ✅ Pass the email here
         userId: user.userId,
       };
 
@@ -156,14 +180,17 @@ const Reminders = () => {
       setEditId(null);
       setShowPopup(false);
     } finally {
-      setSaving(false);
+      setSaving(false); // reset after save
     }
   };
 
   const saveEvent = async () => {
-    // IMPORTANT: save LOCAL ISO (no Z)
-    const startDateTime = `${newEvent.date}T${newEvent.startTime}`;
-    const endDateTime   = `${newEvent.date}T${newEvent.endTime}`;
+    const startDateTime = new Date(
+      `${newEvent.date}T${newEvent.startTime}`
+    ).toISOString();
+    const endDateTime = new Date(
+      `${newEvent.date}T${newEvent.endTime}`
+    ).toISOString();
 
     const eventPayload = {
       summary: newEvent.title,
@@ -209,7 +236,7 @@ const Reminders = () => {
         guests: [""],
         snoozeBefore: "30",
       });
-      setEditingEventId(null);
+      setEditingEventId(null); // reset
     } catch (err) {
       console.error("❌ Failed to save event:", err);
       alert("Something went wrong!");
@@ -225,11 +252,11 @@ const Reminders = () => {
     setNewEvent({
       title: event.title || event.summary,
       description: event.description || "",
-      date: sDate,
-      startTime: sTime,
-      endTime: eTime,
+      date: sDate, // local
+      startTime: sTime, // local
+      endTime: eTime, // local
       guests: event.guestEmails || [""],
-      snoozeBefore: String(event.snoozeBefore ?? 30),
+      snoozeBefore: String(event.snoozeBefore ?? 30), // <-- NEW
     });
 
     setShowEventPopup(true);
@@ -241,13 +268,20 @@ const Reminders = () => {
     try {
       const res = await fetch(
         `https://taskbe.sharda.co.in/api/events/${eventId}?userId=${userId}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+        }
       );
 
       if (!res.ok) {
         throw new Error("Failed to delete event");
       }
-      setEvents((prevEvents) => prevEvents.filter((event) => event._id !== eventId));
+
+      // ✅ Don't call res.json() unless needed
+
+      setEvents((prevEvents) =>
+        prevEvents.filter((event) => event._id !== eventId)
+      );
     } catch (err) {
       console.error("❌ Error deleting event:", err);
     }
@@ -266,22 +300,25 @@ const Reminders = () => {
   // SAFETY: if API ever returns null instead of [], avoid crashes
   const remindersSafe = Array.isArray(reminders) ? reminders : [];
 
-  // Add "Missed" tag for past reminders (except today)
   const updatedReminders = remindersSafe.map((reminder) => {
     const parsedDate = parseISO(reminder.datetime);
     const isOutdated = parsedDate < new Date() && !isToday(parsedDate);
+
     if (isOutdated && !reminder.text.includes("⏰ Missed")) {
-      return { ...reminder, text: `${reminder.text} ⏰ Missed` };
+      return {
+        ...reminder,
+        text: `${reminder.text} ⏰ Missed`,
+      };
     }
     return reminder;
   });
 
   // Filters
   const now = new Date();
-  // TODAY: show all of today's reminders (not only future)
-  const todayReminders = updatedReminders
-    .filter((r) => isToday(parseISO(r.datetime)))
-    .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  const todayReminders = updatedReminders.filter((r) => {
+    const date = parseISO(r.datetime);
+    return isToday(date) && date >= now;
+  });
 
   const laterReminders = updatedReminders.filter((r) => {
     const date = parseISO(r.datetime);
@@ -290,7 +327,7 @@ const Reminders = () => {
 
   const outdatedReminders = updatedReminders.filter((r) => {
     const date = parseISO(r.datetime);
-    return date < now && !isToday(date);
+    return date < now;
   });
 
   // ---- Event buckets (same three columns as reminders) ----
@@ -324,6 +361,25 @@ const Reminders = () => {
     return en < startToday;
   });
 
+  useEffect(() => {
+    localStorage.setItem("reminders", JSON.stringify(updatedReminders));
+  }, [updatedReminders]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email"); // Get email from the query parameter
+
+    if (email) {
+      // Assuming userId is the email, you can store it or a custom userId
+      const userId = email; // Or use any other userId if available
+      localStorage.setItem("googleEmail", email); // Persist google email
+      localStorage.setItem("userId", userId); // Persist userId (using email as an example)
+
+      // You can now proceed with your reminder fetching logic
+      setLinkedEmail(email);
+    }
+  }, []);
+
   // put near other handlers
   const DEFAULT_REMINDER = { text: "", date: "", time: "", snoozeBefore: "1" };
 
@@ -338,8 +394,8 @@ const Reminders = () => {
   };
 
   const openCreateReminder = () => {
-    setEditId(null);
-    setNewReminder(DEFAULT_REMINDER);
+    setEditId(null); // ✅ clear edit mode
+    setNewReminder(DEFAULT_REMINDER); // ✅ blank form
     setShowPopup(true);
   };
 
@@ -457,7 +513,6 @@ const Reminders = () => {
             )}
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Today */}
           <BucketSection
@@ -636,17 +691,16 @@ const Reminders = () => {
                 <button
                   onClick={saveReminder}
                   disabled={saving}
-                  className={`w-full ${
-                    saving
-                      ? "bg-green-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700"
-                  } text-white py-2 rounded-md transition`}
+                  className={`w-full ${saving
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
+                    } text-white py-2 rounded-md transition`}
                 >
                   {editId
                     ? "Update Reminder"
                     : saving
-                    ? "Saving..."
-                    : "Save Reminder"}
+                      ? "Saving..."
+                      : "Save Reminder"}
                 </button>
               </div>
             </div>
@@ -669,11 +723,9 @@ const Reminders = () => {
     sm:text-gray-400 sm:hover:text-red-500
   "
                 onClick={() => {
-
                   setShowEventPopup(false);
                   setEditingEventId(null);
                   setNewEvent(DEFAULT_EVENT);
-
                 }}
               >
                 <FaTimes size={18} />
@@ -828,17 +880,16 @@ const Reminders = () => {
               <button
                 onClick={saveEvent}
                 disabled={saving}
-                className={`w-full ${
-                  saving
-                    ? "bg-purple-400 cursor-not-allowed"
-                    : "bg-purple-600 hover:bg-purple-700"
-                } text-white py-2 rounded-md transition`}
+                className={`w-full ${saving
+                  ? "bg-purple-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700"
+                  } text-white py-2 rounded-md transition`}
               >
                 {saving
                   ? "Saving..."
                   : editingEventId
-                  ? "Save Changes"
-                  : "Create Event"}
+                    ? "Save Changes"
+                    : "Create Event"}
               </button>
             </div>
           </div>
@@ -849,11 +900,9 @@ const Reminders = () => {
 };
 
 // 👇 Reminder Card Display with Time
-
 // One column that shows BOTH reminders and events with their existing card UIs
 // 👇 Reminder Card Display with Time
 // One column that shows BOTH reminders and events with their existing card UIs
-
 const BucketSection = ({
   title,
   className = "",
@@ -873,23 +922,19 @@ const BucketSection = ({
     {reminders.length === 0 && events.length === 0 ? (
       <p className="text-sm text-gray-500">No reminders or events</p>
     ) : (
-
       <>
         {/* ---- Reminders Section ---- */}
         {reminders.length > 0 && (
           <div className="mb-4 overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
-              className={`flex gap-3 sm:flex-col sm:gap-3 ${
-                reminders.length > 1 ? "snap-x snap-mandatory" : ""
-              }`}
-
+              className={`flex gap-3 sm:flex-col sm:gap-3 ${reminders.length > 1 ? "snap-x snap-mandatory" : ""
+                }`}
             >
               {reminders.map((reminder, index) => (
                 <li
                   key={`r-${reminder._id || index}`}
-                  className={`flex-shrink-0 ${
-                    reminders.length > 1 ? "w-[85%]" : "w-full"
-                  } sm:w-full bg-white p-4 rounded-lg shadow-xs 
+                  className={`flex-shrink-0 ${reminders.length > 1 ? "w-[85%]" : "w-full"
+                    } sm:w-full bg-white p-4 rounded-lg shadow-xs 
                              hover:shadow-sm border border-gray-100 
                              transition-all duration-200 hover:border-blue-100 relative group
                              ${reminders.length > 1 ? "snap-start" : ""}`}
@@ -952,18 +997,16 @@ const BucketSection = ({
         {events.length > 0 && (
           <div className="overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
-              className={`flex gap-3 sm:flex-col sm:gap-3 ${
-                events.length > 1 ? "snap-x snap-mandatory" : ""
-              }`}
+              className={`flex gap-3 sm:flex-col sm:gap-3 ${events.length > 1 ? "snap-x snap-mandatory" : ""
+                }`}
             >
               {events
                 .filter((e) => e && (e.title || e.summary))
                 .map((event, index) => (
                   <li
                     key={`e-${event._id || index}`}
-                    className={`flex-shrink-0 ${
-                      events.length > 1 ? "w-[85%]" : "w-full"
-                    } sm:w-full bg-white p-5 rounded-lg shadow-sm 
+                    className={`flex-shrink-0 ${events.length > 1 ? "w-[85%]" : "w-full"
+                      } sm:w-full bg-white p-5 rounded-lg shadow-sm 
                                hover:shadow-md border border-gray-100 
                                transition-all duration-300 hover:border-purple-100 relative group
                                ${events.length > 1 ? "snap-start" : ""}`}
