@@ -53,7 +53,7 @@ const QuillEditor = ({ value, onChange }) => {
   }, [quill, onChange, value]);
 
   return (
-    <div style={{ width: "100%" }}>
+    <div className="w-74 h-28">
       <div ref={quillRef} />
     </div>
   );

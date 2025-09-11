@@ -1,21 +1,51 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { format, isBefore, isToday, isTomorrow, parseISO } from "date-fns";
 import axios from "axios";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+
+// Tabs
+const tabs = ["today", "tomorrow", "upcoming", "overdue", "completed"];
+
+// Tab Button Animation (desktop only)
+const buttonVariants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.1, type: "spring", stiffness: 200 },
+  }),
+  hover: {
+    scale: 1.05,
+    y: -2,
+    boxShadow: "0px 6px 15px rgba(79,70,229,0.4)",
+    transition: { type: "spring", stiffness: 300 },
+  },
+};
+
+// Task Row Animation
+const rowVariants = {
+  hidden: { opacity: 0, y: 25 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.05, duration: 0.4, ease: "easeOut" },
+  }),
+  exit: { opacity: 0, y: -15, transition: { duration: 0.25 } },
+};
 
 const TaskOverview = () => {
   const [tasks, setTasks] = useState([]);
   const [activeTab, setActiveTab] = useState("today");
-  const role = localStorage.getItem("role");
-  const user = JSON.parse(localStorage.getItem("user"));
-  const userEmail = user?.email;
   const [justCompleted, setJustCompleted] = useState(new Set());
   const [loading, setLoading] = useState(true);
 
-  const tabs = ["today", "tomorrow", "upcoming", "overdue", "completed"];
+  const scrollRef = useRef(null);
 
+  const role = localStorage.getItem("role");
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userEmail = user?.email;
+
+  // Fetch tasks
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -32,6 +62,7 @@ const TaskOverview = () => {
 
   const now = new Date();
 
+  // Filter & categorize
   const filteredTasks = tasks.filter((task) => {
     if (task.status === "Completed" && task.isHidden) return false;
     if (role === "admin") return true;
@@ -51,41 +82,42 @@ const TaskOverview = () => {
   filteredTasks.forEach((task) => {
     if (!task.dueDate) return;
     const parsedDate = parseISO(task.dueDate);
-    const isActuallyCompleted = task.status === "Completed";
+    const isCompleted = task.status === "Completed";
     const isJustNowCompleted = justCompleted.has(task._id);
 
-    if (isActuallyCompleted && !isJustNowCompleted) {
+    if (isCompleted && !isJustNowCompleted) {
       categorizedTasks.completed.push(task);
       return;
     }
 
-    if (isToday(parsedDate)) {
-      categorizedTasks.today.push(task);
-    } else if (isTomorrow(parsedDate)) {
-      categorizedTasks.tomorrow.push(task);
-    } else if (isBefore(parsedDate, now)) {
-      categorizedTasks.overdue.push(task);
-    } else {
-      categorizedTasks.upcoming.push(task);
-    }
+    if (isToday(parsedDate)) categorizedTasks.today.push(task);
+    else if (isTomorrow(parsedDate)) categorizedTasks.tomorrow.push(task);
+    else if (isBefore(parsedDate, now)) categorizedTasks.overdue.push(task);
+    else categorizedTasks.upcoming.push(task);
   });
 
-  const getTasksByTab = () => {
-    switch (activeTab) {
-      case "today":
-        return categorizedTasks.today;
-      case "tomorrow":
-        return categorizedTasks.tomorrow;
-      case "upcoming":
-        return categorizedTasks.upcoming;
-      case "overdue":
-        return categorizedTasks.overdue;
-      case "completed":
-        return categorizedTasks.completed;
-      default:
-        return [];
+  // Update dashboard stats
+  useEffect(() => {
+    const counts = {
+      completed: categorizedTasks.completed.length,
+      overdue: categorizedTasks.overdue.length,
+      progress:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length,
+      total:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length +
+        categorizedTasks.overdue.length +
+        categorizedTasks.completed.length,
+    };
+    if (typeof window.updateDashboardStats === "function") {
+      window.updateDashboardStats(counts);
     }
-  };
+  }, [tasks, justCompleted]);
+
+  const getTasksByTab = () => categorizedTasks[activeTab] || [];
 
   const handleToggleCompleted = async (taskId) => {
     const updatedBy = {
@@ -103,8 +135,8 @@ const TaskOverview = () => {
         }
       );
       if (!response.ok) throw new Error("Failed to update task status");
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prev) =>
+        prev.map((task) =>
           task._id === taskId ? { ...task, status: "Completed" } : task
         )
       );
@@ -118,53 +150,45 @@ const TaskOverview = () => {
     }
   };
 
-  useEffect(() => {
-    setJustCompleted(new Set());
-  }, [activeTab]);
+  useEffect(() => setJustCompleted(new Set()), [activeTab]);
 
   const isHiddenCompletedTask = (task) =>
     task.status === "Completed" && task.isHidden === true;
 
-  const currentTabIndex = tabs.indexOf(activeTab);
+  // Handle arrows in mobile (infinite loop + center focus)
+  const handleArrowClick = (direction) => {
+    const currentIndex = tabs.indexOf(activeTab);
+    let newIndex;
 
-  const handlePrevTab = () => {
-    if (currentTabIndex > 0) {
-      setActiveTab(tabs[currentTabIndex - 1]);
-    }else{
-      setActiveTab(tabs[tabs.length-1])
-
+    if (direction === "left") {
+      newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    } else {
+      newIndex = (currentIndex + 1) % tabs.length;
     }
-  };
 
-  const handleNextTab = () => {
-    if (currentTabIndex < tabs.length - 1) {
-      setActiveTab(tabs[currentTabIndex + 1]);
-    }else{
-      setActiveTab(tabs[0])
+    setActiveTab(tabs[newIndex]);
+
+    const container = scrollRef.current;
+    const activeButton = container?.querySelector(
+      `[data-tab="${tabs[newIndex]}"]`
+    );
+    if (activeButton && container) {
+      const offset =
+        activeButton.offsetLeft -
+        container.offsetWidth / 2 +
+        activeButton.offsetWidth / 2;
+      container.scrollTo({ left: offset, behavior: "smooth" });
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[250px]">
-        <svg
-          className="animate-spin h-8 w-8 text-indigo-500"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8z"
-          ></path>
-        </svg>
+        <motion.div
+          className="h-10 w-10 rounded-full border-4 border-indigo-400 border-t-transparent"
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+        />
         <span className="ml-3 text-indigo-600 font-semibold">
           Loading tasks...
         </span>
@@ -173,190 +197,280 @@ const TaskOverview = () => {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg  pb-4  ">
-      <div className="px-6 py-4 border-b flex flex-col  gap-3">
-        <h2 className="text-lg font-bold text-gray-800 mb-3 sm:mb-0">
+    <div>
+      {/* Desktop view */}
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-xl border border-gray-200 p-6 font-sans hidden sm:block">
+        <h2 className="text-2xl font-extrabold text-gray-800 mb-4">
           Task Overview
         </h2>
 
-        {/* Desktop Tabs */}
-        <div className="hidden sm:flex gap-3 bg-gray-200 rounded-xl p-2 ">
-          {tabs.map((tab) => {
+        {/* Tabs */}
+        <div className="flex gap-3 flex-wrap mb-6">
+          {tabs.map((tab, i) => {
             const visibleCount = categorizedTasks[tab]?.filter(
-              (task) => !isHiddenCompletedTask(task)
+              (t) => !isHiddenCompletedTask(t)
             ).length;
             const isActive = activeTab === tab;
-
             return (
-              <button
+              <motion.button
                 key={tab}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                whileHover="hover"
+                variants={buttonVariants}
                 onClick={() => setActiveTab(tab)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200
+                  ${
+                    isActive
+                      ? "bg-indigo-600 text-white"
+                      : "bg-white text-gray-700"
+                  }
+                  shadow-md active:shadow-inner
+                `}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {visibleCount > 0 && (
-                  <span className="bg-white/30 px-2 py-0.5 rounded-full text-xs font-semibold">
+                  <span
+                    className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
+                      isActive
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
+                  >
                     {visibleCount}
                   </span>
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </div>
 
-        {/* Mobile Tabs with Slider */}
-        {/* Mobile Tabs with Slider */}
-        <div className="flex sm:hidden items-center justify-between w-full">
-  {/* Left Arrow */}
-  <button
-    onClick={handlePrevTab}
-    className="p-2 text-gray-600 disabled:opacity-50"
-  >
-    <ChevronLeft className="w-8 h-8" /> {/* 👈 Icon */}
-  </button>
-
-  {/* Active Tab with Dynamic Color */}
-  <span
-    className={`flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-sm
-      ${activeTab === "today"
-          ? "bg-blue-500 text-white"
-          : activeTab === "tomorrow"
-            ? "bg-gray-400 text-white"
-            : activeTab === "upcoming"
-              ? "bg-yellow-500 text-white"
-              : activeTab === "overdue"
-                ? "bg-red-500 text-white"
-                : "bg-green-500 text-white"
-      }`}
-  >
-    {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-    <span className="bg-white text-black px-2 py-0.5 rounded-full text-xs font-bold">
-      {categorizedTasks[activeTab]?.filter(
-        (task) => !isHiddenCompletedTask(task)
-      ).length || 0}
-    </span>
-  </span>
-
-  {/* Right Arrow */}
-  <button
-    onClick={handleNextTab}
-    className="p-2 text-gray-600 disabled:opacity-50"
-  >
-    <ChevronRight className="w-8 h-8" /> {/* 👉 Icon */}
-  </button>
-</div>
-
-      </div>
-
-      {/* Task list */}
-      {/* Task list */}
-      <div className="divide-y hidden md:block h-[60vh] overflow-auto">
-        {getTasksByTab().filter((task) => !isHiddenCompletedTask(task)).length === 0 ? (
-          <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
-        ) : (
-          getTasksByTab()
-            .filter((task) => !isHiddenCompletedTask(task))
-            .map((task) => (
-              <div
-                key={task._id}
-                className="flex justify-between items-center px-6 py-3 hover:bg-gray-50 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={
-                      task.status === "Completed" || justCompleted.has(task._id)
-                    }
-                    onChange={() => handleToggleCompleted(task._id)}
-                    disabled={task.status === "Completed"}
-                    className="accent-indigo-600 cursor-pointer"
-                  />
-                  <span
-                    className={`text-sm ${task.status === "Completed" || justCompleted.has(task._id)
-                        ? "line-through text-gray-400"
-                        : "text-gray-800"
-                      }`}
-                  >
-                    {task.taskName}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end gap-1 text-sm">
-                  <span className="text-gray-500 text-xs">
-                    {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
-                      ? format(new Date(task.dueDate), "MMM d")
-                      : "Invalid date"}
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {task?.assignees?.map((assignee) => (
-                      <span
-                        key={assignee.email}
-                        className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium"
-                      >
-                        {assignee.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))
-        )}
-      </div>
-      <div className=" flex gap-10 flex-col mt-8 mb-4 md:hidden h-[60vh] overflow-auto">
-        {getTasksByTab().filter((task) => !isHiddenCompletedTask(task)).length === 0 ? (
-          <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
-        ) : (
-          getTasksByTab()
-            .filter((task) => !isHiddenCompletedTask(task))
-            .map((task) => (
-              <div
-                key={task._id}
-                className="flex justify-between items-center mb-1 px-6 py-3 h-20 hover:bg-gray-50 transition-all shadow-xl"
-              >
-                <div className="flex items-start flex-col gap-3">
-                  <div className="flex items-center gap-1"  >
-                    <input
-                      type="checkbox"
-                      checked={
-                        task.status === "Completed" || justCompleted.has(task._id)
-                      }
-                      onChange={() => handleToggleCompleted(task._id)}
-                      disabled={task.status === "Completed"}
-                      className="accent-indigo-600 cursor-pointer"
-                    />
-                    <span
-                      className={`text-sm ${task.status === "Completed" || justCompleted.has(task._id)
-                        ? "line-through text-gray-400"
-                        : "text-gray-800"
-                        }`}
+        {/* Task List */}
+        <div className="overflow-y-auto h-[65vh]">
+          {getTasksByTab().filter((t) => !isHiddenCompletedTask(t)).length ===
+          0 ? (
+            <div className="text-gray-500 text-sm text-center italic py-12">
+              No tasks found
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              <AnimatePresence mode="wait">
+                {getTasksByTab()
+                  .filter((task) => !isHiddenCompletedTask(task))
+                  .map((task, idx) => (
+                    <motion.li
+                      key={task._id}
+                      custom={idx}
+                      variants={rowVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      className="bg-white rounded-xl shadow-md p-4 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                     >
-                      {task.taskName}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {task?.assignees?.map((assignee) => (
-                      <span
-                        key={assignee.email}
-                        className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium"
-                      >
-                        {assignee.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1 text-sm italic">
-                  <span className="text-gray-500 text-xs">
-                    {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
-                      ? format(new Date(task.dueDate), "MMM d")
-                      : "Invalid date"}
-                  </span>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={
+                            task.status === "Completed" ||
+                            justCompleted.has(task._id)
+                          }
+                          onChange={() => handleToggleCompleted(task._id)}
+                          disabled={task.status === "Completed"}
+                          className="accent-indigo-600 w-4 h-4 cursor-pointer"
+                        />
+                        <div>
+                          <p
+                            className={`font-medium ${
+                              task.status === "Completed" ||
+                              justCompleted.has(task._id)
+                                ? "line-through text-gray-400"
+                                : "text-gray-800"
+                            }`}
+                          >
+                            {task.taskName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {task.dueDate &&
+                            !isNaN(new Date(task.dueDate).getTime())
+                              ? format(new Date(task.dueDate), "MMM d, yyyy")
+                              : "No due date"}
+                          </p>
+                        </div>
+                      </div>
 
-                </div>
-              </div>
-            ))
-        )}
+                      <div className="flex flex-wrap gap-2">
+                        {task.assignees?.map((assignee) => (
+                          <span
+                            key={assignee.email}
+                            className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium"
+                          >
+                            {assignee.name}
+                          </span>
+                        ))}
+                      </div>
+                    </motion.li>
+                  ))}
+              </AnimatePresence>
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile view */}
+      <div className="sm:hidden block bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-lg border border-gray-200 p-4 font-sans">
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Task Overview</h2>
+
+        {/* Tabs Carousel */}
+        <div className="relative flex items-center mb-5">
+          <button
+            onClick={() => handleArrowClick("left")}
+            className="absolute left-0 z-10 bg-white shadow-md rounded-full p-1 -ml-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          <div
+            ref={scrollRef}
+            id="mobile-tabs"
+            className="flex gap-2 overflow-x-auto scrollbar-hide px-8 w-full scroll-smooth"
+          >
+            {tabs.map((tab) => {
+              const visibleCount = categorizedTasks[tab]?.filter(
+                (t) => !isHiddenCompletedTask(t)
+              ).length;
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  data-tab={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200
+                    ${
+                      isActive
+                        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md"
+                        : "bg-white text-gray-700 border border-gray-200"
+                    }
+                    active:scale-95`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                      isActive
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
+                  >
+                    {visibleCount || 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => handleArrowClick("right")}
+            className="absolute right-0 z-10 bg-white shadow-md rounded-full p-1 -mr-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Task List */}
+        <div className="overflow-y-auto max-h-[70vh]">
+          {getTasksByTab().filter((t) => !isHiddenCompletedTask(t)).length ===
+          0 ? (
+            <div className="text-gray-500 text-xs text-center italic py-8">
+              No tasks
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              <AnimatePresence mode="wait">
+                {getTasksByTab()
+                  .filter((task) => !isHiddenCompletedTask(task))
+                  .map((task, idx) => (
+                    <motion.li
+                      key={task._id}
+                      custom={idx}
+                      variants={rowVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      className="bg-white rounded-xl shadow-md p-3 flex items-center justify-between hover:shadow-lg transition-all duration-200"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={
+                            task.status === "Completed" ||
+                            justCompleted.has(task._id)
+                          }
+                          onChange={() => handleToggleCompleted(task._id)}
+                          disabled={task.status === "Completed"}
+                          className="accent-indigo-600 w-4 h-4 cursor-pointer"
+                        />
+                        <div>
+                          <p
+                            className={`text-sm font-medium ${
+                              task.status === "Completed" ||
+                              justCompleted.has(task._id)
+                                ? "line-through text-gray-400"
+                                : "text-gray-800"
+                            }`}
+                          >
+                            {task.taskName}
+                          </p>
+                          <p className="text-[11px] text-gray-500">
+                            {task.dueDate &&
+                            !isNaN(new Date(task.dueDate).getTime())
+                              ? format(new Date(task.dueDate), "MMM d")
+                              : "No date"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 max-w-[40%] justify-end">
+                        {task.assignees?.map((assignee) => (
+                          <span
+                            key={assignee.email}
+                            className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-medium truncate"
+                          >
+                            {assignee.name}
+                          </span>
+                        ))}
+                      </div>
+                    </motion.li>
+                  ))}
+              </AnimatePresence>
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
