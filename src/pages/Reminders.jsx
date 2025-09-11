@@ -691,16 +691,29 @@ const Reminders = () => {
                 <button
                   onClick={saveReminder}
                   disabled={saving}
+<<<<<<< HEAD
                   className={`w-full ${saving
                     ? "bg-green-400 cursor-not-allowed"
                     : "bg-green-600 hover:bg-green-700"
                     } text-white py-2 rounded-md transition`}
+=======
+                  className={`w-full ${
+                    saving
+                      ? "bg-green-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  } text-white py-2 rounded-md transition`}
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
                 >
                   {editId
                     ? "Update Reminder"
                     : saving
+<<<<<<< HEAD
                       ? "Saving..."
                       : "Save Reminder"}
+=======
+                    ? "Saving..."
+                    : "Save Reminder"}
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
                 </button>
               </div>
             </div>
@@ -723,9 +736,17 @@ const Reminders = () => {
     sm:text-gray-400 sm:hover:text-red-500
   "
                 onClick={() => {
+<<<<<<< HEAD
                   setShowEventPopup(false);
                   setEditingEventId(null);
                   setNewEvent(DEFAULT_EVENT);
+=======
+
+                  setShowEventPopup(false);
+                  setEditingEventId(null);
+                  setNewEvent(DEFAULT_EVENT);
+
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
                 }}
               >
                 <FaTimes size={18} />
@@ -880,16 +901,29 @@ const Reminders = () => {
               <button
                 onClick={saveEvent}
                 disabled={saving}
+<<<<<<< HEAD
                 className={`w-full ${saving
                   ? "bg-purple-400 cursor-not-allowed"
                   : "bg-purple-600 hover:bg-purple-700"
                   } text-white py-2 rounded-md transition`}
+=======
+                className={`w-full ${
+                  saving
+                    ? "bg-purple-400 cursor-not-allowed"
+                    : "bg-purple-600 hover:bg-purple-700"
+                } text-white py-2 rounded-md transition`}
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
               >
                 {saving
                   ? "Saving..."
                   : editingEventId
+<<<<<<< HEAD
                     ? "Save Changes"
                     : "Create Event"}
+=======
+                  ? "Save Changes"
+                  : "Create Event"}
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
               </button>
             </div>
           </div>
@@ -900,9 +934,17 @@ const Reminders = () => {
 };
 
 // 👇 Reminder Card Display with Time
+<<<<<<< HEAD
 // One column that shows BOTH reminders and events with their existing card UIs
 // 👇 Reminder Card Display with Time
 // One column that shows BOTH reminders and events with their existing card UIs
+=======
+
+// One column that shows BOTH reminders and events with their existing card UIs
+// 👇 Reminder Card Display with Time
+// One column that shows BOTH reminders and events with their existing card UIs
+
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
 const BucketSection = ({
   title,
   className = "",
@@ -922,19 +964,36 @@ const BucketSection = ({
     {reminders.length === 0 && events.length === 0 ? (
       <p className="text-sm text-gray-500">No reminders or events</p>
     ) : (
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
       <>
         {/* ---- Reminders Section ---- */}
         {reminders.length > 0 && (
           <div className="mb-4 overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
+<<<<<<< HEAD
               className={`flex gap-3 sm:flex-col sm:gap-3 ${reminders.length > 1 ? "snap-x snap-mandatory" : ""
                 }`}
+=======
+              className={`flex gap-3 sm:flex-col sm:gap-3 ${
+                reminders.length > 1 ? "snap-x snap-mandatory" : ""
+              }`}
+
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
             >
               {reminders.map((reminder, index) => (
                 <li
                   key={`r-${reminder._id || index}`}
+<<<<<<< HEAD
                   className={`flex-shrink-0 ${reminders.length > 1 ? "w-[85%]" : "w-full"
                     } sm:w-full bg-white p-4 rounded-lg shadow-xs 
+=======
+                  className={`flex-shrink-0 ${
+                    reminders.length > 1 ? "w-[85%]" : "w-full"
+                  } sm:w-full bg-white p-4 rounded-lg shadow-xs 
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
                              hover:shadow-sm border border-gray-100 
                              transition-all duration-200 hover:border-blue-100 relative group
                              ${reminders.length > 1 ? "snap-start" : ""}`}
@@ -997,16 +1056,28 @@ const BucketSection = ({
         {events.length > 0 && (
           <div className="overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
+<<<<<<< HEAD
               className={`flex gap-3 sm:flex-col sm:gap-3 ${events.length > 1 ? "snap-x snap-mandatory" : ""
                 }`}
+=======
+              className={`flex gap-3 sm:flex-col sm:gap-3 ${
+                events.length > 1 ? "snap-x snap-mandatory" : ""
+              }`}
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
             >
               {events
                 .filter((e) => e && (e.title || e.summary))
                 .map((event, index) => (
                   <li
                     key={`e-${event._id || index}`}
+<<<<<<< HEAD
                     className={`flex-shrink-0 ${events.length > 1 ? "w-[85%]" : "w-full"
                       } sm:w-full bg-white p-5 rounded-lg shadow-sm 
+=======
+                    className={`flex-shrink-0 ${
+                      events.length > 1 ? "w-[85%]" : "w-full"
+                    } sm:w-full bg-white p-5 rounded-lg shadow-sm 
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
                                hover:shadow-md border border-gray-100 
                                transition-all duration-300 hover:border-purple-100 relative group
                                ${events.length > 1 ? "snap-start" : ""}`}

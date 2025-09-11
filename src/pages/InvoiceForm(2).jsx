@@ -17,7 +17,7 @@ const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
 // Use the function
 
-export default function InvoiceForm({
+export default function InvoiceFormTwo({
   initialInvoice = null,
   onSaved,
   onClose,
@@ -65,7 +65,7 @@ export default function InvoiceForm({
   const [firmsError, setFirmsError] = useState("");
 
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [selectedFirm, setSelectedFirm] = useState(null);
+  const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
   const [isFinalized, setIsFinalized] = useState(false);
   const [selectedBankIndex, setSelectedBankIndex] = useState(0);
@@ -74,64 +74,32 @@ export default function InvoiceForm({
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(null);
 
-  // useEffect(() => {
-  //   const loadFirms = async () => {
-  //     try {
-  //       setFirmsLoading(true);
-  //       const res = await axios.get("https://taskbe.sharda.co.in/firms");
-  //       setFirms(res.data || []);
-  //       console.log("firm fetched ...", res.data)
-  //       if (!isEdit && (res.data || []).length) {
-  //         setSelectedFirmId(res.data[0]._id);
-  //         setSelectedFirm(res.data[0]);
-  //       }
-  //     } catch (e) {
-  //       setFirmsError("Failed to load firms");
-  //       console.error(e);
-  //     } finally {
-  //       setFirmsLoading(false);
-  //     }
-  //   };
-  //   loadFirms();
-  // }, []);
-
   useEffect(() => {
-    let isMounted = true;
+    if (isEdit) return; // Skip API call if we are in edit mode
+  if (firms.length > 0) return;
     const loadFirms = async () => {
+
       try {
         setFirmsLoading(true);
         const res = await axios.get("https://taskbe.sharda.co.in/firms");
-        if (isMounted) {
-          setFirms(res.data || []);
-          console.log("firm fetched ...", res.data);
-          if (!isEdit && (res.data || []).length) {
-            setSelectedFirmId(res.data[0]._id);
-            setSelectedFirm(res.data[0]);
-          }
+        setFirms(res.data || []);
+        console.log("Firms loaded:", res.data);
+        if (!isEdit && (res.data || []).length) {
+          setSelectedFirmId(res.data[0]._id);
+          setSelectedFirm(res.data[0]);
         }
       } catch (e) {
-        if (isMounted) {
-          setFirmsError("Failed to load firms");
-          console.error(e);
-        }
+        setFirmsError("Failed to load firms");
+        console.error(e);
       } finally {
-        if (isMounted) {
-          setFirmsLoading(false);
-        }
+        setFirmsLoading(false);
       }
     };
     loadFirms();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   useEffect(() => {
-    if (!selectedFirmId) {
-      setSelectedFirm(null);
-      return;
-    }
+    if (!selectedFirmId || selectedFirmId === selectedFirm?._id) return;
     const f = firms.find((x) => x._id === selectedFirmId) || null;
     setSelectedFirm(f);
     setSelectedBankIndex(0);
@@ -201,13 +169,13 @@ export default function InvoiceForm({
   // }, [isEdit, selectedFirmId, selectedFirm, invoiceType]);
 
   useEffect(() => {
-    if (isEdit) return; // No preview while editing
-    if (!selectedFirm || !invoiceType) return; // Ensure both selectedFirm and invoiceType are available
+  if (isEdit) return; // No preview while editing
+  if (!selectedFirm || !invoiceType) return; // Ensure both selectedFirm and invoiceType are available
 
-    setInvoiceNumber(""); // Reset invoice number
-    setIsFinalized(false); // Reset finalized flag
-    previewInvoiceNumber(); // Call the function to preview the invoice number
-  }, [isEdit, selectedFirm, invoiceType]); // Dependencies - run when these change
+  setInvoiceNumber(""); // Reset invoice number
+  setIsFinalized(false); // Reset finalized flag
+  previewInvoiceNumber(); // Call the function to preview the invoice number
+}, [isEdit, selectedFirm, invoiceType]); // Dependencies - run when these change
 
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const today = new Date();
@@ -262,51 +230,22 @@ export default function InvoiceForm({
   const originalInvNoRef = useRef("");
 
   // Fetch clients on component mount
-  // useEffect(() => {
-  //   if (clients.length > 0) return; // Prevent re-fetching if clients are already loaded
-  //   const fetchClients = async () => {
-  //     try {
-  //       console.log("Fetching clients..."); // Debug log
-  //       const response = await axios.get("/clients/details");
-  //       console.log("Clients fetched:", response.data); // Debug log
-  //       setClients(response.data);
-  //     } catch (error) {
-  //       console.error("Error fetching clients:", error);
-  //       // Add error state if needed
-  //     }
-  //   };
-
-  //   fetchClients();
-  // }, []);
-
-  // Replace the clients useEffect with this:
   useEffect(() => {
-    let isMounted = true;
-
+    if(clients.length > 0) return; // Prevent re-fetching if clients are already loaded
     const fetchClients = async () => {
       try {
-        console.log("Fetching clients...");
+        console.log("Fetching clients..."); // Debug log
         const response = await axios.get("/clients/details");
-        if (isMounted) {
-          console.log("Clients fetched:", response.data);
-          setClients(response.data);
-        }
+        console.log("Clients fetched:", response.data); // Debug log
+        setClients(response.data);
       } catch (error) {
-        if (isMounted) {
-          console.error("Error fetching clients:", error);
-        }
+        console.error("Error fetching clients:", error);
+        // Add error state if needed
       }
     };
 
-    // Only fetch if we haven't already loaded clients
-    if (clients.length === 0) {
-      fetchClients();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Empty dependency array - run only once on mount
+    fetchClients();
+  }, []);
 
   useEffect(() => {
     if (!selectedClientOption) {
@@ -991,14 +930,25 @@ export default function InvoiceForm({
 
   return (
     <>
-      <div className=" flex gap-5 p-5 bg-gray-100 overflow-x-auto items-start max-h-[95vh] overflow-y-hidden">
+
+     <div className="invoice-page flex gap-5 p-5 bg-gray-100 overflow-x-auto w-full">
+
         {/* Left form side */}
-        <div className="scrollable-panel flex-none w-[500px] h-full overflow-y-auto pr-2 box-border pl-1">
-          <div className="max-h-[90vh] overflow-y-auto pt-5 pr-1">
-            {/* ... Your left side inputs and controls ... */}
-            <div>
-              <div className="flex gap-2 justify-center items-center mb-3">
-                {/* <button
+        <div className="flex-none w-[400px] overflow-y-auto pr-2 box-border">
+
+          {/* ... Your left side inputs and controls ... */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "10px",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
+            <div className="flex gap-2 justify-center items-center mb-3">
+              {/* <button
                 onClick={
                   isEdit ? handleUpdateAndDownloadPDF : handleSaveAndDownloadPDF
                 }
@@ -1014,144 +964,96 @@ export default function InvoiceForm({
                 <FiDownload className="w-4 h-4" />
               </button> */}
 
-                {isEdit && (
-                  <button
-                    onClick={handleUpdateInvoice} // Function to handle updating invoice
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-2"
-                    title="Update Invoice"
-                  >
-                    <FiSave className="w-4 h-4" />
-                    <span>Update Invoice</span>
-                  </button>
-                )}
-
-                {/* Download PDF Button (Only visible in edit mode) */}
-                {isEdit && (
-                  <button
-                    onClick={handleDownloadPDF} // Function to handle downloading PDF
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
-                    title="Download PDF"
-                  >
-                    <FiDownload className="w-4 h-4" />
-                    <span>Download PDF</span>
-                  </button>
-                )}
-
-                {/* Combined button for Save & Generate PDF in non-edit mode */}
-                {!isEdit && (
-                  <button
-                    onClick={handleSaveAndDownloadPDF} // Function to save and download PDF
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
-                    title="Save and Download PDF"
-                  >
-                    <FiSave className="w-4 h-4" />
-                    <span>Save & Generate PDF</span>
-                    <FiDownload className="w-4 h-4" />
-                  </button>
-                )}
-
-                {onClose && (
-                  <button
-                    onClick={onClose}
-                    className="px-4 py-2 border rounded"
-                  >
-                    Close
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              {/* Date Range */}
-              {!isEdit && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      From Date
-                    </label>
-                    <input
-                      type="date"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      max={toDate || undefined}
-                      className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      To Date
-                    </label>
-                    <input
-                      type="date"
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                      min={fromDate || undefined}
-                      className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              )}
-
               {isEdit && (
-                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
-                  <div className="col-span-2">
-                    <label className="block text-xs text-gray-600">
-                      Invoice No.
-                    </label>
-                    <input
-                      readOnly
-                      value={invoiceNumber}
-                      className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm
-            ${
-              isEdit
-                ? "bg-yellow-50 border-yellow-300 text-gray-500"
-                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            }
-            transition-colors duration-300 ease-in-out`}
-                      aria-disabled={isEdit}
-                      onMouseDown={(e) => {
-                        if (isEdit) e.preventDefault();
-                      }}
-                      onKeyDown={(e) => {
-                        if (
-                          isEdit &&
-                          !["Tab", "Shift", "Escape"].includes(e.key)
-                        )
-                          e.preventDefault();
-                      }}
-                    />
-                  </div>
-                </div>
+                <button
+                  onClick={handleUpdateInvoice} // Function to handle updating invoice
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-2"
+                  title="Update Invoice"
+                >
+                  <FiSave className="w-4 h-4" />
+                  <span>Update Invoice</span>
+                </button>
               )}
 
-              {/* Firm Selection */}
+              {/* Download PDF Button (Only visible in edit mode) */}
+              {isEdit && (
+                <button
+                  onClick={handleDownloadPDF} // Function to handle downloading PDF
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                  title="Download PDF"
+                >
+                  <FiDownload className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </button>
+              )}
 
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  Your Details
-                </h2>
-                <label className="block text-sm font-medium text-gray-700">
-                  Select Firm
-                </label>
+              {/* Combined button for Save & Generate PDF in non-edit mode */}
+              {!isEdit && (
+                <button
+                  onClick={handleSaveAndDownloadPDF} // Function to save and download PDF
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                  title="Save and Download PDF"
+                >
+                  <FiSave className="w-4 h-4" />
+                  <span>Save & Generate PDF</span>
+                  <FiDownload className="w-4 h-4" />
+                </button>
+              )}
 
-                {firmsLoading ? (
-                  <div className="mt-1 text-sm text-gray-500">
-                    Loading firms…
-                  </div>
-                ) : firmsError ? (
-                  <div className="mt-1 text-sm text-red-600">{firmsError}</div>
-                ) : (
-                  <select
-                    value={selectedFirmId}
-                    onChange={(e) => setSelectedFirmId(e.target.value)}
-                    disabled={isEdit}
-                    // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
-                    ${
-                      isEdit
-                        ? "locked-field locked-cursor bg-yellow-50 border-yellow-300"
-                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    }`}
+              {onClose && (
+                <button onClick={onClose} className="px-4 py-2 border rounded">
+                  Close
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {/* Date Range */}
+            {!isEdit && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    max={toDate || undefined}
+                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    min={fromDate || undefined}
+                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {isEdit && (
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-600">
+                    Invoice No.
+                  </label>
+                  <input
+                    readOnly
+                    value={invoiceNumber}
+                    className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm
+                      ${
+                        isEdit
+                          ? "locked-field locked-cursor"
+                          : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      }`}
                     aria-disabled={isEdit}
                     onMouseDown={(e) => {
                       if (isEdit) e.preventDefault();
@@ -1160,332 +1062,368 @@ export default function InvoiceForm({
                       if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
                         e.preventDefault();
                     }}
-                  >
-                    {firms.map((f) => (
-                      <option key={f._id} value={f._id}>
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {selectedFirm?.banks?.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Select Bank Account
-                  </label>
-                  <select
-                    value={selectedBankIndex}
-                    onChange={(e) =>
-                      setSelectedBankIndex(parseInt(e.target.value))
-                    }
-                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {selectedFirm?.banks?.map((bank, idx) => (
-                      <option key={bank._id || idx} value={idx}>
-                        {bank.label ||
-                          `${bank.bankName || bank.name} - ${
-                            bank.accountNumber || bank.account
-                          }`}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Invoice Type */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Invoice Type
-                  </label>
-                  <select
-                    value={invoiceType}
-                    onChange={(e) => setInvoiceType(e.target.value)}
-                    disabled={isEdit}
-                    // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm
+            {/* Firm Selection */}
+
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Your Details
+              </h2>
+              <label className="block text-sm font-medium text-gray-700">
+                Select Firm
+              </label>
+
+              {firmsLoading ? (
+                <div className="mt-1 text-sm text-gray-500">Loading firms…</div>
+              ) : firmsError ? (
+                <div className="mt-1 text-sm text-red-600">{firmsError}</div>
+              ) : (
+                <select
+                  value={selectedFirmId}
+                  onChange={(e) => setSelectedFirmId(e.target.value)}
+                  disabled={isEdit}
+                  // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm
+                    ${
+                      isEdit
+                        ? "locked-field locked-cursor"
+                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    }`}
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                >
+                  {firms.map((f) => (
+                    <option key={f._id} value={f._id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {selectedFirm?.banks?.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Select Bank Account
+                </label>
+                <select
+                  value={selectedBankIndex}
+                  onChange={(e) =>
+                    setSelectedBankIndex(parseInt(e.target.value))
+                  }
+                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {selectedFirm?.banks?.map((bank, idx) => (
+                    <option key={bank._id || idx} value={idx}>
+                      {bank.label ||
+                        `${bank.bankName || bank.name} - ${
+                          bank.accountNumber || bank.account
+                        }`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Invoice Type */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Invoice Type
+                </label>
+                <select
+                  value={invoiceType}
+                  onChange={(e) => setInvoiceType(e.target.value)}
+                  disabled={isEdit}
+                  // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm
                   ${
                     isEdit
                       ? "locked-field locked-cursor"
                       : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   }`}
-                    aria-disabled={isEdit}
-                    onMouseDown={(e) => {
-                      if (isEdit) e.preventDefault();
-                    }}
-                    onKeyDown={(e) => {
-                      if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
-                        e.preventDefault();
-                    }}
-                  >
-                    {invoiceTypes.map((type) => (
-                      <option key={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Invoice Date
-                  </label>
-                  <input
-                    type="date"
-                    value={invoiceDate}
-                    onChange={(e) => setInvoiceDate(e.target.value)}
-                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                >
+                  {invoiceTypes.map((type) => (
+                    <option key={type}>{type}</option>
+                  ))}
+                </select>
               </div>
-
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  Customer Details
-                </h2>
-                {isEdit ? (
-                  // Edit Mode: User can modify customer details
-                  <div className="flex flex-col gap-2">
-                    <input
-                      type="text"
-                      value={customer?.name || ""}
-                      onChange={(e) =>
-                        setCustomer({ ...customer, name: e.target.value })
-                      }
-                      className="mt-1 w-full border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter Customer Name"
-                    />
-                    <CreatableSelect
-                      options={clientOptions}
-                      value={selectedClientOption}
-                      onChange={(option) => {
-                        setSelectedClientOption(option);
-                        // Fetch selected client details
-                        const selectedClient = clients.find(
-                          (client) => client._id === option.value
-                        );
-                        if (selectedClient) {
-                          setCustomer(selectedClient);
-                        }
-                      }}
-                      onCreateOption={openCreateClientModal} // shows “+ Add client …”
-                      formatCreateLabel={(inputValue) =>
-                        `+ Add client "${inputValue}"`
-                      }
-                      placeholder="Search or select client..."
-                      isClearable
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          marginBottom: "10px",
-                          minHeight: "40px",
-                          borderRadius: "0.375rem",
-                          borderColor: "#d1d5db",
-                        }),
-                        menu: (base) => ({ ...base, zIndex: 9999 }),
-                      }}
-                      theme={(theme) => ({
-                        ...theme,
-                        colors: { ...theme.colors, primary: "#1a73e8" },
-                      })}
-                    />
-                  </div>
-                ) : (
-                  // Non-Edit Mode: Customer details are displayed as read-only, but still editable in `CreatableSelect`
-                  <div className="flex flex-col gap-2">
-                    <CreatableSelect
-                      options={clientOptions}
-                      value={selectedClientOption}
-                      onChange={(option) => {
-                        setSelectedClientOption(option);
-                        // Fetch selected client details
-                        const selectedClient = clients.find(
-                          (client) => client._id === option.value
-                        );
-                        if (selectedClient) {
-                          setCustomer(selectedClient);
-                        }
-                      }}
-                      onCreateOption={openCreateClientModal} // shows “+ Add client …”
-                      formatCreateLabel={(inputValue) =>
-                        `+ Add client "${inputValue}"`
-                      }
-                      placeholder="Search or select client..."
-                      isClearable
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          marginBottom: "10px",
-                          minHeight: "40px",
-                          borderRadius: "0.375rem",
-                          borderColor: "#d1d5db",
-                        }),
-                        menu: (base) => ({ ...base, zIndex: 9999 }),
-                      }}
-                      theme={(theme) => ({
-                        ...theme,
-                        colors: { ...theme.colors, primary: "#1a73e8" },
-                      })}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Place of Supply */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Place of Supply
+                  Invoice Date
                 </label>
                 <input
-                  placeholder="Place of Supply"
-                  value={placeOfSupply}
-                  onChange={(e) => setPlaceOfSupply(e.target.value)}
+                  type="date"
+                  value={invoiceDate}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
                   className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
 
-              {/* Items Section */}
-              <div className="">
-                <h2 className="text-lg font-semibold text-gray-800">Items</h2>
-                {items.map((item, idx) => {
-                  const amount = (item.qty * item.rate).toFixed(2);
-                  return (
-                    <div
-                      key={idx}
-                      className="border border-gray-300 rounded-lg p-4 mb-2 bg-white shadow-sm"
-                    >
-                      <label className="block text-sm font-medium text-gray-700">
-                        Description
-                      </label>
-                      <input
-                        value={item.description}
-                        onChange={(e) =>
-                          updateItem(idx, "description", e.target.value)
-                        }
-                        placeholder="Description"
-                        className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Qty
-                          </label>
-                          <input
-                            type="number"
-                            value={item.qty}
-                            onChange={(e) =>
-                              updateItem(idx, "qty", Number(e.target.value))
-                            }
-                            min={1}
-                            className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Rate
-                          </label>
-                          <input
-                            type="number"
-                            value={item.rate}
-                            onChange={(e) =>
-                              updateItem(idx, "rate", Number(e.target.value))
-                            }
-                            step="0.01"
-                            className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Amount
-                          </label>
-                          <input
-                            readOnly
-                            value={`₹${amount}`}
-                            className="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => deleteItem(item.id)}
-                          className="mt-6  transition text-red-500 hover:text-red-800"
-                          title="Delete Task"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Add Item Button */}
-                <div className="mt-4 sticky bottom-4 bg-white py-2 text-center">
-                  <button
-                    onClick={addItem}
-                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
-                  >
-                    + Add Item
-                  </button>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Customer Details
+              </h2>
+              {isEdit ? (
+                // Edit Mode: User can modify customer details
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="text"
+                    value={customer?.name || ""}
+                    onChange={(e) =>
+                      setCustomer({ ...customer, name: e.target.value })
+                    }
+                    className="mt-1 w-full border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter Customer Name"
+                  />
+                  <CreatableSelect
+                    options={clientOptions}
+                    value={selectedClientOption}
+                    onChange={(option) => {
+                      setSelectedClientOption(option);
+                      // Fetch selected client details
+                      const selectedClient = clients.find(
+                        (client) => client._id === option.value
+                      );
+                      if (selectedClient) {
+                        setCustomer(selectedClient);
+                      }
+                    }}
+                    onCreateOption={openCreateClientModal} // shows “+ Add client …”
+                    formatCreateLabel={(inputValue) =>
+                      `+ Add client "${inputValue}"`
+                    }
+                    placeholder="Search or select client..."
+                    isClearable
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        marginBottom: "10px",
+                        minHeight: "40px",
+                        borderRadius: "0.375rem",
+                        borderColor: "#d1d5db",
+                      }),
+                      menu: (base) => ({ ...base, zIndex: 9999 }),
+                    }}
+                    theme={(theme) => ({
+                      ...theme,
+                      colors: { ...theme.colors, primary: "#1a73e8" },
+                    })}
+                  />
                 </div>
-              </div>
+              ) : (
+                // Non-Edit Mode: Customer details are displayed as read-only, but still editable in `CreatableSelect`
+                <div className="flex flex-col gap-2">
 
-              {/* Notes Section */}
-              <div className="mb-4 notes-section">
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  Notes
-                </h2>
+                  <CreatableSelect
+                    options={clientOptions}
+                    value={selectedClientOption}
+                    onChange={(option) => {
+                      setSelectedClientOption(option);
+                      // Fetch selected client details
+                      const selectedClient = clients.find(
+                        (client) => client._id === option.value
+                      );
+                      if (selectedClient) {
+                        setCustomer(selectedClient);
+                      }
+                    }}
+                    onCreateOption={openCreateClientModal} // shows “+ Add client …”
+                    formatCreateLabel={(inputValue) =>
+                      `+ Add client "${inputValue}"`
+                    }
+                    placeholder="Search or select client..."
+                    isClearable
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        marginBottom: "10px",
+                        minHeight: "40px",
+                        borderRadius: "0.375rem",
+                        borderColor: "#d1d5db",
+                      }),
+                      menu: (base) => ({ ...base, zIndex: 9999 }),
+                    }}
+                    theme={(theme) => ({
+                      ...theme,
+                      colors: { ...theme.colors, primary: "#1a73e8" },
+                    })}
+                  />
+                </div>
+              )}
+            </div>
 
-                {notes.length === 0 && (
-                  <div className="text-sm text-gray-500 mb-2">
-                    Add your first note for this invoice.
-                  </div>
-                )}
+            {/* Place of Supply */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Place of Supply
+              </label>
+              <input
+                placeholder="Place of Supply"
+                value={placeOfSupply}
+                onChange={(e) => setPlaceOfSupply(e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-                {notes.map((n, idx) => (
+            {/* Items Section */}
+            <div className="">
+              <h2 className="text-lg font-semibold text-gray-800">Items</h2>
+              {items.map((item, idx) => {
+                const amount = (item.qty * item.rate).toFixed(2);
+                return (
                   <div
-                    key={n.id}
-                    className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm invoice-note"
+                    key={idx}
+                    className="border border-gray-300 rounded-lg p-4 mb-2 bg-white shadow-sm"
                   >
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Note {idx + 1}
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description
                     </label>
-                    <textarea
-                      value={n.text}
-                      onChange={(e) => updateNote(n.id, e.target.value)}
-                      rows={2}
-                      placeholder="Write a remark or note for this invoice..."
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    <input
+                      value={item.description}
+                      onChange={(e) =>
+                        updateItem(idx, "description", e.target.value)
+                      }
+                      placeholder="Description"
+                      className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <div className="flex justify-end mt-2">
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Qty
+                        </label>
+                        <input
+                          type="number"
+                          value={item.qty}
+                          onChange={(e) =>
+                            updateItem(idx, "qty", Number(e.target.value))
+                          }
+                          min={1}
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Rate
+                        </label>
+                        <input
+                          type="number"
+                          value={item.rate}
+                          onChange={(e) =>
+                            updateItem(idx, "rate", Number(e.target.value))
+                          }
+                          step="0.01"
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Amount
+                        </label>
+                        <input
+                          readOnly
+                          value={`₹${amount}`}
+                          className="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700"
+                        />
+                      </div>
+
                       <button
                         type="button"
-                        onClick={() => deleteNote(n.id)}
-                        className="text-red-500 hover:text-red-700 text-sm flex items-center gap-2"
-                        title="Delete Note"
+                        onClick={() => deleteItem(item.id)}
+                        className="mt-6  transition text-red-500 hover:text-red-800"
+                        title="Delete Task"
                       >
                         <FaTrash />
-                        Remove
                       </button>
                     </div>
                   </div>
-                ))}
+                );
+              })}
 
-                {/* Add Note button BELOW the notes list */}
+              {/* Add Item Button */}
+              <div className="mt-4 sticky bottom-4 bg-white py-2 text-center">
                 <button
-                  onClick={addNote}
-                  className="w-50  bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium text-sm transition pt-0.5 text-center mb-3.5"
+                  onClick={addItem}
+                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
                 >
-                  + Add Note
+                  + Add Item
                 </button>
               </div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="mb-4 notes-section">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Notes
+              </h2>
+
+              {notes.length === 0 && (
+                <div className="text-sm text-gray-500 mb-2">
+                  Add your first note for this invoice.
+                </div>
+              )}
+
+              {notes.map((n, idx) => (
+                <div
+                  key={n.id}
+                  className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm invoice-note"
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Note {idx + 1}
+                  </label>
+                  <textarea
+                    value={n.text}
+                    onChange={(e) => updateNote(n.id, e.target.value)}
+                    rows={2}
+                    placeholder="Write a remark or note for this invoice..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex justify-end mt-2">
+                    <button
+                      type="button"
+                      onClick={() => deleteNote(n.id)}
+                      className="text-red-500 hover:text-red-700 text-sm flex items-center gap-2"
+                      title="Delete Note"
+                    >
+                      <FaTrash />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Add Note button BELOW the notes list */}
+              <button
+                onClick={addNote}
+                className="w-50  bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium text-sm transition pt-0.5 text-center mb-3.5"
+              >
+                + Add Note
+              </button>
             </div>
           </div>
         </div>
 
-        <div
-          className="overflow-y-auto bg-gray-50 p-4 rounded-md"
-          style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}
-        >
+        <div className="asa-right w-[400px] h-full overflow-y-auto bg-gray-50 p-4 rounded-md">
           <div
             style={{
               width: PREVIEW_W * PREVIEW_SCALE,
@@ -1577,19 +1515,21 @@ export default function InvoiceForm({
             </div>
           </div>
         </div>
-      </div>
+       </div>
 
-      {/* create client modal */}
-      {createClientOpen && (
-        <CreateClientModal
-          client={draftClient} // prefill name
-          onClose={() => {
-            setCreateClientOpen(false);
-            setDraftClient(null);
-          }}
-          onCreate={handleCreateClient} // receives full formData
-        />
-      )}
+        {/* create client modal */}
+        {createClientOpen && (
+          <CreateClientModal
+            client={draftClient} // prefill name
+            onClose={() => {
+              setCreateClientOpen(false);
+              setDraftClient(null);
+            }}
+            onCreate={handleCreateClient} // receives full formData
+          />
+        )}
+
     </>
   );
 }
+

@@ -20,33 +20,45 @@ const MainLayout = ({ children }) => {
 
       <div className="flex flex-col flex-1 w-full">
         <Header />
-        <main className="flex-1 text-gray-800 overflow-hidden w-full z-0 md:pl-[70px] max-w-[100vw] pb-16 md:pb-0">
+
+
+        <main className="flex-1 text-gray-800 overflow-auto w-full z-0 md:pl-[70px] max-w-[100vw] pb-16 md:pb-0">
+
+
           {children}
           <ReminderAlertManager />
         </main>
       </div>
 
       {/* Mobile Footer Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around py-1">
+
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around py-2">
         <MobileNavItem
           to="/"
           label="Home"
-          icon={<FaHome className="text-lg" />}
+          icon={<FaHome className="text-2xl" />} // bigger icon
+
         />
         <MobileNavItem
           to="/all-tasks"
           label="Tasks"
-          icon={<FaClipboardList className="text-lg" />}
+
+          icon={<FaClipboardList className="text-2xl" />}
+
         />
         <MobileNavItem
           to="/clients"
           label="Clients"
-          icon={<FaBriefcase className="text-lg" />}
+
+          icon={<FaBriefcase className="text-2xl" />}
+
         />
         <MobileNavItem
           to="/leave"
           label="Leave"
-          icon={<FaGolfBall className="text-lg" />}
+
+          icon={<FaGolfBall className="text-2xl" />}
+
         />
       </div>
     </div>
@@ -63,17 +75,20 @@ const MobileNavItem = ({ to, label, icon }) => (
   >
     {({ isActive }) => (
       <>
-        {/* Top Indicator - fixed to top */}
+
+        {/* Top Indicator */}
         {isActive && (
           <div
             className="absolute top-0 left-1/2 -translate-x-1/2 
-                          w-7 sm:w-8 h-[3px] bg-blue-700 rounded-b-md"
+                       w-7 sm:w-8 h-[3px] bg-blue-700 rounded-b-md"
           ></div>
         )}
 
-        {/* Icon thoda neeche shift kiya */}
+        {/* Icon slightly lower */}
         <div className="mt-1">{icon}</div>
-        <span className="text-xs mt-0.5">{label}</span>
+        {/* Smaller label */}
+        <span className="text-[10px] mt-0.5">{label}</span>
+
       </>
     )}
   </NavLink>

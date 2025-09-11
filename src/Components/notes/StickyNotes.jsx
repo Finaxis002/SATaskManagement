@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaStickyNote, FaTimes, FaPlus, FaTrash } from "react-icons/fa";
 import NoteContainer from "./NoteContainer";
+import { createPortal } from "react-dom";
 
 const API_BASE = "https://taskbe.sharda.co.in/api/stickynotes"; // Change as needed
 
@@ -49,22 +50,31 @@ const StickyNotes = ({ onClose }) => {
   // Slide-in animation classes
   // Optionally use a state for controlling animation if you want more fancy open/close
 
-  return (
-    <div className="fixed inset-0 z-50">
+return createPortal(
+  <div className="fixed inset-0 z-[2147483645]">
       {/* Overlay with subtle blur effect */}
-      <div className="fixed inset-0 bg-black/40 " onClick={onClose} />
-
+      <div
+  className="fixed inset-0 bg-slate-900/50 z-[2147483646]"
+  onClick={onClose}
+/>
       {/* Drawer */}
       <div
-        className={`
-      fixed right-0 top-0 h-full w-[420px] max-w-full
-      bg-white shadow-2xl z-50
-      transform transition-transform duration-300 ease-in-out
-      translate-x-0 flex flex-col
-    `}
-      >
+     className={`
+       fixed right-0 top-0 h-full
+    w-full sm:w-[380px] md:w-[420px] max-w-[100vw]
+    bg-gradient-to-b from-slate-50 to-white
+    border-l border-slate-200
+    shadow-xl z-[2147483647]
+    sm:rounded-l-2xl
+    transform transition-transform duration-300 ease-in-out
+    translate-x-0 flex flex-col
+     
+     `}
+     onClick={(e) => e.stopPropagation()}
+   >
         {/* Header */}
-        <div className="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+        <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center rounded-tl-none sm:rounded-tl-2xl">
+
           <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
             <FaStickyNote className="text-yellow-400" />
             Sticky Notes
@@ -78,8 +88,11 @@ const StickyNotes = ({ onClose }) => {
         </div>
 
         {/* Notes Container */}
-        <NoteContainer  />
+       <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
+  <NoteContainer />
+</div>
         {/* Footer */}
+<<<<<<< HEAD
         <div className="border-t border-gray-100 px-6 py-4">
           <button
             className="w-full bg-yellow-500 hover:bg-yellow-300 text-yellow-900 font-medium px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
@@ -90,8 +103,27 @@ const StickyNotes = ({ onClose }) => {
             Add New Note
           </button>
         </div>
+=======
+        <div className="bg-slate-50 border-t border-slate-200 px-4 sm:px-6 py-3 rounded-bl-none sm:rounded-bl-2xl">
+  <button
+    onClick={createNote}
+    disabled={creating}
+    className="w-full inline-flex items-center justify-center gap-2
+               px-4 py-3 rounded-lg font-medium
+               bg-amber-400 text-amber-900 shadow-sm
+               transition-colors duration-200
+               hover:bg-amber-300
+               focus:outline-none focus:ring-2 focus:ring-amber-500
+               disabled:opacity-60 disabled:cursor-not-allowed"
+  >
+    <FaPlus className="shrink-0" />
+    {creating ? "Adding..." : "Add New Note"}
+  </button>
+</div>
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
