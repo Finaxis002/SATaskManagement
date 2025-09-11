@@ -22,132 +22,7 @@ const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
-// const NotificationItem = React.memo(
-//   ({
-//     notification,
-//     onMarkAsRead,
-//     selectedNotifications,
-//     toggleSelectNotification,
-//   }) => {
-//     const isUnread = !notification.read;
 
-//     return (
-//       <div
-//         className={`group p-5 rounded-xl border transition-all shadow-sm hover:shadow-md flex justify-between gap-6 ${
-//           isUnread
-//             ? "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300"
-//             : "bg-white border-gray-200"
-//         }`}
-//       >
-//         {/* Left: Message & Meta */}
-//         <div className="flex gap-4 flex-1 items-start">
-//           {/* Checkbox */}
-//           <input
-//             type="checkbox"
-//             checked={selectedNotifications.includes(notification._id)}
-//             onChange={() => toggleSelectNotification(notification._id)}
-//             className="mt-1 h-4 w-4 accent-blue-600"
-//           />
-
-//           {/* Notification Content */}
-//           <div className="space-y-2 w-full">
-//             {/* Top Row: Dot + Message + Priority */}
-//             <div className="flex flex-wrap items-center gap-2">
-//               {isUnread && (
-//                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-//               )}
-
-//               <p className="text-sm font-semibold text-gray-800 break-words">
-//                 {notification.message}
-//               </p>
-
-//               {notification.priority && (
-//                 <span
-//                   className={`px-2 py-0.5 text-xs font-medium rounded-full capitalize ${
-//                     notification.priority === "high"
-//                       ? "bg-red-100 text-red-700"
-//                       : notification.priority === "medium"
-//                       ? "bg-yellow-100 text-yellow-800"
-//                       : "bg-gray-100 text-gray-700"
-//                   }`}
-//                 >
-//                   {notification.priority}
-//                 </span>
-//               )}
-//             </div>
-
-//             {/* Updated By Info */}
-//             {notification.updatedBy &&
-//               (() => {
-//                 try {
-//                   if (notification.updatedBy === "System") {
-//                     return (
-//                       <p className="text-xs text-gray-500 italic">
-//                         Updated by System
-//                       </p>
-//                     );
-//                   }
-
-//                   const updater =
-//                     typeof notification.updatedBy === "string"
-//                       ? JSON.parse(notification.updatedBy)
-//                       : notification.updatedBy;
-
-//                   return updater?.name ? (
-//                     <p className="text-xs text-gray-500 italic">
-//                       Updated by {updater.name}
-//                     </p>
-//                   ) : null;
-//                 } catch (err) {
-//                   return null;
-//                 }
-//               })()}
-
-//             {/* Details */}
-//             {notification.details &&
-//               Object.keys(notification.details).length > 0 && (
-//                 <ul className="list-disc list-inside text-sm text-gray-700 space-y-0.5">
-//                   {Object.entries(notification.details).map(([key, value]) => (
-//                     <li key={key}>
-//                       <span className="font-medium">{key}:</span> {value}
-//                     </li>
-//                   ))}
-//                 </ul>
-//               )}
-
-//             {/* Timestamp */}
-//             <p className="text-xs text-gray-400">
-//               {new Date(notification.createdAt).toLocaleString("en-IN", {
-//                 timeZone: "Asia/Kolkata",
-//                 day: "2-digit",
-//                 month: "2-digit",
-//                 year: "numeric",
-//                 hour: "2-digit",
-//                 minute: "2-digit",
-//                 hour12: true,
-//               })}
-//             </p>
-//           </div>
-//         </div>
-
-//         {/* Right: Action Button */}
-//         <div className="flex-shrink-0 self-start mt-1">
-//           <button
-//             onClick={() => onMarkAsRead(notification._id)}
-//             disabled={notification.read}
-//             className={`text-sm px-4 py-1.5 rounded-md font-medium transition-all border shadow-sm ${
-//               notification.read
-//                 ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-//                 : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-//             }`}
-//           >
-//             {notification.read ? "Read" : "Mark as Read"}
-//           </button>
-//         </div>
-//       </div>
-//     );
-//   }
-// );
 
 const NotificationItem = React.memo(
   ({ notification, onMarkAsRead, selectedNotifications, toggleSelectNotification }) => {
@@ -163,65 +38,116 @@ const NotificationItem = React.memo(
 
     return (
       <div
-        className={`group bg-white rounded-xl shadow-sm border transition-all hover:shadow-md p-4 flex flex-col sm:flex-row sm:items-center gap-4 ${isUnread ? "border-green-400" : "border-gray-200"
-          }`}
+
+        className={`relative group bg-white rounded-xl shadow-lg border transition-all hover:shadow-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center ${
+          isUnread ? "border-blue-400" : "border-gray-200"
+        }`}
       >
         {/* Checkbox */}
-        <input
-          type="checkbox"
-          checked={selectedNotifications.includes(notification._id)}
-          onChange={() => toggleSelectNotification(notification._id)}
-          className="h-4 w-4 accent-green-600 self-start sm:self-center"
-        />
-
-        {/* Dot + Message */}
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            {isUnread && (
-              <BsFillCircleFill className="text-green-600 text-xs animate-pulse" />
-            )}
-            <p className="text-sm font-medium text-gray-800">
-              {notification.message}
-            </p>
-          </div>
-
-          {/* Updated By */}
-          {notification.updatedBy && (
-            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-              <MdUpdate className="text-gray-400" />
-              {notification.updatedBy === "System"
-                ? "Updated by System"
-                : `Updated by ${typeof notification.updatedBy === "string"
-                  ? JSON.parse(notification.updatedBy)?.name || ""
-                  : notification.updatedBy?.name || ""
-                }`}
-            </p>
-          )}
-
-          {/* 🔹 Status Badge */}
-          {notification.status && (
-            <span
-              className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full capitalize ${statusColors[notification.status.toLowerCase()] ||
-                "bg-gray-100 text-gray-700"
-                }`}
-            >
-              Status: {notification.status}
-            </span>
-          )}
+        <div className="flex items-start sm:items-center">
+          <input
+            type="checkbox"
+            checked={selectedNotifications.includes(notification._id)}
+            onChange={() => toggleSelectNotification(notification._id)}
+            className="h-5 w-5 accent-blue-600"
+          />
         </div>
 
-        {/* Date */}
-        <div className="text-xs text-gray-500 flex items-center gap-1 whitespace-nowrap">
-          <FaClock />
-          {new Date(notification.createdAt).toLocaleString("en-IN", {
-            timeZone: "Asia/Kolkata",
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })}
+        {/* Main Content */}
+        <div className="flex-1 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {isUnread && (
+              <BsFillCircleFill className="text-green-600 text-sm animate-pulse" />
+            )}
+            <p className="text-lg font-semibold text-gray-800 break-words">
+              {notification.message}
+            </p>
+            {notification.priority && (
+              <span
+                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
+                  notification.priority === "high"
+                    ? "bg-red-100 text-red-800"
+                    : notification.priority === "medium"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {notification.priority}
+              </span>
+            )}
+          </div>
+
+          {notification.updatedBy &&
+            (() => {
+              try {
+                if (notification.updatedBy === "System") {
+                  return (
+                    <p className="text-sm text-gray-500 italic flex items-center gap-1">
+                      <MdUpdate className="text-gray-400" />
+                      Updated by System
+                    </p>
+                  );
+                }
+
+                const updater =
+                  typeof notification.updatedBy === "string"
+                    ? JSON.parse(notification.updatedBy)
+                    : notification.updatedBy;
+
+                return updater?.name ? (
+                  <p className="text-sm text-gray-500 italic flex items-center gap-1">
+                    <MdUpdate className="text-gray-500" />
+                    Updated by {updater.name}
+                  </p>
+                ) : null;
+              } catch {
+                return null;
+              }
+            })()}
+
+          {notification.details &&
+            Object.keys(notification.details).length > 0 && (
+              <ul className="text-sm text-gray-700 inline-flex gap-2 flex-wrap">
+                {Object.entries(notification.details).map(([key, value]) => (
+                  <li
+                    key={key}
+                    className="bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1 rounded-2xl"
+                  >
+                    <span className="font-medium capitalize">{key}:</span>{" "}
+                    {String(value)}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+          <div className="text-xs text-gray-500 flex items-center gap-1">
+            <FaClock />
+            {new Date(notification.createdAt).toLocaleString("en-IN", {
+              timeZone: "Asia/Kolkata",
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })}
+          </div>
+        </div>
+
+        {/* Mark as Read Button */}
+        <div className="self-start sm:self-auto">
+          <button
+            onClick={() => onMarkAsRead(notification._id)}
+            disabled={notification.read}
+            className={`text-sm font-medium px-5 py-2 rounded-lg transition-all border ${
+              notification.read
+                ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
+                : "bg-green-600 text-white border-green-600 hover:bg-green-700"
+            }`}
+          >
+            {notification.read ? "Read" : "Mark as Read"}
+          </button>
+
         </div>
 
         {/* Mark as Read */}

@@ -698,6 +698,7 @@ const Reminders = () => {
                       : "bg-green-600 hover:bg-green-700"
                   } text-white py-2 rounded-md transition`}
 
+
                 >
                   {editId
                     ? "Update Reminder"
@@ -705,6 +706,7 @@ const Reminders = () => {
 
                     ? "Saving..."
                     : "Save Reminder"}
+
 
                 </button>
               </div>
@@ -892,13 +894,16 @@ const Reminders = () => {
                     : "bg-purple-600 hover:bg-purple-700"
                 } text-white py-2 rounded-md transition`}
 
+
               >
                 {saving
                   ? "Saving..."
                   : editingEventId
 
+
                   ? "Save Changes"
                   : "Create Event"}
+
 
               </button>
             </div>
@@ -938,18 +943,22 @@ const BucketSection = ({
           <div className="mb-4 overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
 
+
               className={`flex gap-3 sm:flex-col sm:gap-3 ${
                 reminders.length > 1 ? "snap-x snap-mandatory" : ""
               }`}
+
 
             >
               {reminders.map((reminder, index) => (
                 <li
                   key={`r-${reminder._id || index}`}
 
+
                   className={`flex-shrink-0 ${
                     reminders.length > 1 ? "w-[85%]" : "w-full"
                   } sm:w-full bg-white p-4 rounded-lg shadow-xs 
+
 
                              hover:shadow-sm border border-gray-100 
                              transition-all duration-200 hover:border-blue-100 relative group
@@ -1014,9 +1023,12 @@ const BucketSection = ({
           <div className="overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
 
+
+
               className={`flex gap-3 sm:flex-col sm:gap-3 ${
                 events.length > 1 ? "snap-x snap-mandatory" : ""
               }`}
+
 
             >
               {events
@@ -1025,9 +1037,11 @@ const BucketSection = ({
                   <li
                     key={`e-${event._id || index}`}
 
+
                     className={`flex-shrink-0 ${
                       events.length > 1 ? "w-[85%]" : "w-full"
                     } sm:w-full bg-white p-5 rounded-lg shadow-sm 
+
 
                                hover:shadow-md border border-gray-100 
                                transition-all duration-300 hover:border-purple-100 relative group

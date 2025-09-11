@@ -25,6 +25,68 @@ const Header = () => {
   const navigate = useNavigate();
   useNotificationSocket(setNotificationCount);
 
+
+  // Check if device is mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  //for search bar
+  useEffect(() => {
+    const highlightMatches = (term) => {
+      // Remove existing highlights
+      document.querySelectorAll("mark[data-highlight]").forEach((mark) => {
+        const parent = mark.parentNode;
+        parent.replaceChild(document.createTextNode(mark.textContent), mark);
+        parent.normalize();
+      });
+
+      if (!term) {
+        setHighlightRefs([]);
+        setCurrentIndex(0);
+        return;
+      }
+
+      const regex = new RegExp(`(${term})`, "gi");
+      const foundMarks = [];
+
+      const walk = (node) => {
+        if (
+          node.nodeType === 3 &&
+          node.parentNode &&
+          node.parentNode.nodeName !== "SCRIPT" &&
+          node.parentNode.nodeName !== "STYLE"
+        ) {
+          const text = node.nodeValue;
+          if (regex.test(text)) {
+            const span = document.createElement("span");
+            span.innerHTML = text.replace(
+              regex,
+              `<mark data-highlight style="background: yellow;">$1</mark>`
+            );
+            const fragment = document.createDocumentFragment();
+            while (span.firstChild) {
+              const child = span.firstChild;
+              if (child.tagName === "MARK") foundMarks.push(child);
+              fragment.appendChild(child);
+            }
+            node.parentNode.replaceChild(fragment, node);
+          }
+        } else if (node.nodeType === 1) {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            walk(node.childNodes[i]);
+          }
+        }
+      };
+
+
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -109,9 +171,20 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Right Section */}
-      <div className="flex items-center gap-2 sm:gap-4 md:gap-5 ml-2 sm:ml-4 relative">
-        {/* Notes & Notifications */}
+      {/* Right Icons */}
+      <div className="flex items-center gap-4 md:gap-5 ml-4 md:ml-6 relative">
+        <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full shadow-sm border border-gray-200">
+          Shortcuts window:
+          <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">
+            Ctrl
+          </kbd>
+          +
+          <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">
+            S
+          </kbd>
+        </span>
+        {/* Mobile view: Show Notes icon instead of Notification icon */}
+
         {isMobile ? (
           <>
             <button
@@ -121,6 +194,7 @@ const Header = () => {
             >
               <FaRegStickyNote className="text-gray-600 text-lg" />
             </button>
+
             <QuickActionsDropdown
               notificationCount={notificationCount}
               isMobile={isMobile}

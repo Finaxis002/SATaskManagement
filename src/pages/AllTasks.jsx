@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TaskFormModal from "../Components/Tasks/TaskFormModal";
 import TaskList from "../Components/Tasks/TaskList";
 import { useNavigate } from "react-router-dom";
@@ -14,26 +14,28 @@ const AllTasks = () => {
   const [hideCompleted, setHideCompleted] = useState(false);
 
   const dispatch = useDispatch();
-
   const role = localStorage.getItem("role") || "user"; // Default to 'user' if not set
-
   const navigate = useNavigate();
 
+  // Create Task Click Handler
   const handleCreateClick = () => {
     setEditingTask(null);
     setShowForm(true);
   };
 
+  // Save Task Handler
   const handleSaveTask = (taskData) => {
     setShowForm(false);
     setRefreshTrigger((prev) => !prev); // ✅ This will tell TaskList to refetch
   };
 
+  // Edit Task Handler
   const handleEdit = (task) => {
     setEditingTask(task);
     setShowForm(true);
   };
 
+  // Remove Completed Tasks Handler
   const handleRemoveCompletedTasks = async () => {
     try {
       const response = await fetch(
@@ -55,8 +57,6 @@ const AllTasks = () => {
         timer: 1500,
         showConfirmButton: false,
       });
-
-      // Toggle refreshTrigger to tell TaskList to refetch
       setRefreshTrigger((prev) => !prev);
     } catch (err) {
       Swal.fire({
@@ -67,6 +67,7 @@ const AllTasks = () => {
     }
   };
 
+  // Remove Obsolete Tasks Handler
   const handleRemoveObsoleteTasks = async () => {
     try {
       const response = await fetch(
@@ -88,7 +89,6 @@ const AllTasks = () => {
         timer: 1500,
         showConfirmButton: false,
       });
-
       setRefreshTrigger((prev) => !prev);
     } catch (err) {
       Swal.fire({
@@ -99,24 +99,41 @@ const AllTasks = () => {
     }
   };
 
+  // Added keydown event listener for Alt + N shortcut to trigger task creation
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Check for Ctrl + M (both lowercase and uppercase)
+      if (e.ctrlKey && (e.key === "m" || e.key === "M")) {
+        e.preventDefault(); // Prevent default behavior for Ctrl + M
+        handleCreateClick(); // Trigger the task creation form
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+
+    // Cleanup the event listener when component unmounts
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, []); // Empty dependency array to run the effect only once
+
   return (
-    <>
-      <div className="px-4 py-6  overflow-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className="text-xl font-semibold"
-            style={{ fontFamily: "Poppins, sans-serif" }}
-          >
+    <div className="w-full min-h-screen bg-white font-inter">
+      {/* Header Section */}
+      <div className="w-full   px-4 sm:px-6 md:px-8 pt-4 pb-2 border-none bg-white">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900">
             Task Manager
-          </h2>
-          <div className="flex gap-3">
-            {/* Create Task Button */}
+          </h1>
+
+          <div className="flex items-center gap-3">
+            {/* Create Task Button with Tooltip */}
             <button
               onClick={handleCreateClick}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 text-sm font-medium px-4 py-1 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-blue-100 hover:border-blue-200"
-              style={{ fontFamily: "Poppins, sans-serif" }}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-cyan-500/50"
+              title="Shortcut: Ctrl + M" // Tooltip showing the shortcut key
             >
-              <span className="text-blue-600 text-lg font-bold">+</span>
+              <span className="text-white text-lg">＋</span>
               Create Task
             </button>
 
@@ -125,7 +142,7 @@ const AllTasks = () => {
                 {/* Remove Completed Button */}
                 <button
                   onClick={handleRemoveCompletedTasks}
-                  className="flex items-center gap-2 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-700 text-sm font-medium px-4 py-1 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-red-100 hover:border-red-200"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50"
                 >
                   <FaTrashAlt className="text-red-500 text-sm" />
                   Remove Completed
@@ -134,7 +151,7 @@ const AllTasks = () => {
                 {/* Remove Obsolete Button */}
                 <button
                   onClick={handleRemoveObsoleteTasks}
-                  className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 text-amber-700 text-sm font-medium px-4 py-1 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-amber-100 hover:border-amber-200"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-amber-600 border border-amber-200 hover:bg-amber-50"
                 >
                   <FaTrashAlt className="text-amber-500 text-sm" />
                   Remove Obsolete
@@ -143,30 +160,34 @@ const AllTasks = () => {
             )}
           </div>
         </div>
+      </div>
 
-        <TaskList
-          refreshTrigger={refreshTrigger}
-          onEdit={handleEdit}
-          setTaskListExternally={setTasks}
-          tasksOverride={tasks}
-          hideCompleted={hideCompleted}
-          hideObsolete={true}
-        />
+      {/* Content Area */}
+      <div className="w-full px-4 sm:px-6 md:px-8   bg-white">
+        <div className="w-full ">
+          <TaskList
+            refreshTrigger={refreshTrigger}
+            onEdit={handleEdit}
+            setTaskListExternally={setTasks}
+            tasksOverride={tasks}
+            hideCompleted={hideCompleted}
+            hideObsolete={true}
+          />
+        </div>
 
+        {/* Modal Form for Task */}
         <div className="flex items-center justify-center">
           {showForm && (
-          <TaskFormModal
-            onClose={() => setShowForm(false)}
-            onSave={handleSaveTask}
-            initialData={editingTask}
-          />
-        )}
+            <TaskFormModal
+              onClose={() => setShowForm(false)}
+              onSave={handleSaveTask}
+              initialData={editingTask}
+            />
+          )}
         </div>
       </div>
-    
-    </>
+    </div>
   );
 };
 
-// Tasks.jsx
 export default AllTasks;
