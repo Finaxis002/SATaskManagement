@@ -5,7 +5,15 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
+<<<<<<< HEAD
 } from "react";
+=======
+ 
+} from "react";
+
+import { useLocation, useNavigate } from "react-router-dom";
+
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence, useInView } from "framer-motion";
@@ -17,6 +25,11 @@ import { FaCalendarAlt, FaClock, FaTimes, FaPlus } from "react-icons/fa";
 import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
 import TaskOverview from "../Components/TaskOverview";
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
 /* ------------------ cache & helpers ------------------ */
 const K = {
   TOKEN: "authToken",
@@ -384,13 +397,25 @@ const TodaysList = forwardRef(function TodaysList(
               setEditingEventId(null);
               setNewEvent({ ...DEFAULT_EVENT });
               setShowEventPopup(true);
+<<<<<<< HEAD
             }}
+=======
+              
+            }
+          }
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
             className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-purple-700 transition focus:outline-none focus:ring-2 focus:ring-purple-400"
             type="button"
             whileTap={{ scale: 0.98 }}
             whileHover={{ y: -1 }}
+<<<<<<< HEAD
           >
             <FaPlus className="text-xs" /> Add Event
+=======
+            title="Shortcut: Alt + A"
+          >
+            <FaPlus className="text-xs"   /> Add Event
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
           </motion.button>
         </div>
       </div>
@@ -664,6 +689,40 @@ const Dashboard = () => {
   const [reminders, setReminders] = useState(() => loadCache(rmKey(userId)));
   const [showStats, setShowStats] = useState(false);
 
+<<<<<<< HEAD
+=======
+  
+
+   useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (e.altKey && e.key.toLowerCase() === "a") {
+      e.preventDefault();
+      if (todaysListRef.current?.openCreateEvent) {
+        todaysListRef.current.openCreateEvent(); // 👈 triggers button click
+      }
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, []);
+
+const location = useLocation();
+const navigate = useNavigate();
+// const todaysListRef = useRef(null);
+
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get("openEvent") === "1") {
+    setTimeout(() => {
+      todaysListRef.current?.openCreateEvent();
+      // clean up query param so it doesn’t persist
+      navigate(location.pathname, { replace: true });
+    }, 200);
+  }
+}, [location, navigate]);
+
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const email = params.get("email");
@@ -1081,4 +1140,8 @@ const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
   );
 };
 
+<<<<<<< HEAD
 export default Dashboard;
+=======
+export default Dashboard;
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd

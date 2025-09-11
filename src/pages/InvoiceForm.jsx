@@ -1571,6 +1571,7 @@ export default function InvoiceForm({
                     numberToWordsIndian={numberToWordsIndian}
                     onImagesLoaded={() => setImagesReady(true)}
                     notes={notesPage2}
+                    showGSTIN={showGSTIN}
                   />
                 )}
               </div>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaStickyNote, FaTimes, FaPlus, FaTrash } from "react-icons/fa";
 import NoteContainer from "./NoteContainer";
-import { createPortal } from "react-dom";
 
 const API_BASE = "https://taskbe.sharda.co.in/api/stickynotes"; // Change as needed
 
@@ -50,31 +49,22 @@ const StickyNotes = ({ onClose }) => {
   // Slide-in animation classes
   // Optionally use a state for controlling animation if you want more fancy open/close
 
-return createPortal(
-  <div className="fixed inset-0 z-[2147483645]">
+  return (
+    <div className="fixed inset-0 z-50">
       {/* Overlay with subtle blur effect */}
-      <div
-  className="fixed inset-0 bg-slate-900/50 z-[2147483646]"
-  onClick={onClose}
-/>
+      <div className="fixed inset-0 bg-black/40 " onClick={onClose} />
+
       {/* Drawer */}
       <div
-     className={`
-       fixed right-0 top-0 h-full
-    w-full sm:w-[380px] md:w-[420px] max-w-[100vw]
-    bg-gradient-to-b from-slate-50 to-white
-    border-l border-slate-200
-    shadow-xl z-[2147483647]
-    sm:rounded-l-2xl
-    transform transition-transform duration-300 ease-in-out
-    translate-x-0 flex flex-col
-     
-     `}
-     onClick={(e) => e.stopPropagation()}
-   >
+        className={`
+      fixed right-0 top-0 h-full w-[420px] max-w-full
+      bg-white shadow-2xl z-50
+      transform transition-transform duration-300 ease-in-out
+      translate-x-0 flex flex-col
+    `}
+      >
         {/* Header */}
-        <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center rounded-tl-none sm:rounded-tl-2xl">
-
+        <div className="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
             <FaStickyNote className="text-yellow-400" />
             Sticky Notes
@@ -88,11 +78,12 @@ return createPortal(
         </div>
 
         {/* Notes Container */}
-       <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
-  <NoteContainer />
-</div>
+        <NoteContainer  />
         {/* Footer */}
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
         <div className="border-t border-gray-100 px-6 py-4">
           <button
             className="w-full bg-yellow-500 hover:bg-yellow-300 text-yellow-900 font-medium px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
@@ -103,6 +94,7 @@ return createPortal(
             Add New Note
           </button>
         </div>
+<<<<<<< HEAD
 =======
         <div className="bg-slate-50 border-t border-slate-200 px-4 sm:px-6 py-3 rounded-bl-none sm:rounded-bl-2xl">
   <button
@@ -121,9 +113,10 @@ return createPortal(
   </button>
 </div>
 >>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
+=======
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
       </div>
-    </div>,
-    document.body
+    </div>
   );
 };
 

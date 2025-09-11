@@ -25,17 +25,17 @@ const Header = () => {
   const navigate = useNavigate();
 
   useNotificationSocket(setNotificationCount);
-  
+
   // Check if device is mobile
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   //for search bar
@@ -228,6 +228,16 @@ const Header = () => {
 
       {/* Right Icons */}
       <div className="flex items-center gap-4 md:gap-5 ml-4 md:ml-6 relative">
+        <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full shadow-sm border border-gray-200">
+          Shortcuts window:
+          <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">
+            Alt
+          </kbd>
+          +
+          <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">
+            S
+          </kbd>
+        </span>
         {/* Mobile view: Show Notes icon instead of Notification icon */}
         {isMobile ? (
           <>
@@ -239,7 +249,7 @@ const Header = () => {
             >
               <FaRegStickyNote className="text-gray-600 text-lg" />
             </button>
-            
+
             {/* QuickActionsDropdown (without notes option) */}
             <QuickActionsDropdown
               notificationCount={notificationCount}

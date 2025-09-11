@@ -36,6 +36,8 @@ export default function InvoicePage({
   notes,
 }) {
   
+  const wrapperJustify = isLastPage ? "space-between" : "flex-start";
+
   const isFirm = (name) =>
     (selectedFirm?.name || "").toLowerCase() === name.toLowerCase();
 
@@ -129,11 +131,11 @@ const isLocalSupply = () => {
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
+        // justifyContent: "space-between",
+        justifyContent: wrapperJustify,
         pageBreakInside: "avoid",
         breakInside: "avoid",
 
-        
       }}
     >
       {/* Header */}
@@ -172,6 +174,10 @@ const isLocalSupply = () => {
         className="invoice-page-container invoice-content"
         style={{
           position: "relative",
+          flex: 1,                 // ✅ fill remaining height so the footer can sit at bottom
+      display: "flex",
+      flexDirection: "column",
+      minHeight: 0,   
         }}
       >
         {/* Watermark */}
@@ -272,12 +278,13 @@ const isLocalSupply = () => {
                   alignItems: "center",
                   gap: 12,
                   justifyContent: "center",
+                  paddingTop: "5px"
                 }}
               >
                 <img
                   src={calogonew}
                   alt="Anunay Logo"
-                  style={{ height: 100 }}
+                  style={{ height: 80 }}
                 />
                 <img
                   src={ASA_Name}
@@ -1391,27 +1398,7 @@ const isLocalSupply = () => {
                               IFSC Code: {ifsc}
                             </td>
                           </tr>
-                          {/* {isSharda && (
-                            <tr>
-                              <td
-                                className="normal-text "
-                                style={{
-                                  padding: 6,
-                                  fontSize: 10,
-                                  fontWeight: "normal",
-                                  fontStyle: "normal",
-                                }}
-                              >
-                                <strong>
-                                  Online Wallets - Paytm, Google Pay & Phone Pay
-                                </strong>
-                                <br />
-                                Name : Anunay Sharda <br />
-                                Mobile Number : 7869777747<br />
-                                UPI ID - 7869777747@ybl
-                              </td>
-                            </tr>
-                          )} */}
+                          
                           {getWalletInfo() && (
                             <tr>
                               <td
@@ -1428,14 +1415,13 @@ const isLocalSupply = () => {
                     {isGSTFirm && (
                       <td
                         colSpan={3}
-                        style={{ border: "1px solid black", padding: 0 }}
+                        style={{ border: "1px solid black", padding: 0 ,verticalAlign: "top"}}
                       >
                         <table
                           style={{
                             width: "100%",
-
                             tableLayout: "fixed",
-                            marginTop: "-37%",
+                           
                           }}
                         >
                           <tbody>
@@ -1579,22 +1565,12 @@ const isLocalSupply = () => {
         </p>
       </div>
       {/* Footer */}
-      <div style={{ marginLeft: "-20px", marginRight: "-20px" }}>
-        {/* {isSharda ? (
-          <img
-            className="footer-image"
-            src={footerImageSharda}
-            alt="Invoice Footer"
-            style={footerStyle}
-          />
-        ) : (
-          <img
-            className="footer-image"
-            src={footerImageFinaxis}
-            alt="Invoice Footer"
-            style={footerStyle}
-          />
-        )} */}
+      <div style={{ marginLeft: "-20px",
+         marginRight: "-20px",
+         marginTop: isLastPage ? 0 : "auto",  // ✅ pushes footer to bottom on page-1
+      flexShrink: 0, 
+          }}>
+       
 
         {selectedFirm.name === "Sharda Associates" ? (
            <img

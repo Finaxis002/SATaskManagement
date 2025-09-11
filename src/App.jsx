@@ -24,8 +24,11 @@ import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
 import { NotesProvider } from "./context/NotesContext";
+import ShortcutHandler from "./Components/ShortcutHandler";
 
 const App = () => {
+
+  
   function MailBoxEmbed() {
     return (
       <iframe
@@ -48,7 +51,9 @@ const App = () => {
   return (
     
     <Router>
+      <ShortcutHandler>
       <Routes>
+         
         <Route path="/login" element={<Login />} /> {/* Login route */}
         {/* Protected Route */}
         <Route
@@ -274,6 +279,7 @@ const App = () => {
           }
         />
       </Routes>
+      </ShortcutHandler>
     </Router>
   );
 };
