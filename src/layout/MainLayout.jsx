@@ -1,4 +1,5 @@
 // src/layout/MainLayout.jsx
+import { useState, useEffect } from "react";
 import Sidebar from "../Components/Sidebar";
 import Header from "../Components/Header";
 import ReminderAlertManager from "../Components/ReminderAlertManager";
@@ -7,10 +8,22 @@ import {
   FaClipboardList,
   FaBriefcase,
   FaGolfBall,
+  FaCog,
+  FaMoneyBill,
+  FaUsers, // 👈 All Users icon import kiya
 } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
 
 const MainLayout = ({ children }) => {
+  const [role, setRole] = useState("");
+
+  useEffect(() => {
+    const storedRole = localStorage.getItem("role");
+    setRole(storedRole);
+  }, []);
+
+  const isAdmin = role === "admin";
+
   return (
     <div className="flex h-screen w-full bg-gray-900 text-white">
       {/* Desktop Sidebar */}
@@ -27,12 +40,22 @@ const MainLayout = ({ children }) => {
       </div>
 
       {/* Mobile Footer Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around py-2">
-        <MobileNavItem
-          to="/"
-          label="Home"
-          icon={<FaHome className="text-2xl" />} // bigger icon
-        />
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around py-1">
+        {/* 👇 Admin me Home ki jagah All Users */}
+        {!isAdmin ? (
+          <MobileNavItem
+            to="/"
+            label="Home"
+            icon={<FaHome className="text-2xl" />}
+          />
+        ) : (
+          <MobileNavItem
+            to="/all-employees"
+            label="All Users"
+            icon={<FaUsers className="text-2xl" />}
+          />
+        )}
+
         <MobileNavItem
           to="/all-tasks"
           label="Tasks"
@@ -48,6 +71,22 @@ const MainLayout = ({ children }) => {
           label="Leave"
           icon={<FaGolfBall className="text-2xl" />}
         />
+
+        {/* Admin-only links */}
+        {isAdmin && (
+          <>
+            <MobileNavItem
+              to="/settings"
+              label="Settings"
+              icon={<FaCog className="text-2xl" />}
+            />
+            <MobileNavItem
+              to="/invoices"
+              label="Invoices"
+              icon={<FaMoneyBill className="text-2xl" />}
+            />
+          </>
+        )}
       </div>
     </div>
   );
@@ -57,7 +96,7 @@ const MobileNavItem = ({ to, label, icon }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `flex flex-col items-center justify-center px-2 py-2 transition-all duration-200 relative 
+      `flex flex-col items-center justify-center px-2 py-1 transition-all duration-200 relative 
       ${isActive ? "text-black font-semibold scale-105" : "text-gray-500"}`
     }
   >
@@ -71,9 +110,8 @@ const MobileNavItem = ({ to, label, icon }) => (
           ></div>
         )}
 
-        {/* Icon slightly lower */}
+        {/* Icon */}
         <div className="mt-1">{icon}</div>
-        {/* Smaller label */}
         <span className="text-[10px] mt-0.5">{label}</span>
       </>
     )}

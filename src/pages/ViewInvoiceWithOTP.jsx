@@ -43,7 +43,7 @@ export default function ViewInvoiceWithOTP() {
 
   if (!otpVerified) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center justify-center min-h-[90vh] bg-black/5 z-50">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
           <h2 className="text-xl font-semibold mb-4">OTP Required</h2>
           {otpSent ? (
