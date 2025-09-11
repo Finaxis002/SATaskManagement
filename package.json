@@ -49,6 +49,7 @@
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.12",
     "genkit": "^1.14.1",
+    "heroicons": "^2.2.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "jotai": "^2.12.5",
