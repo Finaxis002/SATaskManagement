@@ -13,6 +13,7 @@ import ClientList from "../Components/client/ClientList";
 import CreateClientModal from "../Components/client/CreateClientModal";
 import MailCreation from "./MailCreation";
 import LeaveManagement from "./LeaveManagement";
+
 import socket from "../socket";
 import BankDetails from "./BankDetails";
 
@@ -35,15 +36,15 @@ const Departments = () => {
   const [activeTab, setActiveTab] = useState("department");
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
 
- const fetchPendingLeaveCount = async () => {
-  try {
-    const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
-    setPendingLeaveCount(res.data.length || 0);
-    console.log("pending leave :", pendingLeaveCount)
-  } catch (err) {
-    setPendingLeaveCount(0);
-  }
-};
+  const fetchPendingLeaveCount = async () => {
+    try {
+      const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
+      setPendingLeaveCount(res.data.length || 0);
+      console.log("pending leave :", pendingLeaveCount)
+    } catch (err) {
+      setPendingLeaveCount(0);
+    }
+  };
 
   useEffect(() => {
     fetchDepartmentsData();
@@ -61,7 +62,7 @@ const Departments = () => {
     };
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     localStorage.setItem("pendingLeaveCount", pendingLeaveCount);
   }, [pendingLeaveCount]);
 
@@ -164,10 +165,10 @@ const Departments = () => {
 
       const formattedClients = Array.isArray(data)
         ? data.map((client) => ({
-            name: client.name,
-            contactPerson: client.contactPerson || "-",
-            businessName: client.businessName || "-",
-          }))
+          name: client.name,
+          contactPerson: client.contactPerson || "-",
+          businessName: client.businessName || "-",
+        }))
         : [];
 
       setClients(formattedClients);
@@ -416,11 +417,10 @@ const Departments = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-6 py-2 text-sm font-medium transition-all ${
-                activeTab === tab.key
+              className={`px-6 py-2 text-sm font-medium transition-all ${activeTab === tab.key
                   ? "bg-white text-indigo-600 border-b-2 border-indigo-600"
                   : "bg-gray-100 text-gray-700 hover:bg-white"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -469,30 +469,33 @@ const Departments = () => {
                 {Object.entries(departmentMap).map(([dept, { users }]) => (
                   <div
                     key={dept}
-                    className="bg-white rounded-lg shadow-md border border-gray-200 p-6 relative"
+                    className="bg-white rounded-lg shadow-md border border-gray-200 p-6 relative transform transition-transform hover:scale-101 hover:shadow-xl"
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <FaUsers className="text-indigo-600 text-2xl" />
                         <h2 className="text-2xl font-semibold text-indigo-800">
                           {dept}
                         </h2>
-                        <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full">
+                        <span className=" text-indigo-800 text-sm font-medium px-2 py-1 rounded-full block w-full sm:w-auto">
                           {users.length} user{users.length !== 1 && "s"}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => handleEditDepartment(dept, users)}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          className="px-4 py-2 hover:bg-yellow-200 text-yellow-600 font-semibold rounded-lg shadow-md transition-all flex items-center gap-2 justify-center hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 transform hover:shadow-lg"
+                                 title="Edit Department"
+
                         >
-                          ✏️ Edit
+                          ✏️ 
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteDepartment(dept)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
-                          title="Delete Department"
+                           className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-600 font-semibold rounded-lg shadow-md transition-all flex items-center gap-2 justify-center hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 transform hover:shadow-lg"
+  title="Delete Department"
+
                         >
                           <FaTrashAlt size={18} />
                         </button>
@@ -611,7 +614,7 @@ const Departments = () => {
                   {taskCodes.map((codeObj) => (
                     <div
                       key={codeObj._id}
-                      className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
+                     className="bg-gray-200 flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition hover:bg-gray-300"
                     >
                       {editCodeId === codeObj._id ? (
                         <div className="flex items-center gap-2">
@@ -645,14 +648,14 @@ const Departments = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEditCode(codeObj)}
-                          className="text-blue-500 hover:text-blue-700"
+                           className="px-4 py-2 hover:bg-yellow-100 text-yellow-600 font-semibold rounded-lg shadow-md transition-all flex items-center gap-2 justify-center hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 transform hover:shadow-lg"
                           title="Edit Code"
                         >
                           ✏️
                         </button>
                         <button
                           onClick={() => handleDeleteCode(codeObj._id)}
-                          className="text-red-500 hover:text-red-700"
+                           className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-600 font-semibold rounded-lg shadow-md transition-all flex items-center gap-2 justify-center hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 transform hover:shadow-lg"
                           title="Delete Code"
                         >
                           <FaTrashAlt size={16} />
