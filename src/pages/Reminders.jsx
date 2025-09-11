@@ -1041,7 +1041,7 @@ const BucketSection = ({
                                    bg-purple-50 text-purple-700 ring-1 ring-purple-200"
                       >
                         <FaCalendarAlt className="text-[10px]" />
-                        Event
+                        Events
                       </span>
                     </div>
 

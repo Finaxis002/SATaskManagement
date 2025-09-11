@@ -741,7 +741,7 @@ const Notifications = () => {
           )}
           {loading && page > 1 && (
             <div className="text-center text-sm text-gray-400 py-4">
-              Loading more notifications...
+              Loading more notification...
             </div>
           )}
         </div>
