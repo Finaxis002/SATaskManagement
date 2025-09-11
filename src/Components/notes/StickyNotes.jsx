@@ -80,6 +80,10 @@ const StickyNotes = ({ onClose }) => {
         {/* Notes Container */}
         <NoteContainer  />
         {/* Footer */}
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
         <div className="border-t border-gray-100 px-6 py-4">
           <button
             className="w-full bg-yellow-500 hover:bg-yellow-300 text-yellow-900 font-medium px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
@@ -90,6 +94,27 @@ const StickyNotes = ({ onClose }) => {
             Add New Note
           </button>
         </div>
+<<<<<<< HEAD
+=======
+        <div className="bg-slate-50 border-t border-slate-200 px-4 sm:px-6 py-3 rounded-bl-none sm:rounded-bl-2xl">
+  <button
+    onClick={createNote}
+    disabled={creating}
+    className="w-full inline-flex items-center justify-center gap-2
+               px-4 py-3 rounded-lg font-medium
+               bg-amber-400 text-amber-900 shadow-sm
+               transition-colors duration-200
+               hover:bg-amber-300
+               focus:outline-none focus:ring-2 focus:ring-amber-500
+               disabled:opacity-60 disabled:cursor-not-allowed"
+  >
+    <FaPlus className="shrink-0" />
+    {creating ? "Adding..." : "Add New Note"}
+  </button>
+</div>
+>>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
+=======
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
       </div>
     </div>
   );

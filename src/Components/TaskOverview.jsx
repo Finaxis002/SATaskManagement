@@ -96,7 +96,11 @@ const TaskOverview = () => {
     else categorizedTasks.upcoming.push(task);
   });
 
+<<<<<<< HEAD
+  // ✅ Dashboard ko stats bhejna
+=======
   // Update dashboard stats
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
   useEffect(() => {
     const counts = {
       completed: categorizedTasks.completed.length,
@@ -112,8 +116,31 @@ const TaskOverview = () => {
         categorizedTasks.overdue.length +
         categorizedTasks.completed.length,
     };
+<<<<<<< HEAD
+
     if (typeof window.updateDashboardStats === "function") {
       window.updateDashboardStats(counts);
+    }
+  }, [tasks, justCompleted]);
+
+  const getTasksByTab = () => {
+    switch (activeTab) {
+      case "today":
+        return categorizedTasks.today;
+      case "tomorrow":
+        return categorizedTasks.tomorrow;
+      case "upcoming":
+        return categorizedTasks.upcoming;
+      case "overdue":
+        return categorizedTasks.overdue;
+      case "completed":
+        return categorizedTasks.completed;
+      default:
+        return [];
+=======
+    if (typeof window.updateDashboardStats === "function") {
+      window.updateDashboardStats(counts);
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
     }
   }, [tasks, justCompleted]);
 
@@ -155,6 +182,15 @@ const TaskOverview = () => {
   const isHiddenCompletedTask = (task) =>
     task.status === "Completed" && task.isHidden === true;
 
+<<<<<<< HEAD
+  const currentTabIndex = tabs.indexOf(activeTab);
+
+  const handlePrevTab = () => {
+    if (currentTabIndex > 0) {
+      setActiveTab(tabs[currentTabIndex - 1]);
+    } else {
+      setActiveTab(tabs[tabs.length - 1]);
+=======
   // Handle arrows in mobile (infinite loop + center focus)
   const handleArrowClick = (direction) => {
     const currentIndex = tabs.indexOf(activeTab);
@@ -164,8 +200,16 @@ const TaskOverview = () => {
       newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
     } else {
       newIndex = (currentIndex + 1) % tabs.length;
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
     }
 
+<<<<<<< HEAD
+  const handleNextTab = () => {
+    if (currentTabIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentTabIndex + 1]);
+    } else {
+      setActiveTab(tabs[0]);
+=======
     setActiveTab(tabs[newIndex]);
 
     const container = scrollRef.current;
@@ -178,6 +222,7 @@ const TaskOverview = () => {
         container.offsetWidth / 2 +
         activeButton.offsetWidth / 2;
       container.scrollTo({ left: offset, behavior: "smooth" });
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
     }
   };
 
@@ -220,6 +265,13 @@ const TaskOverview = () => {
                 whileHover="hover"
                 variants={buttonVariants}
                 onClick={() => setActiveTab(tab)}
+<<<<<<< HEAD
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+=======
                 className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200
                   ${
                     isActive
@@ -228,6 +280,7 @@ const TaskOverview = () => {
                   }
                   shadow-md active:shadow-inner
                 `}
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {visibleCount > 0 && (
@@ -246,6 +299,163 @@ const TaskOverview = () => {
           })}
         </div>
 
+<<<<<<< HEAD
+        {/* Mobile Tabs with Slider */}
+        <div className="flex sm:hidden items-center justify-between w-full">
+          {/* Left Arrow */}
+          <button
+            onClick={handlePrevTab}
+            className="p-2 text-gray-600 disabled:opacity-50"
+          >
+            <ChevronLeft className="w-8 h-8" /> {/* 👈 Icon */}
+          </button>
+
+          {/* Active Tab with Dynamic Color */}
+          <span
+            className={`flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-sm
+      ${
+        activeTab === "today"
+          ? "bg-blue-500 text-white"
+          : activeTab === "tomorrow"
+          ? "bg-yellow-400 text-white"
+          : activeTab === "upcoming"
+          ? "bg-orange-500 text-white"
+          : activeTab === "overdue"
+          ? "bg-red-500 text-white"
+          : "bg-green-500 text-white"
+      }`}
+          >
+            {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+            <span className="bg-white text-black px-2 py-0.5 rounded-full text-xs font-bold">
+              {categorizedTasks[activeTab]?.filter(
+                (task) => !isHiddenCompletedTask(task)
+              ).length || 0}
+            </span>
+          </span>
+
+          {/* Right Arrow */}
+          <button
+            onClick={handleNextTab}
+            className="p-2 text-gray-600 disabled:opacity-50"
+          >
+            <ChevronRight className="w-8 h-8" /> {/* 👉 Icon */}
+          </button>
+        </div>
+      </div>
+
+      {/* Task list - Desktop */}
+      <div className="divide-y hidden md:block h-[60vh] overflow-auto">
+        {getTasksByTab().filter((task) => !isHiddenCompletedTask(task))
+          .length === 0 ? (
+          <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
+        ) : (
+          getTasksByTab()
+            .filter((task) => !isHiddenCompletedTask(task))
+            .map((task) => (
+              <div
+                key={task._id}
+                className="flex justify-between items-center px-6 py-3 hover:bg-gray-50 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={
+                      task.status === "Completed" || justCompleted.has(task._id)
+                    }
+                    onChange={() => handleToggleCompleted(task._id)}
+                    disabled={task.status === "Completed"}
+                    className="accent-indigo-600 cursor-pointer"
+                  />
+                  <span
+                    className={`text-sm ${
+                      task.status === "Completed" || justCompleted.has(task._id)
+                        ? "line-through text-gray-400"
+                        : "text-gray-800"
+                    }`}
+                  >
+                    {task.taskName}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-sm">
+                  <span className="text-gray-500 text-xs">
+                    {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
+                      ? format(new Date(task.dueDate), "MMM d")
+                      : "Invalid date"}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {task?.assignees?.map((assignee) => (
+                      <span
+                        key={assignee.email}
+                        className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                      >
+                        {assignee.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+        )}
+      </div>
+
+      {/* Task list - Mobile */}
+      <div className=" flex gap-10 flex-col mt-8 mb-4 md:hidden h-[60vh] overflow-auto">
+        {getTasksByTab().filter((task) => !isHiddenCompletedTask(task))
+          .length === 0 ? (
+          <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
+        ) : (
+          getTasksByTab()
+            .filter((task) => !isHiddenCompletedTask(task))
+            .map((task) => (
+              <div
+                key={task._id}
+                className="flex justify-between items-center mb-1 px-6 py-3 h-20 hover:bg-gray-50 transition-all shadow-xl"
+              >
+                <div className="flex items-start flex-col gap-3">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={
+                        task.status === "Completed" ||
+                        justCompleted.has(task._id)
+                      }
+                      onChange={() => handleToggleCompleted(task._id)}
+                      disabled={task.status === "Completed"}
+                      className="accent-indigo-600 cursor-pointer"
+                    />
+                    <span
+                      className={`text-sm ${
+                        task.status === "Completed" ||
+                        justCompleted.has(task._id)
+                          ? "line-through text-gray-400"
+                          : "text-gray-800"
+                      }`}
+                    >
+                      {task.taskName}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {task?.assignees?.map((assignee) => (
+                      <span
+                        key={assignee.email}
+                        className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                      >
+                        {assignee.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-sm italic">
+                  <span className="text-gray-500 text-xs">
+                    {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
+                      ? format(new Date(task.dueDate), "MMM d")
+                      : "Invalid date"}
+                  </span>
+                </div>
+              </div>
+            ))
+        )}
+=======
         {/* Task List */}
         <div className="overflow-y-auto h-[65vh]">
           {getTasksByTab().filter((t) => !isHiddenCompletedTask(t)).length ===
@@ -471,6 +681,7 @@ const TaskOverview = () => {
             </ul>
           )}
         </div>
+>>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
       </div>
     </div>
   );
