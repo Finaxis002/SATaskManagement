@@ -571,7 +571,7 @@ const TodaysList = forwardRef(function TodaysList(
 
                 <div className="mb-4 max-h-[20vh] overflow-y-auto">
                   <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Add Guests
+                    Add Guest
                   </label>
                   {newEvent.guests.map((guest, index) => (
                     <div key={index} className="flex items-center gap-2 mb-2">
