@@ -17,49 +17,36 @@ import "react-datepicker/dist/react-datepicker.css";
 const ITEMS_PER_PAGE = 8;
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
-
 export default function InvoiceForm({
   initialInvoice = null,
   onSaved,
   onClose,
 }) {
   const PREVIEW_W = 794;
-  const PREVIEW_H = 1125;
+  const PREVIEW_H = 1122;
   const PREVIEW_SCALE = 0.9;
   const [activeTab, setActiveTab] = useState("form");
   const [previewScale, setPreviewScale] = useState(PREVIEW_SCALE);
   const previewWrapRef = useRef(null);
 
   useEffect(() => {
-    let timeoutId;
-
     const update = () => {
       const el = previewWrapRef.current;
       if (!el) return;
-
-      const avail = el.clientWidth - 16; // account for padding
-      const scale = Math.min(1, avail / PREVIEW_W); // Scale based on available width
-      setPreviewScale(scale);
-
+      const avail = el.clientWidth - 16;
+      setPreviewScale(Math.min(1, avail / PREVIEW_W));
     };
 
-    const debouncedUpdate = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(update, 100); // Debounce to optimize resize performance
-    };
+    update();
 
-    const ro = new ResizeObserver(debouncedUpdate);
+    const ro = new ResizeObserver(update);
     const el = previewWrapRef.current;
     if (el) ro.observe(el);
 
-
-    window.addEventListener("resize", debouncedUpdate);
-
-
+    window.addEventListener("resize", update);
     return () => {
-      clearTimeout(timeoutId);
       ro.disconnect();
-      window.removeEventListener("resize", debouncedUpdate);
+      window.removeEventListener("resize", update);
     };
   }, []);
 
@@ -77,144 +64,6 @@ export default function InvoiceForm({
   const [selectedClientOption, setSelectedClientOption] = useState(null);
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(null);
-
-
-  // useEffect(() => {
-  //   const loadFirms = async () => {
-  //     try {
-  //       setFirmsLoading(true);
-  //       const res = await axios.get("https://taskbe.sharda.co.in/firms");
-  //       setFirms(res.data || []);
-  //       console.log("firm fetched ...", res.data)
-  //       if (!isEdit && (res.data || []).length) {
-  //         setSelectedFirmId(res.data[0]._id);
-  //         setSelectedFirm(res.data[0]);
-  //       }
-  //     } catch (e) {
-  //       setFirmsError("Failed to load firms");
-  //       console.error(e);
-  //     } finally {
-  //       setFirmsLoading(false);
-  //     }
-  //   };
-  //   loadFirms();
-  // }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    const loadFirms = async () => {
-      try {
-        setFirmsLoading(true);
-        const res = await axios.get("https://taskbe.sharda.co.in/firms");
-        if (isMounted) {
-          setFirms(res.data || []);
-          console.log("firm fetched ...", res.data);
-          if (!isEdit && (res.data || []).length) {
-            setSelectedFirmId(res.data[0]._id);
-            setSelectedFirm(res.data[0]);
-          }
-        }
-      } catch (e) {
-        if (isMounted) {
-          setFirmsError("Failed to load firms");
-          console.error(e);
-        }
-      } finally {
-        if (isMounted) {
-          setFirmsLoading(false);
-        }
-      }
-    };
-    loadFirms();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!selectedFirmId) {
-      setSelectedFirm(null);
-      return;
-    }
-    const f = firms.find((x) => x._id === selectedFirmId) || null;
-    setSelectedFirm(f);
-    setSelectedBankIndex(0);
-  }, [selectedFirmId, firms]);
-
-  const previewInvoiceNumber = async () => {
-    if (isEdit) return;
-    if (!selectedFirm) return;
-    const year = new Date().getFullYear().toString().slice(-2);
-    const month = String(new Date().getMonth() + 1).padStart(2, "0");
-
-    try {
-      const res = await axios.get(
-        "https://taskbe.sharda.co.in/api/invoices/preview-serial",
-        {
-          params: {
-            firmId: selectedFirm?._id,
-            type: invoiceType,
-            year,
-            month,
-          },
-        }
-      );
-      setInvoiceNumber(res.data?.invoiceNumber || "");
-    } catch (err) {
-      console.error("preview-serial failed:", err);
-      setInvoiceNumber(""); // <-- important
-      Swal.fire(
-        "Couldn’t preview invoice number",
-        "Check API URL/Network.",
-        "warning"
-      );
-    }
-  };
-
-  // Finalize invoice number - increments DB (call only when saving)
-  const finalizeInvoiceNumber = async () => {
-    if (isFinalized && invoiceNumber) return invoiceNumber;
-    if (!selectedFirm) throw new Error("No firm selected");
-    const year = new Date().getFullYear().toString().slice(-2);
-    const month = String(new Date().getMonth() + 1).padStart(2, "0");
-
-    try {
-      const res = await axios.post(
-        "https://taskbe.sharda.co.in/api/invoices/finalize-serial",
-        {
-          firmId: selectedFirm?._id,
-          type: invoiceType,
-          year,
-          month,
-        }
-      );
-      setInvoiceNumber(res.data.invoiceNumber);
-      setIsFinalized(true);
-      return res.data.invoiceNumber;
-    } catch (error) {
-      console.error("Error finalizing invoice number", error);
-      throw error;
-    }
-  };
-
-  // useEffect(() => {
-  //   if (isEdit) return; // ⛔ no preview while editing
-  //   setInvoiceNumber("");
-  //   setIsFinalized(false);
-  //   if (selectedFirm && invoiceType) previewInvoiceNumber();
-  // }, [isEdit, selectedFirmId, selectedFirm, invoiceType]);
-
-  useEffect(() => {
-    if (isEdit) return; // No preview while editing
-    if (!selectedFirm || !invoiceType) return; // Ensure both selectedFirm and invoiceType are available
-
-    setInvoiceNumber(""); // Reset invoice number
-    setIsFinalized(false); // Reset finalized flag
-    previewInvoiceNumber(); // Call the function to preview the invoice number
-  }, [isEdit, selectedFirm, invoiceType]); // Dependencies - run when these change
-
-
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -260,7 +109,6 @@ export default function InvoiceForm({
   const offsetPage1 = 0;
   const offsetPage2 = ITEMS_PER_PAGE;
   const originalInvNoRef = useRef("");
-
 
   const clientOptions = clients.map((client) => ({
     value: client._id,
@@ -326,30 +174,18 @@ export default function InvoiceForm({
     setSelectedBankIndex(0);
   }, [selectedFirmId, firms]);
 
-
   useEffect(() => {
-    let isMounted = true;
-
     const fetchClients = async () => {
       try {
-
         const response = await axios.get("/clients/details");
         setClients(response.data);
       } catch (error) {
         console.error("Error fetching clients:", error);
-
       }
     };
 
-    // Only fetch if we haven't already loaded clients
-    if (clients.length === 0) {
-      fetchClients();
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Empty dependency array - run only once on mount
-
+    fetchClients();
+  }, []);
 
   useEffect(() => {
     if (!selectedClientOption) {
@@ -405,7 +241,6 @@ export default function InvoiceForm({
     fetchTasks();
   }, [selectedClientOption, fromDate, toDate]);
 
-
   useEffect(() => {
     if (!isEdit || !initialInvoice) return;
 
@@ -415,7 +250,6 @@ export default function InvoiceForm({
     setIsFinalized(true);
 
     setInvoiceType(inv.invoiceType || invoiceTypes[0]);
-
 
     const d = inv.invoiceDate ? new Date(inv.invoiceDate) : new Date();
     const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
@@ -667,29 +501,6 @@ export default function InvoiceForm({
   }
 
   const handleSaveAndDownloadPDF = async () => {
-    // Validation check
-    const missingFields = [];
-
-    if (!selectedFirmId) missingFields.push("Firm");
-    if (!invoiceType) missingFields.push("Invoice Type");
-    if (!invoiceDate) missingFields.push("Invoice Date");
-    if (!customer.name) missingFields.push("Customer Name");
-    if (!placeOfSupply) missingFields.push("Place of Supply");
-    if (items.length === 0) missingFields.push("and at least one Item");
-
-    if (missingFields.length > 0) {
-      Swal.fire({
-        icon: "error",
-        title: "Validation Error",
-        text: `Please fill out the following required fields: ${missingFields.join(
-          ", "
-        )}`,
-        confirmButtonColor: "#d33",
-        confirmButtonText: "Okay",
-      });
-      return;
-    }
-
     try {
       const finalNo = await finalizeInvoiceNumber();
       setInvoiceNumber(finalNo);
@@ -740,24 +551,9 @@ export default function InvoiceForm({
 
       if (!invoiceRef.current) return;
       const element = invoiceRef.current;
-      // element.style.transform = "scale(1)";
-      // element.style.transformOrigin = "top left";
-      // element.style.width = `${element.scrollWidth}px`;
-      // Remember previous styles
-      const prevTransform = element.style.transform;
-      const prevTransformOrigin = element.style.transformOrigin;
-      const prevWidth = element.style.width;
-      const prevHeight = element.style.height;
-      const prevMaxHeight = element.style.maxHeight;
-      const prevOverflow = element.style.overflow;
-
-      // Unscale + let wrapper grow to full content height
       element.style.transform = "scale(1)";
       element.style.transformOrigin = "top left";
       element.style.width = `${element.scrollWidth}px`;
-      element.style.height = "auto";
-      element.style.maxHeight = "none";
-      element.style.overflow = "visible";
 
       const opt = {
         margin: 0,
@@ -771,54 +567,28 @@ export default function InvoiceForm({
           useCORS: true,
           width: element.scrollWidth,
           windowWidth: element.scrollWidth,
-          windowHeight: element.scrollHeight,
         },
         jsPDF: {
           unit: "px",
           orientation: "portrait",
-          format: [794, 1125],
+          format: [794, 1122],
         },
-
         pagebreak: { mode: ["css", "legacy"], avoid: ".invoice-note" },
-
       };
 
-      // await html2pdf().set(opt).from(element).save();
-      const pageHeightPx = 1125; // must match your jsPDF format height
-      const expectedPages = Math.max(
-        1,
-        Math.ceil(element.scrollHeight / pageHeightPx)
-      );
-
-      await html2pdf()
-        .set(opt)
-        .from(element)
-        .toPdf()
-        .get("pdf")
-        .then((pdf) => {
-          const actual = pdf.internal.getNumberOfPages();
-          // Remove any trailing blank pages that html2pdf sometimes adds
-          for (let i = actual; i > expectedPages; i--) {
-            pdf.deletePage(i);
-          }
-        })
-        .save();
-
+      await html2pdf().set(opt).from(element).save();
 
       element.style.transform = "scale(0.90)";
       element.style.transformOrigin = "top left";
       element.style.width = "";
-
     } catch (error) {
       console.error("Failed to save or generate PDF:", error);
       Swal.fire("Error", "Could not save or generate the invoice.", "error");
     }
   };
 
-
   const handleUpdateInvoice = async () => {
     try {
-
       const firmSnapshot = {
         _id: selectedFirm?._id,
         name: selectedFirm?.name,
@@ -841,7 +611,7 @@ export default function InvoiceForm({
           : null,
       };
 
-      const invoiceData = {
+      const payload = {
         invoiceNumber,
         invoiceDate,
         invoiceType,
@@ -849,87 +619,44 @@ export default function InvoiceForm({
         placeOfSupply,
         customer,
         items,
-        totalAmount: totalAmountWithTax,
         notes,
+        totalAmount: totalAmountWithTax,
       };
 
-      await axios.put(`/invoices/${invoiceNumber}`, invoiceData);
-
+      const idForUpdate = isEdit ? originalInvNoRef.current : invoiceNumber;
+      await axios.put(
+        `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
+          idForUpdate
+        )}`,
+        payload
+      );
 
       await Swal.fire({
         icon: "success",
         title: "Invoice Updated",
         text: `Invoice ${invoiceNumber} has been updated.`,
-
         confirmButtonColor: "#3085d6",
         confirmButtonText: "Ok",
       });
     } catch (error) {
-
-      console.error("Error updating invoice:", error);
-
+      console.error(error);
       Swal.fire("Error", "Could not update the invoice.", "error");
     }
   };
-
 
   const handleDownloadPDF = async () => {
     try {
       if (!invoiceRef.current) return;
 
-
-      const firmSnapshot = {
-        _id: selectedFirm?._id,
-        name: selectedFirm?.name,
-        address: selectedFirm?.address,
-        phone: selectedFirm?.phone,
-        gstin: selectedFirm?.gstin,
-        bank: activeBank
-          ? {
-              _id: activeBank._id,
-              label: activeBank.label || "",
-              bankName: activeBank.bankName || activeBank.name || "",
-              accountName: activeBank.accountName || "",
-              accountNumber:
-                activeBank.accountNumber || activeBank.account || "",
-              ifsc: activeBank.ifsc || "",
-              upiIdName: activeBank.upiIdName || "",
-              upiMobile: activeBank.upiMobile || "",
-              upiId: activeBank.upiId || "",
-            }
-          : null,
-      };
-
-      // Save the invoice to the backend (optional)
-      const invoiceData = {
-        invoiceNumber: finalNo,
-        invoiceDate,
-        invoiceType,
-        selectedFirm: firmSnapshot,
-        placeOfSupply,
-        customer,
-        items,
-        totalAmount: totalAmountWithTax,
-        notes,
-      };
-
-      await axios.post("/invoices", invoiceData);
-
-      // Now generate the PDF
-      if (!invoiceRef.current) return;
       const element = invoiceRef.current;
 
       const prevTransform = element.style.transform;
       const prevTransformOrigin = element.style.transformOrigin;
       const prevWidth = element.style.width;
-      const prevHeight = element.style.height;
-      const prevMaxHeight = element.style.maxHeight;
 
       element.style.transform = "scale(1)";
       element.style.transformOrigin = "top left";
       element.style.width = `${element.scrollWidth}px`;
-      element.style.height = "auto";
-      element.style.maxHeight = "none";
 
       const opt = {
         margin: 0,
@@ -947,26 +674,21 @@ export default function InvoiceForm({
         jsPDF: {
           unit: "px",
           orientation: "portrait",
-          format: [794, 1125],
+          format: [794, 1122],
         },
         pagebreak: { mode: "css" },
       };
 
       await html2pdf().set(opt).from(element).save();
-      element.style.height = prevHeight || "";
-      element.style.maxHeight = prevMaxHeight || "";
 
       element.style.transform = prevTransform || `scale(${previewScale})`;
       element.style.transformOrigin = prevTransformOrigin || "top left";
       element.style.width = prevWidth || "";
     } catch (error) {
-
-      console.error("Failed to generate PDF:", error);
-
+      console.error(error);
       Swal.fire("Error", "Could not generate the invoice PDF.", "error");
     }
   };
-
 
   const openCreateClientModal = (inputValue) => {
     setDraftClient({ name: inputValue });
@@ -1049,7 +771,6 @@ export default function InvoiceForm({
                 selected={fromDate ? new Date(fromDate) : null}
                 onChange={(date) =>
                   setFromDate(date ? date.toISOString().split("T")[0] : "")
-
                 }
                 selectsStart
                 startDate={fromDate ? new Date(fromDate) : null}
@@ -1076,7 +797,6 @@ export default function InvoiceForm({
                 onChange={(date) =>
                   setToDate(date ? date.toISOString().split("T")[0] : "")
                 }
-
                 selectsEnd
                 startDate={fromDate ? new Date(fromDate) : null}
                 endDate={toDate ? new Date(toDate) : null}
@@ -1339,20 +1059,9 @@ export default function InvoiceForm({
                       updateItem(idx, "rate", Number(e.target.value))
                     }
                     step="0.01"
-
                     className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {selectedFirm?.banks?.map((bank, idx) => (
-                      <option key={bank._id || idx} value={idx}>
-                        {bank.label ||
-                          `${bank.bankName || bank.name} - ${
-                            bank.accountNumber || bank.account
-                          }`}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
-
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700">
                     Amount
@@ -1361,7 +1070,6 @@ export default function InvoiceForm({
                     readOnly
                     value={`₹${amount}`}
                     className="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700"
-
                   />
                 </div>
 
@@ -1374,7 +1082,6 @@ export default function InvoiceForm({
                   <FaTrash />
                 </button>
               </div>
-
             </div>
           );
         })}
@@ -1974,7 +1681,6 @@ export default function InvoiceForm({
         </div>
 
         {/* Right preview side */}
-
         <div
           className="overflow-y-auto bg-gray-50 p-4 rounded-md"
           style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}
@@ -2057,17 +1763,14 @@ export default function InvoiceForm({
         </div>
       </div>
 
-
       {/* Create client modal */}
       {createClientOpen && (
         <CreateClientModal
           client={draftClient}
-
           onClose={() => {
             setCreateClientOpen(false);
             setDraftClient(null);
           }}
-
           onCreate={handleCreateClient}
         />
       )}
@@ -2171,7 +1874,6 @@ export default function InvoiceForm({
           </div>
         </div>
       )}
-
     </>
   );
 }
