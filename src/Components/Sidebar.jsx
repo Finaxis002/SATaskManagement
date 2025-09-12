@@ -18,6 +18,8 @@ import {
   FaGolfBall,
   FaMailBulk,
   FaEnvelope,
+  FaDrupal,
+  FaBusinessTime,
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
@@ -347,8 +349,8 @@ const openInvoiceTab = () => {
         
 {role === "admin" && (
   <SidebarItem
-    icon={<FaMoneyBill className="text-xl" />}
-    label="Invoice"
+    icon={<FaBusinessTime className="text-xl" />}
+    label="Invoicing"
     onClick={openInvoiceTab}
     expanded={expanded}
   />
