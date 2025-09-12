@@ -1,6 +1,6 @@
-// components/ClientList.jsx
 import React from "react";
 import { FaTrashAlt, FaEdit } from "react-icons/fa";
+
 const role = localStorage.getItem("role");
 
 const ClientList = ({ clients, onDelete, onEdit }) => {
@@ -9,20 +9,23 @@ const ClientList = ({ clients, onDelete, onEdit }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
       {clients.map((client, index) => (
         <div
           key={index}
-          className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
+          className="bg-white grid grid-cols-[1fr_auto] items-start border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
         >
+          {/* Left Side */}
           <div>
-            <h3 className="text-lg font-semibold text-indigo-800">
+            <h3 className="text-lg font-semibold text-indigo-800 leading-snug break-words">
               {client.name}
             </h3>
             <p className="text-sm text-gray-600">{client.contactPerson}</p>
             <p className="text-sm text-gray-600">{client.businessName}</p>
           </div>
-          <div className="flex gap-3">
+
+          {/* Right Side (Buttons aligned with name first line) */}
+          <div className="flex gap-3 self-start mt-1">
             {role === "admin" && (
               <button
                 onClick={() => onEdit(client)}
@@ -32,15 +35,14 @@ const ClientList = ({ clients, onDelete, onEdit }) => {
                 <FaEdit size={16} />
               </button>
             )}
-
             <button
               onClick={() => onDelete(client.name)}
-              className="text-red-500 hover:text-red-700 transition-colors"
+              className="text-red-500 transition duration-200 transform 
+             hover:text-red-700 hover:scale-110 hover:opacity-80 hover:shadow-md"
               title="Delete Client"
             >
               <FaTrashAlt size={16} />
             </button>
-            
           </div>
         </div>
       ))}
