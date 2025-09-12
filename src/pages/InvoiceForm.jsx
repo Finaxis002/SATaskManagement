@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import html2pdf from "html2pdf.js";
 import CreatableSelect from "react-select/creatable";
 import "../css/InvoiceForm.css";
@@ -74,58 +74,63 @@ export default function InvoiceForm({
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(null);
 
+  
+
   // useEffect(() => {
+  //   let isMounted = true;
   //   const loadFirms = async () => {
   //     try {
   //       setFirmsLoading(true);
   //       const res = await axios.get("https://taskbe.sharda.co.in/firms");
-  //       setFirms(res.data || []);
-  //       console.log("firm fetched ...", res.data)
-  //       if (!isEdit && (res.data || []).length) {
-  //         setSelectedFirmId(res.data[0]._id);
-  //         setSelectedFirm(res.data[0]);
+  //       if (isMounted) {
+  //         setFirms(res.data || []);
+  //         console.log("firm fetched ...", res.data);
+  //         if (!isEdit && (res.data || []).length) {
+  //           setSelectedFirmId(res.data[0]._id);
+  //           setSelectedFirm(res.data[0]);
+  //         }
   //       }
   //     } catch (e) {
-  //       setFirmsError("Failed to load firms");
-  //       console.error(e);
+  //       if (isMounted) {
+  //         setFirmsError("Failed to load firms");
+  //         console.error(e);
+  //       }
   //     } finally {
-  //       setFirmsLoading(false);
+  //       if (isMounted) {
+  //         setFirmsLoading(false);
+  //       }
   //     }
   //   };
   //   loadFirms();
+
+  //   return () => {
+  //     isMounted = false;
+  //   };
   // }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadFirms = async () => {
-      try {
-        setFirmsLoading(true);
-        const res = await axios.get("https://taskbe.sharda.co.in/firms");
-        if (isMounted) {
-          setFirms(res.data || []);
-          console.log("firm fetched ...", res.data);
-          if (!isEdit && (res.data || []).length) {
-            setSelectedFirmId(res.data[0]._id);
-            setSelectedFirm(res.data[0]);
-          }
-        }
-      } catch (e) {
-        if (isMounted) {
-          setFirmsError("Failed to load firms");
-          console.error(e);
-        }
-      } finally {
-        if (isMounted) {
-          setFirmsLoading(false);
-        }
-      }
-    };
-    loadFirms();
+  if (firms.length > 0) return; // Skip fetch if firms are already loaded
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const loadFirms = async () => {
+    try {
+      setFirmsLoading(true);
+      const res = await axios.get("https://taskbe.sharda.co.in/firms");
+      setFirms(res.data || []);
+      console.log("firm fetched ...", res.data);
+      if (!isEdit && res.data?.length) {
+        setSelectedFirmId(res.data[0]._id);
+        setSelectedFirm(res.data[0]);
+      }
+    } catch (e) {
+      setFirmsError("Failed to load firms");
+      console.error(e);
+    } finally {
+      setFirmsLoading(false);
+    }
+  };
+
+  loadFirms();
+}, [firms.length, isEdit]); // Only run once unless `firms.length` or `isEdit` changes
 
   useEffect(() => {
     if (!selectedFirmId) {
@@ -507,8 +512,11 @@ export default function InvoiceForm({
     return rupeeWords + paiseWords + " Rupees Only";
   }
 
-  const page1Items = items.slice(0, ITEMS_PER_PAGE);
-  const page2Items = items.slice(ITEMS_PER_PAGE);
+  // const page1Items = items.slice(0, ITEMS_PER_PAGE);
+  //  const page2Items = items.slice(ITEMS_PER_PAGE);
+  const page1Items = useMemo(()=>items.slice(0, ITEMS_PER_PAGE), [items])
+  const page2Items =useMemo(()=>items.slice(ITEMS_PER_PAGE), [items])
+ 
 
   const handleSaveAndDownloadPDF = async () => {
     // Validation check
@@ -1419,7 +1427,7 @@ export default function InvoiceForm({
                 })}
 
                 {/* Add Item Button */}
-                <div className="mt-4 sticky bottom-4 bg-white py-2 text-center">
+                <div className="mt-4 bottom-4 bg-white py-2 text-center">
                   <button
                     onClick={addItem}
                     className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
