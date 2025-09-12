@@ -13,7 +13,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { motion, AnimatePresence, useInView } from "framer-motion";
 import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
