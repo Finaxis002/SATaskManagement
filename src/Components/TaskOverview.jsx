@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useRef , useMemo} from "react";
 import { format, isBefore, isToday, isTomorrow, parseISO } from "date-fns";
 import axios from "axios";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+// Tabs
+
 
 // Tabs used across desktop & mobile
 const tabs = ["today", "tomorrow", "upcoming", "overdue", "completed"];
@@ -116,7 +118,6 @@ const TaskOverview = () => {
         categorizedTasks.overdue.length +
         categorizedTasks.completed.length,
     };
-
     if (typeof window.updateDashboardStats === "function") {
       window.updateDashboardStats(counts);
     }
@@ -225,7 +226,6 @@ const TaskOverview = () => {
   }
 
   return (
-
     <div>
       {/* Desktop view */}
       <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-xl border border-gray-200 p-6 font-sans hidden sm:block">

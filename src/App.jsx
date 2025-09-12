@@ -24,6 +24,11 @@ import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
 import { NotesProvider } from "./context/NotesContext";
+import ShortcutHandler from "./Components/ShortcutHandler";
+
+
+import SettingsPage from "./pages/SettingsPage";
+import InvoicesPage from "./pages/InvoicesPage";
 
 const App = () => {
   function MailBoxEmbed() {
