@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { format, isBefore, isToday, isTomorrow, parseISO } from "date-fns";
-import { useSelector } from "react-redux";
 import axios from "axios";
+import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+// Tabs used across desktop & mobile
+const tabs = ["today", "tomorrow", "upcoming", "overdue", "completed"];
+
 const TaskOverview = () => {
   const [tasks, setTasks] = useState([]); // Store tasks in state
   const [activeTab, setActiveTab] = useState("today"); // Track active tab (today, tomorrow, etc.)
