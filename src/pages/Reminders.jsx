@@ -95,6 +95,26 @@ const Reminders = () => {
     fetchReminders();
   }, [userId]); // Rerun when userId changes
 
+  console.log("linkedemail :", linkedEmail);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchReminders = async () => {
+      try {
+        // Send userId instead of email for fetching reminders
+        const res = await fetch(
+          `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
+        );
+        const data = await res.json();
+
+        setReminders(data);
+      } catch (err) {
+        console.error("❌ Failed to load reminders:", err);
+      }
+    };
+    fetchReminders();
+  }, [userId]); // Rerun when userId changes
+
   useEffect(() => {
     if (!userId) return;
     const fetchData = async () => {
@@ -935,6 +955,13 @@ const BucketSection = ({
                   key={`r-${reminder._id || index}`}
                   className={`flex-shrink-0 ${reminders.length > 1 ? "w-[85%]" : "w-full"
                     } sm:w-full bg-white p-4 rounded-lg shadow-xs 
+
+
+                  className={`flex-shrink-0 ${
+                    reminders.length > 1 ? "w-[85%]" : "w-full"
+                  } sm:w-full bg-white p-4 rounded-lg shadow-xs 
+
+
                              hover:shadow-sm border border-gray-100 
                              transition-all duration-200 hover:border-blue-100 relative group
                              ${reminders.length > 1 ? "snap-start" : ""}`}
@@ -1041,7 +1068,9 @@ const BucketSection = ({
                                    bg-purple-50 text-purple-700 ring-1 ring-purple-200"
                       >
                         <FaCalendarAlt className="text-[10px]" />
+
                         Event
+
                       </span>
                     </div>
 

@@ -26,6 +26,12 @@ import MailBox from "./pages/MailBox";
 import { NotesProvider } from "./context/NotesContext";
 import ShortcutHandler from "./Components/ShortcutHandler";
 
+import ShortcutHandler from "./Components/ShortcutHandler";
+
+
+import SettingsPage from "./pages/SettingsPage";
+import InvoicesPage from "./pages/InvoicesPage";
+
 const App = () => {
 
   
@@ -49,7 +55,6 @@ const App = () => {
     );
   }
   return (
-    
     <Router>
       <ShortcutHandler>
       <Routes>
@@ -178,6 +183,16 @@ const App = () => {
           }
         />
         <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <SettingsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/profile"
           element={
             <ProtectedRoute>
@@ -213,6 +228,17 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <InvoiceForm />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Add the new InvoicesPage route */}
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoicesPage />
               </MainLayout>
             </ProtectedRoute>
           }
@@ -267,7 +293,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin-mailbox"
           element={

@@ -13,6 +13,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence, useInView } from "framer-motion";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
@@ -350,6 +351,7 @@ const TodaysList = forwardRef(function TodaysList(
   };
 
   const tagCls = (c) =>
+
     ({
       indigo: "bg-indigo-50 text-indigo-700 border border-indigo-200",
       emerald: "bg-emerald-50 text-emerald-700 border border-emerald-200",
@@ -357,6 +359,7 @@ const TodaysList = forwardRef(function TodaysList(
       rose: "bg-rose-50 text-rose-700 border border-rose-200",
       gray: "bg-gray-100 text-gray-700 border border-gray-200",
     }[c] || "bg-gray-100 text-gray-700 border border-gray-200");
+
 
   return (
     <motion.div
@@ -830,10 +833,12 @@ useEffect(() => {
       location: "—",
     }));
 
+
   const todaysRows = useMemo(
     () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
     [events, reminders]
   );
+
 
   const todaysListRef = useRef(null);
 
@@ -875,6 +880,7 @@ useEffect(() => {
               </div>
             </div>
             <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest md:hidden ml-1">
+
               Strategic Business Solutions
             </p>
           </div>
