@@ -691,17 +691,20 @@ const Reminders = () => {
                 <button
                   onClick={saveReminder}
                   disabled={saving}
+
                   className={`w-full ${
                     saving
                       ? "bg-green-400 cursor-not-allowed"
                       : "bg-green-600 hover:bg-green-700"
                   } text-white py-2 rounded-md transition`}
+
                 >
                   {editId
                     ? "Update Reminder"
                     : saving
                     ? "Saving...."
                     : "Save Reminder"}
+
                 </button>
               </div>
             </div>
@@ -881,17 +884,21 @@ const Reminders = () => {
               <button
                 onClick={saveEvent}
                 disabled={saving}
+
                 className={`w-full ${
                   saving
                     ? "bg-purple-400 cursor-not-allowed"
                     : "bg-purple-600 hover:bg-purple-700"
                 } text-white py-2 rounded-md transition`}
+
               >
                 {saving
                   ? "Saving..."
                   : editingEventId
+
                   ? "Save Changes"
                   : "Create Event"}
+
               </button>
             </div>
           </div>
@@ -929,16 +936,20 @@ const BucketSection = ({
         {reminders.length > 0 && (
           <div className="mb-4 overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
+
               className={`flex gap-3 sm:flex-col sm:gap-3 ${
                 reminders.length > 1 ? "snap-x snap-mandatory" : ""
               }`}
+
             >
               {reminders.map((reminder, index) => (
                 <li
                   key={`r-${reminder._id || index}`}
+
                   className={`flex-shrink-0 ${
                     reminders.length > 1 ? "w-[85%]" : "w-full"
                   } sm:w-full bg-white p-4 rounded-lg shadow-xs 
+
                              hover:shadow-sm border border-gray-100 
                              transition-all duration-200 hover:border-blue-100 relative group
                              ${reminders.length > 1 ? "snap-start" : ""}`}
@@ -1001,18 +1012,22 @@ const BucketSection = ({
         {events.length > 0 && (
           <div className="overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
+
               className={`flex gap-3 sm:flex-col sm:gap-3 ${
                 events.length > 1 ? "snap-x snap-mandatory" : ""
               }`}
+
             >
               {events
                 .filter((e) => e && (e.title || e.summary))
                 .map((event, index) => (
                   <li
                     key={`e-${event._id || index}`}
+
                     className={`flex-shrink-0 ${
                       events.length > 1 ? "w-[85%]" : "w-full"
                     } sm:w-full bg-white p-5 rounded-lg shadow-sm 
+
                                hover:shadow-md border border-gray-100 
                                transition-all duration-300 hover:border-purple-100 relative group
                                ${events.length > 1 ? "snap-start" : ""}`}
@@ -1047,7 +1062,9 @@ const BucketSection = ({
                                    bg-purple-50 text-purple-700 ring-1 ring-purple-200"
                       >
                         <FaCalendarAlt className="text-[10px]" />
+
                         Event
+
                       </span>
                     </div>
 

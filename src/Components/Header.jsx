@@ -163,7 +163,9 @@ const Header = () => {
           {isMenuOpen && (
             <div
               id="profile-menu-dropdown"
+
               className="absolute top-11 sm:top-12 right-0 w-40 sm:w-48 bg-white rounded-lg shadow-xl overflow-hidden py-1 z-50 border border-gray-100"
+
               onClick={(e) => e.stopPropagation()}
             >
               <button
