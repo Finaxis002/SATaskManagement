@@ -875,7 +875,7 @@ const BucketSection = ({
           </li>
         ))}
 
-        {/* ---- Events (existing UI) ---- */}
+        {/* ---- Events (fixed UI) ---- */}
         {events
           .filter((e) => e && (e.title || e.summary))
           .map((event, index) => (
@@ -941,100 +941,8 @@ const BucketSection = ({
                       {event.description}
                     </p>
                   </div>
-
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* ---- Events Section ---- */}
-        {events.length > 0 && (
-          <div className="overflow-x-auto scrollbar-hide sm:overflow-x-visible">
-            <ul
-              className={`flex gap-3 sm:flex-col sm:gap-3 ${events.length > 1 ? "snap-x snap-mandatory" : ""
-                }`}
-            >
-              {events
-                .filter((e) => e && (e.title || e.summary))
-                .map((event, index) => (
-                  <li
-                    key={`e-${event._id || index}`}
-                    className={`flex-shrink-0 ${events.length > 1 ? "w-[85%]" : "w-full"
-                      } sm:w-full bg-white p-5 rounded-lg shadow-sm 
-                               hover:shadow-md border border-gray-100 
-                               transition-all duration-300 hover:border-purple-100 relative group
-                               ${events.length > 1 ? "snap-start" : ""}`}
-                  >
-                    {/* Event Icons */}
-                    <div
-                      className="absolute top-3 right-3 flex items-center space-x-1 
-                                 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 
-                                 transition-opacity duration-200"
-                    >
-                      <button
-                        onClick={() => onEditEvent(event)}
-                        className="p-1.5 text-blue-600 sm:text-gray-400 hover:text-blue-600 hover:bg-blue-50 
-                                   rounded-full transition-colors duration-150"
-                        title="Edit"
-                      >
-                        <FaPen size={12} />
-                      </button>
-                      <button
-                        onClick={() => onDeleteEvent(event._id)}
-                        className="p-1.5 text-red-600 sm:text-gray-400 hover:text-red-600 hover:bg-red-50 
-                                   rounded-full transition-colors duration-150"
-                        title="Delete"
-                      >
-                        <FaTimes size={12} />
-                      </button>
-                    </div>
-
-                    <div className="mb-2">
-                      <span
-                        className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
-                                   bg-purple-50 text-purple-700 ring-1 ring-purple-200"
-                      >
-                        <FaCalendarAlt className="text-[10px]" />
-                        Event
-                      </span>
-                    </div>
-
-                    <div className="mb-3">
-                      <h3 className="font-semibold text-gray-900 text-base flex items-center gap-2">
-                        <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></span>
-                        <span className="line-clamp-2">
-                          {event.title || event.summary}
-                        </span>
-                      </h3>
-                    </div>
-
-                    <div className="flex gap-4 mb-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <FaCalendarAlt className="text-purple-400 flex-shrink-0" />
-                          <span className="font-medium text-gray-700">
-                            {format(
-                              parseISO(event.startDateTime),
-                              "EEE, MMM d"
-                            )}
-           </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
-
-              <div className="pt-3 border-t border-gray-100 flex justify-end">
-                <button
-                  onClick={() => onEditEvent(event)}
-                  className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors duration-200"
-                >
-                  <FaPen size={12} />
-                  <span>Edit Event</span>
-                </button>
-              </div>
             </li>
           ))}
       </ul>

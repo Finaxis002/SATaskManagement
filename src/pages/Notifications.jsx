@@ -22,6 +22,7 @@ const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
+
 const NotificationItem = React.memo(
   ({
     notification,
@@ -33,19 +34,16 @@ const NotificationItem = React.memo(
 
     return (
       <div
-
         className={`relative group bg-white rounded-xl shadow-lg border transition-all hover:shadow-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center ${
           isUnread ? "border-blue-400" : "border-gray-200"
         }`}
       >
         {/* Checkbox */}
         <div className="flex items-start sm:items-center">
-
           <input
             type="checkbox"
             checked={selectedNotifications.includes(notification._id)}
             onChange={() => toggleSelectNotification(notification._id)}
-
             className="h-5 w-5 accent-blue-600"
           />
         </div>
@@ -64,17 +62,28 @@ const NotificationItem = React.memo(
                 className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
                   notification.priority === "high"
                     ? "bg-red-100 text-red-800"
-
                     : notification.priority === "medium"
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-gray-100 text-gray-700"
                 }`}
-
-            >
-              Status: {notification.status}
-            </span>
-          )}
-        </div>
+              >
+                {notification.priority}
+              </span>
+            )}
+            {notification.status && (
+              <span
+                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
+                  notification.status === "completed"
+                    ? "bg-green-100 text-green-800"
+                    : notification.status === "pending"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                Status: {notification.status}
+              </span>
+            )}
+          </div>
 
           {notification.updatedBy &&
             (() => {
@@ -121,7 +130,6 @@ const NotificationItem = React.memo(
 
           <div className="text-xs text-gray-500 flex items-center gap-1">
             <FaClock />
-
             {new Date(notification.createdAt).toLocaleString("en-IN", {
               timeZone: "Asia/Kolkata",
               day: "2-digit",
@@ -134,7 +142,6 @@ const NotificationItem = React.memo(
           </div>
         </div>
 
-
         {/* Mark as Read Button */}
         <div className="self-start sm:self-auto">
           <button
@@ -143,7 +150,6 @@ const NotificationItem = React.memo(
             className={`text-sm font-medium px-5 py-2 rounded-lg transition-all border ${
               notification.read
                 ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
-
                 : "bg-green-600 text-white border-green-600 hover:bg-green-700"
             }`}
           >
@@ -151,13 +157,9 @@ const NotificationItem = React.memo(
           </button>
         </div>
       </div>
-      </div>
     );
   }
 );
-
-
-
 
 const getUserContext = () => {
   const userStr = localStorage.getItem("user");
