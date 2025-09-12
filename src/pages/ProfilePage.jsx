@@ -97,56 +97,6 @@ const ProfilePage = () => {
     }
   }, [storedIdentifier, token]);
 
-  // const handlePasswordChange = async () => {
-  //   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-  //     setPasswordError("New passwords don't match");
-  //     return;
-  //   }
-
-  //   if (passwordForm.newPassword.length < 4) {
-  //     setPasswordError("Password must be at least 4 characters long");
-  //     return;
-  //   }
-
-  //   try {
-  //     const response = await axios.post(
-  //       `https://taskbe.sharda.co.in/api/employees/reset-password/admin`,
-  //       {
-  //         newPassword: passwordForm.newPassword,
-  //       },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-
-  //     if (response?.data?.message?.includes("successfully")) {
-  //       setPasswordSuccess("✅ Password updated successfully!");
-  //       setPasswordError("");
-
-  //       setPasswordForm({
-  //         currentPassword: "",
-  //         newPassword: "",
-  //         confirmPassword: "",
-  //       });
-
-  //       // ⏳ Wait 1.5s before closing the modal
-  //       setTimeout(() => {
-  //         setPasswordSuccess(""); // optional: clear message
-  //         setIsEditingPassword(false);
-  //       }, 1500);
-  //     } else {
-  //       setPasswordError("Unexpected response from server.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Password update failed:", err);
-  //     setPasswordError(
-  //       err.response?.data?.message || "Failed to update password"
-  //     );
-  //   }
-  // };
-
   const handlePasswordChange = async () => {
     setPasswordError("");
     setPasswordSuccess("");
@@ -254,13 +204,13 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 md:py-12 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
+          <h1 className=" text-3xl  font-bold text-gray-800">My Profile</h1>
           <button
             onClick={() => setIsEditingPassword(true)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-700 transition"
+            className="bg-indigo-600 text-white md:px-4 px-2 py-2 rounded-lg shadow hover:bg-indigo-700 transition"
           >
             Change Password
           </button>
@@ -269,35 +219,37 @@ const ProfilePage = () => {
         <div className="bg-white rounded-2xl shadow-xl overflow-y-auto">
           <div className="md:flex">
             {/* Left Side - Profile Card */}
-            <div className="md:w-1/3 bg-gradient-to-b from-indigo-600 to-purple-600 p-8 text-white">
-              <div className="flex flex-col items-center">
-                <div className="relative mb-6">
+            <div className="md:w-1/3  bg-gradient-to-b from-indigo-600 to-purple-600 p-8 text-white ">
+              <div className="flex md:flex-col  md:items-center md:mt-7 text-center">
+                <div className="relative  flex md:flex-col flex-row">
                   <img
                     src={`https://ui-avatars.com/api/?name=${user.name}&background=ffffff&color=4f46e5&size=200`}
                     alt="Profile"
-                    className="w-40 h-40 rounded-full border-4 border-white shadow-lg"
+                    className="w-15 h-15 md:h-40 md:w-40 rounded-full border-4 border-white shadow-lg"
                   />
-                </div>
+                  <h2 className="text-2xl font-bold md:mt-6 md:pl-1 md:ml-1 ml-5 mt-2">{user.name}</h2>
 
-                <h2 className="text-2xl font-bold mb-1">{user.name}</h2>
-                <p className="text-indigo-100 mb-4">
+                </div>
+                  
+                
+              </div>
+              <p className="text-indigo-100 ml-20 md:ml-25 md:mt-0 mt-[-25px]">
                   {user.role === "admin"
                     ? "Administrator"
                     : user.position || "Position not specified"}
                 </p>
-              </div>
             </div>
 
             {/* Right Side - Details */}
-            <div className="md:w-2/3 p-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Profile Information{" "}
+            <div className="md:w-2/3 md:p-8 sm:overflow-y-auto md:max-h-[70vh] max-h-[55vh] p-4">
+              <h3 className="text-lg font-semibold text-gray-800 md:mb-4 p-2">
+                Profile Information
               </h3>
               <hr />
-              <div className="grid mt-6 grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid mt-3 grid-cols-1 md:grid-cols-2 md:gap-8 gap-5 md:ml-1.5 ml-2">
                 {/* Full Name */}
                 <div>
-                  <label className="block text-sm text-gray-500 mb-1">
+                  <label className="block text-sm text-gray-500 md:mb-1">
                     Full Name
                   </label>
                   <p className="font-medium">{user.name}</p>
@@ -305,7 +257,7 @@ const ProfilePage = () => {
 
                 {/* Email Address */}
                 <div>
-                  <label className="block text-sm text-gray-500 mb-1">
+                  <label className="block text-sm text-gray-500 md:mb-1">
                     Email Address
                   </label>
                   <p className="font-medium">{user.email}</p>
@@ -316,7 +268,7 @@ const ProfilePage = () => {
                   <label className="block text-sm text-gray-500 mb-1">
                     Role
                   </label>
-                  <div className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full capitalize">
+                  <div className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 ml-[-4px] rounded-full capitalize">
                     {user.role}
                   </div>
                 </div>
@@ -331,16 +283,16 @@ const ProfilePage = () => {
               </div>
 
               {/* Departments */}
-              <div className="md:col-span-2 mt-6 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+              <div className="md:col-span-2 mt-4 space-y-4 ">
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 md:ml-0 ml-2">
                   Departments
                 </h3>
                 {user.department?.length ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 pb-4">
                     {user.department.map((dept, i) => (
                       <span
                         key={i}
-                        className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm"
+                        className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm "
                       >
                         {dept}
                       </span>

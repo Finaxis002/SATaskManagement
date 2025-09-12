@@ -24,6 +24,8 @@ import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
 import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
+import InvoicesPage from "./pages/InvoicesPage";
+import SettingsPage from "./pages/SettingsPage";
 
 
 
@@ -196,7 +198,16 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <SettingsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/profile"
           element={
@@ -240,7 +251,27 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
+        {/* Add the new InvoicesPage route */}
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoicesPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        {/* <Route
+          path="/viewinvoices"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ViewInvoices />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        /> */}
         <Route
           path="/viewinvoicewithotp"
           element={
@@ -284,7 +315,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin-mailbox"
           element={
