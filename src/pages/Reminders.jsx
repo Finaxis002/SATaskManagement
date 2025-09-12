@@ -569,8 +569,145 @@ const Reminders = () => {
 
         {/* Reminder Modal */}
         {showPopup && (
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md">
-            <div className="w-full max-w-md p-6 rounded-2xl  relative animate-fadeIn">
+
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="w-full max-w-sm bg-white p-4 rounded shadow-md max-h-[90vh] overflow-y-auto relative">
+              <div className="w-full max-w-md p-6 rounded-2xl animate-fadeIn">
+                {/* Close Button */}
+                <button
+                  className="absolute top-4 right-4 text-red-400 hover:text-red-700
+    sm:text-gray-400 sm:hover:text-red-500"
+                  onClick={() => {
+                    setShowPopup(false);
+                    setEditId(null); // leave edit mode
+                    setNewReminder(DEFAULT_REMINDER); // reset fields
+                  }}
+                >
+                  <FaTimes size={18} />
+                </button>
+
+                {/* Title */}
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                  📝 {editId ? "Update Reminder" : "Create Reminder"}
+                </h3>
+
+                {/* Reminder Input */}
+                <input
+                  type="text"
+                  placeholder="What's the reminder?"
+                  value={newReminder.text}
+                  onChange={(e) =>
+                    setNewReminder({ ...newReminder, text: e.target.value })
+                  }
+                  className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm"
+                />
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="block sm:hidden text-gray-700">Date:</span>
+
+                    <div className="relative flex-1 sm:flex-none w-full flex items-center">
+                      <FaCalendarAlt className="hidden sm:block text-gray-600 mr-2" />
+
+                      <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 sm:hidden" />
+
+                      <input
+                        type="date"
+                        value={newReminder.date}
+                        onChange={(e) =>
+                          setNewReminder({
+                            ...newReminder,
+                            date: e.target.value,
+                          })
+                        }
+                        className="w-full border border-gray-300 rounded p-2 pl-10 sm:pl-3"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="block sm:hidden text-gray-700">Time:</span>
+
+                    <div className="relative flex-1 sm:flex-none w-full flex items-center">
+                      <FaClock className="hidden sm:block text-gray-600 mr-2" />
+
+                      <FaClock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 sm:hidden" />
+
+                      <input
+                        type="time"
+                        value={newReminder.time}
+                        onChange={(e) =>
+                          setNewReminder({
+                            ...newReminder,
+                            time: e.target.value,
+                          })
+                        }
+                        className="w-full border border-gray-300 rounded p-2 pl-10 sm:pl-3"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Snooze Selector */}
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                  <label htmlFor="snooze" className="text-gray-700">
+                    ⏳ Snooze Before:
+                  </label>
+                  <select
+                    id="snooze"
+                    value={newReminder.snoozeBefore}
+                    onChange={(e) =>
+                      setNewReminder({
+                        ...newReminder,
+                        snoozeBefore: e.target.value,
+                      })
+                    }
+                    className="border border-gray-300 rounded p-2"
+                  >
+                    {Array.from({ length: 60 }, (_, i) => i + 1).map(
+                      (minute) => (
+                        <option key={minute} value={minute}>
+                          {minute} minute{minute > 1 ? "s" : ""}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                {/* Save Button */}
+                <button
+                  onClick={saveReminder}
+                  disabled={saving}
+
+                  className={`w-full ${
+                    saving
+                      ? "bg-green-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  } text-white py-2 rounded-md transition`}
+
+                >
+                  {editId
+                    ? "Update Reminder"
+                    : saving
+                    ? "Saving...."
+                    : "Save Reminder"}
+
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showEventPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-2 sm:px-4">
+            <div
+              className="
+    w-full max-w-md mx-auto bg-white p-4 sm:p-6 rounded-lg shadow-md
+  relative overflow-y-auto mt-4 sm:mt-10
+  max-h-[80vh] sm:max-h-[85vh]
+  "
+            >
+              {/* Close Button */}
+
               <button
                 className="absolute top-4 right-4 text-gray-400 hover:text-red-500"
                 onClick={() => {
