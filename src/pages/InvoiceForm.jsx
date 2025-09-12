@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import html2pdf from "html2pdf.js";
 import CreatableSelect from "react-select/creatable";
 import "../css/InvoiceForm.css";
@@ -64,149 +64,6 @@ export default function InvoiceForm({
   const [selectedClientOption, setSelectedClientOption] = useState(null);
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(null);
-
-
-  
-
-  // useEffect(() => {
-  //   let isMounted = true;
-  //   const loadFirms = async () => {
-  //     try {
-  //       setFirmsLoading(true);
-  //       const res = await axios.get("https://taskbe.sharda.co.in/firms");
-  //       if (isMounted) {
-  //         setFirms(res.data || []);
-  //         console.log("firm fetched ...", res.data);
-  //         if (!isEdit && (res.data || []).length) {
-  //           setSelectedFirmId(res.data[0]._id);
-  //           setSelectedFirm(res.data[0]);
-  //         }
-  //       }
-  //     } catch (e) {
-  //       if (isMounted) {
-  //         setFirmsError("Failed to load firms");
-  //         console.error(e);
-  //       }
-  //     } finally {
-  //       if (isMounted) {
-  //         setFirmsLoading(false);
-  //       }
-  //     }
-  //   };
-  //   loadFirms();
-
-  //   return () => {
-  //     isMounted = false;
-  //   };
-  // }, []);
-
-  useEffect(() => {
-  if (firms.length > 0) return; // Skip fetch if firms are already loaded
-
-  const loadFirms = async () => {
-    try {
-      setFirmsLoading(true);
-      const res = await axios.get("https://taskbe.sharda.co.in/firms");
-      setFirms(res.data || []);
-      console.log("firm fetched ...", res.data);
-      if (!isEdit && res.data?.length) {
-        setSelectedFirmId(res.data[0]._id);
-        setSelectedFirm(res.data[0]);
-      }
-    } catch (e) {
-      setFirmsError("Failed to load firms");
-      console.error(e);
-    } finally {
-      setFirmsLoading(false);
-    }
-  };
-
-  loadFirms();
-}, [firms.length, isEdit]); // Only run once unless `firms.length` or `isEdit` changes
-
-  useEffect(() => {
-    if (!selectedFirmId) {
-      setSelectedFirm(null);
-      return;
-    }
-    const f = firms.find((x) => x._id === selectedFirmId) || null;
-    setSelectedFirm(f);
-    setSelectedBankIndex(0);
-  }, [selectedFirmId, firms]);
-
-  const previewInvoiceNumber = async () => {
-    if (isEdit) return;
-    if (!selectedFirm) return;
-    const year = new Date().getFullYear().toString().slice(-2);
-    const month = String(new Date().getMonth() + 1).padStart(2, "0");
-
-    try {
-      const res = await axios.get(
-        "https://taskbe.sharda.co.in/api/invoices/preview-serial",
-        {
-          params: {
-            firmId: selectedFirm?._id,
-            type: invoiceType,
-            year,
-            month,
-          },
-        }
-      );
-      setInvoiceNumber(res.data?.invoiceNumber || "");
-    } catch (err) {
-      console.error("preview-serial failed:", err);
-      setInvoiceNumber(""); // <-- important
-      Swal.fire(
-        "Couldn’t preview invoice number",
-        "Check API URL/Network.",
-        "warning"
-      );
-    }
-  };
-
-  // Finalize invoice number - increments DB (call only when saving)
-  const finalizeInvoiceNumber = async () => {
-    if (isFinalized && invoiceNumber) return invoiceNumber;
-    if (!selectedFirm) throw new Error("No firm selected");
-    const year = new Date().getFullYear().toString().slice(-2);
-    const month = String(new Date().getMonth() + 1).padStart(2, "0");
-
-    try {
-      const res = await axios.post(
-        "https://taskbe.sharda.co.in/api/invoices/finalize-serial",
-        {
-          firmId: selectedFirm?._id,
-          type: invoiceType,
-          year,
-          month,
-        }
-      );
-      setInvoiceNumber(res.data.invoiceNumber);
-      setIsFinalized(true);
-      return res.data.invoiceNumber;
-    } catch (error) {
-      console.error("Error finalizing invoice number", error);
-      throw error;
-    }
-  };
-
-  // useEffect(() => {
-  //   if (isEdit) return; // ⛔ no preview while editing
-  //   setInvoiceNumber("");
-  //   setIsFinalized(false);
-  //   if (selectedFirm && invoiceType) previewInvoiceNumber();
-  // }, [isEdit, selectedFirmId, selectedFirm, invoiceType]);
-
-  useEffect(() => {
-    if (isEdit) return; // No preview while editing
-    if (!selectedFirm || !invoiceType) return; // Ensure both selectedFirm and invoiceType are available
-
-    setInvoiceNumber(""); // Reset invoice number
-    setIsFinalized(false); // Reset finalized flag
-    previewInvoiceNumber(); // Call the function to preview the invoice number
-  }, [isEdit, selectedFirm, invoiceType]); // Dependencies - run when these change
-
-
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -642,13 +499,6 @@ export default function InvoiceForm({
       paise !== "00" ? ` and ${numberToWords(parseInt(paise))} Paise` : "";
     return rupeeWords + paiseWords + " Rupees Only";
   }
-
-
-  // const page1Items = items.slice(0, ITEMS_PER_PAGE);
-  //  const page2Items = items.slice(ITEMS_PER_PAGE);
-  const page1Items = useMemo(()=>items.slice(0, ITEMS_PER_PAGE), [items])
-  const page2Items =useMemo(()=>items.slice(ITEMS_PER_PAGE), [items])
- 
 
   const handleSaveAndDownloadPDF = async () => {
     try {
@@ -1771,21 +1621,7 @@ export default function InvoiceForm({
                         />
                       )}
                     </div>
-
-                  );
-                })}
-
-                {/* Add Item Button */}
-                <div className="mt-4 bottom-4 bg-white py-2 text-center">
-                  <button
-                    onClick={addItem}
-                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
-                  >
-                    + Add Item
-                  </button>
-
                   </div>
-
                 </div>
               </div>
             </div>
