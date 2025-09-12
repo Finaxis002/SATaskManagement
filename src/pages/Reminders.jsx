@@ -700,7 +700,7 @@ const Reminders = () => {
                   {editId
                     ? "Update Reminder"
                     : saving
-                    ? "Saving..."
+                    ? "Saving...."
                     : "Save Reminder"}
                 </button>
               </div>
