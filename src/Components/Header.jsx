@@ -103,15 +103,16 @@ const Header = () => {
     return () => window.removeEventListener("keydown", handleEnterKey);
   }, [highlightRefs, currentIndex]);
 
+  // Check if device is mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (e.target.closest("#profile-menu") === null) {
-        setIsMenuOpen(false);
-      }
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
     };
 
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -217,28 +218,54 @@ const Header = () => {
       </div>
 
       {/* Right Icons */}
-      <div className="flex items-center gap-5 ml-6 relative">
-        {/* Notifications */}
-        <button
-          onClick={() => navigate("/notifications")}
-          className="relative bg-gray-100 rounded-full p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200"
-          aria-label="Notifications"
-        >
-          <FaBell className="text-gray-600 text-lg" />
-          {/* Notification badge */}
-          {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center ">
-              {notificationCount}
-            </span>
-          )}
-        </button>
+      <div className="flex items-center gap-4 md:gap-5 ml-4 md:ml-6 relative">
+        <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full shadow-sm border border-gray-200">
+          Shortcuts window:
+          <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">
+            Alt
+          </kbd>
+          +
+          <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">
+            S
+          </kbd>
+        </span>
+        {/* Mobile view: Show Notes icon instead of Notification icon */}
+        {isMobile ? (
+          <>
+            <button
+              onClick={() => setShowNotes(true)}
+              className="relative bg-gray-100 rounded-full p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-all duration-200"
+              aria-label="Notes"
+            >
+              <FaRegStickyNote className="text-gray-600 text-lg" />
+            </button>
 
-        {/* Notes */}
-        <QuickActionsDropdown
-          onShowNotes={() => setShowNotes(true)}
-          onShowInbox={() => setShowInbox(true)}
-          onShowReminders={() => setShowReminders(true)}
-        />
+            {/* QuickActionsDropdown (without notes option) */}
+            <QuickActionsDropdown
+              notificationCount={notificationCount}
+              isMobile={isMobile}
+            />
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => navigate("/notifications")}
+              className="relative bg-gray-100 rounded-full p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200"
+              aria-label="Notifications"
+            >
+              <FaBell className="text-gray-600 text-lg" />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center">
+                  {notificationCount}
+                </span>
+              )}
+            </button>
+            <QuickActionsDropdown
+              onShowNotes={() => setShowNotes(true)}
+              isMobile={isMobile}
+            />
+          </>
+        )}
 
         {showNotes && <StickyNotes onClose={() => setShowNotes(false)} />}
 
