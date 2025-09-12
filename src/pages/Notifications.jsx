@@ -22,133 +22,6 @@ const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
-// const NotificationItem = React.memo(
-//   ({
-//     notification,
-//     onMarkAsRead,
-//     selectedNotifications,
-//     toggleSelectNotification,
-//   }) => {
-//     const isUnread = !notification.read;
-
-//     return (
-//       <div
-//         className={`group p-5 rounded-xl border transition-all shadow-sm hover:shadow-md flex justify-between gap-6 ${
-//           isUnread
-//             ? "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300"
-//             : "bg-white border-gray-200"
-//         }`}
-//       >
-//         {/* Left: Message & Meta */}
-//         <div className="flex gap-4 flex-1 items-start">
-//           {/* Checkbox */}
-//           <input
-//             type="checkbox"
-//             checked={selectedNotifications.includes(notification._id)}
-//             onChange={() => toggleSelectNotification(notification._id)}
-//             className="mt-1 h-4 w-4 accent-blue-600"
-//           />
-
-//           {/* Notification Content */}
-//           <div className="space-y-2 w-full">
-//             {/* Top Row: Dot + Message + Priority */}
-//             <div className="flex flex-wrap items-center gap-2">
-//               {isUnread && (
-//                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-//               )}
-
-//               <p className="text-sm font-semibold text-gray-800 break-words">
-//                 {notification.message}
-//               </p>
-
-//               {notification.priority && (
-//                 <span
-//                   className={`px-2 py-0.5 text-xs font-medium rounded-full capitalize ${
-//                     notification.priority === "high"
-//                       ? "bg-red-100 text-red-700"
-//                       : notification.priority === "medium"
-//                       ? "bg-yellow-100 text-yellow-800"
-//                       : "bg-gray-100 text-gray-700"
-//                   }`}
-//                 >
-//                   {notification.priority}
-//                 </span>
-//               )}
-//             </div>
-
-//             {/* Updated By Info */}
-//             {notification.updatedBy &&
-//               (() => {
-//                 try {
-//                   if (notification.updatedBy === "System") {
-//                     return (
-//                       <p className="text-xs text-gray-500 italic">
-//                         Updated by System
-//                       </p>
-//                     );
-//                   }
-
-//                   const updater =
-//                     typeof notification.updatedBy === "string"
-//                       ? JSON.parse(notification.updatedBy)
-//                       : notification.updatedBy;
-
-//                   return updater?.name ? (
-//                     <p className="text-xs text-gray-500 italic">
-//                       Updated by {updater.name}
-//                     </p>
-//                   ) : null;
-//                 } catch (err) {
-//                   return null;
-//                 }
-//               })()}
-
-//             {/* Details */}
-//             {notification.details &&
-//               Object.keys(notification.details).length > 0 && (
-//                 <ul className="list-disc list-inside text-sm text-gray-700 space-y-0.5">
-//                   {Object.entries(notification.details).map(([key, value]) => (
-//                     <li key={key}>
-//                       <span className="font-medium">{key}:</span> {value}
-//                     </li>
-//                   ))}
-//                 </ul>
-//               )}
-
-//             {/* Timestamp */}
-//             <p className="text-xs text-gray-400">
-//               {new Date(notification.createdAt).toLocaleString("en-IN", {
-//                 timeZone: "Asia/Kolkata",
-//                 day: "2-digit",
-//                 month: "2-digit",
-//                 year: "numeric",
-//                 hour: "2-digit",
-//                 minute: "2-digit",
-//                 hour12: true,
-//               })}
-//             </p>
-//           </div>
-//         </div>
-
-//         {/* Right: Action Button */}
-//         <div className="flex-shrink-0 self-start mt-1">
-//           <button
-//             onClick={() => onMarkAsRead(notification._id)}
-//             disabled={notification.read}
-//             className={`text-sm px-4 py-1.5 rounded-md font-medium transition-all border shadow-sm ${
-//               notification.read
-//                 ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-//                 : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-//             }`}
-//           >
-//             {notification.read ? "Read" : "Mark as Read"}
-//           </button>
-//         </div>
-//       </div>
-//     );
-//   }
-// );
-
 const NotificationItem = React.memo(
   ({
     notification,
@@ -160,56 +33,55 @@ const NotificationItem = React.memo(
 
     return (
       <div
-        className={`relative group p-5 rounded-xl border-l-4 shadow-sm hover:shadow-md transition-all flex gap-6 ${
-          isUnread
-            ? "border-blue-500 bg-blue-50/50"
-            : "border-gray-300 bg-white"
+
+        className={`relative group bg-white rounded-xl shadow-lg border transition-all hover:shadow-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center ${
+          isUnread ? "border-blue-400" : "border-gray-200"
         }`}
       >
-        {/* Left: Checkbox */}
-        <div className="pt-1">
+        {/* Checkbox */}
+        <div className="flex items-start sm:items-center">
+
           <input
             type="checkbox"
             checked={selectedNotifications.includes(notification._id)}
             onChange={() => toggleSelectNotification(notification._id)}
-            className="h-4 w-4  accent-blue-600"
+
+            className="h-5 w-5 accent-blue-600"
           />
         </div>
 
-        {/* Middle Content */}
-        <div className="flex-1 space-y-2">
-          {/* Top Row */}
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* Main Content */}
+        <div className="flex-1 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
             {isUnread && (
-              <BsFillCircleFill className="text-blue-500 text-xs animate-pulse" />
+              <BsFillCircleFill className="text-green-600 text-sm animate-pulse" />
             )}
-
-            <p className="text-base font-semibold text-gray-800 break-words">
+            <p className="text-lg font-semibold text-gray-800 break-words">
               {notification.message}
             </p>
-
             {notification.priority && (
               <span
-                className={`px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${
+                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
                   notification.priority === "high"
-                    ? "bg-red-100 text-red-700"
+                    ? "bg-red-100 text-red-800"
+
                     : notification.priority === "medium"
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-gray-100 text-gray-700"
                 }`}
-              >
-                {notification.priority}
-              </span>
-            )}
-          </div>
 
-          {/* Updated By */}
+            >
+              Status: {notification.status}
+            </span>
+          )}
+        </div>
+
           {notification.updatedBy &&
             (() => {
               try {
                 if (notification.updatedBy === "System") {
                   return (
-                    <p className="text-xs text-gray-500 italic flex items-center gap-1">
+                    <p className="text-sm text-gray-500 italic flex items-center gap-1">
                       <MdUpdate className="text-gray-400" />
                       Updated by System
                     </p>
@@ -222,7 +94,7 @@ const NotificationItem = React.memo(
                     : notification.updatedBy;
 
                 return updater?.name ? (
-                  <p className="text-xs text-gray-500 italic flex items-center gap-1">
+                  <p className="text-sm text-gray-500 italic flex items-center gap-1">
                     <MdUpdate className="text-gray-500" />
                     Updated by {updater.name}
                   </p>
@@ -232,14 +104,13 @@ const NotificationItem = React.memo(
               }
             })()}
 
-          {/* Details */}
           {notification.details &&
             Object.keys(notification.details).length > 0 && (
               <ul className="text-sm text-gray-700 inline-flex gap-2 flex-wrap">
                 {Object.entries(notification.details).map(([key, value]) => (
                   <li
                     key={key}
-                    className="bg-blue-100 text-gray-700 border border-blue-300 p-2 rounded-2xl max-w-max"
+                    className="bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1 rounded-2xl"
                   >
                     <span className="font-medium capitalize">{key}:</span>{" "}
                     {String(value)}
@@ -248,9 +119,9 @@ const NotificationItem = React.memo(
               </ul>
             )}
 
-          {/* Timestamp */}
-          <div className="text-xs text-gray-500 flex items-center gap-1 pt-1">
-            <FaClock className="text-gray-500" />
+          <div className="text-xs text-gray-500 flex items-center gap-1">
+            <FaClock />
+
             {new Date(notification.createdAt).toLocaleString("en-IN", {
               timeZone: "Asia/Kolkata",
               day: "2-digit",
@@ -263,14 +134,16 @@ const NotificationItem = React.memo(
           </div>
         </div>
 
-        {/* Right Button */}
-        <div className="self-start">
+
+        {/* Mark as Read Button */}
+        <div className="self-start sm:self-auto">
           <button
             onClick={() => onMarkAsRead(notification._id)}
             disabled={notification.read}
-            className={`text-sm px-4 py-1.5 rounded-md font-medium border transition-all ${
+            className={`text-sm font-medium px-5 py-2 rounded-lg transition-all border ${
               notification.read
-                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
+
                 : "bg-green-600 text-white border-green-600 hover:bg-green-700"
             }`}
           >
@@ -278,37 +151,46 @@ const NotificationItem = React.memo(
           </button>
         </div>
       </div>
+      </div>
     );
   }
 );
 
-  const getUserContext = () => {
-    const userStr = localStorage.getItem("user");
-    let userObj = {};
-    try {
-      userObj = JSON.parse(userStr || "{}");
-    } catch {}
 
-    const token =
-      localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
-    let tokenPayload = {};
-    try {
-      tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
-    } catch {}
 
-    const email =
-      userObj.email || tokenPayload.email || localStorage.getItem("email");
-    const mongoId = userObj._id || localStorage.getItem("userId");
-    const shortId = tokenPayload.userId; // "113"
 
-    return {
-      role: localStorage.getItem("role") || userObj.role || tokenPayload.role,
-      email,
-      mongoId,
-      shortId,
-      allKeys: new Set([email, mongoId, shortId].filter(Boolean)),
-    };
+const getUserContext = () => {
+  const userStr = localStorage.getItem("user");
+  let userObj = {};
+  try {
+    userObj = JSON.parse(userStr || "{}");
+  } catch {
+    console.log("something went wrong")
+  }
+
+
+  const token =
+    localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
+  let tokenPayload = {};
+  try {
+    tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
+  } catch {
+    console.log("something went wrong")
+  }
+
+  const email =
+    userObj.email || tokenPayload.email || localStorage.getItem("email");
+  const mongoId = userObj._id || localStorage.getItem("userId");
+  const shortId = tokenPayload.userId; // "113"
+
+  return {
+    role: localStorage.getItem("role") || userObj.role || tokenPayload.role,
+    email,
+    mongoId,
+    shortId,
+    allKeys: new Set([email, mongoId, shortId].filter(Boolean)),
   };
+};
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -318,8 +200,6 @@ const Notifications = () => {
   const {
     role: userRole,
     email,
-    mongoId,
-    shortId,
     allKeys,
   } = useMemo(getUserContext, []);
   const [notificationCount, setNotificationCount] = useState(0);
@@ -335,8 +215,6 @@ const Notifications = () => {
   });
 
   const limit = 20;
-
-
 
   const handleMarkAsRead = useCallback(
     async (id) => {
