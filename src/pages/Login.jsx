@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaUserAlt, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useDispatch } from "react-redux";
@@ -9,6 +10,7 @@ import Swal from "sweetalert2";
 const RECAPTCHA_SITE_KEY = "6LfwLlMrAAAAAIFtLSnFxwGP_xfkeDU7xuz69sLa";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     userId: "",
     password: "",
@@ -24,52 +26,46 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // make this safer & non-blocking
   const subscribeToPushNotifications = async (userId, token) => {
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      console.log("Notification permission granted.");
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+      // Push requires https (or localhost)
+      const isSecure =
+        window.isSecureContext || location.hostname === "localhost";
+      if (!isSecure) return;
 
-      // Register service worker
-      await navigator.serviceWorker.register("/service-worker.js");
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return;
 
-      // Wait for the service worker to be ready
-      const swRegistration = await navigator.serviceWorker.ready;
+      const reg = await navigator.serviceWorker.register("/service-worker.js");
 
-      // Subscribe to push notifications
-      const subscription = await swRegistration.pushManager.subscribe({
+      // Don’t await .ready forever; race with timeout
+      const ready = Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, rej) =>
+          setTimeout(() => rej(new Error("sw-timeout")), 2500)
+        ),
+      ]);
+      await ready;
+
+      const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey:
-          "BFiAnzKqV9C437P10UIT5_daMne46XuJiVuSn4zQh2MQBjUIwMP9PMgk2TFQL9LOSiQy17eie7XRYZcJ0NE7jMs", // Replace with your VAPID public key
+          "BFiAnzKqV9C437P10UIT5_daMne46XuJiVuSn4zQh2MQBjUIwMP9PMgk2TFQL9LOSiQy17eie7XRYZcJ0NE7jMs",
       });
 
-      console.log("Sending subscription to backend:", { userId, subscription });
-      console.log("Subscription object:", subscription);
-
-      try {
-        // Send the subscription object to your backend to save it
-        const response = await fetch(
-          "https://taskbe.sharda.co.in/api/push-notification/save-subscription", // Backend URL for saving the subscription
-          {
-            method: "POST",
-            body: JSON.stringify({
-              userId,
-              subscription,
-            }),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to save subscription");
+      await fetch(
+        "https://taskbe.sharda.co.in/api/push-notification/save-subscription",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, subscription }),
         }
-        console.log("Subscription saved.");
-      } catch (error) {
-        console.error("Failed to save subscription:", error);
-      }
-    } else {
-      console.error("Notification permission denied.");
+      );
+    } catch (e) {
+      // swallow errors; don’t block login
+      console.error("Push setup failed (non-blocking):", e);
     }
   };
 
@@ -177,6 +173,7 @@ const Login = () => {
       setCaptchaToken(null);
     } finally {
       setLoading(false);
+      navigate("/", { replace: true });
     }
   };
 
@@ -334,9 +331,10 @@ const Login = () => {
             <div>
               <button
                 type="submit"
+                disabled={loading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
               >
-                Sign In
+                 {loading ? "Signing in..." : "Sign In"}
               </button>
             </div>
           </form>

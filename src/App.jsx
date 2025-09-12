@@ -24,7 +24,15 @@ import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
 import { NotesProvider } from "./context/NotesContext";
+
 import InvoiceTab from "./pages/InvoiceTab";
+
+import ShortcutHandler from "./Components/ShortcutHandler";
+
+
+import SettingsPage from "./pages/SettingsPage";
+import InvoicesPage from "./pages/InvoicesPage";
+
 
 const App = () => {
   function MailBoxEmbed() {
@@ -47,7 +55,6 @@ const App = () => {
     );
   }
   return (
-    
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} /> {/* Login route */}
@@ -174,6 +181,16 @@ const App = () => {
           }
         />
         <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <SettingsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/profile"
           element={
             <ProtectedRoute>
@@ -209,6 +226,17 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <InvoiceForm />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Add the new InvoicesPage route */}
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoicesPage />
               </MainLayout>
             </ProtectedRoute>
           }
@@ -263,7 +291,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin-mailbox"
           element={

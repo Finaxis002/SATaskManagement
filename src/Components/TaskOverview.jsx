@@ -1,7 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef , useMemo} from "react";
 import { format, isBefore, isToday, isTomorrow, parseISO } from "date-fns";
-import { useSelector } from "react-redux";
 import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+// Tabs
+
+
+// Tabs used across desktop & mobile
+const tabs = ["today", "tomorrow", "upcoming", "overdue", "completed"];
+
 const TaskOverview = () => {
   const [tasks, setTasks] = useState([]); // Store tasks in state
   const [activeTab, setActiveTab] = useState("today"); // Track active tab (today, tomorrow, etc.)
@@ -94,23 +101,32 @@ const TaskOverview = () => {
     }
   });
 
-  // Filter tasks by the active tab (Today, Tomorrow, etc.)
-  const getTasksByTab = () => {
-    switch (activeTab) {
-      case "today":
-        return categorizedTasks.today;
-      case "tomorrow":
-        return categorizedTasks.tomorrow;
-      case "upcoming":
-        return categorizedTasks.upcoming;
-      case "overdue":
-        return categorizedTasks.overdue;
-      case "completed":
-        return categorizedTasks.completed;
-      default:
-        return [];
+
+  // ✅ Dashboard ko stats bhejna
+  useEffect(() => {
+    const counts = {
+      completed: categorizedTasks.completed.length,
+      overdue: categorizedTasks.overdue.length,
+      progress:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length,
+      total:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length +
+        categorizedTasks.overdue.length +
+        categorizedTasks.completed.length,
+    };
+    if (typeof window.updateDashboardStats === "function") {
+      window.updateDashboardStats(counts);
     }
-  };
+  }, [tasks, justCompleted]);
+
+
+
+  const getTasksByTab = () => categorizedTasks[activeTab] || [];
+
 
   const handleToggleCompleted = async (taskId) => {
     const updatedBy = {
@@ -162,6 +178,25 @@ const TaskOverview = () => {
   const isHiddenCompletedTask = (task) =>
     task.status === "Completed" && task.isHidden === true;
 
+
+  const currentTabIndex = tabs.indexOf(activeTab);
+
+  const handlePrevTab = () => {
+    if (currentTabIndex > 0) {
+      setActiveTab(tabs[currentTabIndex - 1]);
+    } else {
+      setActiveTab(tabs[tabs.length - 1]);
+    }
+
+  const handleNextTab = () => {
+    if (currentTabIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentTabIndex + 1]);
+    } else {
+      setActiveTab(tabs[0]);
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[250px]">
@@ -191,52 +226,97 @@ const TaskOverview = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
-      <div className="flex justify-between items-center px-6 py- border-b ">
-        {role === "user" && (
-          <h2
-            className="text-xl font-semibold text-gray-900"
-            style={{ fontFamily: "Poppins, sans-serif" }}
+    <div>
+      {/* Desktop view */}
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-xl border border-gray-200 p-6 font-sans hidden sm:block">
+        <h2 className="text-2xl font-extrabold text-gray-800 mb-4">
+          Task Overview
+        </h2>
+
+        {/* Tabs */}
+        <div className="flex gap-3 flex-wrap mb-6">
+          {tabs.map((tab, i) => {
+            const visibleCount = categorizedTasks[tab]?.filter(
+              (t) => !isHiddenCompletedTask(t)
+            ).length;
+            const isActive = activeTab === tab;
+            return (
+              <motion.button
+                key={tab}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                whileHover="hover"
+                variants={buttonVariants}
+                onClick={() => setActiveTab(tab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {visibleCount > 0 && (
+                  <span
+                    className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
+                      isActive
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
+                  >
+                    {visibleCount}
+                  </span>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Mobile Tabs with Slider */}
+        <div className="flex sm:hidden items-center justify-between w-full">
+          {/* Left Arrow */}
+          <button
+            onClick={handlePrevTab}
+            className="p-2 text-gray-600 disabled:opacity-50"
           >
-            My Tasks
-          </h2>
-        )}
+            <ChevronLeft className="w-8 h-8" /> {/* 👈 Icon */}
+          </button>
 
-        <div
-          className="flex gap-6 text-sm"
-          style={{ fontFamily: "Poppins, sans-serif" }}
-        >
-          {["today", "tomorrow", "upcoming", "overdue", "completed"].map(
-            (tab) => {
-              const visibleCount = categorizedTasks[tab]?.filter(
+          {/* Active Tab with Dynamic Color */}
+          <span
+            className={`flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-sm
+      ${
+        activeTab === "today"
+          ? "bg-blue-500 text-white"
+          : activeTab === "tomorrow"
+          ? "bg-yellow-400 text-white"
+          : activeTab === "upcoming"
+          ? "bg-orange-500 text-white"
+          : activeTab === "overdue"
+          ? "bg-red-500 text-white"
+          : "bg-green-500 text-white"
+      }`}
+          >
+            {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+            <span className="bg-white text-black px-2 py-0.5 rounded-full text-xs font-bold">
+              {categorizedTasks[activeTab]?.filter(
                 (task) => !isHiddenCompletedTask(task)
-              ).length;
+              ).length || 0}
+            </span>
+          </span>
 
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-2 capitalize border-b-2 transition-all duration-300 ${
-                    activeTab === tab
-                      ? "border-indigo-600 text-black font-semibold"
-                      : "border-transparent text-gray-600 hover:text-indigo-600"
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  {/* {visibleCount > 0 ? ` ${ visibleCount}` : ""} */}
-                  {visibleCount > 0 && (
-                    <span className="ml-1 text-sm font-bold text-indigo-600">
-                      {visibleCount}
-                    </span>
-                  )}
-                </button>
-              );
-            }
-          )}
+          {/* Right Arrow */}
+          <button
+            onClick={handleNextTab}
+            className="p-2 text-gray-600 disabled:opacity-50"
+          >
+            <ChevronRight className="w-8 h-8" /> {/* 👉 Icon */}
+          </button>
         </div>
       </div>
 
-      <div className="divide-y  max-h-[47vh] overflow-y-scroll">
+      {/* Task list - Desktop */}
+      <div className="divide-y hidden md:block h-[60vh] overflow-auto">
         {getTasksByTab().filter((task) => !isHiddenCompletedTask(task))
           .length === 0 ? (
           <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
@@ -246,7 +326,7 @@ const TaskOverview = () => {
             .map((task) => (
               <div
                 key={task._id}
-                className="flex justify-between items-center border-b px-6 py-4 hover:bg-gray-50 transition-all duration-200"
+                className="flex justify-between items-center px-6 py-3 hover:bg-gray-50 transition-all"
               >
                 <div className="flex items-center gap-3">
                   <input
@@ -258,28 +338,90 @@ const TaskOverview = () => {
                     disabled={task.status === "Completed"}
                     className="accent-indigo-600 cursor-pointer"
                   />
-
                   <span
-                    className={`text-gray-800 text-sm  ${
+                    className={`text-sm ${
                       task.status === "Completed" || justCompleted.has(task._id)
                         ? "line-through text-gray-400"
-                        : ""
+                        : "text-gray-800"
                     }`}
-                    style={{ fontFamily: "Roboto, sans-serif" }}
                   >
                     {task.taskName}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  {task?.assignees?.map((assignee) => (
+                <div className="flex flex-col items-end gap-1 text-sm">
+                  <span className="text-gray-500 text-xs">
+                    {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
+                      ? format(new Date(task.dueDate), "MMM d")
+                      : "Invalid date"}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {task?.assignees?.map((assignee) => (
+                      <span
+                        key={assignee.email}
+                        className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                      >
+                        {assignee.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+        )}
+      </div>
+
+      {/* Task list - Mobile */}
+      <div className=" flex gap-10 flex-col mt-8 mb-4 md:hidden h-[60vh] overflow-auto">
+
+        {getTasksByTab().filter((task) => !isHiddenCompletedTask(task))
+          .length === 0 ? (
+          <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
+        ) : (
+          getTasksByTab()
+            .filter((task) => !isHiddenCompletedTask(task))
+            .map((task) => (
+              <div
+                key={task._id}
+
+                className="flex justify-between items-center mb-1 px-6 py-3 h-20 hover:bg-gray-50 transition-all shadow-xl"
+              >
+                <div className="flex items-start flex-col gap-3">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={
+                        task.status === "Completed" ||
+                        justCompleted.has(task._id)
+                      }
+                      onChange={() => handleToggleCompleted(task._id)}
+                      disabled={task.status === "Completed"}
+                      className="accent-indigo-600 cursor-pointer"
+                    />
                     <span
-                      key={assignee.email}
-                      className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium"
+                      className={`text-sm ${
+                        task.status === "Completed" ||
+                        justCompleted.has(task._id)
+                          ? "line-through text-gray-400"
+                          : "text-gray-800"
+                      }`}
                     >
-                      {assignee.name}
+                      {task.taskName}
                     </span>
-                  ))}
-                  <span className="text-gray-500">
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {task?.assignees?.map((assignee) => (
+                      <span
+                        key={assignee.email}
+                        className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                      >
+                        {assignee.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-sm italic">
+                  <span className="text-gray-500 text-xs">
+
                     {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
                       ? format(new Date(task.dueDate), "MMM d")
                       : "Invalid date"}
@@ -292,5 +434,6 @@ const TaskOverview = () => {
     </div>
   );
 };
+}
 
 export default TaskOverview;
