@@ -95,7 +95,6 @@ const handleDepartmentChange = async (selectedOptions, actionMeta) => {
     //   placeholder="Select or add departments"
     // />
     <CreatableSelect
-    
       isMulti
       name="departments"
       options={allDepartments.map((dep) => ({ label: dep, value: dep }))}

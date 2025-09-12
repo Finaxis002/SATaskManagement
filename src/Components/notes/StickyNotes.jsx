@@ -82,7 +82,7 @@ const StickyNotes = ({ onClose }) => {
         {/* Footer */}
         <div className="border-t border-gray-100 px-6 py-4">
           <button
-            className="w-full bg-yellow-500 hover:bg-yellow-300 text-yellow-900 font-medium px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
+            className="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-medium px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
             disabled={creating}
             onClick={createNote}
           >

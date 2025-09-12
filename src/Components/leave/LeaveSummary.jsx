@@ -35,17 +35,16 @@ const LeaveSummary = () => {
   }, [userId]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800 text-center">Your Leave Summary</h2>
-      <div className="border-b border-gray-300 mb-4"></div> 
+    <div className="bg-gray-800 rounded-xl p-6 shadow-md">
+      <h2 className="text-2xl font-semibold mb-4">Your Leave Summary</h2>
       <div className="grid grid-cols-2 gap-4 text-center">
-        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm hover:shadow-md transition">
-          <div className="text-sm text-gray-600">Total Approved Days</div>
-          <div className="text-2xl font-bold text-gray-800">{approvedDays}</div>
+        <div className="bg-gray-700 rounded-md p-4">
+          <div className="text-sm text-gray-400">Total Approved Days</div>
+          <div className="text-2xl font-bold">{approvedDays}</div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm hover:shadow-md transition">
-          <div className="text-sm text-gray-600">Approved Requests</div>
-          <div className="text-2xl font-bold text-gray-800">{approvedCount}</div>
+        <div className="bg-gray-700 rounded-md p-4">
+          <div className="text-sm text-gray-400">Approved Requests</div>
+          <div className="text-2xl font-bold">{approvedCount}</div>
         </div>
       </div>
     </div>
