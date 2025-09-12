@@ -15,45 +15,40 @@ const ITEMS_PER_PAGE = 8;
 
 const invoiceTypes = ["Proforma Invoice", "Tax Invoice", "Invoice"];
 
+
 // Use the function
+
 
 export default function InvoiceForm({
   initialInvoice = null,
   onSaved,
   onClose,
 }) {
+  
   const PREVIEW_W = 794;
-  const PREVIEW_H = 1125;
+  const PREVIEW_H = 1122;
   const PREVIEW_SCALE = 0.9;
   const [previewScale, setPreviewScale] = useState(0.9);
   const previewWrapRef = useRef(null);
 
   useEffect(() => {
-    let timeoutId;
-
     const update = () => {
       const el = previewWrapRef.current;
       if (!el) return;
-      const avail = el.clientWidth - 16; // account for padding
-      const scale = Math.min(1, avail / PREVIEW_W); // Scale based on available width
-      setPreviewScale(scale);
+      const avail = el.clientWidth - 16; // padding
+      setPreviewScale(Math.min(1, avail / PREVIEW_W));
     };
 
-    const debouncedUpdate = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(update, 100); // Debounce to optimize resize performance
-    };
+    update();
 
-    const ro = new ResizeObserver(debouncedUpdate);
+    const ro = new ResizeObserver(update);
     const el = previewWrapRef.current;
-    if (el) ro.observe(el);
+    if (el) ro.observe(el); // <-- guard!
 
-    window.addEventListener("resize", debouncedUpdate);
-
+    window.addEventListener("resize", update);
     return () => {
-      clearTimeout(timeoutId);
       ro.disconnect();
-      window.removeEventListener("resize", debouncedUpdate);
+      window.removeEventListener("resize", update);
     };
   }, []);
 
@@ -65,7 +60,7 @@ export default function InvoiceForm({
   const [firmsError, setFirmsError] = useState("");
 
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [selectedFirm, setSelectedFirm] = useState(null);
+  const [selectedFirm, setSelectedFirm] = useState(firms[0]);
   const [invoiceType, setInvoiceType] = useState(invoiceTypes[0]);
   const [isFinalized, setIsFinalized] = useState(false);
   const [selectedBankIndex, setSelectedBankIndex] = useState(0);
@@ -73,58 +68,26 @@ export default function InvoiceForm({
   const [selectedClientOption, setSelectedClientOption] = useState(null); // keep
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(null);
-
-  // useEffect(() => {
-  //   const loadFirms = async () => {
-  //     try {
-  //       setFirmsLoading(true);
-  //       const res = await axios.get("https://taskbe.sharda.co.in/firms");
-  //       setFirms(res.data || []);
-  //       console.log("firm fetched ...", res.data)
-  //       if (!isEdit && (res.data || []).length) {
-  //         setSelectedFirmId(res.data[0]._id);
-  //         setSelectedFirm(res.data[0]);
-  //       }
-  //     } catch (e) {
-  //       setFirmsError("Failed to load firms");
-  //       console.error(e);
-  //     } finally {
-  //       setFirmsLoading(false);
-  //     }
-  //   };
-  //   loadFirms();
-  // }, []);
+  
 
   useEffect(() => {
-    let isMounted = true;
     const loadFirms = async () => {
       try {
         setFirmsLoading(true);
         const res = await axios.get("https://taskbe.sharda.co.in/firms");
-        if (isMounted) {
-          setFirms(res.data || []);
-          console.log("firm fetched ...", res.data);
-          if (!isEdit && (res.data || []).length) {
-            setSelectedFirmId(res.data[0]._id);
-            setSelectedFirm(res.data[0]);
-          }
+        setFirms(res.data || []);
+        if (!isEdit && (res.data || []).length) {
+          setSelectedFirmId(res.data[0]._id);
+          setSelectedFirm(res.data[0]);
         }
       } catch (e) {
-        if (isMounted) {
-          setFirmsError("Failed to load firms");
-          console.error(e);
-        }
+        setFirmsError("Failed to load firms");
+        console.error(e);
       } finally {
-        if (isMounted) {
-          setFirmsLoading(false);
-        }
+        setFirmsLoading(false);
       }
     };
     loadFirms();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   useEffect(() => {
@@ -193,21 +156,12 @@ export default function InvoiceForm({
     }
   };
 
-  // useEffect(() => {
-  //   if (isEdit) return; // ⛔ no preview while editing
-  //   setInvoiceNumber("");
-  //   setIsFinalized(false);
-  //   if (selectedFirm && invoiceType) previewInvoiceNumber();
-  // }, [isEdit, selectedFirmId, selectedFirm, invoiceType]);
-
   useEffect(() => {
-    if (isEdit) return; // No preview while editing
-    if (!selectedFirm || !invoiceType) return; // Ensure both selectedFirm and invoiceType are available
-
-    setInvoiceNumber(""); // Reset invoice number
-    setIsFinalized(false); // Reset finalized flag
-    previewInvoiceNumber(); // Call the function to preview the invoice number
-  }, [isEdit, selectedFirm, invoiceType]); // Dependencies - run when these change
+    if (isEdit) return; // ⛔ no preview while editing
+    setInvoiceNumber("");
+    setIsFinalized(false);
+    if (selectedFirm && invoiceType) previewInvoiceNumber();
+  }, [isEdit, selectedFirmId, selectedFirm, invoiceType]);
 
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const today = new Date();
@@ -262,51 +216,22 @@ export default function InvoiceForm({
   const originalInvNoRef = useRef("");
 
   // Fetch clients on component mount
-  // useEffect(() => {
-  //   if (clients.length > 0) return; // Prevent re-fetching if clients are already loaded
-  //   const fetchClients = async () => {
-  //     try {
-  //       console.log("Fetching clients..."); // Debug log
-  //       const response = await axios.get("/clients/details");
-  //       console.log("Clients fetched:", response.data); // Debug log
-  //       setClients(response.data);
-  //     } catch (error) {
-  //       console.error("Error fetching clients:", error);
-  //       // Add error state if needed
-  //     }
-  //   };
-
-  //   fetchClients();
-  // }, []);
-
-  // Replace the clients useEffect with this:
   useEffect(() => {
-    let isMounted = true;
-
     const fetchClients = async () => {
       try {
-        console.log("Fetching clients...");
+        console.log("Fetching clients..."); // Debug log
         const response = await axios.get("/clients/details");
-        if (isMounted) {
-          console.log("Clients fetched:", response.data);
-          setClients(response.data);
-        }
+        console.log("Clients fetched:", response.data); // Debug log
+        setClients(response.data);
       } catch (error) {
-        if (isMounted) {
-          console.error("Error fetching clients:", error);
-        }
+        console.error("Error fetching clients:", error);
+        // Add error state if needed
       }
     };
 
-    // Only fetch if we haven't already loaded clients
-    if (clients.length === 0) {
-      fetchClients();
-    }
+    fetchClients();
+  }, []);
 
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Empty dependency array - run only once on mount
 
   useEffect(() => {
     if (!selectedClientOption) {
@@ -361,6 +286,8 @@ export default function InvoiceForm({
 
     fetchTasks();
   }, [selectedClientOption, fromDate, toDate]);
+
+
 
   const updateItem = (index, field, value) => {
     setItems((prevItems) => {
@@ -511,29 +438,6 @@ export default function InvoiceForm({
   const page2Items = items.slice(ITEMS_PER_PAGE);
 
   const handleSaveAndDownloadPDF = async () => {
-    // Validation check
-    const missingFields = [];
-
-    if (!selectedFirmId) missingFields.push("Firm");
-    if (!invoiceType) missingFields.push("Invoice Type");
-    if (!invoiceDate) missingFields.push("Invoice Date");
-    if (!customer.name) missingFields.push("Customer Name");
-    if (!placeOfSupply) missingFields.push("Place of Supply");
-    if (items.length === 0) missingFields.push("and at least one Item");
-
-    if (missingFields.length > 0) {
-      Swal.fire({
-        icon: "error",
-        title: "Validation Error",
-        text: `Please fill out the following required fields: ${missingFields.join(
-          ", "
-        )}`,
-        confirmButtonColor: "#d33",
-        confirmButtonText: "Okay",
-      });
-      return;
-    }
-
     try {
       // Finalize the invoice number and mark it as finalized
       const finalNo = await finalizeInvoiceNumber();
@@ -587,24 +491,9 @@ export default function InvoiceForm({
       // Now generate PDF
       if (!invoiceRef.current) return;
       const element = invoiceRef.current;
-      // element.style.transform = "scale(1)";
-      // element.style.transformOrigin = "top left";
-      // element.style.width = `${element.scrollWidth}px`;
-      // Remember previous styles
-      const prevTransform = element.style.transform;
-      const prevTransformOrigin = element.style.transformOrigin;
-      const prevWidth = element.style.width;
-      const prevHeight = element.style.height;
-      const prevMaxHeight = element.style.maxHeight;
-      const prevOverflow = element.style.overflow;
-
-      // Unscale + let wrapper grow to full content height
       element.style.transform = "scale(1)";
       element.style.transformOrigin = "top left";
       element.style.width = `${element.scrollWidth}px`;
-      element.style.height = "auto";
-      element.style.maxHeight = "none";
-      element.style.overflow = "visible";
 
       const opt = {
         margin: 0,
@@ -618,51 +507,22 @@ export default function InvoiceForm({
           useCORS: true,
           width: element.scrollWidth,
           windowWidth: element.scrollWidth,
-          windowHeight: element.scrollHeight,
         },
         jsPDF: {
           unit: "px",
           orientation: "portrait",
-          format: [794, 1125],
+          format: [794, 1122],
         },
-        //     pagebreak: { mode: ['css', 'legacy'],
-        // avoid: '.invoice-note'},
-        // pagebreak: { mode: ['css', 'legacy'], before: '.html2pdf__page-break', avoid: '.invoice-note' },
-        pagebreak: { mode: "css" },
+        pagebreak: { mode: ['css', 'legacy'],
+    avoid: '.invoice-note'},
       };
 
-      // await html2pdf().set(opt).from(element).save();
-      const pageHeightPx = 1125; // must match your jsPDF format height
-      const expectedPages = Math.max(
-        1,
-        Math.ceil(element.scrollHeight / pageHeightPx)
-      );
-
-      await html2pdf()
-        .set(opt)
-        .from(element)
-        .toPdf()
-        .get("pdf")
-        .then((pdf) => {
-          const actual = pdf.internal.getNumberOfPages();
-          // Remove any trailing blank pages that html2pdf sometimes adds
-          for (let i = actual; i > expectedPages; i--) {
-            pdf.deletePage(i);
-          }
-        })
-        .save();
+      await html2pdf().set(opt).from(element).save();
 
       // Reset styles
-      // element.style.transform = "scale(0.90)";
-      // element.style.transformOrigin = "top left";
-      // element.style.width = "";
-      // Restore preview styles
-      element.style.transform = prevTransform || `scale(${previewScale})`;
-      element.style.transformOrigin = prevTransformOrigin || "top left";
-      element.style.width = prevWidth || "";
-      element.style.height = prevHeight || "";
-      element.style.maxHeight = prevMaxHeight || "";
-      element.style.overflow = prevOverflow || "";
+      element.style.transform = "scale(0.90)";
+      element.style.transformOrigin = "top left";
+      element.style.width = "";
     } catch (error) {
       console.error("Failed to save or generate PDF:", error);
       Swal.fire("Error", "Could not save or generate the invoice.", "error");
@@ -783,15 +643,67 @@ export default function InvoiceForm({
   }, [isEdit, initialInvoice]);
 
   // Skip preview number in edit mode
-  // useEffect(() => {
-  //   if (isEdit) return;
-  //   if (selectedFirm && invoiceType) previewInvoiceNumber();
-  // }, [isEdit, selectedFirm, invoiceType]);
+  useEffect(() => {
+    if (isEdit) return;
+    if (selectedFirm && invoiceType) previewInvoiceNumber();
+  }, [isEdit, selectedFirm, invoiceType]);
 
-  // Update Invoice Handler (Only saves the invoice)
-  const handleUpdateInvoice = async () => {
+  // const updateInvoice = async () => {
+  //   try {
+  //     const firmSnapshot = {
+  //       _id: selectedFirm?._id,
+  //       name: selectedFirm?.name,
+  //       address: selectedFirm?.address,
+  //       phone: selectedFirm?.phone,
+  //       gstin: selectedFirm?.gstin,
+  //       bank: activeBank
+  //         ? {
+  //             _id: activeBank._id,
+  //             label: activeBank.label || "",
+  //             bankName: activeBank.bankName || activeBank.name || "",
+  //             accountName: activeBank.accountName || "",
+  //             accountNumber:
+  //               activeBank.accountNumber || activeBank.account || "",
+  //             ifsc: activeBank.ifsc || "",
+  //             upiIdName: activeBank.upiIdName || "",
+  //             upiMobile: activeBank.upiMobile || "",
+  //             upiId: activeBank.upiId || "",
+  //           }
+  //         : null,
+  //     };
+
+  //     const payload = {
+  //       invoiceNumber,
+  //       invoiceDate,
+  //       invoiceType, // ignored if changed (server freezes)
+  //       selectedFirm: firmSnapshot, // bank allowed; rest frozen server-side
+  //       placeOfSupply,
+  //       customer, // frozen server-side
+  //       items,
+  //       notes,
+  //       totalAmount: totalAmountWithTax,
+  //     };
+
+  //     // const { data } = await axios.put(`https://taskbe.sharda.co.in/api/invoices/${invoiceNumber}`, payload);
+  //     const idForUpdate = isEdit ? originalInvNoRef.current : invoiceNumber;
+  //     const { data } = await axios.put(
+  //       `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
+  //         idForUpdate
+  //       )}`,
+  //       payload
+  //     );
+  //     await Swal.fire("Updated", "Invoice saved successfully.", "success");
+  //     onSaved && onSaved(data);
+  //     onClose && onClose();
+  //   } catch (e) {
+  //     console.error(e);
+  //     Swal.fire("Error", "Could not update the invoice.", "error");
+  //   }
+  // };
+
+  const handleUpdateAndDownloadPDF = async () => {
     try {
-      // Perform the update logic here (saving invoice to DB)
+      // 1) UPDATE the invoice in DB (no finalize here)
       const firmSnapshot = {
         _id: selectedFirm?._id,
         name: selectedFirm?.name,
@@ -814,115 +726,48 @@ export default function InvoiceForm({
           : null,
       };
 
-      const invoiceData = {
+      const payload = {
         invoiceNumber,
         invoiceDate,
-        invoiceType,
+        invoiceType, // server freezes type if changed
         selectedFirm: firmSnapshot,
         placeOfSupply,
-        customer,
+        customer, // frozen server-side
         items,
-        totalAmount: totalAmountWithTax,
         notes,
+        totalAmount: totalAmountWithTax,
       };
 
-      await axios.put(`/invoices/${invoiceNumber}`, invoiceData);
+      const idForUpdate = isEdit ? originalInvNoRef.current : invoiceNumber;
+      await axios.put(
+        `https://taskbe.sharda.co.in/api/invoices/${encodeURIComponent(
+          idForUpdate
+        )}`,
+        payload
+      );
 
-      // Show success message
-      Swal.fire({
+      // Optional toast
+      await Swal.fire({
         icon: "success",
         title: "Invoice Updated",
-        text: `Invoice ${invoiceNumber} has been updated successfully.`,
+        text: `Invoice ${invoiceNumber} has been updated. Generating PDF...`,
         confirmButtonColor: "#3085d6",
         confirmButtonText: "Ok",
       });
-    } catch (error) {
-      console.error("Error updating invoice:", error);
-      Swal.fire("Error", "Could not update the invoice.", "error");
-    }
-  };
 
-  // Download PDF Handler (Only generates and downloads the PDF)
-  const handleDownloadPDF = async () => {
-    try {
-      // Validate form fields before proceeding
-      const missingFields = [];
-      if (!selectedFirmId) missingFields.push("Firm");
-      if (!invoiceType) missingFields.push("Invoice Type");
-      if (!invoiceDate) missingFields.push("Invoice Date");
-      if (!customer.name) missingFields.push("Customer Name");
-      if (!placeOfSupply) missingFields.push("Place of Supply");
-      if (items.length === 0) missingFields.push("At least one Item");
-
-      if (missingFields.length > 0) {
-        Swal.fire({
-          icon: "error",
-          title: "Validation Error",
-          text: `Please fill out the following required fields: ${missingFields.join(
-            ", "
-          )}`,
-          confirmButtonColor: "#d33",
-          confirmButtonText: "Okay",
-        });
-        return;
-      }
-
-      // Generate PDF logic here (same as your existing PDF generation logic)
-      const finalNo = await finalizeInvoiceNumber();
-      setInvoiceNumber(finalNo);
-
-      const firmSnapshot = {
-        _id: selectedFirm?._id,
-        name: selectedFirm?.name,
-        address: selectedFirm?.address,
-        phone: selectedFirm?.phone,
-        gstin: selectedFirm?.gstin,
-        bank: activeBank
-          ? {
-              _id: activeBank._id,
-              label: activeBank.label || "",
-              bankName: activeBank.bankName || activeBank.name || "",
-              accountName: activeBank.accountName || "",
-              accountNumber:
-                activeBank.accountNumber || activeBank.account || "",
-              ifsc: activeBank.ifsc || "",
-              upiIdName: activeBank.upiIdName || "",
-              upiMobile: activeBank.upiMobile || "",
-              upiId: activeBank.upiId || "",
-            }
-          : null,
-      };
-
-      // Save the invoice to the backend (optional)
-      const invoiceData = {
-        invoiceNumber: finalNo,
-        invoiceDate,
-        invoiceType,
-        selectedFirm: firmSnapshot,
-        placeOfSupply,
-        customer,
-        items,
-        totalAmount: totalAmountWithTax,
-        notes,
-      };
-
-      await axios.post("/invoices", invoiceData);
-
-      // Now generate the PDF
+      // 2) GENERATE the PDF (do NOT finalize/increment in edit mode)
       if (!invoiceRef.current) return;
+
       const element = invoiceRef.current;
 
+      // remember current styles and temporarily un-scale
       const prevTransform = element.style.transform;
       const prevTransformOrigin = element.style.transformOrigin;
       const prevWidth = element.style.width;
-      const prevHeight = element.style.height;
-      const prevMaxHeight = element.style.maxHeight;
 
       element.style.transform = "scale(1)";
       element.style.transformOrigin = "top left";
       element.style.width = `${element.scrollWidth}px`;
-      element.style.height = "auto";
-      element.style.maxHeight = "none";
 
       const opt = {
         margin: 0,
@@ -940,65 +785,180 @@ export default function InvoiceForm({
         jsPDF: {
           unit: "px",
           orientation: "portrait",
-          format: [794, 1125],
+          format: [794, 1122],
         },
         pagebreak: { mode: "css" },
       };
 
       await html2pdf().set(opt).from(element).save();
-      element.style.height = prevHeight || "";
-      element.style.maxHeight = prevMaxHeight || "";
 
       // restore preview styles
       element.style.transform = prevTransform || `scale(${previewScale})`;
       element.style.transformOrigin = prevTransformOrigin || "top left";
       element.style.width = prevWidth || "";
+
     } catch (error) {
-      console.error("Failed to generate PDF:", error);
-      Swal.fire("Error", "Could not generate the invoice PDF.", "error");
+      console.error(error);
+      Swal.fire("Error", "Could not update or generate the invoice.", "error");
     }
   };
 
   const calculateNotesPages = () => {
-    if (notes.length === 0) return 0;
+  if (notes.length === 0) return 0;
+  
+  // Simple estimation - you might need to adjust this based on your actual layout
+  const approxLinesPerPage = 40;
+  let totalLines = 0;
+  
+  notes.forEach(note => {
+    // Estimate lines based on character count (assuming ~60 chars per line)
+    const lines = Math.ceil(note.text.length / 60) + 1; // +1 for the number prefix
+    totalLines += lines;
+  });
+  
+  return Math.ceil(totalLines / approxLinesPerPage);
+};
 
-    // Simple estimation - you might need to adjust this based on your actual layout
-    const approxLinesPerPage = 40;
-    let totalLines = 0;
 
-    notes.forEach((note) => {
-      // Estimate lines based on character count (assuming ~60 chars per line)
-      const lines = Math.ceil(note.text.length / 60) + 1; // +1 for the number prefix
-      totalLines += lines;
-    });
 
-    return Math.ceil(totalLines / approxLinesPerPage);
-  };
 
-  const splitNotesForPages = (notes, maxNotesPerPage = 5) => {
-    if (notes.length === 0) return [[], []]; // Empty notes case
 
-    // If all notes fit on one page, return them all for page 1
-    if (notes.length <= maxNotesPerPage) return [notes, []];
+const splitNotesForPages = (notes, maxNotesPerPage = 5) => {
+  if (notes.length === 0) return [[], []]; // Empty notes case
 
-    // Otherwise, split notes between pages
-    return [notes.slice(0, maxNotesPerPage), notes.slice(maxNotesPerPage)];
-  };
+  // If all notes fit on one page, return them all for page 1
+  if (notes.length <= maxNotesPerPage) return [notes, []];
 
-  // Calculate pages needed
-  const notesPages = calculateNotesPages();
-  const [notesPage1, notesPage2] = splitNotesForPages(notes);
+  // Otherwise, split notes between pages
+  return [notes.slice(0, maxNotesPerPage), notes.slice(maxNotesPerPage)];
+};
+
+
+// Calculate pages needed
+const notesPages = calculateNotesPages();
+const [notesPage1, notesPage2] = splitNotesForPages(notes); 
 
   return (
     <>
-      <div className=" flex gap-5 p-5 bg-gray-100 overflow-x-auto items-start max-h-[95vh] overflow-y-hidden">
+      <style>{`
+  .locked-field { 
+    background-color: #fff7d6 !important; 
+    border-color: #d1d5db !important; 
+    color: #374151 !important;
+  }
+  .locked-cursor, .locked-cursor * { 
+    cursor: not-allowed !important;
+  }
+`}</style>
+      <style>{`
+  /* force two columns and prevent wrapping */
+  .asa-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    gap: 20px !important;
+    padding: 20px !important;
+    background: #f9f9f9 !important;
+    overflow-x: auto !important; /* horizontal scroll if needed */
+  }
+
+  /* lock the left panel to a fixed column width (override width:100%) */
+  .asa-left {
+    flex: 0 0 520px !important;
+    width: 520px !important;
+    max-width: 520px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* right side is content-sized; never wraps */
+  .asa-right {
+    flex: 0 0 auto !important;
+  }
+    @media print {
+    .invoice-note {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .notes-container {
+      break-inside: auto;
+    }
+  }
+  
+  .invoice-note {
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px dotted #eee;
+  }
+  
+  .note-number {
+    font-weight: bold;
+    margin-right: 5px;
+  }
+  
+  .note-text {
+    white-space: pre-line;
+  }
+`}</style>
+      ;
+      <div
+        className="invoice-page "
+      
+        style={{
+          display: "flex",
+          flexDirection: "row", // This ensures side-by-side layout
+          gap: "20px",
+          padding: "20px",
+          background: "#f9f9f9",
+          height: "calc(100vh - 40px)",
+          overflowX: "auto",
+          alignItems: "flex-start",
+          overflow: "hidden",
+          width: "100%", // Make it take full available width
+          maxWidth: "none", // Remove any max-width constraints
+        }}
+      >
         {/* Left form side */}
-        <div className="scrollable-panel flex-none w-[500px] h-full overflow-y-auto pr-2 box-border pl-1">
-          <div className="max-h-[90vh] overflow-y-auto pt-5 pr-1">
-            {/* ... Your left side inputs and controls ... */}
-            <div>
-              <div className="flex gap-2 justify-center items-center mb-3">
-                {/* <button
+        <div
+          className="invoice-left scrollable-panel"
+          style={{
+            flex: "0 0 520px",
+            maxWidth: "520px",
+            minWidth: "520px",
+            boxSizing: "border-box",
+            height: "100%",
+            overflowY: "auto",
+            paddingRight: "8px",
+          }}
+        >
+          {/* ... Your left side inputs and controls ... */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "10px",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
+            <div className="flex gap-2 justify-center items-center mb-3">
+              {/* {isEdit ? (
+                <button
+                  onClick={updateInvoice}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                >
+                  Update Invoice
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveAndDownloadPDF}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  title="Save and Download PDF"
+                >
+                  Save & Generate PDF
+                </button>
+              )} */}
+              <button
                 onClick={
                   isEdit ? handleUpdateAndDownloadPDF : handleSaveAndDownloadPDF
                 }
@@ -1012,146 +972,62 @@ export default function InvoiceForm({
                   {isEdit ? "Update & Download PDF" : "Save & Download PDF"}
                 </span>
                 <FiDownload className="w-4 h-4" />
-              </button> */}
+              </button>
 
-                {isEdit && (
-                  <button
-                    onClick={handleUpdateInvoice} // Function to handle updating invoice
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-2"
-                    title="Update Invoice"
-                  >
-                    <FiSave className="w-4 h-4" />
-                    <span>Update Invoice</span>
-                  </button>
-                )}
-
-                {/* Download PDF Button (Only visible in edit mode) */}
-                {isEdit && (
-                  <button
-                    onClick={handleDownloadPDF} // Function to handle downloading PDF
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
-                    title="Download PDF"
-                  >
-                    <FiDownload className="w-4 h-4" />
-                    <span>Download PDF</span>
-                  </button>
-                )}
-
-                {/* Combined button for Save & Generate PDF in non-edit mode */}
-                {!isEdit && (
-                  <button
-                    onClick={handleSaveAndDownloadPDF} // Function to save and download PDF
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
-                    title="Save and Download PDF"
-                  >
-                    <FiSave className="w-4 h-4" />
-                    <span>Save & Generate PDF</span>
-                    <FiDownload className="w-4 h-4" />
-                  </button>
-                )}
-
-                {onClose && (
-                  <button
-                    onClick={onClose}
-                    className="px-4 py-2 border rounded"
-                  >
-                    Close
-                  </button>
-                )}
-              </div>
+              {onClose && (
+                <button onClick={onClose} className="px-4 py-2 border rounded">
+                  Close
+                </button>
+              )}
             </div>
+          </div>
 
-            <div className="space-y-1">
-              {/* Date Range */}
-              {!isEdit && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      From Date
-                    </label>
-                    <input
-                      type="date"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      max={toDate || undefined}
-                      className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      To Date
-                    </label>
-                    <input
-                      type="date"
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                      min={fromDate || undefined}
-                      className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+          <div className="space-y-1">
+            {/* Date Range */}
+            {!isEdit && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    max={toDate || undefined}
+                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-              )}
-
-              {isEdit && (
-                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
-                  <div className="col-span-2">
-                    <label className="block text-xs text-gray-600">
-                      Invoice No.
-                    </label>
-                    <input
-                      readOnly
-                      value={invoiceNumber}
-                      className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm
-            ${
-              isEdit
-                ? "bg-yellow-50 border-yellow-300 text-gray-500"
-                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            }
-            transition-colors duration-300 ease-in-out`}
-                      aria-disabled={isEdit}
-                      onMouseDown={(e) => {
-                        if (isEdit) e.preventDefault();
-                      }}
-                      onKeyDown={(e) => {
-                        if (
-                          isEdit &&
-                          !["Tab", "Shift", "Escape"].includes(e.key)
-                        )
-                          e.preventDefault();
-                      }}
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    min={fromDate || undefined}
+                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Firm Selection */}
-
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  Your Details
-                </h2>
-                <label className="block text-sm font-medium text-gray-700">
-                  Select Firm
-                </label>
-
-                {firmsLoading ? (
-                  <div className="mt-1 text-sm text-gray-500">
-                    Loading firms…
-                  </div>
-                ) : firmsError ? (
-                  <div className="mt-1 text-sm text-red-600">{firmsError}</div>
-                ) : (
-                  <select
-                    value={selectedFirmId}
-                    onChange={(e) => setSelectedFirmId(e.target.value)}
-                    disabled={isEdit}
-                    // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {isEdit && (
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-600">
+                    Invoice No.
+                  </label>
+                  <input
+                    readOnly
+                    value={invoiceNumber}
                     className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
-                    ${
-                      isEdit
-                        ? "locked-field locked-cursor bg-yellow-50 border-yellow-300"
-                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    }`}
+                      ${
+                        isEdit
+                          ? "locked-field locked-cursor"
+                          : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      }`}
                     aria-disabled={isEdit}
                     onMouseDown={(e) => {
                       if (isEdit) e.preventDefault();
@@ -1160,331 +1036,359 @@ export default function InvoiceForm({
                       if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
                         e.preventDefault();
                     }}
-                  >
-                    {firms.map((f) => (
-                      <option key={f._id} value={f._id}>
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {selectedFirm?.banks?.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Select Bank Account
-                  </label>
-                  <select
-                    value={selectedBankIndex}
-                    onChange={(e) =>
-                      setSelectedBankIndex(parseInt(e.target.value))
-                    }
-                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {selectedFirm?.banks?.map((bank, idx) => (
-                      <option key={bank._id || idx} value={idx}>
-                        {bank.label ||
-                          `${bank.bankName || bank.name} - ${
-                            bank.accountNumber || bank.account
-                          }`}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Invoice Type */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Invoice Type
-                  </label>
-                  <select
-                    value={invoiceType}
-                    onChange={(e) => setInvoiceType(e.target.value)}
-                    disabled={isEdit}
-                    // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm
+            {/* Firm Selection */}
+
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Your Details
+              </h2>
+              <label className="block text-sm font-medium text-gray-700">
+                Select Firm
+              </label>
+
+              {firmsLoading ? (
+                <div className="mt-1 text-sm text-gray-500">Loading firms…</div>
+              ) : firmsError ? (
+                <div className="mt-1 text-sm text-red-600">{firmsError}</div>
+              ) : (
+                <select
+                  value={selectedFirmId}
+                  onChange={(e) => setSelectedFirmId(e.target.value)}
+                  disabled={isEdit}
+                  // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
+                    ${
+                      isEdit
+                        ? "locked-field locked-cursor"
+                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    }`}
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                >
+                  {firms.map((f) => (
+                    <option key={f._id} value={f._id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {selectedFirm?.banks?.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Select Bank Account
+                </label>
+                <select
+                  value={selectedBankIndex}
+                  onChange={(e) =>
+                    setSelectedBankIndex(parseInt(e.target.value))
+                  }
+                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {selectedFirm?.banks?.map((bank, idx) => (
+                    <option key={bank._id || idx} value={idx}>
+                      {bank.label ||
+                        `${bank.bankName || bank.name} - ${
+                          bank.accountNumber || bank.account
+                        }`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Invoice Type */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Invoice Type
+                </label>
+                <select
+                  value={invoiceType}
+                  onChange={(e) => setInvoiceType(e.target.value)}
+                  disabled={isEdit}
+                  // className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
                   ${
                     isEdit
                       ? "locked-field locked-cursor"
                       : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   }`}
-                    aria-disabled={isEdit}
-                    onMouseDown={(e) => {
-                      if (isEdit) e.preventDefault();
-                    }}
-                    onKeyDown={(e) => {
-                      if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
-                        e.preventDefault();
-                    }}
-                  >
-                    {invoiceTypes.map((type) => (
-                      <option key={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Invoice Date
-                  </label>
-                  <input
-                    type="date"
-                    value={invoiceDate}
-                    onChange={(e) => setInvoiceDate(e.target.value)}
-                    className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                >
+                  {invoiceTypes.map((type) => (
+                    <option key={type}>{type}</option>
+                  ))}
+                </select>
               </div>
-
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  Customer Details
-                </h2>
-                {isEdit ? (
-                  // Edit Mode: User can modify customer details
-                  <div className="flex flex-col gap-2">
-                    <input
-                      type="text"
-                      value={customer?.name || ""}
-                      onChange={(e) =>
-                        setCustomer({ ...customer, name: e.target.value })
-                      }
-                      className="mt-1 w-full border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter Customer Name"
-                    />
-                    <CreatableSelect
-                      options={clientOptions}
-                      value={selectedClientOption}
-                      onChange={(option) => {
-                        setSelectedClientOption(option);
-                        // Fetch selected client details
-                        const selectedClient = clients.find(
-                          (client) => client._id === option.value
-                        );
-                        if (selectedClient) {
-                          setCustomer(selectedClient);
-                        }
-                      }}
-                      onCreateOption={openCreateClientModal} // shows “+ Add client …”
-                      formatCreateLabel={(inputValue) =>
-                        `+ Add client "${inputValue}"`
-                      }
-                      placeholder="Search or select client..."
-                      isClearable
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          marginBottom: "10px",
-                          minHeight: "40px",
-                          borderRadius: "0.375rem",
-                          borderColor: "#d1d5db",
-                        }),
-                        menu: (base) => ({ ...base, zIndex: 9999 }),
-                      }}
-                      theme={(theme) => ({
-                        ...theme,
-                        colors: { ...theme.colors, primary: "#1a73e8" },
-                      })}
-                    />
-                  </div>
-                ) : (
-                  // Non-Edit Mode: Customer details are displayed as read-only, but still editable in `CreatableSelect`
-                  <div className="flex flex-col gap-2">
-                    <CreatableSelect
-                      options={clientOptions}
-                      value={selectedClientOption}
-                      onChange={(option) => {
-                        setSelectedClientOption(option);
-                        // Fetch selected client details
-                        const selectedClient = clients.find(
-                          (client) => client._id === option.value
-                        );
-                        if (selectedClient) {
-                          setCustomer(selectedClient);
-                        }
-                      }}
-                      onCreateOption={openCreateClientModal} // shows “+ Add client …”
-                      formatCreateLabel={(inputValue) =>
-                        `+ Add client "${inputValue}"`
-                      }
-                      placeholder="Search or select client..."
-                      isClearable
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          marginBottom: "10px",
-                          minHeight: "40px",
-                          borderRadius: "0.375rem",
-                          borderColor: "#d1d5db",
-                        }),
-                        menu: (base) => ({ ...base, zIndex: 9999 }),
-                      }}
-                      theme={(theme) => ({
-                        ...theme,
-                        colors: { ...theme.colors, primary: "#1a73e8" },
-                      })}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Place of Supply */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Place of Supply
+                  Invoice Date
                 </label>
                 <input
-                  placeholder="Place of Supply"
-                  value={placeOfSupply}
-                  onChange={(e) => setPlaceOfSupply(e.target.value)}
+                  type="date"
+                  value={invoiceDate}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
                   className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
 
-              {/* Items Section */}
-              <div className="">
-                <h2 className="text-lg font-semibold text-gray-800">Items</h2>
-                {items.map((item, idx) => {
-                  const amount = (item.qty * item.rate).toFixed(2);
-                  return (
-                    <div
-                      key={idx}
-                      className="border border-gray-300 rounded-lg p-4 mb-2 bg-white shadow-sm"
-                    >
-                      <label className="block text-sm font-medium text-gray-700">
-                        Description
-                      </label>
-                      <input
-                        value={item.description}
-                        onChange={(e) =>
-                          updateItem(idx, "description", e.target.value)
-                        }
-                        placeholder="Description"
-                        className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+            {/* Client Selection */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Customer Details
+              </h2>
+              {isEdit ? (
+                <input
+                  readOnly
+                  value={customer?.name || ""}
+                  className={`mt-1 w-full border rounded-md px-3 py-2 shadow-sm 
+                   ${
+                     isEdit
+                       ? "locked-field locked-cursor"
+                       : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   }`}
+                  aria-disabled={isEdit}
+                  onMouseDown={(e) => {
+                    if (isEdit) e.preventDefault();
+                  }}
+                  onKeyDown={(e) => {
+                    if (isEdit && !["Tab", "Shift", "Escape"].includes(e.key))
+                      e.preventDefault();
+                  }}
+                  title="Client is locked for existing invoice"
+                />
+              ) : (
+                <CreatableSelect
+                  options={clientOptions}
+                  value={selectedClientOption}
+                  onChange={(option) => setSelectedClientOption(option)}
+                  onCreateOption={openCreateClientModal} // 👈 shows “+ Add client …”
+                  formatCreateLabel={(inputValue) =>
+                    `+ Add client "${inputValue}"`
+                  }
+                  placeholder="Search or select client..."
+                  isClearable
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      marginBottom: "10px",
+                      minHeight: "40px",
+                      borderRadius: "0.375rem",
+                      borderColor: "#d1d5db",
+                    }),
+                    menu: (base) => ({ ...base, zIndex: 9999 }),
+                  }}
+                  theme={(theme) => ({
+                    ...theme,
+                    colors: { ...theme.colors, primary: "#1a73e8" },
+                  })}
+                />
+              )}
+            </div>
 
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Qty
-                          </label>
-                          <input
-                            type="number"
-                            value={item.qty}
-                            onChange={(e) =>
-                              updateItem(idx, "qty", Number(e.target.value))
-                            }
-                            min={1}
-                            className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Rate
-                          </label>
-                          <input
-                            type="number"
-                            value={item.rate}
-                            onChange={(e) =>
-                              updateItem(idx, "rate", Number(e.target.value))
-                            }
-                            step="0.01"
-                            className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Amount
-                          </label>
-                          <input
-                            readOnly
-                            value={`₹${amount}`}
-                            className="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700"
-                          />
-                        </div>
+            {/* Place of Supply */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Place of Supply
+              </label>
+              <input
+                placeholder="Place of Supply"
+                value={placeOfSupply}
+                onChange={(e) => setPlaceOfSupply(e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-                        <button
-                          type="button"
-                          onClick={() => deleteItem(item.id)}
-                          className="mt-6  transition text-red-500 hover:text-red-800"
-                          title="Delete Task"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Add Item Button */}
-                <div className="mt-4 sticky bottom-4 bg-white py-2 text-center">
-                  <button
-                    onClick={addItem}
-                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
-                  >
-                    + Add Item
-                  </button>
-                </div>
-              </div>
-
-              {/* Notes Section */}
-              <div className="mb-4 notes-section">
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  Notes
-                </h2>
-
-                {notes.length === 0 && (
-                  <div className="text-sm text-gray-500 mb-2">
-                    Add your first note for this invoice.
-                  </div>
-                )}
-
-                {notes.map((n, idx) => (
+            {/* Items Section */}
+            <div className="relative max-h-[60vh] overflow-y-auto pr-2">
+              <h2 className="text-lg font-semibold text-gray-800">Items</h2>
+              {items.map((item, idx) => {
+                const amount = (item.qty * item.rate).toFixed(2);
+                return (
                   <div
-                    key={n.id}
-                    className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm invoice-note"
+                    key={idx}
+                    className="border border-gray-300 rounded-lg p-4 mb-2 bg-white shadow-sm"
                   >
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Note {idx + 1}
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description
                     </label>
-                    <textarea
-                      value={n.text}
-                      onChange={(e) => updateNote(n.id, e.target.value)}
-                      rows={2}
-                      placeholder="Write a remark or note for this invoice..."
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    <input
+                      value={item.description}
+                      onChange={(e) =>
+                        updateItem(idx, "description", e.target.value)
+                      }
+                      placeholder="Description"
+                      className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <div className="flex justify-end mt-2">
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Qty
+                        </label>
+                        <input
+                          type="number"
+                          value={item.qty}
+                          onChange={(e) =>
+                            updateItem(idx, "qty", Number(e.target.value))
+                          }
+                          min={1}
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Rate
+                        </label>
+                        <input
+                          type="number"
+                          value={item.rate}
+                          onChange={(e) =>
+                            updateItem(idx, "rate", Number(e.target.value))
+                          }
+                          step="0.01"
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Amount
+                        </label>
+                        <input
+                          readOnly
+                          value={`₹${amount}`}
+                          className="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700"
+                        />
+                      </div>
+
                       <button
                         type="button"
-                        onClick={() => deleteNote(n.id)}
-                        className="text-red-500 hover:text-red-700 text-sm flex items-center gap-2"
-                        title="Delete Note"
+                        onClick={() => deleteItem(item.id)}
+                        className="mt-6  transition text-red-500 hover:text-red-800"
+                        title="Delete Task"
                       >
                         <FaTrash />
-                        Remove
                       </button>
                     </div>
                   </div>
-                ))}
+                );
+              })}
 
-                {/* Add Note button BELOW the notes list */}
+              {/* Add Item Button */}
+              <div className="mt-4 sticky bottom-4 bg-white py-2 text-center">
                 <button
-                  onClick={addNote}
-                  className="w-50  bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium text-sm transition pt-0.5 text-center mb-3.5"
+                  onClick={addItem}
+                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium text-sm transition"
                 >
-                  + Add Note
+                  + Add Item
                 </button>
               </div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="mb-4 notes-section">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Notes
+              </h2>
+
+              {notes.length === 0 && (
+                <div className="text-sm text-gray-500 mb-2">
+                  Add your first note for this invoice.
+                </div>
+              )}
+
+              {notes.map((n, idx) => (
+                <div
+                  key={n.id}
+                  className="border border-gray-300 rounded-lg p-3 mb-2 bg-white shadow-sm invoice-note"
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Note {idx + 1}
+                  </label>
+                  <textarea
+                    value={n.text}
+                    onChange={(e) => updateNote(n.id, e.target.value)}
+                    rows={2}
+                    placeholder="Write a remark or note for this invoice..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex justify-end mt-2">
+                    <button
+                      type="button"
+                      onClick={() => deleteNote(n.id)}
+                      className="text-red-500 hover:text-red-700 text-sm flex items-center gap-2"
+                      title="Delete Note"
+                    >
+                      <FaTrash />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Add Note button BELOW the notes list */}
+              <button
+                onClick={addNote}
+                className="w-50  bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium text-sm transition pt-0.5 text-center"
+              >
+                + Add Note
+              </button>
             </div>
           </div>
         </div>
 
+        {/* Right side invoice preview */}
+        {/* <div
+          ref={previewWrapRef}
+          style={{
+            flex: "1 1 0",
+            minWidth: 0,
+            overflow: "auto",
+            maxHeight: "calc(100vh - 160px)",
+            padding: 8,
+            background: "#f3f4f6",
+            borderRadius: 8,
+          }}
+        >
+          <div
+            style={{
+              width: PREVIEW_W * previewScale,
+              height: PREVIEW_H * previewScale,
+            }}
+          ></div>
+        </div> */}
         <div
-          className="overflow-y-auto bg-gray-50 p-4 rounded-md"
-          style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}
+          className="asa-right"
+          ref={previewWrapRef}
+          style={{
+            flex: "1",
+            height: "100%", // Take full height of parent
+            overflowY: "auto", // Add vertical scrolling
+            padding: "8px",
+            background: "#f3f4f6",
+            borderRadius: "8px",
+          }}
         >
           <div
             style={{
@@ -1544,7 +1448,7 @@ export default function InvoiceForm({
                   sgstAmount={sgstAmount}
                   numberToWordsIndian={numberToWordsIndian}
                   onImagesLoaded={() => setImagesReady(true)}
-                  showGSTIN={showGSTIN}
+                  showGSTIN={showGSTIN}                  
                   notes={notesPage1}
                 />
 
@@ -1571,26 +1475,25 @@ export default function InvoiceForm({
                     numberToWordsIndian={numberToWordsIndian}
                     onImagesLoaded={() => setImagesReady(true)}
                     notes={notesPage2}
-                    showGSTIN={showGSTIN}
                   />
                 )}
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* create client modal */}
-      {createClientOpen && (
-        <CreateClientModal
-          client={draftClient} // prefill name
-          onClose={() => {
-            setCreateClientOpen(false);
-            setDraftClient(null);
-          }}
-          onCreate={handleCreateClient} // receives full formData
-        />
-      )}
+        {/* create client modal */}
+        {createClientOpen && (
+          <CreateClientModal
+            client={draftClient} // prefill name
+            onClose={() => {
+              setCreateClientOpen(false);
+              setDraftClient(null);
+            }}
+            onCreate={handleCreateClient} // receives full formData
+          />
+        )}
+      </div>
     </>
   );
 }

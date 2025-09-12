@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "../redux/userSlice";
 import ChatSidebar from "../Components/Inbox/ChatSidebar";
 import ChatMessages from "../Components/Inbox/ChatMessages";
-import ChatHeader from "../Components/Inbox/ChatHeader";
 import MessageInput from "../Components/Inbox/MessageInput";
 
 // Assume socket.io client setup
@@ -30,7 +29,7 @@ const Inbox = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [newMessagesHeader, setNewMessagesHeader] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);  // Add here
+
   //download pdf
   const [loader, setLoader] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +39,9 @@ const Inbox = () => {
   const [files, setFiles] = useState([]); // Array of File objects
   const [filePreviews, setFilePreviews] = useState([]); // Array of preview URLs
   const [uploadProgress, setUploadProgress] = useState([]); // Array of progress numbers
+
+
+
 
   //recentUserChat
 
@@ -402,7 +404,6 @@ const Inbox = () => {
     setSelectedGroup(group);
     setSelectedUser(null); // Clear selected user when switching to a group
 
-    setIsFullScreen(true);   // Make chat full-screen
     // Mark messages as read for this group
     markMessagesAsRead(group);
   };
@@ -417,7 +418,6 @@ const Inbox = () => {
     }
     setSelectedGroup(null);
 
-    setIsFullScreen(true); // Set chat to full-screen mode when a user is selected
     // Mark messages as read immediately when clicking the chat
     await markMessagesAsRead(user.userId || user.name);
 
@@ -431,6 +431,7 @@ const Inbox = () => {
   useEffect(() => {
     const handleReceiveMessage = (msg) => {
       console.log("📨 Real-time message received:", msg);
+      
 
       // For Group Messages
       if (msg.group) {
@@ -654,108 +655,77 @@ const Inbox = () => {
     }
   };
 
+  
+// Helper function to convert time string (e.g., "2:30 PM") to comparable value
 
-  // Helper function to convert time string (e.g., "2:30 PM") to comparable value
 
+// Filter out the current user (logged-in user) from the admins and regular users
+const filteredAdmins = admins.filter(admin => admin.name !== currentUser.name);
+const filteredRegularUsers = regularUsers.filter(user => user.name !== currentUser.name);
 
-  // Filter out the current user (logged-in user) from the admins and regular users
-  const filteredAdmins = admins.filter(admin => admin.name !== currentUser.name);
-  const filteredRegularUsers = regularUsers.filter(user => user.name !== currentUser.name);
-
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-
-  useEffect(() => {
-    const handleResize = () => setScreenWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   return (
-    <div className="w-full max-h-screen p-2 sm:p-4 flex bg-gray-100">
-
-      {/* Left column for groups (Sidebar) */}
-      {(!isFullScreen || screenWidth >= 768) && (
-        <ChatSidebar
-          showGroups={showGroups}
-          groupUnreadCounts={groupUnreadCounts}
-          currentUser={currentUser}
-          userUnreadCounts={userUnreadCounts}
-          groups={groups}
-          selectedGroup={selectedGroup}
-          handleGroupClick={handleGroupClick}
-          setShowGroups={setShowGroups}
-          searchTerm={searchTerm}
-          admins={admins}
-          selectedUser={selectedUser}
-          regularUsers={regularUsers}
-          users={users}
-          handleUserClick={handleUserClick}
-          setSearchTerm={setSearchTerm}
-          messages={messages}
-        />
-      )}
-
+    <div className="w-full max-h-screen p-4 flex bg-gray-100">
+      {/* Left column for groups */}
+      <ChatSidebar
+        showGroups={showGroups}
+        groupUnreadCounts={groupUnreadCounts}
+        currentUser={currentUser}
+        userUnreadCounts={userUnreadCounts}
+        groups={groups}
+        selectedGroup={selectedGroup}
+        handleGroupClick={handleGroupClick}
+        setShowGroups={setShowGroups}
+        searchTerm={searchTerm}
+       admins={filteredAdmins}
+        selectedUser={selectedUser}
+        regularUsers={filteredRegularUsers}
+        users={users}
+        handleUserClick={handleUserClick}
+        setSearchTerm={setSearchTerm}
+        messages={messages}
+       
+      />
 
       {/* Right column for chat messages */}
-      {(selectedUser || selectedGroup) && (isFullScreen || screenWidth >= 768) && (
-        <div
-          className={`${isFullScreen && screenWidth < 768
-            ? "w-full h-screen"
-            : "w-full md:w-3/4 pl-4"
-            } flex flex-col `} // Added padding-top to push content down on mobile view
+      <div className="w-3/4 pl-4 flex flex-col">
+        <ChatMessages
+          selectedUser={selectedUser}
+          messages={messages}
+          selectedGroup={selectedGroup}
+          scrollRef={scrollRef}
+          currentUser={currentUser}
+          downloadProgress={downloadProgress}
+          downloadImage={downloadImage}
+          downloadPdf={downloadPdf}
+          handleFileDownload={handleFileDownload}
+           groups={groups}
+           users={users}
+        />
 
-        >
-          <div className="sticky top-0 left-0 w-full z-10 bg-white shadow-md">
-            <ChatHeader
-              selectedUser={selectedUser}
-              selectedGroup={selectedGroup}
-              setSelectedUser={setSelectedUser}
-              setSelectedGroup={setSelectedGroup}
-              isFullScreen={isFullScreen}
-              setIsFullScreen={setIsFullScreen}
-            />
-          </div>
-
-
-          <div className="relative mb-4 gap-4 flex flex-col">
-            <ChatMessages
-              selectedUser={selectedUser}
-              messages={messages}
-              selectedGroup={selectedGroup}
-              scrollRef={scrollRef}
-              currentUser={currentUser}
-              downloadProgress={downloadProgress}
-              downloadImage={downloadImage}
-              downloadPdf={downloadPdf}
-              handleFileDownload={handleFileDownload}
-              groups={groups}
-              users={users}
-            />
-            <MessageInput
-              dragActive={dragActive}
-              showEmojiPicker={showEmojiPicker}
-              handleFileChange={handleFileChange}
-              files={files}
-              messageInputRef={messageInputRef}
-              messageText={messageText}
-              handleChange={handleChange}
-              handleKeyPress={handleKeyPress}
-              sendMessage={sendMessage}
-              uploadProgress={uploadProgress}
-              setDragActive={setDragActive}
-              setFiles={setFiles}
-              setFilePreviews={setFilePreviews}
-              setUploadProgress={setUploadProgress}
-              setShowEmojiPicker={setShowEmojiPicker}
-              onEmojiClick={onEmojiClick}
-              filePreviews={filePreviews}
-            />
-          </div>
-        </div>
-      )}
+        {/* Input field and Send button (Fixed at the bottom) */}
+        <MessageInput
+          dragActive={dragActive}
+          showEmojiPicker={showEmojiPicker}
+          handleFileChange={handleFileChange}
+          files={files}
+          messageInputRef={messageInputRef}
+          messageText={messageText}
+          handleChange={handleChange}
+          handleKeyPress={handleKeyPress}
+          sendMessage={sendMessage}
+          uploadProgress={uploadProgress}
+          setDragActive={setDragActive}
+          setFiles={setFiles}
+          setFilePreviews={setFilePreviews}
+          setUploadProgress={setUploadProgress}
+          setShowEmojiPicker={setShowEmojiPicker}
+          onEmojiClick={onEmojiClick}
+          filePreviews={filePreviews}
+        />
+      </div>
     </div>
   );
-
 };
 
-export default Inbox;  
+export default Inbox;

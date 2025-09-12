@@ -1,76 +1,50 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { format, isBefore, isToday, isTomorrow, parseISO } from "date-fns";
+import { useSelector } from "react-redux";
 import axios from "axios";
-import { motion, AnimatePresence } from "framer-motion";
-
-// Tabs
-const tabs = ["today", "tomorrow", "upcoming", "overdue", "completed"];
-
-// Tab Button Animation (desktop only)
-const buttonVariants = {
-  hidden: { opacity: 0, y: -20 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, type: "spring", stiffness: 200 },
-  }),
-  hover: {
-    scale: 1.05,
-    y: -2,
-    boxShadow: "0px 6px 15px rgba(79,70,229,0.4)",
-    transition: { type: "spring", stiffness: 300 },
-  },
-};
-
-// Task Row Animation
-const rowVariants = {
-  hidden: { opacity: 0, y: 25 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.05, duration: 0.4, ease: "easeOut" },
-  }),
-  exit: { opacity: 0, y: -15, transition: { duration: 0.25 } },
-};
-
 const TaskOverview = () => {
-  const [tasks, setTasks] = useState([]);
-  const [activeTab, setActiveTab] = useState("today");
-  const [justCompleted, setJustCompleted] = useState(new Set());
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState([]); // Store tasks in state
+  const [activeTab, setActiveTab] = useState("today"); // Track active tab (today, tomorrow, etc.)
 
-  const scrollRef = useRef(null);
-
+  // ✅ Get logged-in user info from Redux state
   const role = localStorage.getItem("role");
   const user = JSON.parse(localStorage.getItem("user"));
   const userEmail = user?.email;
 
-  // Fetch tasks
+  const [justCompleted, setJustCompleted] = useState(new Set());
+  const [loading, setLoading] = useState(true);
+
+  // Fetch tasks from the API and categorize them
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         const res = await axios.get("https://taskbe.sharda.co.in/api/tasks");
-        setTasks(res.data);
+        setTasks(res.data); // Store fetched tasks in state
       } catch (err) {
         console.error("Failed to fetch tasks", err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchTasks();
   }, []);
 
   const now = new Date();
 
-  // Filter & categorize
+  // Filter tasks based on user role (only show tasks assigned to the logged-in user if not an admin)
   const filteredTasks = tasks.filter((task) => {
     if (task.status === "Completed" && task.isHidden) return false;
+
     if (role === "admin") return true;
+
     return task.assignees?.some(
       (assignee) => assignee.email.toLowerCase() === userEmail?.toLowerCase()
     );
   });
+  console.log("Logged-in user email:", userEmail);
 
+  // Categorize tasks based on due date (Today, Tomorrow, Overdue, etc.)
   const categorizedTasks = {
     today: [],
     tomorrow: [],
@@ -82,19 +56,44 @@ const TaskOverview = () => {
   filteredTasks.forEach((task) => {
     if (!task.dueDate) return;
     const parsedDate = parseISO(task.dueDate);
-    const isCompleted = task.status === "Completed";
+
+    const isActuallyCompleted = task.status === "Completed";
     const isJustNowCompleted = justCompleted.has(task._id);
 
-    if (isCompleted && !isJustNowCompleted) {
+    // ✅ This prevents re-showing the task in the current tab after a tab switch
+    if (isActuallyCompleted && !isJustNowCompleted) {
       categorizedTasks.completed.push(task);
       return;
     }
 
-    if (isToday(parsedDate)) categorizedTasks.today.push(task);
-    else if (isTomorrow(parsedDate)) categorizedTasks.tomorrow.push(task);
-    else if (isBefore(parsedDate, now)) categorizedTasks.overdue.push(task);
-    else categorizedTasks.upcoming.push(task);
+    // ✅ Temporarily keep it in current tab if just completed
+    if (isToday(parsedDate)) {
+      if (activeTab === "today" && isJustNowCompleted) {
+        categorizedTasks.today.push(task);
+      } else if (!isJustNowCompleted) {
+        categorizedTasks.today.push(task);
+      }
+    } else if (isTomorrow(parsedDate)) {
+      if (activeTab === "tomorrow" && isJustNowCompleted) {
+        categorizedTasks.tomorrow.push(task);
+      } else if (!isJustNowCompleted) {
+        categorizedTasks.tomorrow.push(task);
+      }
+    } else if (isBefore(parsedDate, now)) {
+      if (activeTab === "overdue" && isJustNowCompleted) {
+        categorizedTasks.overdue.push(task);
+      } else if (!isJustNowCompleted) {
+        categorizedTasks.overdue.push(task);
+      }
+    } else {
+      if (activeTab === "upcoming" && isJustNowCompleted) {
+        categorizedTasks.upcoming.push(task);
+      } else if (!isJustNowCompleted) {
+        categorizedTasks.upcoming.push(task);
+      }
+    }
   });
+
 
   // ✅ Dashboard ko stats bhejna
   useEffect(() => {
@@ -122,29 +121,42 @@ const TaskOverview = () => {
 
   const getTasksByTab = () => categorizedTasks[activeTab] || [];
 
+
   const handleToggleCompleted = async (taskId) => {
     const updatedBy = {
       name: localStorage.getItem("name"),
       email: localStorage.getItem("userId"),
     };
+
+    // Show crossed UI immediately
     setJustCompleted((prev) => new Set(prev).add(taskId));
+
     try {
       const response = await fetch(
         `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({ status: "Completed", updatedBy }),
         }
       );
+
       if (!response.ok) throw new Error("Failed to update task status");
-      setTasks((prev) =>
-        prev.map((task) =>
+
+      // ✅ Update local task list so next render shows correct status
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
           task._id === taskId ? { ...task, status: "Completed" } : task
         )
       );
+
+      console.log("✅ Task marked as completed");
     } catch (error) {
       console.error("❌ Failed to update status", error);
+
+      // Revert justCompleted if error happens
       setJustCompleted((prev) => {
         const newSet = new Set(prev);
         newSet.delete(taskId);
@@ -153,10 +165,13 @@ const TaskOverview = () => {
     }
   };
 
-  useEffect(() => setJustCompleted(new Set()), [activeTab]);
+  useEffect(() => {
+    setJustCompleted(new Set());
+  }, [activeTab]);
 
   const isHiddenCompletedTask = (task) =>
     task.status === "Completed" && task.isHidden === true;
+
 
   const currentTabIndex = tabs.indexOf(activeTab);
 
@@ -175,14 +190,28 @@ const TaskOverview = () => {
     }
   };
 
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[250px]">
-        <motion.div
-          className="h-10 w-10 rounded-full border-4 border-indigo-400 border-t-transparent"
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-        />
+        <svg
+          className="animate-spin h-8 w-8 text-indigo-500"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8z"
+          ></path>
+        </svg>
         <span className="ml-3 text-indigo-600 font-semibold">
           Loading tasks...
         </span>
@@ -191,6 +220,7 @@ const TaskOverview = () => {
   }
 
   return (
+
     <div>
       {/* Desktop view */}
       <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-xl border border-gray-200 p-6 font-sans hidden sm:block">
@@ -337,6 +367,7 @@ const TaskOverview = () => {
 
       {/* Task list - Mobile */}
       <div className=" flex gap-10 flex-col mt-8 mb-4 md:hidden h-[60vh] overflow-auto">
+
         {getTasksByTab().filter((task) => !isHiddenCompletedTask(task))
           .length === 0 ? (
           <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
@@ -346,6 +377,7 @@ const TaskOverview = () => {
             .map((task) => (
               <div
                 key={task._id}
+
                 className="flex justify-between items-center mb-1 px-6 py-3 h-20 hover:bg-gray-50 transition-all shadow-xl"
               >
                 <div className="flex items-start flex-col gap-3">
@@ -384,6 +416,7 @@ const TaskOverview = () => {
                 </div>
                 <div className="flex flex-col items-end gap-1 text-sm italic">
                   <span className="text-gray-500 text-xs">
+
                     {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
                       ? format(new Date(task.dueDate), "MMM d")
                       : "Invalid date"}

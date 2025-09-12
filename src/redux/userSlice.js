@@ -8,11 +8,11 @@ export const fetchUsers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Fetch departments
-      const deptRes = await axios.get("https://taskbe.sharda.co.in/api/departments");
+      const deptRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/departments");
       const departments = deptRes.data.map(dept => dept.name); // Extract department names to an array
 
       // Fetch employees
-      const userRes = await axios.get("https://taskbe.sharda.co.in/api/employees");
+      const userRes = await axios.get("https://sataskmanagementbackend.onrender.com/api/employees");
       const users = userRes.data;
 
       // Filter users' departments based on valid departments
@@ -34,7 +34,7 @@ export const deleteUser = createAsyncThunk(
   "users/deleteUser",
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`https://taskbe.sharda.co.in/api/employees/${id}`);
+      await axios.delete(`https://sataskmanagementbackend.onrender.com/api/employees/${id}`);
       return id; // Return ID to remove it from the list
     } catch (error) {
       return rejectWithValue("Failed to delete user");
@@ -45,7 +45,7 @@ export const deleteUser = createAsyncThunk(
 export const updateUser = async (id, updatedUserData) => {
   try {
     const response = await axios.put(
-      `https://taskbe.sharda.co.in/api/employees/${id}`,
+      `https://sataskmanagementbackend.onrender.com/api/employees/${id}`,
       updatedUserData
     );
     return response.data; // Return updated user data
@@ -57,7 +57,7 @@ export const updateUser = async (id, updatedUserData) => {
 export const resetPassword = async (id, newPassword) => {
   try {
     const response = await axios.post(
-      `https://taskbe.sharda.co.in/api/employees/reset-password/${id}`,
+      `https://sataskmanagementbackend.onrender.com/api/employees/reset-password/${id}`,
       { newPassword }
     );
     return response.data; // Return response data

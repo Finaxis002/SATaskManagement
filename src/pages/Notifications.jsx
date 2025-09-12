@@ -23,7 +23,6 @@ const socket = io("https://taskbe.sharda.co.in", {
 });
 
 
-
 const NotificationItem = React.memo(
   ({
     notification,
@@ -69,6 +68,19 @@ const NotificationItem = React.memo(
                 }`}
               >
                 {notification.priority}
+              </span>
+            )}
+            {notification.status && (
+              <span
+                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
+                  notification.status === "completed"
+                    ? "bg-green-100 text-green-800"
+                    : notification.status === "pending"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                Status: {notification.status}
               </span>
             )}
           </div>
@@ -149,35 +161,38 @@ const NotificationItem = React.memo(
   }
 );
 
+const getUserContext = () => {
+  const userStr = localStorage.getItem("user");
+  let userObj = {};
+  try {
+    userObj = JSON.parse(userStr || "{}");
+  } catch {
+    console.log("something went wrong")
+  }
 
 
-  const getUserContext = () => {
-    const userStr = localStorage.getItem("user");
-    let userObj = {};
-    try {
-      userObj = JSON.parse(userStr || "{}");
-    } catch {}
+  const token =
+    localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
+  let tokenPayload = {};
+  try {
+    tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
+  } catch {
+    console.log("something went wrong")
+  }
 
-    const token =
-      localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
-    let tokenPayload = {};
-    try {
-      tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
-    } catch {}
+  const email =
+    userObj.email || tokenPayload.email || localStorage.getItem("email");
+  const mongoId = userObj._id || localStorage.getItem("userId");
+  const shortId = tokenPayload.userId; // "113"
 
-    const email =
-      userObj.email || tokenPayload.email || localStorage.getItem("email");
-    const mongoId = userObj._id || localStorage.getItem("userId");
-    const shortId = tokenPayload.userId; // "113"
-
-    return {
-      role: localStorage.getItem("role") || userObj.role || tokenPayload.role,
-      email,
-      mongoId,
-      shortId,
-      allKeys: new Set([email, mongoId, shortId].filter(Boolean)),
-    };
+  return {
+    role: localStorage.getItem("role") || userObj.role || tokenPayload.role,
+    email,
+    mongoId,
+    shortId,
+    allKeys: new Set([email, mongoId, shortId].filter(Boolean)),
   };
+};
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -187,8 +202,6 @@ const Notifications = () => {
   const {
     role: userRole,
     email,
-    mongoId,
-    shortId,
     allKeys,
   } = useMemo(getUserContext, []);
   const [notificationCount, setNotificationCount] = useState(0);
@@ -204,8 +217,6 @@ const Notifications = () => {
   });
 
   const limit = 20;
-
-
 
   const handleMarkAsRead = useCallback(
     async (id) => {
@@ -520,7 +531,7 @@ const Notifications = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
         {/* Group By Section */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-600 font-medium">Group by:</span>
@@ -605,7 +616,7 @@ const Notifications = () => {
           Loading notifications...
         </div>
       ) : (
-        <div className="space-y-4 mb-5 ">
+        <div className="space-y-4">
           {Object.keys(filteredNotifications).length === 0 ? (
             <div className="text-center text-gray-500 bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-200">
               🎉 No notifications match your filters

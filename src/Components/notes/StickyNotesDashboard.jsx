@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from "react";
 import {
   Bold,
@@ -11,6 +12,7 @@ import {
   Copy,
 } from "lucide-react";
 
+
 export default function StickyNotesDashboard() {
   const [stickyNotes, setStickyNotes] = useState([
     { id: 1, content: "<p>Write your note here...</p>" },
@@ -20,6 +22,7 @@ export default function StickyNotesDashboard() {
   const savedRangesRef = useRef({});
 
   const focusEditor = (id) => editorsRef.current[id]?.focus();
+
 
   const saveSelection = (id) => {
     const sel = window.getSelection();
@@ -140,19 +143,22 @@ export default function StickyNotesDashboard() {
 
   return (
     <div className="rounded-xl shadow w-80 space-y-3">
+
       {/* Header */}
       <div className="flex justify-between items-center mb-2 bg-yellow-200 px-2 py-1 rounded-t-xl">
         <h3 className="text-sm font-medium">Sticky Notes</h3>
         <button
+
           onClick={addNewNote}
           className="p-1 hover:bg-yellow-300 rounded text-sm text-gray-700"
           title="Add new note"
+
         >
           + New
         </button>
       </div>
-
       {/* Notes */}
+
       {stickyNotes.map((note, index) => (
         <div key={note.id} className="p-3 bg-yellow-200 rounded-xl">
           {/* Note header */}
@@ -247,6 +253,7 @@ export default function StickyNotesDashboard() {
           />
         </div>
       ))}
+
     </div>
   );
 }
