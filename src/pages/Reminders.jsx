@@ -18,7 +18,7 @@ import {
   FaPen,
   FaPlus,
   FaBell,
-  FaUser,
+  FaUser
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 
@@ -400,40 +400,25 @@ const Reminders = () => {
   };
 
   return (
-    <div className="h-screen  overflow-y-auto p-4 pb-35 relative overflow-hidden">
-      {/* Overlay */}
-      {(showPopup || showEventPopup) && (
-        <div
-          className="fixed inset-0 bg-black/50 px-4 bg-opacity-30 z-40"
-          onClick={() => {
-            setShowPopup(false);
-            setShowEventPopup(false);
-            setEditId(null);
-            setEditingEventId(null);
-            setNewReminder(DEFAULT_REMINDER);
-            setNewEvent(DEFAULT_EVENT);
-          }}
-        />
-      )}
-
+    <div className="h-screen  overflow-y-auto p-4 relative overflow-hidden">
       <div className=" relative mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <span className="hidden sm:inline">📅</span> My Reminders
+            <span>📅</span> My Reminders
           </h2>
 
           <div className="flex flex-col w-full sm:w-auto gap-2">
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={openCreateReminder}
-                className="flex items-center gap-1.5 bg-indigo-600 text-white px-2.5 py-1 text-xs sm:text-sm rounded-full shadow hover:bg-indigo-700 transition"
+                className="flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-indigo-700 transition"
               >
                 <FaPlus className="text-xs" /> Add Reminder
               </button>
 
               <button
                 onClick={() => {
-                  setEditingEventId(null);
+                  setEditingEventId(null); // <-- important
                   setNewEvent({
                     title: "",
                     description: "",
@@ -445,7 +430,7 @@ const Reminders = () => {
                   });
                   setShowEventPopup(true);
                 }}
-                className="flex items-center gap-1.5 bg-purple-600 text-white px-2.5 py-1 text-xs sm:text-sm rounded-full shadow hover:bg-purple-700 transition"
+                className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-purple-700 transition"
               >
                 <FaPlus className="text-xs" /> Add Event
               </button>
@@ -460,13 +445,14 @@ const Reminders = () => {
                     return;
                   }
 
+                  // Directly pass redirect_url and user_id as query params
                   const backendUrl = `https://taskbe.sharda.co.in/auth/google?redirect_url=${encodeURIComponent(
                     "https://tasks.sharda.co.in/reminders"
                   )}&user_id=${encodeURIComponent(userId)}`;
 
                   window.open(backendUrl, "_blank");
                 }}
-                className="flex items-center gap-1.5 bg-white text-gray-700 px-2.5 py-1 text-xs sm:text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
+                className="flex items-center gap-1.5 bg-white text-gray-700 px-3 py-1.5 text-sm rounded-full shadow border border-gray-200 hover:bg-gray-50 transition"
               >
                 <img
                   src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/1024px-Google_Calendar_icon_%282020%29.svg.png"
@@ -583,315 +569,237 @@ const Reminders = () => {
 
         {/* Reminder Modal */}
         {showPopup && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="w-full max-w-sm bg-white p-4 rounded shadow-md max-h-[90vh] overflow-y-auto relative">
-              <div className="w-full max-w-md p-6 rounded-2xl animate-fadeIn">
-                {/* Close Button */}
-                <button
-                  className="absolute top-4 right-4 text-red-400 hover:text-red-700
-    sm:text-gray-400 sm:hover:text-red-500"
-                  onClick={() => {
-                    setShowPopup(false);
-                    setEditId(null); // leave edit mode
-                    setNewReminder(DEFAULT_REMINDER); // reset fields
-                  }}
-                >
-                  <FaTimes size={18} />
-                </button>
-
-                {/* Title */}
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  📝 {editId ? "Update Reminder" : "Create Reminder"}
-                </h3>
-
-                {/* Reminder Input */}
-                <input
-                  type="text"
-                  placeholder="What's the reminder?"
-                  value={newReminder.text}
-                  onChange={(e) =>
-                    setNewReminder({ ...newReminder, text: e.target.value })
-                  }
-                  className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm"
-                />
-
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <span className="block sm:hidden text-gray-700">Date:</span>
-
-                    <div className="relative flex-1 sm:flex-none w-full flex items-center">
-                      <FaCalendarAlt className="hidden sm:block text-gray-600 mr-2" />
-
-                      <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 sm:hidden" />
-
-                      <input
-                        type="date"
-                        value={newReminder.date}
-                        onChange={(e) =>
-                          setNewReminder({
-                            ...newReminder,
-                            date: e.target.value,
-                          })
-                        }
-                        className="w-full border border-gray-300 rounded p-2 pl-10 sm:pl-3"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <span className="block sm:hidden text-gray-700">Time:</span>
-
-                    <div className="relative flex-1 sm:flex-none w-full flex items-center">
-                      <FaClock className="hidden sm:block text-gray-600 mr-2" />
-
-                      <FaClock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 sm:hidden" />
-
-                      <input
-                        type="time"
-                        value={newReminder.time}
-                        onChange={(e) =>
-                          setNewReminder({
-                            ...newReminder,
-                            time: e.target.value,
-                          })
-                        }
-                        className="w-full border border-gray-300 rounded p-2 pl-10 sm:pl-3"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Snooze Selector */}
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                  <label htmlFor="snooze" className="text-gray-700">
-                    ⏳ Snooze Before:
-                  </label>
-                  <select
-                    id="snooze"
-                    value={newReminder.snoozeBefore}
-                    onChange={(e) =>
-                      setNewReminder({
-                        ...newReminder,
-                        snoozeBefore: e.target.value,
-                      })
-                    }
-                    className="border border-gray-300 rounded p-2"
-                  >
-                    {Array.from({ length: 60 }, (_, i) => i + 1).map(
-                      (minute) => (
-                        <option key={minute} value={minute}>
-                          {minute} minute{minute > 1 ? "s" : ""}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-
-                {/* Save Button */}
-                <button
-                  onClick={saveReminder}
-                  disabled={saving}
-                  className={`w-full ${saving
-                    ? "bg-green-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                    } text-white py-2 rounded-md transition`}
-                >
-                  {editId
-                    ? "Update Reminder"
-                    : saving
-                      ? "Saving..."
-                      : "Save Reminder"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showEventPopup && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-2 sm:px-4">
-            <div
-              className="
-    w-full max-w-md mx-auto bg-white p-4 sm:p-6 rounded-lg shadow-md
-  relative overflow-y-auto mt-4 sm:mt-10
-  max-h-[80vh] sm:max-h-[85vh]
-  "
-            >
-              {/* Close Button */}
+          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm bg-white p-4 rounded shadow-md">
+            <div className="w-full max-w-md p-6 rounded-2xl  relative animate-fadeIn">
               <button
-                className="
-    absolute top-3 right-3 sm:top-4 sm:right-4
-    text-red-400 hover:text-red-700
-    sm:text-gray-400 sm:hover:text-red-500
-  "
+                className="absolute top-4 right-4 text-gray-400 hover:text-red-500"
                 onClick={() => {
-                  setShowEventPopup(false);
-                  setEditingEventId(null);
-                  setNewEvent(DEFAULT_EVENT);
+                  setShowPopup(false);
+                  setEditId(null); // leave edit mode
+                  setNewReminder(DEFAULT_REMINDER); // reset fields
                 }}
               >
                 <FaTimes size={18} />
               </button>
-              {/* Title */}
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 mt-2 sm:mt-0">
-                📅 {editingEventId ? "Update Event" : "Create Event"}
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                📝 {editId ? "Update Reminder" : "Create Reminder"}
               </h3>
-              {/* Event Title */}
+
               <input
                 type="text"
-                placeholder="Event Title"
-                value={newEvent.title}
+                placeholder="What's the reminder?"
+                value={newReminder.text}
                 onChange={(e) =>
-                  setNewEvent({ ...newEvent, title: e.target.value })
+                  setNewReminder({ ...newReminder, text: e.target.value })
                 }
-                className="w-full border border-gray-300 p-2 sm:p-3 rounded-md mb-4 text-sm"
+                className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm"
               />
-              {/* Event Description */}
-              <textarea
-                placeholder="Event Description"
-                value={newEvent.description}
-                onChange={(e) =>
-                  setNewEvent({ ...newEvent, description: e.target.value })
-                }
-                className="w-full border border-gray-300 p-2 sm:p-3 rounded-md mb-4 text-sm"
-              />
-              {/* Date & Time */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4 text-sm text-gray-600">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <span className="block sm:hidden text-gray-700">Date:</span>
-                  <div className="relative flex-1 sm:flex-none w-full flex items-center">
-                    <FaCalendarAlt className="hidden sm:block text-gray-600 mr-2" />
-                    <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 sm:hidden" />
-                    <input
-                      type="date"
-                      value={newEvent.date}
-                      onChange={(e) =>
-                        setNewEvent({ ...newEvent, date: e.target.value })
-                      }
-                      className="w-full border border-gray-300 rounded p-2 pl-10 sm:pl-3 sm:w-32"
-                    />
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <span className="block sm:hidden text-gray-700">
-                    Start: ⏰
-                  </span>
-                  <div className="relative flex-1 sm:flex-none w-full flex items-center">
-                    <FaClock className="hidden sm:block text-gray-600 mr-2" />
-                    <FaClock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 sm:hidden" />
-                    <input
-                      type="time"
-                      value={newEvent.startTime}
-                      onChange={(e) =>
-                        setNewEvent({ ...newEvent, startTime: e.target.value })
-                      }
-                      className="w-full border border-gray-300 rounded p-2 pl-10 sm:pl-3 sm:w-24"
-                    />
-                  </div>
-                </div>
-
-                {/* End Time */}
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <span className="block sm:hidden text-gray-700">End: ⏰</span>
-
-                  <div className="relative flex-1 sm:flex-none w-full flex items-center">
-                    <span className="hidden sm:block text-gray-600 mr-2">
-                      to
-                    </span>
-                    <FaClock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 sm:hidden" />
-                    <input
-                      type="time"
-                      value={newEvent.endTime}
-                      onChange={(e) =>
-                        setNewEvent({ ...newEvent, endTime: e.target.value })
-                      }
-                      className="w-full border border-gray-300 rounded p-2 pl-10 sm:pl-3 sm:w-24"
-                    />
-                  </div>
-                </div>
+              <div className="flex items-center mb-4 gap-2 text-sm text-gray-600">
+                <FaCalendarAlt />
+                <input
+                  type="date"
+                  value={newReminder.date}
+                  onChange={(e) =>
+                    setNewReminder({ ...newReminder, date: e.target.value })
+                  }
+                  className="border border-gray-300 rounded p-2"
+                />
+                <FaClock />
+                <input
+                  type="time"
+                  value={newReminder.time}
+                  onChange={(e) =>
+                    setNewReminder({ ...newReminder, time: e.target.value })
+                  }
+                  className="border border-gray-300 rounded p-2"
+                />
               </div>
 
-              {/* Snooze Selector */}
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                <label htmlFor="event-snooze" className="text-gray-700">
+                <label htmlFor="snooze" className="text-gray-700">
                   ⏳ Snooze Before:
                 </label>
                 <select
-                  id="event-snooze"
-                  value={newEvent.snoozeBefore}
+                  id="snooze"
+                  value={newReminder.snoozeBefore}
                   onChange={(e) =>
-                    setNewEvent({ ...newEvent, snoozeBefore: e.target.value })
+                    setNewReminder({
+                      ...newReminder,
+                      snoozeBefore: e.target.value,
+                    })
                   }
                   className="border border-gray-300 rounded p-2"
                 >
-                  {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map((m) => (
-                    <option key={m} value={m}>
-                      {m} minutes
+                  {Array.from({ length: 60 }, (_, i) => i + 1).map((minute) => (
+                    <option key={minute} value={minute}>
+                      {minute} minute{minute > 1 ? "s" : ""}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Guest Emails */}
-              <div className="mb-4 max-h-[20vh] overflow-y-auto">
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Add Guests
-                </label>
-                {newEvent.guests.map((guest, index) => (
-                  <div key={index} className="flex items-center gap-2 mb-2">
-                    <input
-                      type="email"
-                      placeholder="guest@example.com"
-                      value={guest}
-                      onChange={(e) => {
-                        const updated = [...newEvent.guests];
-                        updated[index] = e.target.value;
-                        setNewEvent({ ...newEvent, guests: updated });
-                      }}
-                      className="w-full border border-gray-300 rounded p-2"
-                    />
-                    <button
-                      onClick={() => {
-                        const updated = newEvent.guests.filter(
-                          (_, i) => i !== index
-                        );
-                        setNewEvent({ ...newEvent, guests: updated });
-                      }}
-                      className="text-red-500"
-                      title="Remove Guest"
-                    >
-                      <FaTimes />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() =>
-                    setNewEvent({
-                      ...newEvent,
-                      guests: [...newEvent.guests, ""],
-                    })
-                  }
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  + Add Another Guest
-                </button>
-              </div>
-
-              {/* Save Button */}
               <button
-                onClick={saveEvent}
+                onClick={saveReminder}
                 disabled={saving}
-                className={`w-full ${saving
-                  ? "bg-purple-400 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700"
-                  } text-white py-2 rounded-md transition`}
+                className={`w-full ${
+                  saving
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
+                } text-white py-2 rounded-md transition`}
               >
-                {saving
+                {editId
+                  ? "Update Reminder"
+                  : saving
                   ? "Saving..."
-                  : editingEventId
-                    ? "Save Changes"
-                    : "Create Event"}
+                  : "Save Reminder"}
               </button>
             </div>
+          </div>
+        )}
+
+        {showEventPopup && (
+          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md bg-white p-6 rounded shadow-md">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500"
+              onClick={() => {
+                setShowEventPopup(false);
+                setEditingEventId(null); // leave edit mode
+                setNewEvent(DEFAULT_EVENT); // reset fields
+              }}
+            >
+              <FaTimes size={18} />
+            </button>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              📅 {editingEventId ? "Update Event" : "Create Event"}
+            </h3>
+
+            <input
+              type="text"
+              placeholder="Event Title"
+              value={newEvent.title}
+              onChange={(e) =>
+                setNewEvent({ ...newEvent, title: e.target.value })
+              }
+              className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm"
+            />
+
+            <textarea
+              placeholder="Event Description"
+              value={newEvent.description}
+              onChange={(e) =>
+                setNewEvent({ ...newEvent, description: e.target.value })
+              }
+              className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm"
+            />
+
+            <div className="flex items-center mb-4 gap-2 text-sm text-gray-600">
+              <FaCalendarAlt />
+              <input
+                type="date"
+                value={newEvent.date}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, date: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2"
+              />
+              <FaClock />
+              <input
+                type="time"
+                value={newEvent.startTime}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, startTime: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2"
+              />
+              <span>to</span>
+              <input
+                type="time"
+                value={newEvent.endTime}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, endTime: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+              <label htmlFor="event-snooze" className="text-gray-700">
+                ⏳ Snooze Before:
+              </label>
+              <select
+                id="event-snooze"
+                value={newEvent.snoozeBefore}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, snoozeBefore: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2"
+              >
+                {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map((m) => (
+                  <option key={m} value={m}>
+                    {m} minutes
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Guest Emails */}
+            <div className="mb-4 max-h-[20vh] overflow-y-auto">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Add Guests
+              </label>
+              {newEvent.guests.map((guest, index) => (
+                <div key={index} className="flex items-center gap-2 mb-2">
+                  <input
+                    type="email"
+                    placeholder="guest@example.com"
+                    value={guest}
+                    onChange={(e) => {
+                      const updated = [...newEvent.guests];
+                      updated[index] = e.target.value;
+                      setNewEvent({ ...newEvent, guests: updated });
+                    }}
+                    className="w-full border border-gray-300 rounded p-2"
+                  />
+                  <button
+                    onClick={() => {
+                      const updated = newEvent.guests.filter(
+                        (_, i) => i !== index
+                      );
+                      setNewEvent({ ...newEvent, guests: updated });
+                    }}
+                    className="text-red-500"
+                    title="Remove Guest"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  setNewEvent({ ...newEvent, guests: [...newEvent.guests, ""] })
+                }
+                className="text-sm text-blue-600 hover:underline"
+              >
+                + Add Another Guest
+              </button>
+            </div>
+
+            <button
+              onClick={saveEvent}
+              disabled={saving}
+              className={`w-full ${
+                saving
+                  ? "bg-purple-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700"
+              } text-white py-2 rounded-md transition`}
+            >
+              {saving
+                ? "Saving..."
+                : editingEventId
+                ? "Save Changes"
+                : "Create Event"}
+            </button>
           </div>
         )}
       </div>
@@ -899,8 +807,6 @@ const Reminders = () => {
   );
 };
 
-// 👇 Reminder Card Display with Time
-// One column that shows BOTH reminders and events with their existing card UIs
 // 👇 Reminder Card Display with Time
 // One column that shows BOTH reminders and events with their existing card UIs
 const BucketSection = ({
@@ -914,79 +820,128 @@ const BucketSection = ({
   onEditEvent,
 }) => (
   <div
-    className={`rounded-xl relative p-4 pb-6 shadow-sm bg-gray-200 ${className} 
-            sm:max-h-[70vh] sm:overflow-y-auto sm:scrollbar-hide`}
+    className={`rounded-xl relative p-4 shadow-sm bg-gray-200 max-h-[70vh] overflow-y-auto ${className}`}
   >
     <h4 className="text-lg font-semibold mb-3 text-gray-700">{title}</h4>
 
     {reminders.length === 0 && events.length === 0 ? (
       <p className="text-sm text-gray-500">No reminders or events</p>
     ) : (
-      <>
-        {/* ---- Reminders Section ---- */}
-        {reminders.length > 0 && (
-          <div className="mb-4 overflow-x-auto scrollbar-hide sm:overflow-x-visible">
-            <ul
-              className={`flex gap-3 sm:flex-col sm:gap-3 ${reminders.length > 1 ? "snap-x snap-mandatory" : ""
-                }`}
-            >
-              {reminders.map((reminder, index) => (
-                <li
-                  key={`r-${reminder._id || index}`}
-                  className={`flex-shrink-0 ${reminders.length > 1 ? "w-[85%]" : "w-full"
-                    } sm:w-full bg-white p-4 rounded-lg shadow-xs 
-                             hover:shadow-sm border border-gray-100 
-                             transition-all duration-200 hover:border-blue-100 relative group
-                             ${reminders.length > 1 ? "snap-start" : ""}`}
+      <ul className="space-y-3">
+        {/* ---- Reminders (existing UI) ---- */}
+        {reminders.map((reminder, index) => (
+          <li
+            key={`r-${reminder._id || index}`}
+            className="bg-white p-4 rounded-lg shadow-xs hover:shadow-sm border border-gray-100 transition-all duration-200 hover:border-blue-100 relative group"
+          >
+            <div className="pr-8">
+              <div className="mb-2">
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
+                    bg-blue-50 text-blue-700 ring-1 ring-blue-200"
                 >
-                  <div className="pr-8">
-                    <div className="mb-2">
-                      <span
-                        className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
-                                   bg-blue-50 text-blue-700 ring-1 ring-blue-200"
-                      >
-                        <FaBell className="text-[10px]" />
-                        Reminder
+                  <FaBell className="text-[10px]" />
+                  Reminder
+                </span>
+              </div>
+              <div className="font-medium text-gray-800 flex items-start">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                <span className="leading-snug">{reminder.text}</span>
+              </div>
+              <div className="flex items-center text-xs text-gray-500 mt-2 ml-4">
+                <FaClock className="mr-1.5 text-gray-400" />
+                <span>
+                  {format(parseISO(reminder.datetime), "EEE, MMM d, h:mm a")}
+                </span>
+              </div>
+            </div>
+
+            <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <button
+                onClick={() => onEditReminder(reminder)}
+                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-150"
+                title="Edit"
+              >
+                <FaPen size={12} />
+              </button>
+              <button
+                onClick={() => onDeleteReminder(reminder._id)}
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-150"
+                title="Delete"
+              >
+                <FaTimes size={12} />
+              </button>
+            </div>
+          </li>
+        ))}
+
+        {/* ---- Events (existing UI) ---- */}
+        {events
+          .filter((e) => e && (e.title || e.summary))
+          .map((event, index) => (
+            <li
+              key={`e-${event._id || index}`}
+              className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 hover:border-purple-100"
+            >
+              {/* Type chip */}
+              <div className="mb-2">
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
+                    bg-purple-50 text-purple-700 ring-1 ring-purple-200"
+                >
+                  <FaCalendarAlt className="text-[10px]" />
+                  Event
+                </span>
+              </div>
+
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-semibold text-gray-900 text-base flex items-center gap-2">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></span>
+                  <span className="line-clamp-2">
+                    {event.title || event.summary}
+                  </span>
+                </h3>
+                <button
+                  onClick={() => onDeleteEvent(event._id)}
+                  className="text-gray-300 hover:text-red-500 p-1 transition-colors duration-200"
+                  aria-label="Delete event"
+                >
+                  <FaTimes size={16} />
+                </button>
+              </div>
+
+              <div className="flex gap-4 mb-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <FaCalendarAlt className="text-purple-400 flex-shrink-0" />
+                    <span className="font-medium text-gray-700">
+                      {format(parseISO(event.startDateTime), "EEE, MMM d")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <FaClock className="text-purple-400 flex-shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-gray-700">
+                        {format(parseISO(event.startDateTime), "h:mm a")}
+                      </span>
+                      <span className="text-gray-400">-</span>
+                      <span className="font-medium text-gray-700">
+                        {format(parseISO(event.endDateTime), "h:mm a")}
                       </span>
                     </div>
-                    <div className="font-medium text-gray-800 flex items-start">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                      <span className="leading-snug">{reminder.text}</span>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-500 mt-2 ml-4">
-                      <FaClock className="mr-1.5 text-gray-400" />
-                      <span>
-                        {format(
-                          parseISO(reminder.datetime),
-                          "EEE, MMM d, h:mm a"
-                        )}
-                      </span>
-                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {event.description && (
+                <div className="mb-4">
+                  <div className="flex items-start gap-3 text-sm text-gray-600">
+                    <FaAlignLeft className="text-purple-400 mt-0.5 flex-shrink-0" />
+                    <p className="whitespace-pre-line text-gray-700">
+                      {event.description}
+                    </p>
                   </div>
 
-                  {/* Reminder Icons */}
-                  <div
-                    className="absolute top-3 right-3 flex items-center space-x-1 
-                               opacity-100 sm:opacity-0 sm:group-hover:opacity-100 
-                               transition-opacity duration-200"
-                  >
-                    <button
-                      onClick={() => onEditReminder(reminder)}
-                      className="p-1.5 text-blue-600 sm:text-gray-400 hover:text-blue-600 hover:bg-blue-50 
-                                 rounded-full transition-colors duration-150"
-                      title="Edit"
-                    >
-                      <FaPen size={12} />
-                    </button>
-                    <button
-                      onClick={() => onDeleteReminder(reminder._id)}
-                      className="p-1.5 text-red-600 sm:text-gray-400 hover:text-red-600 hover:bg-red-50 
-                                 rounded-full transition-colors duration-150"
-                      title="Delete"
-                    >
-                      <FaTimes size={12} />
-                    </button>
-                  </div>
                 </li>
               ))}
             </ul>
@@ -1063,63 +1018,26 @@ const BucketSection = ({
                               parseISO(event.startDateTime),
                               "EEE, MMM d"
                             )}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <FaClock className="text-purple-400 flex-shrink-0" />
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium text-gray-700">
-                              {format(parseISO(event.startDateTime), "h:mm a")}
-                            </span>
-                            <span className="text-gray-400">-</span>
-                            <span className="font-medium text-gray-700">
-                              {format(parseISO(event.endDateTime), "h:mm a")}
-                            </span>
-                          </div>
-                        </div>
+           </span>
+                        ))}
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
 
-                    {event.description && (
-                      <div className="mb-4">
-                        <div className="flex items-start gap-3 text-sm text-gray-600">
-                          <FaAlignLeft className="text-purple-400 mt-0.5 flex-shrink-0" />
-                          <p className="whitespace-pre-line text-gray-700">
-                            {event.description}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {event.guestEmails?.length > 0 && (
-                      <div className="mb-4">
-                        <div className="flex items-start gap-3 text-sm">
-                          <FaUserFriends className="text-purple-400 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-700 mb-2">
-                              Invited Guests
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {event.guestEmails.map((email, i) => (
-                                <span
-                                  key={i}
-                                  className="bg-gray-50 px-3 py-1.5 rounded-full text-xs text-gray-700 border border-gray-200 flex items-center gap-1"
-                                >
-                                  <FaUser className="text-gray-400 text-xs" />
-                                  {email}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                ))}
-            </ul>
-          </div>
-        )}
-      </>
+              <div className="pt-3 border-t border-gray-100 flex justify-end">
+                <button
+                  onClick={() => onEditEvent(event)}
+                  className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors duration-200"
+                >
+                  <FaPen size={12} />
+                  <span>Edit Event</span>
+                </button>
+              </div>
+            </li>
+          ))}
+      </ul>
     )}
   </div>
 );

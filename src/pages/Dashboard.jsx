@@ -1,3 +1,4 @@
+
 import {
   useEffect,
   useMemo,
@@ -62,66 +63,25 @@ const mergeById = (serverList = [], cachedList = []) => {
 };
 
 
+
 function getTimeBasedGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good Morning";
-  if (h < 18) return "Good Afternoon";
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
   return "Good Evening";
 }
 
-const openGoogleConnect = () => {
-  const raw = localStorage.getItem(K.USER);
-  const u = raw ? JSON.parse(raw) : null;
-  const uid = u?.userId || localStorage.getItem(K.USER_ID);
-  if (!uid) {
-    alert("Please login first.");
-    return;
-  }
-  const redirect = window.location.origin + "/reminders";
-  const backendUrl = `https://taskbe.sharda.co.in/auth/google?redirect_url=${encodeURIComponent(
-    redirect
-  )}&user_id=${encodeURIComponent(uid)}`;
-  window.open(backendUrl, "_blank");
-};
+const Dashboard = () => {
+  const [greeting, setGreeting] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
+  const [todaysBirthdays, setTodaysBirthdays] = useState([]);
+  const [showBirthdayBanner, setShowBirthdayBanner] = useState(false);
 
-const ensureLinkedOrPrompt = async () => {
-  const token = localStorage.getItem(K.TOKEN);
-  const email = localStorage.getItem(K.GOOGLE_EMAIL);
-  if (!token || !email) {
-    if (
-      window.confirm(
-        "Google Calendar is not linked. Do you want to connect it now?"
-      )
-    ) {
-      openGoogleConnect();
-    }
-    throw new Error("Google not linked");
-  }
-};
+  useSocketSetup();
 
-/* ------------------ Portal (fixes hidden/clipped modals) ------------------ */
-function ModalPortal({ children }) {
-  const elRef = useRef(null);
-  if (!elRef.current) {
-    elRef.current = document.createElement("div");
-  }
-  useEffect(() => {
-    const el = elRef.current;
-    el.setAttribute("id", "portal-root");
-    document.body.appendChild(el);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      document.body.removeChild(el);
-    };
-  }, []);
-  return createPortal(children, elRef.current);
-}
+  const { name, role, loading, isBirthdayToday, birthdate, userId } =
+    useSelector((state) => state.auth);
 
-/* ------------------ styles ------------------ */
-const glass =
-  "backdrop-blur-xl bg-white/60 border border-white/30 shadow-[0_10px_30px_rgba(0,0,0,0.08)]";
 
 /* ------------------ TodaysList ------------------ */
 
@@ -142,20 +102,14 @@ const TodaysList = forwardRef(function TodaysList(
     endTime: "",
     guests: [""],
     snoozeBefore: "30",
+
   };
 
-  const [showEventPopup, setShowEventPopup] = useState(false);
-  const [newEvent, setNewEvent] = useState({ ...DEFAULT_EVENT });
-  const [editingEventId, setEditingEventId] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const showUserBirthday =
+    role !== "admin" && (isBirthdayToday ?? computeIsToday(birthdate));
 
-  useImperativeHandle(ref, () => ({
-    openCreateEvent: () => {
-      setEditingEventId(null);
-      setNewEvent({ ...DEFAULT_EVENT });
-      setShowEventPopup(true);
-    },
-  }));
+  const { notes: latestNotes, loading: notesLoading } = useStickyNotes(3);
+
 
 
   const saveEvent = async () => {
@@ -717,52 +671,12 @@ useEffect(() => {
     if (email) localStorage.setItem(K.GOOGLE_EMAIL, email);
     if (token) localStorage.setItem(K.TOKEN, token);
     if (uid) localStorage.setItem(K.USER_ID, uid);
+
   }, []);
-
-  useEffect(() => {
-    if (!userId) return;
-    (async () => {
-      try {
-        const [evRes, remRes] = await Promise.all([
-          fetch(`https://taskbe.sharda.co.in/api/events?userId=${userId}`),
-          fetch(`https://taskbe.sharda.co.in/api/reminders?userId=${userId}`),
-        ]);
-        const [serverEv, serverRm] = await Promise.all([
-          evRes.json(),
-          remRes.json(),
-        ]);
-        const currentEvCache = loadCache(evKey(userId));
-        const currentRmCache = loadCache(rmKey(userId));
-
-        const mergedEv = mergeById(
-          Array.isArray(serverEv) ? serverEv : [],
-          currentEvCache
-        );
-        const mergedRm = mergeById(
-          Array.isArray(serverRm) ? serverRm : [],
-          currentRmCache
-        );
-
-        setEvents(mergedEv);
-        setReminders(mergedRm);
-        saveCache(evKey(userId), mergedEv);
-        saveCache(rmKey(userId), mergedRm);
-      } catch (e) {
-        console.error("Failed to load rows:", e);
-      }
-    })();
-  }, [userId]);
-
-  useEffect(() => {
-    saveCache(evKey(userId), events);
-  }, [events, userId]);
-  useEffect(() => {
-    saveCache(rmKey(userId), reminders);
-  }, [reminders, userId]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-[90vh] bg-gray-50">
         <svg
           className="animate-spin h-10 w-10 text-blue-600"
           xmlns="http://www.w3.org/2000/svg"
@@ -776,23 +690,17 @@ useEffect(() => {
             r="10"
             stroke="currentColor"
             strokeWidth="4"
-          />
+          ></circle>
           <path
             className="opacity-75"
             fill="currentColor"
-            d="M4 12a 8 8 0 018-8v8z"
-          />
+            d="M4 12a8 8 0 018-8v8z"
+          ></path>
         </svg>
         <span className="ml-3 text-lg text-gray-600">Loading dashboard...</span>
       </div>
     );
   }
-
-
-
-
-
-
 
   return (
     <div className="relative w-full h-full bg-gradient-to-b from-indigo-50 via-white to-white pb-24 overflow-y-auto px-2 md:px-5">
@@ -854,160 +762,162 @@ useEffect(() => {
                 month: "short",
                 day: "numeric",
               })}
+
             </div>
           </div>
-        </motion.div>
-      </div>
 
-      {/* Stats */}
-      <div className="bg-transparent">
-        <div className="w-full ">
-          <button
-            className="md:hidden flex items-center justify-between w-full bg-indigo-600 text-white px-6 py-3 rounded-md shadow"
-            onClick={() => setShowStats(!showStats)}
-            type="button"
-          >
-            <span className="text-sm">Show Statistics</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-5 w-5 transition ${showStats ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-
-          <div className="hidden md:grid md:grid-cols-4 gap-4 mt-0">
-            <StatCard
-              pillLabel="Total Task"
-              variant="blue"
-              label="All Tasks"
-              value={stats.TotalTask}
-              icon={<ClipboardList />}
-            />
-            <StatCard
-              pillLabel="Completed"
-              variant="green"
-              label="Done"
-              value={stats.Completed}
-              icon={<CheckCircle />}
-            />
-            <StatCard
-              pillLabel="Progress"
-              variant="gray"
-              label="In progress"
-              value={stats.Progress}
-              icon={<Clock />}
-            />
-            <StatCard
-              pillLabel="Overdue"
-              variant="red"
-              label="Past Due"
-              value={stats.Overdue}
-              icon={<AlertCircle />}
-            />
-          </div>
-
-          <AnimatePresence>
-            {showStats && (
-              <motion.div
-                className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 md:hidden"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
+          {/* Date and Greeting Section */}
+          <div className="text-center md:text-right space-y-2">
+            {/* Minimal date display */}
+            <div className="flex items-center justify-center md:justify-end space-x-2 text-gray-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
               >
-                <StatCard
-                  pillLabel="Total Task"
-                  variant="blue"
-                  label="All Tasks"
-                  value={stats.TotalTask}
-                  icon={<ClipboardList />}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
-                <StatCard
-                  pillLabel="Completed"
-                  variant="green"
-                  label="Done"
-                  value={stats.Completed}
-                  icon={<CheckCircle />}
-                />
-                <StatCard
-                  pillLabel="Progress"
-                  variant="gray"
-                  label="In progress"
-                  value={stats.Progress}
-                  icon={<Clock />}
-                />
-                <StatCard
-                  pillLabel="Overdue"
-                  variant="red"
-                  label="Past Due"
-                  value={stats.Overdue}
-                  icon={<AlertCircle />}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </svg>
+              <p className="text-sm">
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+
+            {/* Refined greeting */}
+            <h1 className="text-2xl font-normal text-gray-700 mt-1">
+              {getTimeBasedGreeting()},{" "}
+              <span className="text-[#2184A3] font-medium">
+                {name || "User"}
+              </span>
+            </h1>
+          </div>
         </div>
       </div>
+      
+      {role === "admin" && todaysBirthdays.length > 0 && (
+        <div className="mt-4">
+          <div className="rounded-2xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50 to-indigo-100 p-0.5">
+            <div className="rounded-2xl bg-white/60 backdrop-blur-sm">
+              {/* Header */}
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-indigo-100/70">
+                <span className="text-xl">🎂</span>
+                <h3 className="text-indigo-900 font-semibold">
+                  Today’s Birthdays
+                </h3>
+              </div>
 
-      {/* Main */}
-      <div className="md:mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6">
-        <div className="sticky top-0 max-h-[90vh] space-y-4">
-          <TodaysList
-            ref={todaysListRef}
-            rows={todaysRows}
-            events={events}
-            setEvents={setEvents}
-            userId={userId}
-          />
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.05 }}
-          >
-            <TaskOverview />
-          </motion.div>
+              {/* Body */}
+              <div className="px-5 py-4">
+                {todaysBirthdays.length === 0 ? (
+                  <div className="text-sm text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                    No birthdays today.
+                  </div>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {todaysBirthdays.map((emp) => (
+                      <li
+                        key={emp._id}
+                        className="group flex flex-wrap items-center gap-2 rounded-lg px-3  hover:bg-white transition"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                        <span className="font-medium text-gray-900">
+                          {emp.name}
+                        </span>
+                        <span className="text-gray-400">—</span>
+
+                        {/* departments as subtle chips */}
+                        <span className="flex flex-wrap gap-1.5">
+                          {toDeptArray(emp.department).map((dep, i) => (
+                            <span
+                              key={i}
+                              className="text-[11px] leading-5 px-2 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
+                            >
+                              {dep}
+                            </span>
+                          ))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
+      )}
 
-        <div className="lg:border-l lg:border-white/50 lg:pl-6 hidden md:block max-h-[90vh] overflow-y-auto">
-          <motion.div
-            className="space-y-6"
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.08 }}
-          >
-            <StickyNotesDashboard />
-          </motion.div>
+      {showUserBirthday && (
+        <div className="mt-4 relative">
+          {/* tiny CSS for animations */}
+          <style>{`
+      @keyframes float {
+        0%,100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-4px) rotate(3deg); }
+      }
+      @keyframes fall {
+        0%   { transform: translateY(-10px) rotate(0deg); opacity: .9; }
+        100% { transform: translateY(140%) rotate(720deg); opacity: .9; }
+      }
+      .confetti {
+        position:absolute; top:-10px;
+        width:8px; height:8px; border-radius:2px;
+        animation: fall 3.8s linear infinite;
+        opacity:.9;
+      }
+      .confetti:nth-child(odd)  { width:6px; height:10px; border-radius:1px; }
+    `}</style>
+
+          <div className="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 shadow-sm ring-1 ring-amber-100">
+            {/* confetti pieces */}
+            <div className="pointer-events-none absolute inset-0">
+              {Array.from({ length: 16 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="confetti"
+                  style={{
+                    left: `${(i + 1) * (100 / 17)}%`,
+                    background: `hsl(${i * 24}, 90%, 60%)`,
+                    animationDelay: `${-i * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center gap-4 px-5 py-4 relative">
+              {/* animated emoji (no file) */}
+              <div
+                className="text-3xl select-none"
+                style={{ animation: "float 2.5s ease-in-out infinite" }}
+                aria-hidden="true"
+              >
+                🎉
+              </div>
+
+              <div className="flex-1">
+                <div className="text-lg md:text-xl font-semibold">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-700 to-yellow-700">
+                    Happy Birthday {name}!
+                  </span>
+                </div>
+                <p className="text-sm text-amber-800/90 mt-0.5">
+                  Wishing you a wonderful year ahead.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
+      )}
 
-/* ---------- Stat Card: glow strictly BEHIND the card ---------- */
-const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
-  const pill =
-    {
-      blue: "bg-indigo-100 text-indigo-700 border border-indigo-200",
-      green: "bg-emerald-100 text-emerald-700 border border-emerald-200",
-      gray: "bg-amber-200 text-amber-700 border border-amber-300",
-      red: "bg-rose-100 text-rose-700 border border-rose-200",
-    }[variant] || "bg-gray-100 text-gray-700 border border-gray-200";
-
-  // gradient colors for the BACK glow
-  const glowGradient =
-    {
-      blue: "from-indigo-500/45 via-indigo-400/35 to-cyan-300/30",
-      green: "from-emerald-500/45 via-emerald-400/35 to-lime-300/30",
-      gray: "from-amber-500/45 via-amber-400/35 to-orange-300/30",
-      red: "from-rose-500/45 via-rose-400/35 to-red-300/30",
-    }[variant] || "from-indigo-400/40 via-indigo-300/30 to-cyan-300/25";
 
   // tinted drop shadow on the card itself (subtle)
   const hoverShadow =
@@ -1018,62 +928,29 @@ const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
       red: "hover:shadow-[0_22px_30px_rgba(244,63,94,0.28)]",
     }[variant] || "hover:shadow-[0_22px_30px_rgba(99,102,241,0.24)]";
 
-  // count-up
-  const numRef = useRef(null);
-  const isInView = useInView(numRef, { once: true, margin: "-20% 0px" });
-  const [display, setDisplay] = useState(0);
-  useEffect(() => {
-    if (!isInView) return;
-    const target = Number(value || 0);
-    const duration = 700;
-    const start = performance.now();
-    let raf;
-    const tick = (t) => {
-      const p = Math.min(1, (t - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setDisplay(Math.round(target * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value, isInView]);
 
-  return (
-    <div className="relative group">
-      {/* BEHIND layer: stays strictly behind the card */}
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute -inset-2 rounded-3xl -z-10 opacity-0 group-hover:opacity-100 transition duration-300 blur-2xl bg-gradient-to-br ${glowGradient}`}
-        // keep behind & outside the card; no overlay on content
-        style={{ filter: "saturate(115%)" }}
-      />
-      <motion.div
-        className={`relative rounded-2xl ${glass} px-6 py-4 transition ${hoverShadow} overflow-visible`}
-        whileHover={{ y: -4 }}
-        transition={{ type: "spring", stiffness: 180, damping: 18 }}
-      >
-        <div className="relative flex items-center justify-between">
-          <span className={`text-[11px] px-2 py-1 rounded-full ${pill}`}>
-            {pillLabel}
-          </span>
-          <motion.div
-            className="grid place-items-center"
-            initial={{ rotate: -6, scale: 0.95 }}
-            animate={{ rotate: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 180, damping: 12 }}
-          >
-            {icon}
-          </motion.div>
+      <div className="mt-6 flex flex-col md:flex-row gap-2">
+        {/* Task Overview - 70% width on medium screens and up */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden w-full md:w-[70%]">
+          <div className="flex justify-between items-center">
+            <h2
+              className="text-xl font-semibold text-gray-800 p-6 pb-0"
+              style={{ fontFamily: "Poppins, sans-serif" }}
+            >
+              Task Overview
+            </h2>
+          </div>
+
+          <div className="">
+            <TaskOverview />
+          </div>
         </div>
 
-        <p
-          ref={numRef}
-          className="mt-3 text-4xl font-extrabold tracking-tight text-gray-900"
-        >
-          {display}
-        </p>
-        <p className="mt-1 text-xs text-gray-600">{label}</p>
-      </motion.div>
+        {/* Sticky Notes - 30% width on medium screens and up */}
+        <div className="w-full md:w-[30%]  w-full">
+          <StickyNotesDashboard />
+        </div>
+      </div>
     </div>
   );
 };
