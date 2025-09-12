@@ -5,14 +5,10 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
- 
 } from "react";
-
-import { useLocation, useNavigate } from "react-router-dom";
-
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
-import { motion, AnimatePresence, useInView } from "framer-motion";    
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
@@ -20,8 +16,6 @@ import { ClipboardList, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { FaCalendarAlt, FaClock, FaTimes, FaPlus } from "react-icons/fa";
 import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
 import TaskOverview from "../Components/TaskOverview";
-
-
 
 /* ------------------ cache & helpers ------------------ */
 const K = {
@@ -44,7 +38,7 @@ const loadCache = (key) => {
 const saveCache = (key, list) => {
   try {
     localStorage.setItem(key, JSON.stringify(list || []));
-  } catch {}
+  } catch { }
 };
 const mergeById = (serverList = [], cachedList = []) => {
   const out = [];

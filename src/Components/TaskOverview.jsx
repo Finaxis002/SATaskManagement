@@ -329,7 +329,7 @@ const TaskOverview = () => {
       <div className=" flex gap-10 flex-col mt-8 mb-4 md:hidden h-[60vh] overflow-auto">
         {getTasksByTab().filter((task) => !isHiddenCompletedTask(task))
           .length === 0 ? (
-          <div className="px-6 py-4 text-gray-500 text-sm">No tasks found.</div>
+          <div className="px-6 py-4 text-gray-500 text-sm">No task found.</div>
         ) : (
           getTasksByTab()
             .filter((task) => !isHiddenCompletedTask(task))

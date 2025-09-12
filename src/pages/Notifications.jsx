@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import { FaRegBell, FaCheckCircle, FaClock } from "react-icons/fa";
 import { MdUpdate } from "react-icons/md";
 import { BsFillCircleFill } from "react-icons/bs";
-
+import { motion, AnimatePresence } from "framer-motion";
 // ===== Add this once under imports =====
 const api = axios.create({
   baseURL: "https://taskbe.sharda.co.in",
@@ -23,13 +23,16 @@ const socket = io("https://taskbe.sharda.co.in", {
 });
 
 const NotificationItem = React.memo(
-  ({
-    notification,
-    onMarkAsRead,
-    selectedNotifications,
-    toggleSelectNotification,
-  }) => {
+  ({ notification, onMarkAsRead, selectedNotifications, toggleSelectNotification }) => {
     const isUnread = !notification.read;
+
+    // 🔹 Status color map
+    const statusColors = {
+      completed: "bg-green-100 text-green-700",
+      approved: "bg-blue-100 text-blue-700",
+      "pending review": "bg-yellow-100 text-yellow-700",
+      urgent: "bg-red-100 text-red-700",
+    };
 
     return (
       <div
@@ -65,11 +68,11 @@ const NotificationItem = React.memo(
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-gray-100 text-gray-700"
                 }`}
-              >
-                {notification.priority}
-              </span>
-            )}
-          </div>
+            >
+              Status: {notification.status}
+            </span>
+          )}
+        </div>
 
           {notification.updatedBy &&
             (() => {
@@ -138,14 +141,16 @@ const NotificationItem = React.memo(
                 ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
                 : "bg-green-600 text-white border-green-600 hover:bg-green-700"
             }`}
-          >
-            {notification.read ? "Read" : "Mark as Read"}
-          </button>
-        </div>
+        >
+          {notification.read ? "Read" : "Mark as Read"}
+        </button>
       </div>
     );
   }
 );
+
+
+
 
 const getUserContext = () => {
   const userStr = localStorage.getItem("user");
@@ -643,7 +648,7 @@ const Notifications = () => {
           )}
           {loading && page > 1 && (
             <div className="text-center text-sm text-gray-400 py-4">
-              Loading more notifications...
+              Loading more notification...
             </div>
           )}
         </div>
