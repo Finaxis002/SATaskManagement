@@ -242,6 +242,7 @@ useEffect(() => {
 
   if (verified) return <ViewInvoices />;
 
+
   return (
     <div className="min-h-[60vh] w-full flex items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white shadow-md">
@@ -263,6 +264,7 @@ useEffect(() => {
               {loading ? "Sending…" : "Send OTP"}
             </button>
           ) : (
+
             <>
               <div className="mt-5 grid grid-cols-6 gap-2" onPaste={onPaste}>
                 {digits.map((d, i) => (

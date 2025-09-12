@@ -88,7 +88,7 @@ const Clients = () => {
   };
 
   return (
-    <div className="p-2 bg-gray-100 min-h-screen">
+    <div className="p-3 bg-gray-100 min-h-screen">
       <div
         className="flex flex-row flex-wrap items-center 
   mb-3 px-1 py-1 sm:py-3 lg:py-3 gap-3"
@@ -105,7 +105,7 @@ const Clients = () => {
         <button
           onClick={() => setShowClientModal(true)}
           className="ml-auto mr-1 sm:mr-0 bg-indigo-600 hover:bg-indigo-700 text-white 
-    px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm
+    px-3 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm
     rounded-lg flex items-center gap-1.5 sm:gap-2
     transition-all duration-200 shadow-sm justify-center
     transform hover:scale-105 hover:opacity-90 hover:shadow-lg"

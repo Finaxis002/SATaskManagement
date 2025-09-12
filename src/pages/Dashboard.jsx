@@ -5,10 +5,12 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
+
  
 } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
+
 
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
@@ -20,7 +22,6 @@ import { ClipboardList, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { FaCalendarAlt, FaClock, FaTimes, FaPlus } from "react-icons/fa";
 import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
 import TaskOverview from "../Components/TaskOverview";
-
 
 
 /* ------------------ cache & helpers ------------------ */
@@ -44,7 +45,9 @@ const loadCache = (key) => {
 const saveCache = (key, list) => {
   try {
     localStorage.setItem(key, JSON.stringify(list || []));
+
   } catch {}
+
 };
 const mergeById = (serverList = [], cachedList = []) => {
   const out = [];
@@ -110,6 +113,7 @@ const ensureLinkedOrPrompt = async () => {
   }
 };
 
+
 /* ------------------ Portal (fixes hidden/clipped modals) ------------------ */
 function ModalPortal({ children }) {
   const elRef = useRef(null);
@@ -129,6 +133,7 @@ function ModalPortal({ children }) {
   }, []);
   return createPortal(children, elRef.current);
 }
+
 
 /* ------------------ styles ------------------ */
 const glass =
@@ -350,6 +355,7 @@ const TodaysList = forwardRef(function TodaysList(
   };
 
   const tagCls = (c) =>
+
     ({
       indigo: "bg-indigo-50 text-indigo-700 border border-indigo-200",
       emerald: "bg-emerald-50 text-emerald-700 border border-emerald-200",
@@ -357,6 +363,7 @@ const TodaysList = forwardRef(function TodaysList(
       rose: "bg-rose-50 text-rose-700 border border-rose-200",
       gray: "bg-gray-100 text-gray-700 border border-gray-200",
     }[c] || "bg-gray-100 text-gray-700 border border-gray-200");
+
 
   return (
     <motion.div
@@ -390,16 +397,20 @@ const TodaysList = forwardRef(function TodaysList(
               setEditingEventId(null);
               setNewEvent({ ...DEFAULT_EVENT });
               setShowEventPopup(true);
+
               
             }
           }
+
             className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-purple-700 transition focus:outline-none focus:ring-2 focus:ring-purple-400"
             type="button"
             whileTap={{ scale: 0.98 }}
             whileHover={{ y: -1 }}
+
             title="Shortcut: Ctrl + A"
           >
             <FaPlus className="text-xs"   /> Add Event
+
           </motion.button>
         </div>
       </div>
@@ -488,7 +499,9 @@ const TodaysList = forwardRef(function TodaysList(
               exit={{ opacity: 0 }}
             >
               <motion.div
+
                 className="relative w-full max-w-md sm:max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-gray-200"
+
                 initial={{ scale: 0.95, opacity: 0, y: 12 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: -8 }}
@@ -527,6 +540,7 @@ const TodaysList = forwardRef(function TodaysList(
                   }
                   className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
                 />
+
 
                 <div className="flex flex-col sm:flex-row sm:gap-4 mb-4 gap-2 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
@@ -589,6 +603,7 @@ const TodaysList = forwardRef(function TodaysList(
                 <div className="mb-4 max-h-[20vh] overflow-y-auto">
                   <label className="text-sm font-medium text-gray-700 mb-2 block">
                     Add Guests
+
                   </label>
                   {newEvent.guests.map((guest, index) => (
                     <div key={index} className="flex items-center gap-2 mb-2">
@@ -620,10 +635,12 @@ const TodaysList = forwardRef(function TodaysList(
                   ))}
                   <button
                     onClick={() =>
+
                       setNewEvent({
                         ...newEvent,
                         guests: [...newEvent.guests, ""],
                       })
+
                     }
                     className="text-sm text-blue-600 hover:underline"
                     type="button"
@@ -635,19 +652,23 @@ const TodaysList = forwardRef(function TodaysList(
                 <motion.button
                   onClick={saveEvent}
                   disabled={saving}
+
                   className={`w-full ${
                     saving
                       ? "bg-purple-400 cursor-not-allowed"
                       : "bg-purple-600 hover:bg-purple-700"
                   } text-white py-2 rounded-md transition shadow`}
+
                   type="button"
                   whileTap={{ scale: 0.98 }}
                 >
                   {saving
                     ? "Saving..."
                     : editingEventId
+
                     ? "Save Changes"
                     : "Create Event"}
+
                 </motion.button>
               </motion.div>
             </motion.div>
@@ -663,6 +684,7 @@ const Dashboard = () => {
   useSocketSetup();
   useStickyNotes(3);
   const { loading } = useSelector((s) => s.auth);
+
 
   const rawUser = localStorage.getItem(K.USER);
   const userObj = rawUser ? JSON.parse(rawUser) : null;
@@ -703,6 +725,7 @@ useEffect(() => {
     }, 200);
   }
 }, [location, navigate]);
+
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -830,10 +853,12 @@ useEffect(() => {
       location: "—",
     }));
 
+
   const todaysRows = useMemo(
     () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
     [events, reminders]
   );
+
 
   const todaysListRef = useRef(null);
 
@@ -853,6 +878,7 @@ useEffect(() => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
+
           <div className="flex flex-col md:items-start space-x-4 md:space-x-0  ">
             <div className="flex ">
               <motion.div
@@ -875,6 +901,7 @@ useEffect(() => {
               </div>
             </div>
             <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest md:hidden ml-1">
+
               Strategic Business Solutions
             </p>
           </div>
@@ -886,7 +913,9 @@ useEffect(() => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.05 }}
         >
+
           <div className="">
+
             <div className="text-gray-700">
               {getTimeBasedGreeting()},{" "}
               <span className="text-[#018f95] font-medium">{name}</span>
@@ -1055,11 +1084,13 @@ const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
   // tinted drop shadow on the card itself (subtle)
   const hoverShadow =
     {
+
       blue: "hover:shadow-[0_22px_30px_rgba(79,70,229,0.28)]",
       green: "hover:shadow-[0_22px_30px_rgba(16,185,129,0.28)]",
       gray: "hover:shadow-[0_22px_30px_rgba(245,158,11,0.28)]",
       red: "hover:shadow-[0_22px_30px_rgba(244,63,94,0.28)]",
     }[variant] || "hover:shadow-[0_22px_30px_rgba(99,102,241,0.24)]";
+
 
   // count-up
   const numRef = useRef(null);
@@ -1121,4 +1152,6 @@ const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
   );
 };
 
+
 export default Dashboard;
+

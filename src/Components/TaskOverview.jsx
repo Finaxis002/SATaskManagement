@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { format, isBefore, isToday, isTomorrow, parseISO } from "date-fns";
 import axios from "axios";
+
 import { motion, AnimatePresence } from "framer-motion";
 
 // Tabs
@@ -46,6 +47,7 @@ const TaskOverview = () => {
   const userEmail = user?.email;
 
   // Fetch tasks
+
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -62,7 +64,7 @@ const TaskOverview = () => {
 
   const now = new Date();
 
-  // Filter & categorize
+
   const filteredTasks = tasks.filter((task) => {
     if (task.status === "Completed" && task.isHidden) return false;
     if (role === "admin") return true;
@@ -82,13 +84,16 @@ const TaskOverview = () => {
   filteredTasks.forEach((task) => {
     if (!task.dueDate) return;
     const parsedDate = parseISO(task.dueDate);
+
     const isCompleted = task.status === "Completed";
     const isJustNowCompleted = justCompleted.has(task._id);
 
     if (isCompleted && !isJustNowCompleted) {
+
       categorizedTasks.completed.push(task);
       return;
     }
+
 
     if (isToday(parsedDate)) categorizedTasks.today.push(task);
     else if (isTomorrow(parsedDate)) categorizedTasks.tomorrow.push(task);
@@ -97,6 +102,7 @@ const TaskOverview = () => {
   });
 
   // Update dashboard stats
+
   useEffect(() => {
     const counts = {
       completed: categorizedTasks.completed.length,
@@ -112,8 +118,10 @@ const TaskOverview = () => {
         categorizedTasks.overdue.length +
         categorizedTasks.completed.length,
     };
+
     if (typeof window.updateDashboardStats === "function") {
       window.updateDashboardStats(counts);
+
     }
   }, [tasks, justCompleted]);
 
@@ -135,8 +143,10 @@ const TaskOverview = () => {
         }
       );
       if (!response.ok) throw new Error("Failed to update task status");
+
       setTasks((prev) =>
         prev.map((task) =>
+
           task._id === taskId ? { ...task, status: "Completed" } : task
         )
       );
@@ -154,6 +164,7 @@ const TaskOverview = () => {
 
   const isHiddenCompletedTask = (task) =>
     task.status === "Completed" && task.isHidden === true;
+
 
   // Handle arrows in mobile (infinite loop + center focus)
   const handleArrowClick = (direction) => {
@@ -178,6 +189,7 @@ const TaskOverview = () => {
         container.offsetWidth / 2 +
         activeButton.offsetWidth / 2;
       container.scrollTo({ left: offset, behavior: "smooth" });
+
     }
   };
 
@@ -197,6 +209,7 @@ const TaskOverview = () => {
   }
 
   return (
+
     <div>
       {/* Desktop view */}
       <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-xl border border-gray-200 p-6 font-sans hidden sm:block">
@@ -242,9 +255,11 @@ const TaskOverview = () => {
                   </span>
                 )}
               </motion.button>
+
             );
           })}
         </div>
+
 
         {/* Task List */}
         <div className="overflow-y-auto h-[65vh]">
@@ -373,9 +388,11 @@ const TaskOverview = () => {
                         ? "bg-white/20 text-white"
                         : "bg-gray-200 text-gray-800"
                     }`}
+
                   >
                     {visibleCount || 0}
                   </span>
+
                 </button>
               );
             })}
@@ -471,6 +488,7 @@ const TaskOverview = () => {
             </ul>
           )}
         </div>
+
       </div>
     </div>
   );
