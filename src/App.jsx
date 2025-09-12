@@ -26,8 +26,6 @@ import MailBox from "./pages/MailBox";
 import { NotesProvider } from "./context/NotesContext";
 import ShortcutHandler from "./Components/ShortcutHandler";
 
-import ShortcutHandler from "./Components/ShortcutHandler";
-
 
 import SettingsPage from "./pages/SettingsPage";
 import InvoicesPage from "./pages/InvoicesPage";
