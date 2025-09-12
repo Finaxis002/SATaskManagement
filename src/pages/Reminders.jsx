@@ -691,40 +691,19 @@ const Reminders = () => {
                 <button
                   onClick={saveReminder}
                   disabled={saving}
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
+
                   className={`w-full ${saving
                     ? "bg-green-400 cursor-not-allowed"
                     : "bg-green-600 hover:bg-green-700"
                     } text-white py-2 rounded-md transition`}
-<<<<<<< HEAD
-=======
-                  className={`w-full ${
-                    saving
-                      ? "bg-green-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700"
-                  } text-white py-2 rounded-md transition`}
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
+
                 >
                   {editId
                     ? "Update Reminder"
                     : saving
-<<<<<<< HEAD
-<<<<<<< HEAD
+
                       ? "Saving..."
                       : "Save Reminder"}
-=======
-                    ? "Saving..."
-                    : "Save Reminder"}
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
-                      ? "Saving..."
-                      : "Save Reminder"}
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
                 </button>
               </div>
             </div>
@@ -747,23 +726,16 @@ const Reminders = () => {
     sm:text-gray-400 sm:hover:text-red-500
   "
                 onClick={() => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                  setShowEventPopup(false);
-                  setEditingEventId(null);
-                  setNewEvent(DEFAULT_EVENT);
-=======
 
                   setShowEventPopup(false);
                   setEditingEventId(null);
                   setNewEvent(DEFAULT_EVENT);
 
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
+
                   setShowEventPopup(false);
                   setEditingEventId(null);
                   setNewEvent(DEFAULT_EVENT);
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
+
                 }}
               >
                 <FaTimes size={18} />
@@ -918,40 +890,21 @@ const Reminders = () => {
               <button
                 onClick={saveEvent}
                 disabled={saving}
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
+
                 className={`w-full ${saving
                   ? "bg-purple-400 cursor-not-allowed"
                   : "bg-purple-600 hover:bg-purple-700"
                   } text-white py-2 rounded-md transition`}
-<<<<<<< HEAD
-=======
-                className={`w-full ${
-                  saving
-                    ? "bg-purple-400 cursor-not-allowed"
-                    : "bg-purple-600 hover:bg-purple-700"
-                } text-white py-2 rounded-md transition`}
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
+
               >
                 {saving
                   ? "Saving..."
                   : editingEventId
-<<<<<<< HEAD
-<<<<<<< HEAD
+
                     ? "Save Changes"
                     : "Create Event"}
-=======
-                  ? "Save Changes"
-                  : "Create Event"}
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
-                    ? "Save Changes"
-                    : "Create Event"}
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
+
+
               </button>
             </div>
           </div>
@@ -961,24 +914,14 @@ const Reminders = () => {
   );
 };
 
-// 👇 Reminder Card Display with Time
-<<<<<<< HEAD
-<<<<<<< HEAD
-// One column that shows BOTH reminders and events with their existing card UIs
-// 👇 Reminder Card Display with Time
-// One column that shows BOTH reminders and events with their existing card UIs
-=======
+
+
 
 // One column that shows BOTH reminders and events with their existing card UIs
 // 👇 Reminder Card Display with Time
 // One column that shows BOTH reminders and events with their existing card UIs
 
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
-// One column that shows BOTH reminders and events with their existing card UIs
-// 👇 Reminder Card Display with Time
-// One column that shows BOTH reminders and events with their existing card UIs
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
+
 const BucketSection = ({
   title,
   className = "",
@@ -998,46 +941,37 @@ const BucketSection = ({
     {reminders.length === 0 && events.length === 0 ? (
       <p className="text-sm text-gray-500">No reminders or events</p>
     ) : (
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
-      <>
+
         {/* ---- Reminders Section ---- */}
         {reminders.length > 0 && (
           <div className="mb-4 overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
-<<<<<<< HEAD
-<<<<<<< HEAD
+
               className={`flex gap-3 sm:flex-col sm:gap-3 ${reminders.length > 1 ? "snap-x snap-mandatory" : ""
                 }`}
-=======
+
               className={`flex gap-3 sm:flex-col sm:gap-3 ${
                 reminders.length > 1 ? "snap-x snap-mandatory" : ""
               }`}
 
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
+
               className={`flex gap-3 sm:flex-col sm:gap-3 ${reminders.length > 1 ? "snap-x snap-mandatory" : ""
                 }`}
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
+
             >
               {reminders.map((reminder, index) => (
                 <li
                   key={`r-${reminder._id || index}`}
-<<<<<<< HEAD
-<<<<<<< HEAD
+
                   className={`flex-shrink-0 ${reminders.length > 1 ? "w-[85%]" : "w-full"
                     } sm:w-full bg-white p-4 rounded-lg shadow-xs 
-=======
+
                   className={`flex-shrink-0 ${
                     reminders.length > 1 ? "w-[85%]" : "w-full"
                   } sm:w-full bg-white p-4 rounded-lg shadow-xs 
->>>>>>> 9c6fa57ae2527e4bf1be25c92de3c1a39ec9bce9
-=======
+
+
                   className={`flex-shrink-0 ${reminders.length > 1 ? "w-[85%]" : "w-full"
                     } sm:w-full bg-white p-4 rounded-lg shadow-xs 
 >>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
@@ -1103,7 +1037,6 @@ const BucketSection = ({
         {events.length > 0 && (
           <div className="overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
-<<<<<<< HEAD
 <<<<<<< HEAD
               className={`flex gap-3 sm:flex-col sm:gap-3 ${events.length > 1 ? "snap-x snap-mandatory" : ""
                 }`}

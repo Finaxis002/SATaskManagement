@@ -96,11 +96,7 @@ const TaskOverview = () => {
     else categorizedTasks.upcoming.push(task);
   });
 
-<<<<<<< HEAD
   // ✅ Dashboard ko stats bhejna
-=======
-  // Update dashboard stats
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
   useEffect(() => {
     const counts = {
       completed: categorizedTasks.completed.length,
@@ -116,33 +112,13 @@ const TaskOverview = () => {
         categorizedTasks.overdue.length +
         categorizedTasks.completed.length,
     };
-<<<<<<< HEAD
 
     if (typeof window.updateDashboardStats === "function") {
       window.updateDashboardStats(counts);
     }
   }, [tasks, justCompleted]);
 
-  const getTasksByTab = () => {
-    switch (activeTab) {
-      case "today":
-        return categorizedTasks.today;
-      case "tomorrow":
-        return categorizedTasks.tomorrow;
-      case "upcoming":
-        return categorizedTasks.upcoming;
-      case "overdue":
-        return categorizedTasks.overdue;
-      case "completed":
-        return categorizedTasks.completed;
-      default:
-        return [];
-=======
-    if (typeof window.updateDashboardStats === "function") {
-      window.updateDashboardStats(counts);
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
-    }
-  }, [tasks, justCompleted]);
+
 
   const getTasksByTab = () => categorizedTasks[activeTab] || [];
 
@@ -182,7 +158,6 @@ const TaskOverview = () => {
   const isHiddenCompletedTask = (task) =>
     task.status === "Completed" && task.isHidden === true;
 
-<<<<<<< HEAD
   const currentTabIndex = tabs.indexOf(activeTab);
 
   const handlePrevTab = () => {
@@ -190,39 +165,13 @@ const TaskOverview = () => {
       setActiveTab(tabs[currentTabIndex - 1]);
     } else {
       setActiveTab(tabs[tabs.length - 1]);
-=======
-  // Handle arrows in mobile (infinite loop + center focus)
-  const handleArrowClick = (direction) => {
-    const currentIndex = tabs.indexOf(activeTab);
-    let newIndex;
-
-    if (direction === "left") {
-      newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    } else {
-      newIndex = (currentIndex + 1) % tabs.length;
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
     }
 
-<<<<<<< HEAD
   const handleNextTab = () => {
     if (currentTabIndex < tabs.length - 1) {
       setActiveTab(tabs[currentTabIndex + 1]);
     } else {
       setActiveTab(tabs[0]);
-=======
-    setActiveTab(tabs[newIndex]);
-
-    const container = scrollRef.current;
-    const activeButton = container?.querySelector(
-      `[data-tab="${tabs[newIndex]}"]`
-    );
-    if (activeButton && container) {
-      const offset =
-        activeButton.offsetLeft -
-        container.offsetWidth / 2 +
-        activeButton.offsetWidth / 2;
-      container.scrollTo({ left: offset, behavior: "smooth" });
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
     }
   };
 
@@ -265,22 +214,11 @@ const TaskOverview = () => {
                 whileHover="hover"
                 variants={buttonVariants}
                 onClick={() => setActiveTab(tab)}
-<<<<<<< HEAD
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   isActive
                     ? "bg-indigo-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
-=======
-                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200
-                  ${
-                    isActive
-                      ? "bg-indigo-600 text-white"
-                      : "bg-white text-gray-700"
-                  }
-                  shadow-md active:shadow-inner
-                `}
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {visibleCount > 0 && (
@@ -299,7 +237,6 @@ const TaskOverview = () => {
           })}
         </div>
 
-<<<<<<< HEAD
         {/* Mobile Tabs with Slider */}
         <div className="flex sm:hidden items-center justify-between w-full">
           {/* Left Arrow */}
@@ -455,236 +392,10 @@ const TaskOverview = () => {
               </div>
             ))
         )}
-=======
-        {/* Task List */}
-        <div className="overflow-y-auto h-[65vh]">
-          {getTasksByTab().filter((t) => !isHiddenCompletedTask(t)).length ===
-          0 ? (
-            <div className="text-gray-500 text-sm text-center italic py-12">
-              No tasks found
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              <AnimatePresence mode="wait">
-                {getTasksByTab()
-                  .filter((task) => !isHiddenCompletedTask(task))
-                  .map((task, idx) => (
-                    <motion.li
-                      key={task._id}
-                      custom={idx}
-                      variants={rowVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      className="bg-white rounded-xl shadow-md p-4 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={
-                            task.status === "Completed" ||
-                            justCompleted.has(task._id)
-                          }
-                          onChange={() => handleToggleCompleted(task._id)}
-                          disabled={task.status === "Completed"}
-                          className="accent-indigo-600 w-4 h-4 cursor-pointer"
-                        />
-                        <div>
-                          <p
-                            className={`font-medium ${
-                              task.status === "Completed" ||
-                              justCompleted.has(task._id)
-                                ? "line-through text-gray-400"
-                                : "text-gray-800"
-                            }`}
-                          >
-                            {task.taskName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {task.dueDate &&
-                            !isNaN(new Date(task.dueDate).getTime())
-                              ? format(new Date(task.dueDate), "MMM d, yyyy")
-                              : "No due date"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        {task.assignees?.map((assignee) => (
-                          <span
-                            key={assignee.email}
-                            className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium"
-                          >
-                            {assignee.name}
-                          </span>
-                        ))}
-                      </div>
-                    </motion.li>
-                  ))}
-              </AnimatePresence>
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile view */}
-      <div className="sm:hidden block bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-lg border border-gray-200 p-4 font-sans">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Task Overview</h2>
-
-        {/* Tabs Carousel */}
-        <div className="relative flex items-center mb-5">
-          <button
-            onClick={() => handleArrowClick("left")}
-            className="absolute left-0 z-10 bg-white shadow-md rounded-full p-1 -ml-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          <div
-            ref={scrollRef}
-            id="mobile-tabs"
-            className="flex gap-2 overflow-x-auto scrollbar-hide px-8 w-full scroll-smooth"
-          >
-            {tabs.map((tab) => {
-              const visibleCount = categorizedTasks[tab]?.filter(
-                (t) => !isHiddenCompletedTask(t)
-              ).length;
-              const isActive = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  data-tab={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200
-                    ${
-                      isActive
-                        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-200"
-                    }
-                    active:scale-95`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-gray-200 text-gray-800"
-                    }`}
-                  >
-                    {visibleCount || 0}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={() => handleArrowClick("right")}
-            className="absolute right-0 z-10 bg-white shadow-md rounded-full p-1 -mr-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Task List */}
-        <div className="overflow-y-auto max-h-[70vh]">
-          {getTasksByTab().filter((t) => !isHiddenCompletedTask(t)).length ===
-          0 ? (
-            <div className="text-gray-500 text-xs text-center italic py-8">
-              No tasks
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              <AnimatePresence mode="wait">
-                {getTasksByTab()
-                  .filter((task) => !isHiddenCompletedTask(task))
-                  .map((task, idx) => (
-                    <motion.li
-                      key={task._id}
-                      custom={idx}
-                      variants={rowVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      className="bg-white rounded-xl shadow-md p-3 flex items-center justify-between hover:shadow-lg transition-all duration-200"
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={
-                            task.status === "Completed" ||
-                            justCompleted.has(task._id)
-                          }
-                          onChange={() => handleToggleCompleted(task._id)}
-                          disabled={task.status === "Completed"}
-                          className="accent-indigo-600 w-4 h-4 cursor-pointer"
-                        />
-                        <div>
-                          <p
-                            className={`text-sm font-medium ${
-                              task.status === "Completed" ||
-                              justCompleted.has(task._id)
-                                ? "line-through text-gray-400"
-                                : "text-gray-800"
-                            }`}
-                          >
-                            {task.taskName}
-                          </p>
-                          <p className="text-[11px] text-gray-500">
-                            {task.dueDate &&
-                            !isNaN(new Date(task.dueDate).getTime())
-                              ? format(new Date(task.dueDate), "MMM d")
-                              : "No date"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1 max-w-[40%] justify-end">
-                        {task.assignees?.map((assignee) => (
-                          <span
-                            key={assignee.email}
-                            className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-medium truncate"
-                          >
-                            {assignee.name}
-                          </span>
-                        ))}
-                      </div>
-                    </motion.li>
-                  ))}
-              </AnimatePresence>
-            </ul>
-          )}
-        </div>
->>>>>>> 37de8b36c2864a74f920419a70aae2f8292902fd
       </div>
     </div>
   );
 };
+}
 
 export default TaskOverview;

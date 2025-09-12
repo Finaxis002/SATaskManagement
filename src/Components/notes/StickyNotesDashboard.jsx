@@ -11,7 +11,7 @@ import {
   Copy,
 } from "lucide-react";
 
-export default function StickyNote() {
+export default function StickyNotesDashboard() {
   const [stickyNotes, setStickyNotes] = useState([
     { id: 1, content: "<p>Write your note here...</p>" },
   ]);
@@ -251,4 +251,3 @@ export default function StickyNote() {
   );
 }
 
-export default StickyNotesDashboard;
