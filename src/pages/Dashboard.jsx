@@ -7,7 +7,7 @@ import {
   useImperativeHandle,
  
 } from "react";
-
+// import useLocation from 'react-router';
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { createPortal } from "react-dom";
@@ -45,7 +45,9 @@ const loadCache = (key) => {
 const saveCache = (key, list) => {
   try {
     localStorage.setItem(key, JSON.stringify(list || []));
-  } catch {}
+  } catch {
+    console.log("error")
+   }
 };
 const mergeById = (serverList = [], cachedList = []) => {
   const out = [];
@@ -63,16 +65,6 @@ const mergeById = (serverList = [], cachedList = []) => {
   return out;
 };
 
-const toLocalParts = (isoString) => {
-  const d = new Date(isoString);
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}` };
-};
 
 function getTimeBasedGreeting() {
   const h = new Date().getHours();
@@ -136,8 +128,14 @@ const glass =
   "backdrop-blur-xl bg-white/60 border border-white/30 shadow-[0_10px_30px_rgba(0,0,0,0.08)]";
 
 /* ------------------ TodaysList ------------------ */
+
+  const endT = endOfToday();
+  const startT = startOfToday();
+
+
+
 const TodaysList = forwardRef(function TodaysList(
-  { rows = [], events, setEvents, userId },
+  { rows = [], setEvents, userId },
   ref
 ) {
   const DEFAULT_EVENT = {
@@ -163,17 +161,6 @@ const TodaysList = forwardRef(function TodaysList(
     },
   }));
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const email = params.get("email");
-    theToken: {
-      const token = params.get("token");
-      const uid = params.get("user_id");
-      if (email) localStorage.setItem(K.GOOGLE_EMAIL, email);
-      if (token) localStorage.setItem(K.TOKEN, token);
-      if (uid) localStorage.setItem(K.USER_ID, uid);
-    }
-  }, []);
 
   const saveEvent = async () => {
     if (saving) return;
@@ -312,46 +299,8 @@ const TodaysList = forwardRef(function TodaysList(
     }
   };
 
-  const handleEditEvent = (event) => {
-    setEditingEventId(event._id);
-    const { date: sDate, time: sTime } = toLocalParts(event.startDateTime);
-    const { time: eTime } = toLocalParts(event.endDateTime);
-    setNewEvent({
-      title: event.title || event.summary || "",
-      description: event.description || "",
-      date: sDate,
-      startTime: sTime,
-      endTime: eTime,
-      guests: event.guestEmails || [""],
-      snoozeBefore: String(event.snoozeBefore ?? 30),
-    });
-    setShowEventPopup(true);
-  };
-
-  const handleDeleteEvent = async (idOrTemp) => {
-    setEvents((prev) => {
-      const next = prev.filter((e) => (e._id || e.tempId) !== idOrTemp);
-      saveCache(evKey(userId), next);
-      return next;
-    });
-    if (String(idOrTemp).startsWith("tmp_")) return;
-
-    try {
-      const uid =
-        userId || JSON.parse(localStorage.getItem(K.USER) || "{}")?.userId;
-      await fetch(
-        `https://taskbe.sharda.co.in/api/events/${idOrTemp}?userId=${encodeURIComponent(
-          uid
-        )}`,
-        { method: "DELETE" }
-      );
-    } catch (err) {
-      console.error("❌ Error deleting event:", err);
-    }
-  };
 
   const tagCls = (c) =>
-
     ({
       indigo: "bg-indigo-50 text-indigo-700 border border-indigo-200",
       emerald: "bg-emerald-50 text-emerald-700 border border-emerald-200",
@@ -359,7 +308,6 @@ const TodaysList = forwardRef(function TodaysList(
       rose: "bg-rose-50 text-rose-700 border border-rose-200",
       gray: "bg-gray-100 text-gray-700 border border-gray-200",
     }[c] || "bg-gray-100 text-gray-700 border border-gray-200");
-
 
   return (
     <motion.div
@@ -676,6 +624,65 @@ const Dashboard = () => {
   const [reminders, setReminders] = useState(() => loadCache(rmKey(userId)));
   const [showStats, setShowStats] = useState(false);
 
+    const [stats, setStats] = useState({
+    TotalTask: 0,
+    Completed: 0,
+    Progress: 0,
+    Overdue: 0,
+  });
+
+  const location = useLocation();
+const navigate = useNavigate();
+
+  useEffect(() => {
+    window.updateDashboardStats = (counts) => {
+      setStats({
+        TotalTask: counts.total,
+        Completed: counts.completed,
+        Progress: counts.progress,
+        Overdue: counts.overdue,
+      });
+    };
+  }, []);
+
+
+    const todayEventRows = (events || [])
+    .filter((e) => e?.startDateTime && e?.endDateTime)
+    .filter((e) => {
+      const s = parseISO(e.startDateTime);
+      const en = parseISO(e.endDateTime);
+      return s <= endT && en >= startT;
+    })
+    .map((e) => ({
+      ts: parseISO(e.startDateTime).getTime(),
+      time: format(parseISO(e.startDateTime), "h:mm a"),
+      title: e.title || e.summary || "Event",
+      tag: "Event",
+      color: "indigo",
+      location: e.location || "—",
+    }));
+
+    
+  const todayReminderRows = (reminders || [])
+    .filter((r) => r?.datetime && isToday(parseISO(r.datetime)))
+    .map((r) => ({
+      ts: parseISO(r.datetime).getTime(),
+      time: format(parseISO(r.datetime), "h:mm a"),
+      title: r.text || "Reminder",
+      tag: "Reminder",
+      color: "amber",
+      location: "—",
+    }));
+
+
+    const todaysRows = useMemo(
+    () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
+    [events, reminders]
+  );
+
+  const todaysListRef = useRef(null);
+
+
   
 
    useEffect(() => {
@@ -692,8 +699,7 @@ const Dashboard = () => {
   return () => window.removeEventListener("keydown", handleKeyDown);
 }, []);
 
-const location = useLocation();
-const navigate = useNavigate();
+
 // const todaysListRef = useRef(null);
 
 useEffect(() => {
@@ -786,61 +792,11 @@ useEffect(() => {
     );
   }
 
-  const [stats, setStats] = useState({
-    TotalTask: 0,
-    Completed: 0,
-    Progress: 0,
-    Overdue: 0,
-  });
-  useEffect(() => {
-    window.updateDashboardStats = (counts) => {
-      setStats({
-        TotalTask: counts.total,
-        Completed: counts.completed,
-        Progress: counts.progress,
-        Overdue: counts.overdue,
-      });
-    };
-  }, []);
-
-  const startT = startOfToday();
-  const endT = endOfToday();
-
-  const todayEventRows = (events || [])
-    .filter((e) => e?.startDateTime && e?.endDateTime)
-    .filter((e) => {
-      const s = parseISO(e.startDateTime);
-      const en = parseISO(e.endDateTime);
-      return s <= endT && en >= startT;
-    })
-    .map((e) => ({
-      ts: parseISO(e.startDateTime).getTime(),
-      time: format(parseISO(e.startDateTime), "h:mm a"),
-      title: e.title || e.summary || "Event",
-      tag: "Event",
-      color: "indigo",
-      location: e.location || "—",
-    }));
-
-  const todayReminderRows = (reminders || [])
-    .filter((r) => r?.datetime && isToday(parseISO(r.datetime)))
-    .map((r) => ({
-      ts: parseISO(r.datetime).getTime(),
-      time: format(parseISO(r.datetime), "h:mm a"),
-      title: r.text || "Reminder",
-      tag: "Reminder",
-      color: "amber",
-      location: "—",
-    }));
 
 
-  const todaysRows = useMemo(
-    () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
-    [events, reminders]
-  );
 
 
-  const todaysListRef = useRef(null);
+
 
   return (
     <div className="relative w-full h-full bg-gradient-to-b from-indigo-50 via-white to-white pb-24 overflow-y-auto px-2 md:px-5">
@@ -872,7 +828,7 @@ useEffect(() => {
               </motion.div>
               <div className="inline-block ml-2 mt-1 md:mt-3">
                 <h1 className="text-xl font-semibold text-gray-800 tracking-normal leading-tight w-48  md:w-80">
-                  Anunay Sharda & Associates
+                  Anunay Sharda & Associate
                 </h1>
                 <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest hidden md:block">
                   Strategic Business Solutions
@@ -880,7 +836,6 @@ useEffect(() => {
               </div>
             </div>
             <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest md:hidden ml-1">
-
               Strategic Business Solutions
             </p>
           </div>
@@ -1126,5 +1081,8 @@ const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
     </div>
   );
 };
+
+
+
 
 export default Dashboard;

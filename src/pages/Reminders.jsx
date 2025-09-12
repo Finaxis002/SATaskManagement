@@ -961,7 +961,6 @@ const BucketSection = ({
                     reminders.length > 1 ? "w-[85%]" : "w-full"
                   } sm:w-full bg-white p-4 rounded-lg shadow-xs 
 
-
                              hover:shadow-sm border border-gray-100 
                              transition-all duration-200 hover:border-blue-100 relative group
                              ${reminders.length > 1 ? "snap-start" : ""}`}

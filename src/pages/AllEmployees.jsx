@@ -34,6 +34,12 @@ const AllEmployees = () => {
 
   const [loading, setLoading] = useState(true);
 
+  // Calculate total users, admins, and departments
+  const totalUsers = users.length;  // Total users count
+  const totalAdmins = users.filter(user => user.role === 'admin').length;  // Count of admins
+  const departments = [...new Set(users.flatMap(user => user.department))];  // Unique departments
+  const totalDepartments = departments.length;  // Count of unique departments
+
   useEffect(() => {
     setLoading(true); // Start loader as soon as we fetch
     dispatch(fetchUsers()).finally(() => setLoading(false));
@@ -172,176 +178,289 @@ const AllEmployees = () => {
 
   return (
     <div className="relative w-full h-[90vh] overflow-y-auto">
-      <img
-        src={bgImage}
-        alt="Background"
-        className="absolute top-0 left-0 w-full h-full object-cover opacity-10 z-0"
-      />
+
       <div className="relative z-10 bg-white max-w-7xl mx-auto rounded-xl shadow-xl p-8">
         <h2
-          className="text-3xl font-semibold text-center text-gray-800 mb-8"
+          className="text-3xl font-semibold  text-gray-800 mb-8 "
           style={{ fontFamily: "Poppins, sans-serif" }}
         >
           Users Directory
         </h2>
-
+<div className="border-b-2 border-gray-300 mb-6"></div>
         <div className="overflow-x-auto">
           <div className="flex justify-end mb-4">
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg font-semibold transition"
+              className="w-auto px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 shadow-lg font-semibold transition sm:px-4 sm:py-1 "
             >
-              + Add User
+              <span className="hidden sm:inline">+ Add User</span>
+              <span className="sm:hidden font-light">+ Add User </span>
             </button>
           </div>
+          {/* Displaying Total Users, Admins, Departments in a Smaller Box */}
+          <div className="flex justify-between mb-8 gap-4">
+            <div className="w-full sm:w-[30%] bg-gray-100 py-3 px-4 rounded-lg shadow-xl text-center">
+              <div className="text-sm font-semibold text-gray-700 leading-tight">Total Users</div>
+              <div className="text-2xl font-bold text-indigo-600 leading-none">{totalUsers}</div>
+            </div>
 
-          <table className="min-w-full border-collapse bg-white text-sm shadow-sm rounded-md">
-            <thead>
-              <tr className="bg-gray-300 text-black text-left font-semibold">
-                <th className="px-5 py-3 border-b font-medium">Emp ID</th>
-                <th className="px-5 py-3 border-b font-medium">Name</th>
-                <th className="px-5 py-3 border-b font-medium">Email</th>
-                <th className="px-5 py-3 border-b font-medium">Position</th>
-                <th className="px-5 py-3 border-b font-medium">Department</th>
-                <th className="px-5 py-3 border-b font-medium">Role</th>
-                <th className="px-5 py-3 border-b font-medium text-center">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="7" className="px-5 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin h-6 w-6 text-indigo-500 mr-3"
-                        viewBox="0 0 24 24"
+            <div className="w-full sm:w-[30%] bg-gray-100 py-3 px-4 rounded-lg shadow-xl text-center">
+              <div className="text-sm font-semibold text-gray-700 leading-tight">Admins</div>
+              <div className="text-2xl font-bold text-indigo-600 leading-none">{totalAdmins}</div>
+            </div>
+
+            <div className="w-full sm:w-[30%] bg-gray-100 py-3 px-4 rounded-lg shadow-xl text-center">
+              <div className="text-sm font-semibold text-gray-700 leading-tight">Departments</div>
+              <div className="text-2xl font-bold text-indigo-600 leading-none">{totalDepartments}</div>
+            </div>
+          </div>
+
+          <div className="hidden sm:block">
+
+            <table className="min-w-full border-collapse  bg-white text-sm shadow-sm rounded-md">
+              <thead>
+                <tr className="bg-gray-300 text-black text-left font-semibold  text-transform: uppercase">
+                  <th className="px-5 py-3 border-b font-medium">Emp ID</th>
+                  <th className="px-5 py-3 border-b font-medium">Name</th>
+                  <th className="px-5 py-3 border-b font-medium">Email</th>
+                  <th className="px-5 py-3 border-b font-medium">Position</th>
+                  <th className="px-5 py-3 border-b font-medium">Department</th>
+                  <th className="px-5 py-3 border-b font-medium">Role</th>
+                  <th className="px-5 py-3 border-b font-medium text-center">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="px-5 py-4 text-center">
+                      <div className="flex items-center justify-center">
+                        <svg
+                          className="animate-spin h-6 w-6 text-indigo-500 mr-3"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8z"
+                          ></path>
+                        </svg>
+                        <span className="text-indigo-600 font-medium">
+                          Loading Users...
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="7"
+                      className="px-5 py-4 text-center text-gray-500"
+                    >
+                      No users found.
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((user, index) => (
+                    <tr
+                      key={user._id}
+                      className="bg-white hover:bg-gray-200 transition duration-100"
+                      style={{ fontFamily: "Roboto, sans-serif" }}
+                    >
+                      <td className="px-5 py-3 border-b text-gray-700">
+                        {user.userId}
+                      </td>
+                      <td className="px-5 py-3 border-b font-semibold">
+                        {user.name}
+                      </td>
+                      <td className="px-5 py-3 border-b text-gray-600">
+                        {user.email}
+                      </td>
+                      <td className="px-5 py-3 border-b">{user.position}</td>
+                      <td className="px-5 py-3 border-b">
+                        {Array.isArray(user.department) ? (
+                          user.department.map((dept, index) => (
+                            <span
+                              key={index}
+                              className="inline-block px-3 mr-2 mb-2 text-sm font-medium text-black bg-gray-200 rounded-full"
+                            >
+                              {dept}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full">
+                            {user.department}
+                          </span>
+                        )}
+                      </td>
+
+                      <td
+                        className={`px-5 py-3 border-b transition-transform duration-200 hover:scale-105 ${user.role.toLowerCase() === "admin" ? "text-violet-600" : "text-green-600"
+                          }`}
                       >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v8z"
-                        ></path>
-                      </svg>
-                      <span className="text-indigo-600 font-medium">
-                        Loading Users...
-                      </span>
+                        {user.role}
+                      </td>
+                      <td className="px-5 py-3 border-b text-center">
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="  flex items-center gap-2 px-4 py-2  hover:bg-[#d2d5f1]  text-xs rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105"
+                            title="Edit"
+                          >
+                            <FaEdit className="text-xs text-blue-500" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleResetPassword(user._id, user.name)
+                            }
+                            className="flex items-center gap-2 px-4 py-2  hover:bg-[#f7f7a2]  text-xs rounded-md shadow-md transition ease-in-out transform hover:scale-105"
+                            title="Reset password">
+                            <FaSyncAlt className="text-xs text-yellow-500" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user._id)}
+                            className="flex items-center gap-2 px-3 py-1.5  hover:bg-[#f5a8a8] rounded-md shadow-sm transition ease-in-out transform hover:scale-105"
+                            title="Delete" >
+                            <FaTrash className="text-xs text-red-500" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+
+        {/* Edit Modal */}
+        {showEditModal && (
+          <div className="fixed inset-0 flex justify-center items-center bg-opacity-30 z-30">
+            <AddEmployee
+              showEditModal={true}
+              setShowEditModal={setShowEditModal}
+              employeeToEdit={selectedUser}
+              handleCloseModal={() => {
+                setShowEditModal(false);
+                setSelectedUser(null);
+                dispatch(fetchUsers());
+              }}
+            />
+          </div>
+        )}
+
+        {/* Add Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 flex justify-center items-center bg-opacity-30 z-30">
+            <AddEmployee
+              showEditModal={false}
+              setShowEditModal={setShowAddModal}
+              employeeToEdit={null}
+              handleCloseModal={() => setShowAddModal(false)}
+            />
+          </div>
+        )}
+        {/* Mobile View (Stacked Data for Small Screens) */}
+        <div className="block sm:hidden">
+          {loading ? (
+            <div className="flex items-center justify-center h-[250px]">
+              <svg className="animate-spin h-8 w-8 text-indigo-500" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+              </svg>
+              <span className="ml-3 text-indigo-600 font-semibold">Loading Users...</span>
+            </div>
+          ) : users.length === 0 ? (
+            <p className="text-center text-gray-500">No users found.</p>
+          ) : (
+            users.map((user, index) => (
+              <div key={user._id} className="bg-white hover:bg-gray-200 transition duration-300 p-4 mb-4 rounded-lg shadow-lg">
+                <div className="bg-gray-200 p-4 rounded-lg w-full">
+                  {/* Employee Details Flex Container */}
+                  <div className="flex flex-col items-start">
+                    {/* Employee's Name */}
+                    <div className="flex justify-center items-center w-full text-xl font-semibold text-yellow-800 mb-2">{user.name}</div>
+
+                    {/* Employee's ID and Position */}
+                    <div className="mb-2">
+                      <span className="font-medium text-gray-700">Emp ID:</span> {user.userId}
                     </div>
-                  </td>
-                </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="7"
-                    className="px-5 py-4 text-center text-gray-500"
-                  >
-                    No users found.
-                  </td>
-                </tr>
-              ) : (
-                users.map((user, index) => (
-                  <tr
-                    key={user._id}
-                    className={`${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-100"
-                    }  transition duration-300`}
-                    style={{ fontFamily: "Roboto, sans-serif" }}
-                  >
-                    <td className="px-5 py-3 border-b text-gray-700">
-                      {user.userId}
-                    </td>
-                    <td className="px-5 py-3 border-b font-semibold">
-                      {user.name}
-                    </td>
-                    <td className="px-5 py-3 border-b text-gray-600">
-                      {user.email}
-                    </td>
-                    <td className="px-5 py-3 border-b">{user.position}</td>
-                    <td className="px-5 py-3 border-b">
+                    <div className="mb-2">
+                      <span className="font-medium text-gray-700">Position:</span> {user.position}
+                    </div>
+
+                    {/* Employee's Email */}
+                    <div className="mb-2">
+                      <span className="font-medium text-gray-700">Email:</span> {user.email}
+                    </div>
+
+                    {/* Departments */}
+                    <div className="mb-2">
+                      <span className="font-medium text-gray-700">Departments:</span>
                       {Array.isArray(user.department) ? (
                         user.department.map((dept, index) => (
-                          <span
-                            key={index}
-                            className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full"
-                          >
+                          <span key={index} className="inline-block px-3 py-1 mr-2 mb-2 text-sm font-medium text-black-50 bg-gray-50 rounded-full">
                             {dept}
                           </span>
                         ))
                       ) : (
-                        <span className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full">
+                        <span className="inline-block px-3 py-1 mr-2 mb-2 text-sm font-medium text-black bg-gray-100 rounded-full">
                           {user.department}
                         </span>
                       )}
-                    </td>
+                    </div>
 
-                    <td className="px-5 py-3 border-b">{user.role}</td>
-                    <td className="px-5 py-3 border-b text-center">
-                      <div className="flex justify-center gap-3">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="  flex items-center gap-2 px-4 py-2  hover:bg-[#d2d5f1]  text-xs rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105"
-                        >
-                          <FaEdit className="text-xs text-blue-500" />
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleResetPassword(user._id, user.name)
-                          }
-                          className="flex items-center gap-2 px-4 py-2  hover:bg-[#f7f7a2]  text-xs rounded-md shadow-md transition ease-in-out transform hover:scale-105"
-                        >
-                          <FaSyncAlt className="text-xs text-yellow-500" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user._id)}
-                          className="flex items-center gap-2 px-3 py-1.5  hover:bg-[#f5a8a8] rounded-md shadow-sm transition ease-in-out transform hover:scale-105"
-                        >
-                          <FaTrash className="text-xs text-red-500" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    {/* Role */}
+                    <div className="mb-4">
+                      <span className="font-medium text-gray-700">Role:</span>
+                      <span
+                        className={`ml-2 = transition-transform duration-200 hover:scale-105 ${user.role.toLowerCase() === "admin" ? "text-violet-600" : "text-green-600"
+                          }`}
+                      >
+                        {user.role}
+                      </span>
+                    </div>
+                    {/* Action Buttons with Icons */}
+                    <div className="flex justify-between mt-4 gap-0.5 w-full p-4">
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-[#d2d5f1] text-sm rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105 ml-2"
+                      >
+                        <FaEdit className="text-lg text-blue-500" />
+                      </button>
+
+                      <button
+                        onClick={() => handleResetPassword(user._id, user.name)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-[#f7f7a2] text-sm rounded-md shadow-md transition ease-in-out transform hover:scale-105 ml-2"
+                      >
+                        <FaSyncAlt className="text-lg text-yellow-500" />
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(user._id)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-[#f5a8a8] rounded-md shadow-sm transition ease-in-out transform hover:scale-105 ml-2"
+                      >
+                        <FaTrash className="text-lg text-red-500" />
+                      </button>
+                    </div>
+                  </div> {/* End of flex container */}
+                </div> {/* End of inner white box */}
+              </div>
+            ))
+          )}
+
         </div>
       </div>
-
-      {/* Modal for editing employee */}
-      {showEditModal && (
-        <div className="fixed inset-0 flex justify-center items-center bg-opacity-30 z-30">
-          <AddEmployee
-            showEditModal={true}
-            setShowEditModal={setShowEditModal}
-            employeeToEdit={selectedUser} // Pass the selected user here!
-            handleCloseModal={() => {
-              setShowEditModal(false);
-              setSelectedUser(null);
-              dispatch(fetchUsers());
-            }}
-          />
-        </div>
-      )}
-
-      {showAddModal && (
-        <div className="fixed inset-0 flex justify-center items-center bg-opacity-30 z-30">
-          <AddEmployee
-            showEditModal={false}
-            setShowEditModal={setShowAddModal} // This will close modal from AddEmployee
-            employeeToEdit={null} // Ensure it's in 'add' mode
-            handleCloseModal={() => setShowAddModal(false)}
-          />
-        </div>
-      )}
     </div>
   );
 };

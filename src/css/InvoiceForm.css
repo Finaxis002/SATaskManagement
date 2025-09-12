@@ -13,11 +13,10 @@
 .invoice-page {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f5f5f5;
-  height: auto;
-  overflow: auto;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
-  /* flex-direction: column; */
-  
+  flex-direction: column;
 }
 
 .invoice-header {
@@ -50,13 +49,13 @@
   color: white;
 }
 
-/* .invoice-body {
+.invoice-body {
   display: flex;
   flex-grow: 1;
   padding: 2rem;
   gap: 30px;
   overflow: hidden;
-} */
+}
 
 .invoice-section {
   background: white;
@@ -137,19 +136,17 @@
   padding-bottom: 1rem;
 }
 
-
- .invoice-body {
+.invoice-body {
   display: flex;
-  flex-direction: row; /* Use row layout by default */
   gap: 30px;
-  max-width: 1200px; /* Limit max-width */
-  width: 100%; /* Allow it to grow */
+  max-width: 1200px;
+  margin: auto;
   padding: 2rem;
-  overflow: hidden;
-  flex-wrap: wrap; /* Allow columns to wrap on small screens */
+  height: calc(100vh - 80px);
+  /* Full viewport height minus header */
 }
 
-/* .invoice-left {
+.invoice-left {
   background: white;
   border-radius: 8px;
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.1);
@@ -158,17 +155,17 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-} */
- .invoice-left {
-  flex: 1 1 50%;
-  width: 55%;
-  max-width: 800px;  /* Limit max-width */
-  min-width: 400px;  /* Optional: set a minimum width */
-  overflow-y: auto;
-  padding-right: 8px;
-  box-sizing: border-box;
 }
 
+/* .invoice-right {
+  width: 600px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 100%;
+} */
 
 /* scrollbar styling (optional) */
 .invoice-left::-webkit-scrollbar,
@@ -203,15 +200,13 @@
 .invoice-left textarea {
   width: 100%;
   padding: 10px 12px;
-  margin-bottom: 15px;
   border-radius: 6px;
-  border: 1.5px solid #007f8f;
+  border: 1.8px solid #007f8f;
   font-size: 15px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #222;
   background-color: white;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  box-sizing: border-box;
   appearance: none;
   /* Remove default arrow in some browsers */
   -webkit-appearance: none;
@@ -286,7 +281,7 @@
 /* Items rows */
 .item-row {
   display: grid;
-  grid-template-columns:  repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: 3fr 1fr 1.5fr 1.5fr 1.2fr auto auto;
   gap: 12px;
   align-items: center;
   margin-bottom: 12px;
@@ -341,7 +336,6 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-
 }
 
 .invoice-box {
@@ -614,65 +608,4 @@
 
 .border-left-none {
   border-left: "none";
-}
-
-/* --- Force 2-column layout for the invoice screen --- */
-.invoice-two-col {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  align-items: flex-start !important;
-  justify-content: flex-start !important;
-  gap: 20px !important;
-  padding: 20px !important;
-  background: #f9f9f9 !important;
-}
-
-/* Left column stays a fixed width so the right preview never wraps under it */
-.invoice-two-col .asa-left {
-  flex: 0 0 520px !important;
-  width: 520px !important;
-  max-width: 520px !important;
-  box-sizing: border-box !important;
-}
-
-/* Right column just takes its content size */
-.invoice-two-col .asa-right {
-  flex: 0 0 auto !important;
-}
-
-/* If the screen is narrow, allow horizontal scroll instead of wrapping */
-/* @media (max-width: 1100px) {
-  .invoice-two-col {
-    overflow-x: auto !important;
-  }
-} */
-
-@media (max-width: 1100px) {
-  .invoice-body {
-    flex-direction: column; /* Stack the columns on smaller screens */
-    padding: 1rem;
-  }
-
-  .invoice-left {
-    width: 100%;  /* Allow left side to take full width on small screens */
-  }
-
-  .invoice-right {
-    width: 100%;  /* Make the preview area take full width */
-  }
-}
-
-@media (max-width: 1024px) {
-  .invoice-left input,
-  .invoice-left select,
-  .invoice-left textarea {
-    width: 100%;
-    font-size: 14px; /* Adjust font size for smaller screens */
-  }
-}
-
-@media (max-width: 768px) {
-  .item-row {
-    grid-template-columns: 1fr; /* Stack items on smaller screens */
-  }
 }

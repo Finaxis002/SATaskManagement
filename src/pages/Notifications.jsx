@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import { FaRegBell, FaCheckCircle, FaClock } from "react-icons/fa";
 import { MdUpdate } from "react-icons/md";
 import { BsFillCircleFill } from "react-icons/bs";
-import { motion, AnimatePresence } from "framer-motion";
+
 // ===== Add this once under imports =====
 const api = axios.create({
   baseURL: "https://taskbe.sharda.co.in",
@@ -26,16 +26,13 @@ const socket = io("https://taskbe.sharda.co.in", {
 
 
 const NotificationItem = React.memo(
-  ({ notification, onMarkAsRead, selectedNotifications, toggleSelectNotification }) => {
+  ({
+    notification,
+    onMarkAsRead,
+    selectedNotifications,
+    toggleSelectNotification,
+  }) => {
     const isUnread = !notification.read;
-
-    // 🔹 Status color map
-    const statusColors = {
-      completed: "bg-green-100 text-green-700",
-      approved: "bg-blue-100 text-blue-700",
-      "pending review": "bg-yellow-100 text-yellow-700",
-      urgent: "bg-red-100 text-red-700",
-    };
 
     return (
       <div
@@ -73,6 +70,19 @@ const NotificationItem = React.memo(
                 }`}
               >
                 {notification.priority}
+              </span>
+            )}
+            {notification.status && (
+              <span
+                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
+                  notification.status === "completed"
+                    ? "bg-green-100 text-green-800"
+                    : notification.status === "pending"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                Status: {notification.status}
               </span>
             )}
           </div>
@@ -147,20 +157,7 @@ const NotificationItem = React.memo(
           >
             {notification.read ? "Read" : "Mark as Read"}
           </button>
-
         </div>
-
-        {/* Mark as Read */}
-        <button
-          onClick={() => onMarkAsRead(notification._id)}
-          disabled={notification.read}
-          className={`text-sm px-4 py-1.5 rounded-md font-medium border ml-auto ${notification.read
-              ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-              : "bg-green-600 text-white border-green-600 hover:bg-green-700"
-            }`}
-        >
-          {notification.read ? "Read" : "Mark as Read"}
-        </button>
       </div>
     );
   }
@@ -168,33 +165,38 @@ const NotificationItem = React.memo(
 
 
 
-  const getUserContext = () => {
-    const userStr = localStorage.getItem("user");
-    let userObj = {};
-    try {
-      userObj = JSON.parse(userStr || "{}");
-    } catch {}
+const getUserContext = () => {
+  const userStr = localStorage.getItem("user");
+  let userObj = {};
+  try {
+    userObj = JSON.parse(userStr || "{}");
+  } catch {
+    console.log("something went wrong")
+  }
 
-    const token =
-      localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
-    let tokenPayload = {};
-    try {
-      tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
-    } catch {}
 
-    const email =
-      userObj.email || tokenPayload.email || localStorage.getItem("email");
-    const mongoId = userObj._id || localStorage.getItem("userId");
-    const shortId = tokenPayload.userId; // "113"
+  const token =
+    localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
+  let tokenPayload = {};
+  try {
+    tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
+  } catch {
+    console.log("something went wrong")
+  }
 
-    return {
-      role: localStorage.getItem("role") || userObj.role || tokenPayload.role,
-      email,
-      mongoId,
-      shortId,
-      allKeys: new Set([email, mongoId, shortId].filter(Boolean)),
-    };
+  const email =
+    userObj.email || tokenPayload.email || localStorage.getItem("email");
+  const mongoId = userObj._id || localStorage.getItem("userId");
+  const shortId = tokenPayload.userId; // "113"
+
+  return {
+    role: localStorage.getItem("role") || userObj.role || tokenPayload.role,
+    email,
+    mongoId,
+    shortId,
+    allKeys: new Set([email, mongoId, shortId].filter(Boolean)),
   };
+};
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -204,8 +206,6 @@ const Notifications = () => {
   const {
     role: userRole,
     email,
-    mongoId,
-    shortId,
     allKeys,
   } = useMemo(getUserContext, []);
   const [notificationCount, setNotificationCount] = useState(0);
@@ -221,8 +221,6 @@ const Notifications = () => {
   });
 
   const limit = 20;
-
-
 
   const handleMarkAsRead = useCallback(
     async (id) => {
@@ -537,7 +535,7 @@ const Notifications = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
         {/* Group By Section */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-600 font-medium">Group by:</span>
@@ -622,7 +620,7 @@ const Notifications = () => {
           Loading notifications...
         </div>
       ) : (
-        <div className="space-y-4 mb-5 ">
+        <div className="space-y-4">
           {Object.keys(filteredNotifications).length === 0 ? (
             <div className="text-center text-gray-500 bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-200">
               🎉 No notifications match your filters
@@ -666,7 +664,7 @@ const Notifications = () => {
           )}
           {loading && page > 1 && (
             <div className="text-center text-sm text-gray-400 py-4">
-              Loading more notification...
+              Loading more notifications...
             </div>
           )}
         </div>

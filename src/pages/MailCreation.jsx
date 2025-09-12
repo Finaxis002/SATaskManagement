@@ -176,40 +176,57 @@ const MailCreation = () => {
     <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 ">
       <div className=" mx-auto">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-bold text-indigo-900 tracking-tight drop-shadow-sm flex items-center">
-            <span className="h-8 w-1 bg-indigo-500 rounded-full mr-4"></span>
-            Mail User Management
-          </h1>
+          {/* Mobile (h2) */}
+<h2 className="block sm:hidden text-2xl font-bold text-indigo-900 tracking-tight drop-shadow-sm flex items-center">
+  <span className="h-7 w-1 bg-indigo-500 rounded-full mr-3"></span>
+  Mail User Management
+</h2>
+
+{/* Desktop (h1) */}
+<h1 className="hidden sm:flex text-3xl font-bold text-indigo-900 tracking-tight drop-shadow-sm items-center">
+  <span className="h-8 w-1 bg-indigo-500 rounded-full mr-4"></span>
+  Mail User Management
+</h1>
           <button
-            onClick={openModal}
-            className="inline-flex items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 text-sm"
-          >
-            <PlusCircle className="w-5 h-5 mr-2" />
-            Create Mail ID
-          </button>
+  onClick={openModal}
+  className="inline-flex items-center 
+             px-3 py-2 text-xs   /* default = mobile */
+             sm:px-4 sm:py-2.5 sm:text-sm  /* sm aur upar = desktop */
+             bg-indigo-600 hover:bg-indigo-700 
+             text-white font-medium rounded-lg shadow-md 
+             hover:shadow-lg transition-all duration-200 
+             transform hover:scale-[1.02] active:scale-95"
+>
+  <PlusCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+  Create Mail ID
+</button>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-2 border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-              <Mail className="w-5 h-5 mr-2 text-indigo-600" />
-              Existing Mail Users
-            </h2>
-          </div>
+  <div className="p-2 border-b border-gray-100">
+    <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+      <Mail className="w-5 h-5 mr-2 text-indigo-600" />
+      Existing Mail Users
+    </h2>
+  </div>
 
-          <div className="overflow-x-auto h-[45vh]">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 text-gray-600 text-sm">
-                  <th className="py-4 px-6 text-left font-medium rounded-tl-lg">
-                    Mail ID
-                  </th>
-                  <th className="py-4 px-6 text-right font-medium rounded-tr-lg">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+  {/* Use vertical scroll only */}
+  <div className="overflow-y-auto overflow-x-hidden h-[45vh]">
+    <table className="w-full table-fixed">
+      {/* Control column widths */}
+      <colgroup>
+        <col className="w-[70%] sm:w-[80%]" />
+        <col className="w-[30%] sm:w-[20%]" />
+      </colgroup>
+
+      <thead>
+        <tr className="bg-gray-50 text-gray-600 text-sm">
+          <th className="py-4 px-6 text-left font-medium rounded-tl-lg">Mail ID</th>
+          <th className="py-4 px-6 text-right font-medium rounded-tr-lg">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody className="divide-y divide-gray-100">
                 {users.length === 0 ? (
                   <tr>
                     <td colSpan={2} className="py-8 text-center">
@@ -228,7 +245,7 @@ const MailCreation = () => {
                       key={u.email}
                       className="hover:bg-gray-50 transition-colors"
                     >
-                      <td className="py-4 px-6 font-medium text-gray-800">
+<td className="py-4 px-6 font-medium text-gray-800 hover:scale-102 transition-transform">
                         <div className="flex items-center">
                           <User className="w-4 h-4 mr-2 text-blue-600" />
                           {u.email}
@@ -237,19 +254,19 @@ const MailCreation = () => {
                       <td className="py-4 px-6 text-right">
                         <div className="flex justify-end space-x-2">
                           <button
-                            className="p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                            className="p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700  hover:scale-102  transition-colors  hover:scale-105 transition-transform"
                             onClick={() => openResetModal(u.email)}
                             title="Reset Password"
                           >
-                            <Key size={16} />
+                            <Key size={20} />
                           </button>
 
                           <button
-                            className="p-2 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+                            className="p-2 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors transform hover:scale-105 transition-transform"
                             onClick={() => handleDelete(u.email)}
                             title="delete mail"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={20} />
                           </button>
                         </div>
                       </td>
