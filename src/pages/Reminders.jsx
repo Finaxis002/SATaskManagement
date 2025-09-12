@@ -95,26 +95,6 @@ const Reminders = () => {
     fetchReminders();
   }, [userId]); // Rerun when userId changes
 
-  console.log("linkedemail :", linkedEmail);
-
-  useEffect(() => {
-    if (!userId) return;
-    const fetchReminders = async () => {
-      try {
-        // Send userId instead of email for fetching reminders
-        const res = await fetch(
-          `https://taskbe.sharda.co.in/api/reminders?userId=${userId}`
-        );
-        const data = await res.json();
-
-        setReminders(data);
-      } catch (err) {
-        console.error("❌ Failed to load reminders:", err);
-      }
-    };
-    fetchReminders();
-  }, [userId]); // Rerun when userId changes
-
   useEffect(() => {
     if (!userId) return;
     const fetchData = async () => {
@@ -711,16 +691,20 @@ const Reminders = () => {
                 <button
                   onClick={saveReminder}
                   disabled={saving}
-                  className={`w-full ${saving
-                    ? "bg-green-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                    } text-white py-2 rounded-md transition`}
+
+                  className={`w-full ${
+                    saving
+                      ? "bg-green-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  } text-white py-2 rounded-md transition`}
+
                 >
                   {editId
                     ? "Update Reminder"
                     : saving
-                      ? "Saving..."
-                      : "Save Reminder"}
+                    ? "Saving...."
+                    : "Save Reminder"}
+
                 </button>
               </div>
             </div>
@@ -900,16 +884,21 @@ const Reminders = () => {
               <button
                 onClick={saveEvent}
                 disabled={saving}
-                className={`w-full ${saving
-                  ? "bg-purple-400 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700"
-                  } text-white py-2 rounded-md transition`}
+
+                className={`w-full ${
+                  saving
+                    ? "bg-purple-400 cursor-not-allowed"
+                    : "bg-purple-600 hover:bg-purple-700"
+                } text-white py-2 rounded-md transition`}
+
               >
                 {saving
                   ? "Saving..."
                   : editingEventId
-                    ? "Save Changes"
-                    : "Create Event"}
+
+                  ? "Save Changes"
+                  : "Create Event"}
+
               </button>
             </div>
           </div>
@@ -947,15 +936,15 @@ const BucketSection = ({
         {reminders.length > 0 && (
           <div className="mb-4 overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
-              className={`flex gap-3 sm:flex-col sm:gap-3 ${reminders.length > 1 ? "snap-x snap-mandatory" : ""
-                }`}
+
+              className={`flex gap-3 sm:flex-col sm:gap-3 ${
+                reminders.length > 1 ? "snap-x snap-mandatory" : ""
+              }`}
+
             >
               {reminders.map((reminder, index) => (
                 <li
                   key={`r-${reminder._id || index}`}
-                  className={`flex-shrink-0 ${reminders.length > 1 ? "w-[85%]" : "w-full"
-                    } sm:w-full bg-white p-4 rounded-lg shadow-xs 
-
 
                   className={`flex-shrink-0 ${
                     reminders.length > 1 ? "w-[85%]" : "w-full"
@@ -1023,16 +1012,22 @@ const BucketSection = ({
         {events.length > 0 && (
           <div className="overflow-x-auto scrollbar-hide sm:overflow-x-visible">
             <ul
-              className={`flex gap-3 sm:flex-col sm:gap-3 ${events.length > 1 ? "snap-x snap-mandatory" : ""
-                }`}
+
+              className={`flex gap-3 sm:flex-col sm:gap-3 ${
+                events.length > 1 ? "snap-x snap-mandatory" : ""
+              }`}
+
             >
               {events
                 .filter((e) => e && (e.title || e.summary))
                 .map((event, index) => (
                   <li
                     key={`e-${event._id || index}`}
-                    className={`flex-shrink-0 ${events.length > 1 ? "w-[85%]" : "w-full"
-                      } sm:w-full bg-white p-5 rounded-lg shadow-sm 
+
+                    className={`flex-shrink-0 ${
+                      events.length > 1 ? "w-[85%]" : "w-full"
+                    } sm:w-full bg-white p-5 rounded-lg shadow-sm 
+
                                hover:shadow-md border border-gray-100 
                                transition-all duration-300 hover:border-purple-100 relative group
                                ${events.length > 1 ? "snap-start" : ""}`}
