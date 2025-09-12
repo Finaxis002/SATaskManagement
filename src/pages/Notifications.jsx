@@ -145,6 +145,7 @@ const NotificationItem = React.memo(
           {notification.read ? "Read" : "Mark as Read"}
         </button>
       </div>
+      </div>
     );
   }
 );
@@ -157,14 +158,18 @@ const getUserContext = () => {
   let userObj = {};
   try {
     userObj = JSON.parse(userStr || "{}");
-  } catch {}
+  } catch {
+    console.log("something went wrong")
+  }
 
   const token =
     localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
   let tokenPayload = {};
   try {
     tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
-  } catch {}
+  } catch {
+    console.log("something went wrong")
+  }
 
   const email =
     userObj.email || tokenPayload.email || localStorage.getItem("email");
@@ -188,8 +193,6 @@ const Notifications = () => {
   const {
     role: userRole,
     email,
-    mongoId,
-    shortId,
     allKeys,
   } = useMemo(getUserContext, []);
   const [notificationCount, setNotificationCount] = useState(0);
