@@ -43,12 +43,12 @@ useEffect(() => {
 }, []);
 
   return (
-    <div className="min-h-screen overflow-y-auto bg-gray-100 text-gray-900 p-6">
+    <div className="min-h-screen max-h-[90vh] overflow-y-auto bg-gray-100 text-gray-900 p-6 pb-[20vh]">
   <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-6 h-full overflow-y-auto">
     {/* Left: Leave Request Form */}
      <div className="overflow-y-auto h-auto pr-2">
-  <LeaveRequestForm />
-</div>
+   <LeaveRequestForm /> 
+ </div>
     
 
     {/* Right: Leave Requests + Summary */}
