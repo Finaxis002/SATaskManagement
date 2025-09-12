@@ -46,13 +46,13 @@ useEffect(() => {
     <div className="min-h-screen bg-gray-900 text-white p-6 ">
   <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-6 h-full">
     {/* Left: Leave Request Form */}
-     <div className="  pr-2">
+     <div className="overflow-y-auto max-h-[calc(100vh-48px)] pr-2">
 <LeaveRequestForm />
      </div>
     
 
     {/* Right: Leave Requests + Summary */}
-    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6   pl-2 custom-scrollbar">
+    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-[calc(100vh-48px)] pl-2 custom-scrollbar">
       <LeaveRequestList />
       <LeaveSummary />
     </div>

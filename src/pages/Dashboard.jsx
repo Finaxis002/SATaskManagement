@@ -6,9 +6,11 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
+// import useLocation from 'react-router';
+import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+import {AnimatePresence, useInView , motion} from "framer-motion";
 import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
@@ -16,6 +18,7 @@ import { ClipboardList, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { FaCalendarAlt, FaClock, FaTimes, FaPlus } from "react-icons/fa";
 import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
 import TaskOverview from "../Components/TaskOverview";
+
 
 /* ------------------ cache & helpers ------------------ */
 const K = {
@@ -38,7 +41,9 @@ const loadCache = (key) => {
 const saveCache = (key, list) => {
   try {
     localStorage.setItem(key, JSON.stringify(list || []));
-  } catch { }
+  } catch {
+    console.log("error")
+   }
 };
 const mergeById = (serverList = [], cachedList = []) => {
   const out = [];
@@ -56,16 +61,6 @@ const mergeById = (serverList = [], cachedList = []) => {
   return out;
 };
 
-const toLocalParts = (isoString) => {
-  const d = new Date(isoString);
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}` };
-};
 
 function getTimeBasedGreeting() {
   const h = new Date().getHours();
@@ -129,8 +124,14 @@ const glass =
   "backdrop-blur-xl bg-white/60 border border-white/30 shadow-[0_10px_30px_rgba(0,0,0,0.08)]";
 
 /* ------------------ TodaysList ------------------ */
+
+  const endT = endOfToday();
+  const startT = startOfToday();
+
+
+
 const TodaysList = forwardRef(function TodaysList(
-  { rows = [], events, setEvents, userId },
+  { rows = [], setEvents, userId },
   ref
 ) {
   const DEFAULT_EVENT = {
@@ -156,17 +157,6 @@ const TodaysList = forwardRef(function TodaysList(
     },
   }));
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const email = params.get("email");
-    theToken: {
-      const token = params.get("token");
-      const uid = params.get("user_id");
-      if (email) localStorage.setItem(K.GOOGLE_EMAIL, email);
-      if (token) localStorage.setItem(K.TOKEN, token);
-      if (uid) localStorage.setItem(K.USER_ID, uid);
-    }
-  }, []);
 
   const saveEvent = async () => {
     if (saving) return;
@@ -305,52 +295,15 @@ const TodaysList = forwardRef(function TodaysList(
     }
   };
 
-  const handleEditEvent = (event) => {
-    setEditingEventId(event._id);
-    const { date: sDate, time: sTime } = toLocalParts(event.startDateTime);
-    const { time: eTime } = toLocalParts(event.endDateTime);
-    setNewEvent({
-      title: event.title || event.summary || "",
-      description: event.description || "",
-      date: sDate,
-      startTime: sTime,
-      endTime: eTime,
-      guests: event.guestEmails || [""],
-      snoozeBefore: String(event.snoozeBefore ?? 30),
-    });
-    setShowEventPopup(true);
-  };
-
-  const handleDeleteEvent = async (idOrTemp) => {
-    setEvents((prev) => {
-      const next = prev.filter((e) => (e._id || e.tempId) !== idOrTemp);
-      saveCache(evKey(userId), next);
-      return next;
-    });
-    if (String(idOrTemp).startsWith("tmp_")) return;
-
-    try {
-      const uid =
-        userId || JSON.parse(localStorage.getItem(K.USER) || "{}")?.userId;
-      await fetch(
-        `https://taskbe.sharda.co.in/api/events/${idOrTemp}?userId=${encodeURIComponent(
-          uid
-        )}`,
-        { method: "DELETE" }
-      );
-    } catch (err) {
-      console.error("❌ Error deleting event:", err);
-    }
-  };
 
   const tagCls = (c) =>
-  ({
-    indigo: "bg-indigo-50 text-indigo-700 border border-indigo-200",
-    emerald: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    amber: "bg-amber-50 text-amber-700 border border-amber-200",
-    rose: "bg-rose-50 text-rose-700 border border-rose-200",
-    gray: "bg-gray-100 text-gray-700 border border-gray-200",
-  }[c] || "bg-gray-100 text-gray-700 border border-gray-200");
+    ({
+      indigo: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+      emerald: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      amber: "bg-amber-50 text-amber-700 border border-amber-200",
+      rose: "bg-rose-50 text-rose-700 border border-rose-200",
+      gray: "bg-gray-100 text-gray-700 border border-gray-200",
+    }[c] || "bg-gray-100 text-gray-700 border border-gray-200");
 
   return (
     <motion.div
@@ -384,13 +337,16 @@ const TodaysList = forwardRef(function TodaysList(
               setEditingEventId(null);
               setNewEvent({ ...DEFAULT_EVENT });
               setShowEventPopup(true);
-            }}
+              
+            }
+          }
             className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-purple-700 transition focus:outline-none focus:ring-2 focus:ring-purple-400"
             type="button"
             whileTap={{ scale: 0.98 }}
             whileHover={{ y: -1 }}
+            title="Shortcut: Alt + A"
           >
-            <FaPlus className="text-xs" /> Add Event
+            <FaPlus className="text-xs"   /> Add Event
           </motion.button>
         </div>
       </div>
@@ -479,7 +435,7 @@ const TodaysList = forwardRef(function TodaysList(
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-gray-200"
+                className="relative w-full max-w-md sm:max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-gray-200"
                 initial={{ scale: 0.95, opacity: 0, y: 12 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: -8 }}
@@ -519,37 +475,43 @@ const TodaysList = forwardRef(function TodaysList(
                   className="w-full border border-gray-300 p-3 rounded-md mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
                 />
 
-                <div className="flex items-center mb-4 gap-2 text-sm text-gray-600">
-                  <FaCalendarAlt />
-                  <input
-                    type="date"
-                    value={newEvent.date}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, date: e.target.value })
-                    }
-                    className="border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                  />
-                  <FaClock />
-                  <input
-                    type="time"
-                    value={newEvent.startTime}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, startTime: e.target.value })
-                    }
-                    className="border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                  />
-                  <span>to</span>
-                  <input
-                    type="time"
-                    value={newEvent.endTime}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, endTime: e.target.value })
-                    }
-                    className="border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                  />
+                <div className="flex flex-col sm:flex-row sm:gap-4 mb-4 gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt />
+                    <input
+                      type="date"
+                      value={newEvent.date}
+                      onChange={(e) =>
+                        setNewEvent({ ...newEvent, date: e.target.value })
+                      }
+                      className="w-full sm:w-auto border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FaClock />
+                    <input
+                      type="time"
+                      value={newEvent.startTime}
+                      onChange={(e) =>
+                        setNewEvent({ ...newEvent, startTime: e.target.value })
+                      }
+                      className="w-full sm:w-auto border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>to</span>
+                    <input
+                      type="time"
+                      value={newEvent.endTime}
+                      onChange={(e) =>
+                        setNewEvent({ ...newEvent, endTime: e.target.value })
+                      }
+                      className="w-full sm:w-auto border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    />
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-gray-700 mb-4">
+                <div className="flex flex-col sm:flex-row sm:gap-4 mb-4 gap-2 text-sm text-gray-700">
                   <label htmlFor="event-snooze" className="text-gray-700">
                     ⏳ Snooze Before:
                   </label>
@@ -559,19 +521,21 @@ const TodaysList = forwardRef(function TodaysList(
                     onChange={(e) =>
                       setNewEvent({ ...newEvent, snoozeBefore: e.target.value })
                     }
-                    className="border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    className="w-full sm:w-auto border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
                   >
-                    {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map((m) => (
-                      <option key={m} value={m}>
-                        {m} minutes
-                      </option>
-                    ))}
+                    {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map(
+                      (m) => (
+                        <option key={m} value={m}>
+                          {m} minutes
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
 
                 <div className="mb-4 max-h-[20vh] overflow-y-auto">
                   <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Add Guest
+                    Add Guests
                   </label>
                   {newEvent.guests.map((guest, index) => (
                     <div key={index} className="flex items-center gap-2 mb-2">
@@ -603,7 +567,10 @@ const TodaysList = forwardRef(function TodaysList(
                   ))}
                   <button
                     onClick={() =>
-                      setNewEvent({ ...newEvent, guests: [...newEvent.guests, ""] })
+                      setNewEvent({
+                        ...newEvent,
+                        guests: [...newEvent.guests, ""],
+                      })
                     }
                     className="text-sm text-blue-600 hover:underline"
                     type="button"
@@ -615,18 +582,19 @@ const TodaysList = forwardRef(function TodaysList(
                 <motion.button
                   onClick={saveEvent}
                   disabled={saving}
-                  className={`w-full ${saving
+                  className={`w-full ${
+                    saving
                       ? "bg-purple-400 cursor-not-allowed"
                       : "bg-purple-600 hover:bg-purple-700"
-                    } text-white py-2 rounded-md transition shadow`}
+                  } text-white py-2 rounded-md transition shadow`}
                   type="button"
                   whileTap={{ scale: 0.98 }}
                 >
                   {saving
                     ? "Saving..."
                     : editingEventId
-                      ? "Save Changes"
-                      : "Create Event"}
+                    ? "Save Changes"
+                    : "Create Event"}
                 </motion.button>
               </motion.div>
             </motion.div>
@@ -651,6 +619,95 @@ const Dashboard = () => {
   const [events, setEvents] = useState(() => loadCache(evKey(userId)));
   const [reminders, setReminders] = useState(() => loadCache(rmKey(userId)));
   const [showStats, setShowStats] = useState(false);
+
+    const [stats, setStats] = useState({
+    TotalTask: 0,
+    Completed: 0,
+    Progress: 0,
+    Overdue: 0,
+  });
+
+  const location = useLocation();
+const navigate = useNavigate();
+
+  useEffect(() => {
+    window.updateDashboardStats = (counts) => {
+      setStats({
+        TotalTask: counts.total,
+        Completed: counts.completed,
+        Progress: counts.progress,
+        Overdue: counts.overdue,
+      });
+    };
+  }, []);
+
+
+    const todayEventRows = (events || [])
+    .filter((e) => e?.startDateTime && e?.endDateTime)
+    .filter((e) => {
+      const s = parseISO(e.startDateTime);
+      const en = parseISO(e.endDateTime);
+      return s <= endT && en >= startT;
+    })
+    .map((e) => ({
+      ts: parseISO(e.startDateTime).getTime(),
+      time: format(parseISO(e.startDateTime), "h:mm a"),
+      title: e.title || e.summary || "Event",
+      tag: "Event",
+      color: "indigo",
+      location: e.location || "—",
+    }));
+
+    
+  const todayReminderRows = (reminders || [])
+    .filter((r) => r?.datetime && isToday(parseISO(r.datetime)))
+    .map((r) => ({
+      ts: parseISO(r.datetime).getTime(),
+      time: format(parseISO(r.datetime), "h:mm a"),
+      title: r.text || "Reminder",
+      tag: "Reminder",
+      color: "amber",
+      location: "—",
+    }));
+
+
+    const todaysRows = useMemo(
+    () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
+    [events, reminders]
+  );
+
+  const todaysListRef = useRef(null);
+
+
+  
+
+   useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (e.altKey && e.key.toLowerCase() === "a") {
+      e.preventDefault();
+      if (todaysListRef.current?.openCreateEvent) {
+        todaysListRef.current.openCreateEvent(); // 👈 triggers button click
+      }
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, []);
+
+
+// const todaysListRef = useRef(null);
+
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get("openEvent") === "1") {
+    setTimeout(() => {
+      todaysListRef.current?.openCreateEvent();
+      // clean up query param so it doesn’t persist
+      navigate(location.pathname, { replace: true });
+    }, 200);
+  }
+}, [location, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -731,59 +788,11 @@ const Dashboard = () => {
     );
   }
 
-  const [stats, setStats] = useState({
-    TotalTask: 0,
-    Completed: 0,
-    Progress: 0,
-    Overdue: 0,
-  });
-  useEffect(() => {
-    window.updateDashboardStats = (counts) => {
-      setStats({
-        TotalTask: counts.total,
-        Completed: counts.completed,
-        Progress: counts.progress,
-        Overdue: counts.overdue,
-      });
-    };
-  }, []);
 
-  const startT = startOfToday();
-  const endT = endOfToday();
 
-  const todayEventRows = (events || [])
-    .filter((e) => e?.startDateTime && e?.endDateTime)
-    .filter((e) => {
-      const s = parseISO(e.startDateTime);
-      const en = parseISO(e.endDateTime);
-      return s <= endT && en >= startT;
-    })
-    .map((e) => ({
-      ts: parseISO(e.startDateTime).getTime(),
-      time: format(parseISO(e.startDateTime), "h:mm a"),
-      title: e.title || e.summary || "Event",
-      tag: "Event",
-      color: "indigo",
-      location: e.location || "—",
-    }));
 
-  const todayReminderRows = (reminders || [])
-    .filter((r) => r?.datetime && isToday(parseISO(r.datetime)))
-    .map((r) => ({
-      ts: parseISO(r.datetime).getTime(),
-      time: format(parseISO(r.datetime), "h:mm a"),
-      title: r.text || "Reminder",
-      tag: "Reminder",
-      color: "amber",
-      location: "—",
-    }));
 
-  const todaysRows = useMemo(
-    () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
-    [events, reminders]
-  );
 
-  const todaysListRef = useRef(null);
 
   return (
     <div className="relative w-full h-full bg-gradient-to-b from-indigo-50 via-white to-white pb-24 overflow-y-auto px-2 md:px-5">
@@ -801,27 +810,28 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
-          <motion.div
-            className={`p-2 rounded-2xl w-16 h-16 bg-white/70 border border-white/50 shadow-xl grid place-items-center ${glass}`}
-            whileHover={{ rotate: 2, scale: 1.02 }}
-          >
-            <img
-              src="/SALOGO-black.png"
-              alt="ASA Logo"
-              className="object-contain"
-            />
-          </motion.div>
-          <div className="ml-3">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold text-gray-800 leading-tight">
-                Anunay Sharda & Associates
-              </h1>
-              <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-                Live
-                <span className="ml-1 h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-              </span>
+          <div className="flex flex-col md:items-start space-x-4 md:space-x-0  ">
+            <div className="flex ">
+              <motion.div
+                className={`p-2 rounded-2xl w-16 h-16 bg-white/70 border border-white/50 shadow-xl grid place-items-center ${glass}`}
+                whileHover={{ rotate: 2, scale: 1.02 }}
+              >
+                <img
+                  src="/SALOGO-black.png"
+                  alt="ASA Logo"
+                  className="object-contain"
+                />
+              </motion.div>
+              <div className="inline-block ml-2 mt-1 md:mt-3">
+                <h1 className="text-xl font-semibold text-gray-800 tracking-normal leading-tight w-48  md:w-80">
+                  Anunay Sharda & Associate
+                </h1>
+                <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest hidden md:block">
+                  Strategic Business Solutions
+                </p>
+              </div>
             </div>
-            <p className="text-[#018f95] text-[13px] font-light tracking-widest">
+            <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest md:hidden ml-1">
               Strategic Business Solutions
             </p>
           </div>
@@ -833,7 +843,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.05 }}
         >
-          <div className="text-right">
+          <div className="">
             <div className="text-gray-700">
               {getTimeBasedGreeting()},{" "}
               <span className="text-[#018f95] font-medium">{name}</span>
@@ -1002,11 +1012,11 @@ const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
   // tinted drop shadow on the card itself (subtle)
   const hoverShadow =
     {
-      blue: "hover:shadow-[0_22px_70px_rgba(79,70,229,0.28)]",
-      green: "hover:shadow-[0_22px_70px_rgba(16,185,129,0.28)]",
-      gray: "hover:shadow-[0_22px_70px_rgba(245,158,11,0.28)]",
-      red: "hover:shadow-[0_22px_70px_rgba(244,63,94,0.28)]",
-    }[variant] || "hover:shadow-[0_22px_70px_rgba(99,102,241,0.24)]";
+      blue: "hover:shadow-[0_22px_30px_rgba(79,70,229,0.28)]",
+      green: "hover:shadow-[0_22px_30px_rgba(16,185,129,0.28)]",
+      gray: "hover:shadow-[0_22px_30px_rgba(245,158,11,0.28)]",
+      red: "hover:shadow-[0_22px_30px_rgba(244,63,94,0.28)]",
+    }[variant] || "hover:shadow-[0_22px_30px_rgba(99,102,241,0.24)]";
 
   // count-up
   const numRef = useRef(null);
@@ -1067,5 +1077,9 @@ const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
     </div>
   );
 };
+
+
+
+
 
 export default Dashboard;

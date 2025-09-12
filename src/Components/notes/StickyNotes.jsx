@@ -80,6 +80,7 @@ const StickyNotes = ({ onClose }) => {
         {/* Notes Container */}
         <NoteContainer  />
         {/* Footer */}
+
         <div className="border-t border-gray-100 px-6 py-4">
           <button
             className="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-medium px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
@@ -90,6 +91,7 @@ const StickyNotes = ({ onClose }) => {
             Add New Note
           </button>
         </div>
+
       </div>
     </div>
   );

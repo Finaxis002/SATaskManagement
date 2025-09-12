@@ -236,8 +236,10 @@ const ChatMessages = ({
         ref={scrollRef}
         className="flex-1 relative overflow-y-auto p-4 bg-gray-50"
       >
-        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
-          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white px-4 py-6 space-y-4 mb-4">
+
+        <div className="flex-1 overflow-y-auto bg-blue-100 px-4 py-6 space-y-4 mb-4 pb-28 md:pb-6   h-[65vh]   ">
+          <div className="flex-1 overflow-y-auto bg-blue-100 to-white px-4 py-6 space-y-4 mb-4">
+
             {Array.isArray(messages) && messages.length > 0 ? (
               <>
                 {/* ✅ Only this block is needed */}

@@ -4,9 +4,9 @@
 import { io } from "socket.io-client";
 
 
-const socket = io("https://taskbe.sharda.co.in", {
+const socket = io("https://sataskmanagementbackend.onrender.com", {
   withCredentials: true,
-  transports: ["websocket", "polling"],
+  transports: ["websocket"], // Ensures WebSocket transport
 });
 
 socket.on("connect", () => {
@@ -20,13 +20,5 @@ const userEmail = localStorage.getItem("userId"); // ✅ using your stored value
 if (userEmail) {
   socket.emit("register", userEmail); // Register this socket with email
 }
-
-// Add the event listener for the 'client-reconnected' event
-socket.on("client-reconnected", (data) => {
-  console.log("WhatsApp client reconnected successfully.");
-  
-  // Example: Update the UI or show a message
-  alert("WhatsApp client reconnected! Please refresh or rescan the QR if needed.");
-});
 
 export default socket;
