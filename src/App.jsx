@@ -24,11 +24,15 @@ import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
 import { NotesProvider } from "./context/NotesContext";
+
+import InvoiceTab from "./pages/InvoiceTab";
+
 import ShortcutHandler from "./Components/ShortcutHandler";
 
 
 import SettingsPage from "./pages/SettingsPage";
 import InvoicesPage from "./pages/InvoicesPage";
+
 
 const App = () => {
   function MailBoxEmbed() {
@@ -293,6 +297,17 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout>
                 <AdminMailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route 
+          path="/invoice-tab"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoiceTab />
               </MainLayout>
             </ProtectedRoute>
           }
