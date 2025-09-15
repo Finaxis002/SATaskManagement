@@ -617,7 +617,7 @@ const renderTaskCard = (task, index) => (
       </button>
 
       {/* Task Name */}
-      <h3 className="text-xl w-72 font-bold mb-3 text-gray-800">
+      <h3 className="text-xl font-bold mb-3 text-gray-800 w-72">
         {task.taskName}
       </h3>
 
@@ -696,7 +696,7 @@ const renderTaskCard = (task, index) => (
     {openTaskPopup === task._id && (
       <div className="fixed inset-0  bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4  ">
         <div className="bg-gray-100  rounded-2xl shadow-3xl w-full   p-6 relative overflow-y-auto max-h-[90vh] border border-gray-400 "
-        style={{ width: "90%", maxWidth: "inherit" }} // ✅ popup same width as card
+        style={{ width: "100%", maxWidth: "inherit" }} // ✅ popup same width as card
          >
           
           {/* Close button */}
@@ -816,7 +816,7 @@ const renderTaskCard = (task, index) => (
                    }}
                    autoFocus
                  />
-                 <div className="flex justify-end  gap-4">
+                 <div className="flex justify-end mt-1 gap-4">
                    <button
                      onClick={() => setOpenWorkDescPopup(null)}
                      className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
@@ -904,13 +904,13 @@ const renderTaskCard = (task, index) => (
 
       {openRemarkPopup === task._id && (
         <div
-          className=" top-full left-0 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4  bg-white select-text overflow-y-scroll "
+          className=" top-full left-0 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
           role="dialog"
           aria-modal="true"
           aria-labelledby="remark-dialog-title"
           style={{ backgroundColor: colors.surface }}
         >
-          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3 ">
+          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
             <h4
               id="remark-dialog-title"
               className="font-semibold text-base"
@@ -949,7 +949,7 @@ const renderTaskCard = (task, index) => (
                 }}
                 autoFocus
               />
-              <div className="flex justify-end  gap-3">
+              <div className="flex justify-end mt-1 gap-3">
                 <button
                   onClick={() => setOpenRemarkPopup(null)}
                   className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
@@ -996,7 +996,7 @@ const renderTaskCard = (task, index) => (
           </div>
 
           {/* Actions */}
-          <div className="flex pl-1 flex-wrap gap-3 mt-6">
+          <div className="flex pl-4 flex-wrap gap-3 mt-6">
             <button
               onClick={() => onEdit(task)}
               className="px-8 py-1 rounded-lg bg-blue-100 text-blue-700 border border-b-blue-700 hover:bg-blue-600 hover:text-white font-medium"

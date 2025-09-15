@@ -1,69 +1,131 @@
 import React, { useState, useEffect } from "react";
+import CreatableSelect from "react-select/creatable";
 import Select from "react-select";
 
-const TaskCodeFilterSelector = ({ selectedCode, setSelectedCode }) => {
-  const [taskCodes, setTaskCodes] = useState([]);
-  const [loading, setLoading] = useState(false);
+export const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    borderRadius: 12,
+    borderColor: state.isFocused ? "#a5b4fc" : "#e5e7eb",
+    boxShadow: state.isFocused ? "0 0 0 2px #a5b4fc33" : "none",
+    minHeight: 45,
+    fontSize: 15,
+    background: "#f9fafb",
+    transition: "border-color 0.2s, box-shadow 0.2s",
+    outline: "none",
+    "&:hover": {
+      borderColor: "#a5b4fc",
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: 12,
+    marginTop: 6,
+    boxShadow: "0 6px 36px 0 rgba(31, 41, 55, 0.15)",
+    padding: 0,
+    background: "#fff",
+    zIndex: 20,
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+  option: (base, state) => ({
+    ...base,
+    background: state.isSelected
+      ? "#e0e7ff"
+      : state.isFocused
+      ? "#f3f4f6"
+      : "#fff",
+    color: "#2a3342",
+    fontWeight: state.isSelected ? 600 : 400,
+    padding: "10px 16px",
+    fontSize: 14,
+    cursor: "pointer",
+    transition: "background 0.18s, color 0.18s",
+    borderRadius: 8,
+    margin: "2px 6px",
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: "#94a3b8",
+    fontSize: 14,
+    fontWeight: 400,
+    letterSpacing: ".01em",
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: "#334155",
+    fontSize: 15,
+    fontWeight: 500,
+  }),
+  dropdownIndicator: (base, state) => ({
+    ...base,
+    color: state.isFocused ? "#6366f1" : "#94a3b8",
+    transition: "color 0.18s",
+    padding: "2px 6px",
+    "&:hover": {
+      color: "#6366f1",
+    },
+  }),
+  indicatorSeparator: (base) => ({
+    ...base,
+    display: "none",
+  }),
+  input: (base) => ({
+    ...base,
+    fontSize: 15,
+    color: "#334155",
+  }),
+  clearIndicator: (base) => ({
+    ...base,
+    padding: "2px 6px",
+    color: "#cbd5e1",
+    "&:hover": {
+      color: "#6366f1",
+    },
+  }),
+  valueContainer: (base) => ({
+    ...base,
+    padding: "2px 8px",
+  }),
+};
+
+const TaskCodeSelector = ({ selectedCode, setSelectedCode }) => {
+  // const [taskCodes, setTaskCodes] = useState([]);
+  const [options, setOptions] = useState([]);
 
   useEffect(() => {
-    const fetchTaskCodes = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          "https://taskbe.sharda.co.in/api/task-codes"
+    fetch("https://taskbe.sharda.co.in/api/task-codes")
+      .then((r) => {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      })
+      .then((data) => {
+        setOptions(
+          data.map((code) => ({
+            label: code.name,
+            value: code.name,
+          }))
         );
-        const data = await res.json();
-        const options = data.map((code) => ({
-          label: code.name,
-          value: code.name,
-        }));
-        setTaskCodes(options);
-      } catch (err) {
-        console.error("Failed to fetch task codes:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTaskCodes();
+      })
+      .catch(console.error);
   }, []);
 
   return (
     <Select
       isClearable
       isSearchable
-      isLoading={loading}
-      options={taskCodes}
+      options={options}
       value={selectedCode}
       onChange={setSelectedCode}
       placeholder="Select task code"
-      classNamePrefix="select"
-      menuPortalTarget={document.body} // Portal outside of scrollable parent
+      noOptionsMessage={() => "No matching codes"}
       styles={{
-        control: (base) => ({
-          ...base,
-          height: 30,
-          minHeight: "30px",
-          fontSize: "0.75rem",
-          borderColor: "#d1d5db",
-          borderRadius: "0.375rem",
-          boxShadow: "none",
-          "&:hover": {
-            borderColor: "#d1d5db",
-          },
-        }),
-        menu: (base) => ({
-          ...base,
-          zIndex: 9999, // Make sure it goes above sticky headers
-        }),
-        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-        valueContainer: (base) => ({
-          ...base,
-          height: 30,
-        }),
+        ...customSelectStyles,
       }}
     />
   );
 };
 
-export default TaskCodeFilterSelector;
+export default TaskCodeSelector;
