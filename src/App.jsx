@@ -267,7 +267,7 @@ const App = () => {
           }
         />
         
-        {/* <Route
+        <Route
           path="/viewinvoicewithotp"
           element={
             <ProtectedRoute>
@@ -276,8 +276,8 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
-
-        /> */}
+        />
+        
 
         <Route
           path="/whatsapp"
@@ -322,7 +322,7 @@ const App = () => {
           }
         />
 
-        <Route 
+        {/* <Route 
           path="/invoice-tab"
           element={
             <ProtectedRoute>
@@ -331,7 +331,7 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
-        />
+        /> */}
       </Routes>
     </ShortcutHandler>
     </Router>
