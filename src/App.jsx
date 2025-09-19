@@ -276,7 +276,6 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
-
         />
         
 
