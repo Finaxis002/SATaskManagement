@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import ViewInvoices from "./ViewInvoices";
+import InvoiceTab from "./InvoiceTab";
 
 export default function ViewInvoiceWithOTP() {
   const [otpSent, setOtpSent] = useState(false);
@@ -93,5 +94,5 @@ export default function ViewInvoiceWithOTP() {
   }
 
   // If verified, show the real invoices page
-  return <ViewInvoices />;
+  return <InvoiceTab />;
 }
