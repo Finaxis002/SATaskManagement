@@ -170,9 +170,7 @@ export default function ViewInvoiceWithOTP() {
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full text-center">
           <h2 className="text-xl font-semibold mb-4 text-green-600">OTP Verified Successfully!</h2>
           <p className="mb-4">Invoice software has been opened in a new tab.</p>
-          <p className="mb-4 text-sm text-gray-600">
-            If the new tab didn't open, please check your pop-up settings.
-          </p>
+          
           <button
             onClick={() => window.location.reload()}
             className="bg-blue-600 text-white px-4 py-2 rounded"
