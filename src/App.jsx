@@ -271,9 +271,9 @@ const App = () => {
           path="/viewinvoicewithotp"
           element={
             <ProtectedRoute>
-              <MainLayout>
+             
                 <ViewInvoiceWithOTP />
-              </MainLayout>
+              
             </ProtectedRoute>
           }
         />
