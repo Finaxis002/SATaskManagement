@@ -11,7 +11,8 @@ import useNotificationSocket from "../hook/useNotificationSocket";
 import StickyNotes from "./notes/StickyNotes";
 import QuickActionsDropdown from "./QuickActionsDropdown";
 
-import { useNavigate, useRoutes } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileInitial, setProfileInitial] = useState("Fi");
@@ -24,6 +25,19 @@ const Header = () => {
   const navigate = useNavigate();
 
   useNotificationSocket(setNotificationCount);
+
+  // Check if device is mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   //for search bar
   useEffect(() => {
     const highlightMatches = (term) => {
@@ -103,25 +117,20 @@ const Header = () => {
     return () => window.removeEventListener("keydown", handleEnterKey);
   }, [highlightRefs, currentIndex]);
 
-  // Check if device is mobile
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+    const handleClickOutside = (e) => {
+      if (e.target.closest("#profile-menu") === null) {
+        setIsMenuOpen(false);
+      }
     };
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   useEffect(() => {
-    const role = localStorage.getItem("role");
     const name = localStorage.getItem("name");
 
-    // if (role === "admin") {
-    //   setProfileInitial("Fi");
-    // } else
     if (name) {
       const initials = name
         .split(" ")
@@ -158,7 +167,7 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="bg-white w-full text-gray-800 px-6 py-3 flex items-center justify-between shadow-sm sticky top-0 z-50">
+    <header className="bg-white w-full text-gray-800 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm sticky top-0 z-50">
       {/* Search Bar */}
       <div className="flex-1 flex justify-end">
         <div className="relative w-full max-w-xl">
@@ -232,6 +241,7 @@ const Header = () => {
         {/* Mobile view: Show Notes icon instead of Notification icon */}
         {isMobile ? (
           <>
+            {/* Notes button (replaces notification on mobile) */}
             <button
               onClick={() => setShowNotes(true)}
               className="relative bg-gray-100 rounded-full p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-all duration-200"
@@ -247,6 +257,7 @@ const Header = () => {
             />
           </>
         ) : (
+          /* Desktop view: Original order */
           <>
             <button
               onClick={() => navigate("/notifications")}
@@ -254,12 +265,14 @@ const Header = () => {
               aria-label="Notifications"
             >
               <FaBell className="text-gray-600 text-lg" />
+              {/* Notification badge */}
               {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center ">
                   {notificationCount}
                 </span>
               )}
             </button>
+
             <QuickActionsDropdown
               onShowNotes={() => setShowNotes(true)}
               isMobile={isMobile}
@@ -267,6 +280,7 @@ const Header = () => {
           </>
         )}
 
+        {/* Sticky Notes Modal */}
         {showNotes && <StickyNotes onClose={() => setShowNotes(false)} />}
 
         {/* Profile Menu */}

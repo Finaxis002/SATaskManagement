@@ -1,10 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
+
+// Pages
 import Dashboard from "./pages/Dashboard";
 import AddEmployee from "./pages/AddEmployee";
 import AllEmployees from "./pages/AllEmployees";
-import Login from "./pages/Login"; // Import the login page
-import ProtectedRoute from "./Components/ProtectedRoute";
+import Login from "./pages/Login";
 import Tasks from "./pages/Tasks";
 import Notifications from "./pages/Notifications";
 import Reminders from "./pages/Reminders";
@@ -13,9 +14,9 @@ import AllTasks from "./pages/AllTasks";
 import Departments from "./pages/Departments";
 import Completed from "./pages/Completed";
 import CalendarPage from "./pages/CalendarPage";
-import ProfilePage from "./pages/ProfilePage"; // Adjust the path as per your structure
+import ProfilePage from "./pages/ProfilePage";
 import Leave from "./pages/Leave";
-import LeaveManagement from "./pages/LeaveManagement"; // Adjust the path as per your structure
+import LeaveManagement from "./pages/LeaveManagement";
 import InvoiceForm from "./pages/InvoiceForm";
 import Clients from "./pages/Clients";
 import ViewInvoices from "./pages/ViewInvoices";
@@ -23,15 +24,18 @@ import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
 import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
+import InvoicesPage from "./pages/InvoicesPage";
+import SettingsPage from "./pages/SettingsPage";
+
+
+
+// Context & Components
 import { NotesProvider } from "./context/NotesContext";
 
 import InvoiceTab from "./pages/InvoiceTab";
 
 import ShortcutHandler from "./Components/ShortcutHandler";
-
-
-import SettingsPage from "./pages/SettingsPage";
-import InvoicesPage from "./pages/InvoicesPage";
+import ProtectedRoute from "./Components/ProtectedRoute";
 
 
 const App = () => {
@@ -54,11 +58,15 @@ const App = () => {
       />
     );
   }
+
   return (
     <Router>
+      <ShortcutHandler>
       <Routes>
-        <Route path="/login" element={<Login />} /> {/* Login route */}
-        {/* Protected Route */}
+        {/* Public route */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected routes */}
         <Route
           path="/"
           element={
@@ -69,7 +77,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {/* Other routes */}
+
         <Route
           path="/add-employee"
           element={
@@ -80,6 +88,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/all-employees"
           element={
@@ -90,6 +99,11 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+       
+
+       
+
         <Route
           path="/reminders"
           element={
@@ -100,6 +114,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/tasks"
           element={
@@ -110,6 +125,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/clients"
           element={
@@ -120,6 +136,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/notifications"
           element={
@@ -130,6 +147,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/inbox"
           element={
@@ -140,6 +158,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/all-tasks"
           element={
@@ -150,6 +169,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/departments"
           element={
@@ -160,6 +180,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/completed"
           element={
@@ -170,6 +191,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/calendar"
           element={
@@ -200,6 +222,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/leave"
           element={
@@ -210,6 +233,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/leavemanagement"
           element={
@@ -220,6 +244,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/invoice"
           element={
@@ -251,8 +276,10 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
+
         />
         
+
         <Route
           path="/whatsapp"
           element={
@@ -263,6 +290,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/mail-creation"
           element={
@@ -273,6 +301,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/mailbox"
           element={
@@ -305,6 +334,7 @@ const App = () => {
           }
         /> */}
       </Routes>
+    </ShortcutHandler>
     </Router>
   );
 };
