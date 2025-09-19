@@ -337,14 +337,14 @@ const openInvoiceTab = () => {
           />
         )}
 
-        {role === "admin" && (
+        {/* {role === "admin" && (
           <SidebarItem
             icon={<FaDochub className="text-xl" />}
             label="View Invoice"
             to="/viewinvoicewithotp"
             expanded={expanded}
           />
-        )}
+        )} */}
 
         
 {role === "admin" && (
