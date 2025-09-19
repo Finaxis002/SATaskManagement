@@ -100,10 +100,7 @@ const App = () => {
           }
         />
 
-       
-
-       
-
+ 
         <Route
           path="/reminders"
           element={
@@ -245,7 +242,7 @@ const App = () => {
           }
         />
 
-        <Route
+        {/* <Route
           path="/invoice"
           element={
             <ProtectedRoute>
@@ -254,8 +251,8 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
-        />
-        {/* Add the new InvoicesPage route */}
+        /> */}
+        {/* Add the new InvoicesPage route for mobile view*/}
         <Route
           path="/invoices"
           element={
