@@ -7,9 +7,8 @@ const QuillEditor = ({ value, onChange }) => {
     modules: {
       toolbar: {
         container: [
-          ["bold", "italic", "underline", "strike", "link"],
-          [{ list: "ordered" }, { list: "bullet" }],
-          [{ color: [] }, { background: [] }],
+          [{ color: [] }, { background: [] }, { list: "ordered" }, { list: "bullet" }], ["bold", "italic", "underline", "strike", "link"]
+          // [{ color: [] }, { background: [] }],
         ],
       },
     },
@@ -53,7 +52,7 @@ const QuillEditor = ({ value, onChange }) => {
   }, [quill, onChange, value]);
 
   return (
-    <div style={{ width: "100%" }}>
+    <div className="w-100% ">
       <div ref={quillRef} />
     </div>
   );

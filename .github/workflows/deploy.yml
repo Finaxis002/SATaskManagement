@@ -34,11 +34,8 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SERVER_IP }}
           REMOTE_USER: root
-          REMOTE_PORT: 22 
           TARGET: /var/www/tasks.sharda.co.in  # Path for Task Management app
           SOURCE: dist/  # Use the dist folder as the source for deployment
-          ARGS: "-rlgoDzvc --delete"  # ← ADD THIS LINE (inside env section)
-          SSH_ARGS: "-o ConnectTimeout=30 -o StrictHostKeyChecking=no"  # ← ADD THIS LINE (inside env section)
           SCRIPT_AFTER: |
             chown -R www-data:www-data /var/www/tasks.sharda.co.in
             chmod -R 755 /var/www/tasks.sharda.co.in
