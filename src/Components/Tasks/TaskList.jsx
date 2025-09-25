@@ -4,12 +4,14 @@ import { updateTaskStatus } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
 import StatusDropdownPortal from "../StatusDropdownPortal";
-import { faPen, faCopy, faTimes} from "@fortawesome/free-solid-svg-icons";
+import { faPen, faCopy, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaExclamationCircle, FaSpinner } from "react-icons/fa";
 import { fetchUsers } from "../../redux/userSlice";
 import Swal from "sweetalert2";
 import { io } from "socket.io-client";
 import FilterSection from "./FilterSection";
+import MessagePopup from "./MessagePopup";
+import axios from "../../utils/secureAxios";
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 // import { faCopy, faTimes, faPen } from "@fortawesome/free-solid-svg-icons";
 
@@ -47,6 +49,10 @@ const TaskList = ({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [loading, setLoading] = useState(true);
 
+  // new code is here
+  const [openMessagePopup, setOpenMessagePopup] = useState(null);
+  const [taskForMessage, setTaskForMessage] = useState(null);
+
   const role = localStorage.getItem("role");
   const userEmail = JSON.parse(localStorage.getItem("user"))?.email;
 
@@ -80,6 +86,54 @@ const TaskList = ({
       setUniqueUsers([...new Set(names)]);
     }
   }, [users]);
+
+  const handleMessageSend = async (payload) => {
+    try {
+      // const payload = {
+      //   // message: {  // Send the message in the correct structure
+      //   //   taskId: taskId,
+      //   //   // clientId: taskForMessage.clientId,  // Ensure the correct task and client data
+      //   //   clientName: taskForMessage.clientName,
+      //   //   message: message,
+      //   //   sentAt: new Date().toISOString(),
+      //   //   sentBy: taskForMessage.assignedBy.name, // Ensure this is valid
+      //   taskId: taskId,
+      //   clientName: taskForMessage.clientName,
+      //   message: message,
+      //   sentAt: new Date().toISOString(),
+      //   sentBy: taskForMessage.assignedBy.name,
+      // };
+
+      // if (!taskForMessage?.clientId) {
+      //   Swal.fire('Error', 'Client ID is missing!', 'error');
+      //   return; // Exit the function if clientId is missing
+      // }
+      // payload.clientId = taskForMessage.clientId; // Add clientId to payload if available
+
+      // console.log("Sending clientId:", payload.clientId);
+      
+      // console.log("Sending payload:", payload); // Log the payload to check data
+
+      // Send the message to the backend using axios
+      const response = await axios.post(
+        "https://taskbe.sharda.co.in/api/message-history",
+        payload
+      );
+      // console.log("Sending clientId:", payload.clientId);
+
+      console.log("Response from server:", response.data);
+
+      if (response.status === 201) {
+        console.log("Message sent:", response.data);
+        Swal.fire("Message sent successfully!");
+      } else {
+        throw new Error("Message sending failed");
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      Swal.fire("Error", "Failed to send message", "error");
+    }
+  };
 
   const fetchTasksFromAPI = async () => {
     setLoading(true);
@@ -451,7 +505,7 @@ const TaskList = ({
     surface: "#FFFFFF", // White
   };
 
-    const handleCopyTask = async (originalTask) => {
+  const handleCopyTask = async (originalTask) => {
     // Enhanced confirmation dialog with more details
     const { isConfirmed } = await Swal.fire({
       title: "Duplicate Task",
@@ -591,309 +645,306 @@ const TaskList = ({
     }
   };
 
-
-const renderTaskCard = (task, index) => (
-  <>
-    {/* Task Card */}
-    <div
-      key={task._id}
-      className="relative border border-gray-300 rounded-2xl p-5 mb-6 shadow-md hover:shadow-xl transition duration-300 bg-gray-100 cursor-pointer max-w-md mx-auto"
-      onClick={(e) => {
-        // prevent popup when clicking on action buttons
-        // if (!e.target.closest("button")) {
-        //   setOpenTaskPopup(task._id);
-        // }
-      }}
-    >
-      {/* Copy button */}
-      <button
-        className="absolute top-3 right-3 p-2 rounded-md border border-gray-300 text-gray-500 hover:text-gray-900 hover:bg-gray-100 shadow-sm"
-        onClick={() => handleCopyTask?.(task)}
-        title="Copy Task"
-        aria-label={`Copy task ${task.taskName}`}
-        type="button"
+  const renderTaskCard = (task, index) => (
+    <>
+      {/* Task Card */}
+      <div
+        key={task._id}
+        className="relative border border-gray-300 rounded-2xl p-5 mb-6 shadow-md hover:shadow-xl transition duration-300 bg-gray-100 cursor-pointer max-w-md mx-auto"
+        onClick={(e) => {
+          // prevent popup when clicking on action buttons
+          // if (!e.target.closest("button")) {
+          //   setOpenTaskPopup(task._id);
+          // }
+        }}
       >
-        <FontAwesomeIcon icon={faCopy} className="h-5 w-5" />
-      </button>
+        {/* Copy button */}
+        <button
+          className="absolute top-3 right-3 p-2 rounded-md border border-gray-300 text-gray-500 hover:text-gray-900 hover:bg-gray-100 shadow-sm"
+          onClick={() => handleCopyTask?.(task)}
+          title="Copy Task"
+          aria-label={`Copy task ${task.taskName}`}
+          type="button"
+        >
+          <FontAwesomeIcon icon={faCopy} className="h-5 w-5" />
+        </button>
+        
 
-      {/* Task Name */}
-      <h3 className="text-xl font-bold mb-3 text-gray-800 w-72">
-        {task.taskName}
-      </h3>
+        {/* Task Name */}
+        <h3 className="text-xl font-bold mb-3 text-gray-800 w-72">
+          {task.taskName}
+        </h3>
 
+        {/* Dates */}
+        <div className="flex justify-between text-md text-gray-600 mb-4">
+          <div>
+            <span className="font-semibold">Work Date:</span>{" "}
+            {new Date(task.assignedDate).toLocaleDateString("en-GB")}
+          </div>
+          <div>
+            <span className="font-semibold">Due Date:</span>{" "}
+            {new Date(task.dueDate).toLocaleDateString("en-GB")}
+          </div>
+        </div>
+
+        {/* Status */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="font-semibold text-gray-700">Status:</span>
+          <span
+            className="px-3 py-1 rounded-full text-sm font-semibold cursor-pointer shadow-sm"
+            style={{
+              backgroundColor:
+                task.status === "Completed"
+                  ? "#d1fae5"
+                  : task.status === "In Progress"
+                  ? "#fef9c3"
+                  : task.status === "To Do"
+                  ? "#e0f2fe"
+                  : "#f3e8ff",
+              color:
+                task.status === "Completed"
+                  ? "#065f46"
+                  : task.status === "In Progress"
+                  ? "#92400e"
+                  : task.status === "To Do"
+                  ? "#0369a1"
+                  : "#6d28d9",
+            }}
+            onClick={(e) => {
+              e.stopPropagation(); // prevent opening popup
+              const rect = e.target.getBoundingClientRect();
+              setDropdownPosition({
+                top: rect.top + window.scrollY + 35,
+                left: rect.left + window.scrollX,
+              });
+              setEditingStatus(task._id);
+            }}
+          >
+            {task.status}
+          </span>
+        </div>
+
+        {/* Assigned By */}
+        <p className="text-md text-gray-600">
+          <span className="font-semibold">Assigned by:</span>{" "}
+          <span className="italic text-cyan-800">
+            {task.assignedBy?.name || "—"}
+          </span>
+        </p>
+
+        {/* 🔹 Clickable text instead of whole card */}
+        <button
+          onClick={() => setOpenTaskPopup(task._id)}
+          className="text-indigo-600 text-md font-medium hover:underline focus:outline-none underline mt-1.5"
+        >
+          View Details
+        </button>
+      </div>
       
 
-      {/* Dates */}
-      <div className="flex justify-between text-md text-gray-600 mb-4">
-        <div>
-          <span className="font-semibold">Work Date:</span>{" "}
-          {new Date(task.assignedDate).toLocaleDateString("en-GB")}
-        </div>
-        <div>
-          <span className="font-semibold">Due Date:</span>{" "}
-          {new Date(task.dueDate).toLocaleDateString("en-GB")}
-        </div>
-      </div>
-
-      {/* Status */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="font-semibold text-gray-700">Status:</span>
-        <span
-          className="px-3 py-1 rounded-full text-sm font-semibold cursor-pointer shadow-sm"
-          style={{
-            backgroundColor:
-              task.status === "Completed"
-                ? "#d1fae5"
-                : task.status === "In Progress"
-                ? "#fef9c3"
-                : task.status === "To Do"
-                ? "#e0f2fe"
-                : "#f3e8ff",
-            color:
-              task.status === "Completed"
-                ? "#065f46"
-                : task.status === "In Progress"
-                ? "#92400e"
-                : task.status === "To Do"
-                ? "#0369a1"
-                : "#6d28d9",
-          }}
-          onClick={(e) => {
-            e.stopPropagation(); // prevent opening popup
-            const rect = e.target.getBoundingClientRect();
-            setDropdownPosition({
-              top: rect.top + window.scrollY + 35,
-              left: rect.left + window.scrollX,
-            });
-            setEditingStatus(task._id);
-          }}
-        >
-          {task.status}
-        </span>
-      </div>
-
-      {/* Assigned By */}
-      <p className="text-md text-gray-600">
-        <span className="font-semibold">Assigned by:</span>{" "}
-        <span className="italic text-cyan-800">
-          {task.assignedBy?.name || "—"}
-        </span>
-      </p>
-
-      {/* 🔹 Clickable text instead of whole card */}
-      <button
-        onClick={() => setOpenTaskPopup(task._id)}
-        className="text-indigo-600 text-md font-medium hover:underline focus:outline-none underline mt-1.5"
-      >
-        View Details
-      </button>
-    </div>
-
-    
-   
-
-    {/* Popup for details */}
-    {openTaskPopup === task._id && (
-      <div className="fixed inset-0  bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4  ">
-        <div className="bg-gray-100  rounded-2xl shadow-3xl w-full   p-6 relative overflow-y-auto max-h-[90vh] border border-gray-400 "
-        style={{ width: "100%", maxWidth: "inherit" }} // ✅ popup same width as card
-         >
-          
-          {/* Close button */}
-          <button
-            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
-            onClick={() => setOpenTaskPopup(null)}
+      {/* Popup for details */}
+      {openTaskPopup === task._id && (
+        <div className="fixed inset-0  bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4  ">
+          <div
+            className="bg-gray-100  rounded-2xl shadow-3xl w-full   p-6 relative overflow-y-auto max-h-[90vh] border border-gray-400 "
+            style={{ width: "100%", maxWidth: "inherit" }} // ✅ popup same width as card
           >
-            ×
-          </button>
+            {/* Close button */}
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
+              onClick={() => setOpenTaskPopup(null)}
+            >
+              ×
+            </button>
 
-          {/* <h2 className="text-2xl font-bold mb-5 text-gray-800">
+            {/* <h2 className="text-2xl font-bold mb-5 text-gray-800">
             {task.taskName}
           </h2> */}
 
-          {/* Full Description */}
-          <div className="mb-4">
-       <span className="block text-gray-900 font-semibold tracking-wide mb-2 select-none ">
-         Work Description + Code:
-       </span>
-       <td
-         className="relative group text-[15px]"
-         style={{ color: colors.textSecondary, minWidth: "260px" }}
-       >
-         <div >
-           <span className="text-[15px] text-gray-400 subpixel-antialiased break-words flex-1">
-             {(task.workDesc || "No description").length > 90
-               ? `${task.workDesc.slice(0, 90)}…`
-               : task.workDesc || "No description"}
-            {task.code && (
-               <span
-                 className="text-indigo-600 underline cursor-pointer ml-3 font-semibold hover:text-indigo-900"
-                 title="View Project Report"
-               >
-                 (1 Project Report)
-               </span>
-             )}
-           </span>
-          {(task.workDesc || "").length > 90 && (
-             <div className="relative inline-block">
-               <span className="sr-only">more</span>
-               <div
-                 className="absolute z-50 hidden group-hover:block w-96 rounded-2xl p-5 text-xs shadow-lg whitespace-pre-wrap border border-gray-300 bg-white"
-                style={{
-                   color: colors.textSecondary,
-                   top: "36px",
-                   left: "-16px",
-                   maxHeight: "12rem",
-                   overflowY: "auto",
-                   boxShadow:
-                     "0 12px 24px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0,0,0,0.08)",
-                 }}
-               >
-                 {task.workDesc}
-               </div>
-             </div>
-           )}
-           <button
-            className="opacity-90 group-hover:opacity-100 text-gray-700 hover:text-gray-900 focus:outline-none transition"
-            onClick={() => {
-              setOpenWorkDescPopup(task._id);
-               setWorkDescMode("edit");
-             }}
-             title="Edit description"
-             aria-label={`Edit description for task ${task.taskName}`}
-             type="button"
-           >
-             <FontAwesomeIcon icon={faPen} className="h-5 w-5" />
-           </button>
-         </div>
-
-         {openWorkDescPopup === task._id && (
-           <div
-             className=" top-full left-0 mt-3 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
-             role="dialog"
-             aria-modal="true"
-             aria-labelledby="workdesc-dialog-title"
-             style={{
-               backgroundColor: colors.surface,
-               borderColor: colors.border,
-             }}
-           >
-             <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-               <h4
-                 id="workdesc-dialog-title"
-                 className="font-semibold text-lg"
-                 style={{ color: colors.textPrimary }}
-               >
-                {workDescMode === "edit" ? "Edit Description" : "Description"}
-               </h4>
-               <button
-                 className="text-gray-500 hover:text-gray-700 text-2xl font-light leading-none focus:outline-none"
-                 onClick={() => setOpenWorkDescPopup(null)}
-                 aria-label="Close description popup"
-                 type="button"
-               >
-                 ×
-               </button>
-             </div>
-
-             {workDescMode === "edit" ? (
-               <>
-                 <textarea
-                   value={workDescs[task._id] || task.workDesc || ""}
-                   onChange={(e) =>
-                     setWorkDescs((prev) => ({
-                       ...prev,
-                       [task._id]: e.target.value,
-                     }))
-                   }
-                   rows={5}
-                   placeholder="Enter work description…"
-                   className="w-full px-5 py-3 text-sm rounded-2xl resize-y border border-gray-300 focus:outline-none focus:ring-4 focus:ring-purple-400 transition-colors duration-300"
-                   style={{
-                     color: colors.textPrimary,
-                     backgroundColor: colors.background,
-                     boxShadow: "none",
-                   }}
-                   autoFocus
-                 />
-                 <div className="flex justify-end mt-1 gap-4">
-                   <button
-                     onClick={() => setOpenWorkDescPopup(null)}
-                     className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
-                     type="button"
-                   >
-                     Cancel
-                   </button>
-                   <button
-                     onClick={() => {
-                       handleWorkDescSave(task._id);
-                       setOpenWorkDescPopup(null);
-                     }}
-                     className="px-6 py-2 text-sm rounded-2xl font-semibold text-white bg-purple-700 hover:bg-purple-800 transition"
-                     type="button"
+            {/* Full Description */}
+            <div className="mb-4">
+              <span className="block text-gray-900 font-semibold tracking-wide mb-2 select-none ">
+                Work Description + Code:
+              </span>
+              <td
+                className="relative group text-[15px]"
+                style={{ color: colors.textSecondary, minWidth: "260px" }}
+              >
+                <div>
+                  <span className="text-[15px] text-gray-400 subpixel-antialiased break-words flex-1">
+                    {(task.workDesc || "No description").length > 90
+                      ? `${task.workDesc.slice(0, 90)}…`
+                      : task.workDesc || "No description"}
+                    {task.code && (
+                      <span
+                        className="text-indigo-600 underline cursor-pointer ml-3 font-semibold hover:text-indigo-900"
+                        title="View Project Report"
+                      >
+                        (1 Project Report)
+                      </span>
+                    )}
+                  </span>
+                  {(task.workDesc || "").length > 90 && (
+                    <div className="relative inline-block">
+                      <span className="sr-only">more</span>
+                      <div
+                        className="absolute z-50 hidden group-hover:block w-96 rounded-2xl p-5 text-xs shadow-lg whitespace-pre-wrap border border-gray-300 bg-white"
+                        style={{
+                          color: colors.textSecondary,
+                          top: "36px",
+                          left: "-16px",
+                          maxHeight: "12rem",
+                          overflowY: "auto",
+                          boxShadow:
+                            "0 12px 24px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0,0,0,0.08)",
+                        }}
+                      >
+                        {task.workDesc}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    className="opacity-90 group-hover:opacity-100 text-gray-700 hover:text-gray-900 focus:outline-none transition"
+                    onClick={() => {
+                      setOpenWorkDescPopup(task._id);
+                      setWorkDescMode("edit");
+                    }}
+                    title="Edit description"
+                    aria-label={`Edit description for task ${task.taskName}`}
+                    type="button"
                   >
-                     Save
-                   </button>
-                 </div>
-               </>
-            ) : (
-               <div
-                 className="text-gray-900 text-sm whitespace-pre-wrap max-h-44 overflow-y-auto"
-                 style={{ color: colors.textSecondary }}
-               >
-                 {task.workDesc || "No description available"}
-              </div>
-             )}
-           </div>
-         )}
-     </td>
-     </div>
+                    <FontAwesomeIcon icon={faPen} className="h-5 w-5" />
+                  </button>
+                </div>
 
+                {openWorkDescPopup === task._id && (
+                  <div
+                    className=" top-full left-0 mt-3 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="workdesc-dialog-title"
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                      <h4
+                        id="workdesc-dialog-title"
+                        className="font-semibold text-lg"
+                        style={{ color: colors.textPrimary }}
+                      >
+                        {workDescMode === "edit"
+                          ? "Edit Description"
+                          : "Description"}
+                      </h4>
+                      <button
+                        className="text-gray-500 hover:text-gray-700 text-2xl font-light leading-none focus:outline-none"
+                        onClick={() => setOpenWorkDescPopup(null)}
+                        aria-label="Close description popup"
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
 
-          {/* Remarks */}
-      <div className="relative mb-4 flex flex-wrap items-center gap-1">
-      <span
-        className="font-bold  text-[16px] select-none italic"
-        style={{ color: colors.textPrimary }}
-      >
-        Remark:
-      </span>
-      <span
-        className={`text-sm text-gray-800 max-w-[65%] ${
-          (remarks[task._id] ?? "").length > 40 ? "truncate" : ""
-        } select-text`}
-        style={{ color: colors.textSecondary }}
-      >
-        {remarks[task._id] ?? "No remark"}
-      </span>
-      {(remarks[task._id] || "").length > 40 && (
-        <button
-          className="ml-2 text-indigo-600 text-xs hover:underline focus:outline-none transition-colors duration-150"
-          onClick={() => {
-            setOpenRemarkPopup(task._id);
-            setRemarkMode("view");
-          }}
-          aria-label={`Read full remark for task ${task.taskName}`}
-          type="button"
-        >
-          Read more
-        </button>
-      )}
-      <button
-        className=" text-indigo-500 hover:text-indigo-800 focus:outline-none transition-colors duration-150"
-        onClick={() => {
-          setOpenRemarkPopup(task._id);
-          setRemarkMode("edit");
-        }}
-        title="Edit remark"
-        aria-label={`Edit remark for task ${task.taskName}`}
-        type="button"
-      >
-        <FontAwesomeIcon icon={faPen} className="h-5 w-5" />
-      </button>
+                    {workDescMode === "edit" ? (
+                      <>
+                        <textarea
+                          value={workDescs[task._id] || task.workDesc || ""}
+                          onChange={(e) =>
+                            setWorkDescs((prev) => ({
+                              ...prev,
+                              [task._id]: e.target.value,
+                            }))
+                          }
+                          rows={5}
+                          placeholder="Enter work description…"
+                          className="w-full px-5 py-3 text-sm rounded-2xl resize-y border border-gray-300 focus:outline-none focus:ring-4 focus:ring-purple-400 transition-colors duration-300"
+                          style={{
+                            color: colors.textPrimary,
+                            backgroundColor: colors.background,
+                            boxShadow: "none",
+                          }}
+                          autoFocus
+                        />
+                        <div className="flex justify-end mt-1 gap-4">
+                          <button
+                            onClick={() => setOpenWorkDescPopup(null)}
+                            className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
+                            type="button"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleWorkDescSave(task._id);
+                              setOpenWorkDescPopup(null);
+                            }}
+                            className="px-6 py-2 text-sm rounded-2xl font-semibold text-white bg-purple-700 hover:bg-purple-800 transition"
+                            type="button"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div
+                        className="text-gray-900 text-sm whitespace-pre-wrap max-h-44 overflow-y-auto"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        {task.workDesc || "No description available"}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </td>
+            </div>
 
-      {/* Assign by */}
-      {/* <p className="w-full mt-3">
+            {/* Remarks */}
+            <div className="relative mb-4 flex flex-wrap items-center gap-1">
+              <span
+                className="font-bold  text-[16px] select-none italic"
+                style={{ color: colors.textPrimary }}
+              >
+                Remark:
+              </span>
+              <span
+                className={`text-sm text-gray-800 max-w-[65%] ${
+                  (remarks[task._id] ?? "").length > 40 ? "truncate" : ""
+                } select-text`}
+                style={{ color: colors.textSecondary }}
+              >
+                {remarks[task._id] ?? "No remark"}
+              </span>
+              {(remarks[task._id] || "").length > 40 && (
+                <button
+                  className="ml-2 text-indigo-600 text-xs hover:underline focus:outline-none transition-colors duration-150"
+                  onClick={() => {
+                    setOpenRemarkPopup(task._id);
+                    setRemarkMode("view");
+                  }}
+                  aria-label={`Read full remark for task ${task.taskName}`}
+                  type="button"
+                >
+                  Read more
+                </button>
+              )}
+              <button
+                className=" text-indigo-500 hover:text-indigo-800 focus:outline-none transition-colors duration-150"
+                onClick={() => {
+                  setOpenRemarkPopup(task._id);
+                  setRemarkMode("edit");
+                }}
+                title="Edit remark"
+                aria-label={`Edit remark for task ${task.taskName}`}
+                type="button"
+              >
+                <FontAwesomeIcon icon={faPen} className="h-5 w-5" />
+              </button>
+
+              {/* Assign by */}
+              {/* <p className="w-full mt-3">
         <span className="font-bold text-gray-700 subpixel-antialiased select-none">
           Assigned by:
         </span>{" "}
@@ -902,451 +953,450 @@ const renderTaskCard = (task, index) => (
         </span>
       </p> */}
 
-      {openRemarkPopup === task._id && (
-        <div
-          className=" top-full left-0 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="remark-dialog-title"
-          style={{ backgroundColor: colors.surface }}
-        >
-          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-            <h4
-              id="remark-dialog-title"
-              className="font-semibold text-base"
-              style={{ color: colors.textPrimary }}
-            >
-              {remarkMode === "edit" ? "Edit Remark" : "Full Remark"}
-            </h4>
-            <button
-              className="text-gray-500 hover:text-gray-700 text-2xl font-light leading-none focus:outline-none"
-              onClick={() => setOpenRemarkPopup(null)}
-              aria-label="Close remark popup"
-              type="button"
-            >
-              ×
-            </button>
-          </div>
+              {openRemarkPopup === task._id && (
+                <div
+                  className=" top-full left-0 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="remark-dialog-title"
+                  style={{ backgroundColor: colors.surface }}
+                >
+                  <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                    <h4
+                      id="remark-dialog-title"
+                      className="font-semibold text-base"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      {remarkMode === "edit" ? "Edit Remark" : "Full Remark"}
+                    </h4>
+                    <button
+                      className="text-gray-500 hover:text-gray-700 text-2xl font-light leading-none focus:outline-none"
+                      onClick={() => setOpenRemarkPopup(null)}
+                      aria-label="Close remark popup"
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
 
-          {remarkMode === "edit" ? (
-            <>
-              <textarea
-                value={remarks[task._id] ?? ""}
-                onChange={(e) =>
-                  setRemarks((prev) => ({
-                    ...prev,
-                    [task._id]: e.target.value,
-                  }))
-                }
-                rows={5}
-                placeholder="Edit Remark"
-                className="w-full px-5 py-3 text-sm border rounded-2xl focus:ring-4 outline-none resize-y transition-colors duration-300"
-                style={{
-                  borderColor: colors.border,
-                  color: colors.textPrimary,
-                  backgroundColor: colors.background,
-                  boxShadow: "none",
-                }}
-                autoFocus
-              />
-              <div className="flex justify-end mt-1 gap-3">
-                <button
-                  onClick={() => setOpenRemarkPopup(null)}
-                  className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
-                  type="button"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    handleRemarkSave(task._id);
-                  }}
-                  className="px-4 py-1 text-sm rounded-2xl font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
-                  type="button"
-                >
-                  Save
-                </button>
+                  {remarkMode === "edit" ? (
+                    <>
+                      <textarea
+                        value={remarks[task._id] ?? ""}
+                        onChange={(e) =>
+                          setRemarks((prev) => ({
+                            ...prev,
+                            [task._id]: e.target.value,
+                          }))
+                        }
+                        rows={5}
+                        placeholder="Edit Remark"
+                        className="w-full px-5 py-3 text-sm border rounded-2xl focus:ring-4 outline-none resize-y transition-colors duration-300"
+                        style={{
+                          borderColor: colors.border,
+                          color: colors.textPrimary,
+                          backgroundColor: colors.background,
+                          boxShadow: "none",
+                        }}
+                        autoFocus
+                      />
+                      <div className="flex justify-end mt-1 gap-3">
+                        <button
+                          onClick={() => setOpenRemarkPopup(null)}
+                          className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleRemarkSave(task._id);
+                          }}
+                          className="px-4 py-1 text-sm rounded-2xl font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
+                          type="button"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      className="text-gray-900 text-sm whitespace-pre-wrap max-h-44 overflow-y-auto border border-gray-100 rounded-xl p-4 select-text"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      {remarks[task._id] || "No remark"}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Team */}
+            <div className="mb-3 flex gap-2">
+              <h3 className="font-semibold text-gray-700 mt-1 mb-1">Team:</h3>
+              <div className="flex flex-wrap gap-2">
+                {task.assignees?.map((assignee) => (
+                  <span
+                    key={assignee.email}
+                    className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-medium"
+                  >
+                    {assignee.name}
+                  </span>
+                ))}
               </div>
-            </>
-          ) : (
-            <div
-              className="text-gray-900 text-sm whitespace-pre-wrap max-h-44 overflow-y-auto border border-gray-100 rounded-xl p-4 select-text"
-              style={{ color: colors.textSecondary }}
-            >
-              {remarks[task._id] || "No remark"}
             </div>
-          )}
-        </div>
-      )}
-    </div>
 
-          {/* Team */}
-          <div className="mb-3 flex gap-2">
-            <h3 className="font-semibold text-gray-700 mt-1 mb-1">Team:</h3>
-            <div className="flex flex-wrap gap-2">
-              {task.assignees?.map((assignee) => (
-                <span
-                  key={assignee.email}
-                  className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-medium"
-                >
-                  {assignee.name}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex pl-4 flex-wrap gap-3 mt-6">
-            <button
-              onClick={() => onEdit(task)}
-              className="px-8 py-1 rounded-lg bg-blue-100 text-blue-700 border border-b-blue-700 hover:bg-blue-600 hover:text-white font-medium"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => handleStatusChange(task._id, "Completed")}
-              className="px-3 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-600 border border-green-700 hover:text-white font-medium"
-            >
-              Completed
-            </button>
-            {/* <button
+            {/* Actions */}
+            <div className="flex pl-4 flex-wrap gap-3 mt-6">
+              <button
+                onClick={() => onEdit(task)}
+                className="px-8 py-1 rounded-lg bg-blue-100 text-blue-700 border border-b-blue-700 hover:bg-blue-600 hover:text-white font-medium"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleStatusChange(task._id, "Completed")}
+                className="px-3 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-600 border border-green-700 hover:text-white font-medium"
+              >
+                Completed
+              </button>
+              {/* <button
               onClick={() => handleCopyTask?.(task)}
               className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
             >
               Copy
             </button> */}
-            {role === "admin" && (
-              <button
-                onClick={() => handleDeleteTask(task)}
-                className="px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-600 hover:text-white font-medium"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
-  </>
-);
-
-
-  // Rendering task row for large screens (table)
- const renderTaskRow = (task, index) => (
-  <tr
-    key={task._id}
-    id={`task-${task._id}`}
-    className={`group border-b transition-colors duration-150 bg-white ${
-      index % 2 === 0 ? colors.background : "#F3F4F6"
-    } hover:bg-cyan-50`}
-    style={{ borderColor: colors.border }}
-  >
-    <td
-      className="py-3 px-4 text-[13px]"
-      style={{ color: colors.textSecondary }}
-    >
-      {index + 1}
-    </td>
-
-    <td className="py-3 px-4" style={{ color: colors.textPrimary }}>
-      <div className="flex items-center gap-2 font-semibold">
-        {task.taskName}
-        {new Date(task.dueDate) < new Date() &&
-          task.status !== "Completed" &&
-          task.status !== "Obsolete" && (
-            <FaExclamationCircle
-              className="text-red-600"
-              title="Overdue Task"
-              size={14}
-              aria-label="Overdue task"
-            />
-          )}
-        <button
-          onClick={() => onEdit(task)}
-          title="Edit"
-          aria-label={`Edit task ${task.taskName}`}
-          className="opacity-70 hover:opacity-100 text-blue-700 hover:text-gray-700 focus:outline-none"
-        >
-          <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
-        </button>
-      </div>
-    </td>
-
-    <td
-      className="py-3 px-4 relative group text-[13px]"
-      style={{ color: colors.textSecondary, minWidth: "250px" }}
-    >
-      <div className="flex items-center gap-2 min-h-[22px]">
-        <span>
-          {(task.workDesc || "No description").length > 70
-            ? `${task.workDesc.slice(0, 70)}…`
-            : task.workDesc || "No description"}
-          {task.code && (
-            <span
-              className="text-indigo-600 underline cursor-pointer ml-1"
-              style={{ fontWeight: "600" }}
-            >
-              (1 Project Report)
-            </span>
-          )}
-        </span>
-        {(task.workDesc || "").length > 70 && (
-          <div className="relative inline-block">
-            <span className="sr-only">more</span>
-            <div
-              className="absolute z-50 hidden group-hover:block w-80 rounded-md p-3 text-xs whitespace-pre-wrap shadow-lg"
-              style={{
-                backgroundColor: colors.surface,
-                color: colors.textSecondary,
-                border: `1px solid ${colors.border}`,
-                left: "-8px",
-                top: "28px",
-                boxShadow:
-                  "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
-                maxHeight: "10rem",
-                overflowY: "auto",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {task.workDesc}
+              {role === "admin" && (
+                <button
+                  onClick={() => handleDeleteTask(task)}
+                  className="px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-600 hover:text-white font-medium"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
-        )}
-        <button
-          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 transition focus:outline-none"
-          onClick={() => {
-            setOpenWorkDescPopup(task._id);
-            setWorkDescMode("edit");
-          }}
-          title="Edit description"
-          aria-label={`Edit description for task ${task.taskName}`}
-        >
-          <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
-        </button>
-      </div>
-
-      {openWorkDescPopup === task._id && (
-        <div
-          className="absolute top-full left-0 mt-1 w-80 rounded-md shadow-lg border z-50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="workdesc-dialog-title"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          <div className="flex justify-between items-center mb-2 pb-1 border-b border-gray-100">
-            <h4
-              id="workdesc-dialog-title"
-              className="font-semibold text-sm"
-              style={{ color: colors.textPrimary }}
-            >
-              {workDescMode === "edit" ? "Edit Description" : "Description"}
-            </h4>
-            <button
-              className="text-gray-400 hover:text-gray-600 text-lg leading-none focus:outline-none"
-              onClick={() => setOpenWorkDescPopup(null)}
-              aria-label="Close description popup"
-            >
-              ×
-            </button>
-          </div>
-
-          {workDescMode === "edit" ? (
-            <>
-              <textarea
-                value={workDescs[task._id] || task.workDesc || ""}
-                onChange={(e) =>
-                  setWorkDescs((prev) => ({
-                    ...prev,
-                    [task._id]: e.target.value,
-                  }))
-                }
-                rows={4}
-                placeholder="Enter work description…"
-                className="w-full px-3 py-2 text-sm rounded-md resize-y focus:outline-none focus:ring-2"
-                style={{
-                  borderColor: colors.border,
-                  color: colors.textPrimary,
-                  backgroundColor: colors.background,
-                  borderWidth: "1px",
-                  boxShadow: "none",
-                  transition: "border-color 0.3s ease",
-                }}
-                autoFocus
-              />
-              <div className="flex justify-end mt-3 gap-2">
-                <button
-                  onClick={() => setOpenWorkDescPopup(null)}
-                  className="px-3 py-1 text-sm rounded-md"
-                  style={{
-                    color: colors.textSecondary,
-                    backgroundColor: colors.background,
-                    border: `1px solid ${colors.border}`,
-                  }}
-                  tabIndex={0}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    handleWorkDescSave(task._id);
-                    setOpenWorkDescPopup(null);
-                  }}
-                  className="px-3 py-1 text-sm rounded-md font-medium"
-                  style={{
-                    color: colors.surface,
-                    backgroundColor: colors.primary,
-                    border: `1px solid ${colors.primary}`,
-                  }}
-                  tabIndex={0}
-                >
-                  Save
-                </button>
-              </div>
-            </>
-          ) : (
-            <div
-              className="text-gray-700 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto"
-              style={{ color: colors.textSecondary }}
-            >
-              {task.workDesc || "No description available"}
-            </div>
-          )}
         </div>
       )}
-    </td>
+    </>
+  );
 
-    <td
-      className="py-3 px-4 text-[13px]"
-      style={{ color: colors.textSecondary }}
+  // Rendering task row for large screens (table)
+  const renderTaskRow = (task, index) => (
+    <tr
+      key={task._id}
+      id={`task-${task._id}`}
+      className={`group border-b transition-colors duration-150 bg-white ${
+        index % 2 === 0 ? colors.background : "#F3F4F6"
+      } hover:bg-cyan-50`}
+      style={{ borderColor: colors.border }}
     >
-      {formatAssignedDate(task.assignedDate)}
-    </td>
+      <td
+        className="py-3 px-4 text-[13px]"
+        style={{ color: colors.textSecondary }}
+      >
+        {index + 1}
+      </td>
 
-    <td
-      className="py-3 px-4 text-[13px]"
-      style={{ color: colors.textSecondary }}
-    >
-      {new Date(task.dueDate).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })}
-    </td>
+      <td className="py-3 px-4" style={{ color: colors.textPrimary }}>
+        <div className="flex items-center gap-2 font-semibold">
+          {task.taskName}
+          {new Date(task.dueDate) < new Date() &&
+            task.status !== "Completed" &&
+            task.status !== "Obsolete" && (
+              <FaExclamationCircle
+                className="text-red-600"
+                title="Overdue Task"
+                size={14}
+                aria-label="Overdue task"
+              />
+            )}
+          <button
+            onClick={() => onEdit(task)}
+            title="Edit"
+            aria-label={`Edit task ${task.taskName}`}
+            className="opacity-70 hover:opacity-100 text-blue-700 hover:text-gray-700 focus:outline-none"
+          >
+            <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
+          </button>
+        </div>
+      </td>
 
-    <td className="py-3 px-4 text-center cursor-pointer select-none">
-      <span
-        className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-sm"
-        style={{
-          backgroundColor:
-            task.status === "Completed"
-              ? colors.secondaryLight
-              : task.status === "In Progress"
-              ? colors.warningLight
-              : task.status === "To Do"
-              ? colors.primaryLight
-              : task.status === "Obsolete"
-              ? "#E0E7FF"
-              : colors.dangerLight,
-          color:
-            task.status === "Completed"
-              ? colors.secondary
-              : task.status === "In Progress"
-              ? colors.warning
-              : task.status === "To Do"
-              ? colors.primary
-              : task.status === "Obsolete"
-              ? "#6366F1"
-              : colors.danger,
-          border: `1px solid ${
-            task.status === "Completed"
-              ? colors.secondary
-              : task.status === "In Progress"
-              ? colors.warning
-              : task.status === "To Do"
-              ? colors.primary
-              : task.status === "Obsolete"
-              ? "#6366F1"
-              : colors.danger
-          }`,
-        }}
-        onClick={(e) => {
-          const rect = e.target.getBoundingClientRect();
-          setDropdownPosition({
-            top: rect.top + window.scrollY + 30,
-            left: rect.left + window.scrollX,
-          });
-          setEditingStatus(task._id);
-        }}
-        role="button"
-        tabIndex={0}
-        aria-label={`Change status for task ${task.taskName}`}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
+      <td
+        className="py-3 px-4 relative group text-[13px]"
+        style={{ color: colors.textSecondary, minWidth: "250px" }}
+      >
+        <div className="flex items-center gap-2 min-h-[22px]">
+          <span>
+            {(task.workDesc || "No description").length > 70
+              ? `${task.workDesc.slice(0, 70)}…`
+              : task.workDesc || "No description"}
+            {task.code && (
+              <span
+                className="text-indigo-600 underline cursor-pointer ml-1"
+                style={{ fontWeight: "600" }}
+              >
+                (1 Project Report)
+              </span>
+            )}
+          </span>
+          {(task.workDesc || "").length > 70 && (
+            <div className="relative inline-block">
+              <span className="sr-only">more</span>
+              <div
+                className="absolute z-50 hidden group-hover:block w-80 rounded-md p-3 text-xs whitespace-pre-wrap shadow-lg"
+                style={{
+                  backgroundColor: colors.surface,
+                  color: colors.textSecondary,
+                  border: `1px solid ${colors.border}`,
+                  left: "-8px",
+                  top: "28px",
+                  boxShadow:
+                    "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+                  maxHeight: "10rem",
+                  overflowY: "auto",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {task.workDesc}
+              </div>
+            </div>
+          )}
+          <button
+            className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 transition focus:outline-none"
+            onClick={() => {
+              setOpenWorkDescPopup(task._id);
+              setWorkDescMode("edit");
+            }}
+            title="Edit description"
+            aria-label={`Edit description for task ${task.taskName}`}
+          >
+            <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
+          </button>
+        </div>
+
+        {openWorkDescPopup === task._id && (
+          <div
+            className="absolute top-full left-0 mt-1 w-80 rounded-md shadow-lg border z-50 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="workdesc-dialog-title"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <div className="flex justify-between items-center mb-2 pb-1 border-b border-gray-100">
+              <h4
+                id="workdesc-dialog-title"
+                className="font-semibold text-sm"
+                style={{ color: colors.textPrimary }}
+              >
+                {workDescMode === "edit" ? "Edit Description" : "Description"}
+              </h4>
+              <button
+                className="text-gray-400 hover:text-gray-600 text-lg leading-none focus:outline-none"
+                onClick={() => setOpenWorkDescPopup(null)}
+                aria-label="Close description popup"
+              >
+                ×
+              </button>
+            </div>
+
+            {workDescMode === "edit" ? (
+              <>
+                <textarea
+                  value={workDescs[task._id] || task.workDesc || ""}
+                  onChange={(e) =>
+                    setWorkDescs((prev) => ({
+                      ...prev,
+                      [task._id]: e.target.value,
+                    }))
+                  }
+                  rows={4}
+                  placeholder="Enter work description…"
+                  className="w-full px-3 py-2 text-sm rounded-md resize-y focus:outline-none focus:ring-2"
+                  style={{
+                    borderColor: colors.border,
+                    color: colors.textPrimary,
+                    backgroundColor: colors.background,
+                    borderWidth: "1px",
+                    boxShadow: "none",
+                    transition: "border-color 0.3s ease",
+                  }}
+                  autoFocus
+                />
+                <div className="flex justify-end mt-3 gap-2">
+                  <button
+                    onClick={() => setOpenWorkDescPopup(null)}
+                    className="px-3 py-1 text-sm rounded-md"
+                    style={{
+                      color: colors.textSecondary,
+                      backgroundColor: colors.background,
+                      border: `1px solid ${colors.border}`,
+                    }}
+                    tabIndex={0}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleWorkDescSave(task._id);
+                      setOpenWorkDescPopup(null);
+                    }}
+                    className="px-3 py-1 text-sm rounded-md font-medium"
+                    style={{
+                      color: colors.surface,
+                      backgroundColor: colors.primary,
+                      border: `1px solid ${colors.primary}`,
+                    }}
+                    tabIndex={0}
+                  >
+                    Save
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div
+                className="text-gray-700 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto"
+                style={{ color: colors.textSecondary }}
+              >
+                {task.workDesc || "No description available"}
+              </div>
+            )}
+          </div>
+        )}
+      </td>
+
+      <td
+        className="py-3 px-4 text-[13px]"
+        style={{ color: colors.textSecondary }}
+      >
+        {formatAssignedDate(task.assignedDate)}
+      </td>
+
+      <td
+        className="py-3 px-4 text-[13px]"
+        style={{ color: colors.textSecondary }}
+      >
+        {new Date(task.dueDate).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })}
+      </td>
+
+      <td className="py-3 px-4 text-center cursor-pointer select-none">
+        <span
+          className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-sm"
+          style={{
+            backgroundColor:
+              task.status === "Completed"
+                ? colors.secondaryLight
+                : task.status === "In Progress"
+                ? colors.warningLight
+                : task.status === "To Do"
+                ? colors.primaryLight
+                : task.status === "Obsolete"
+                ? "#E0E7FF"
+                : colors.dangerLight,
+            color:
+              task.status === "Completed"
+                ? colors.secondary
+                : task.status === "In Progress"
+                ? colors.warning
+                : task.status === "To Do"
+                ? colors.primary
+                : task.status === "Obsolete"
+                ? "#6366F1"
+                : colors.danger,
+            border: `1px solid ${
+              task.status === "Completed"
+                ? colors.secondary
+                : task.status === "In Progress"
+                ? colors.warning
+                : task.status === "To Do"
+                ? colors.primary
+                : task.status === "Obsolete"
+                ? "#6366F1"
+                : colors.danger
+            }`,
+          }}
+          onClick={(e) => {
             const rect = e.target.getBoundingClientRect();
             setDropdownPosition({
               top: rect.top + window.scrollY + 30,
               left: rect.left + window.scrollX,
             });
             setEditingStatus(task._id);
-          }
-        }}
-      >
-        {task.status}
-      </span>
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={`Change status for task ${task.taskName}`}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              const rect = e.target.getBoundingClientRect();
+              setDropdownPosition({
+                top: rect.top + window.scrollY + 30,
+                left: rect.left + window.scrollX,
+              });
+              setEditingStatus(task._id);
+            }
+          }}
+        >
+          {task.status}
+        </span>
 
-      {editingStatus === task._id && (
-        <StatusDropdownPortal>
-          <div
-            ref={dropdownRef}
-            className="absolute rounded-md shadow-lg border w-40 mt-1 z-50"
-            style={{
-              position: "absolute",
-              top: dropdownPosition.top,
-              left: dropdownPosition.left,
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
-          >
-            {["To Do", "In Progress", "Completed", "Obsolete"].map(
-              (statusOption) => (
-                <div
-                  key={statusOption}
-                  className="px-4 py-2 text-sm cursor-pointer select-none hover:bg-gray-100"
-                  style={{
-                    color:
-                      statusOption === "Completed"
-                        ? colors.secondary
-                        : statusOption === "In Progress"
-                        ? colors.warning
-                        : statusOption === "To Do"
-                        ? colors.primary
-                        : "#6366F1",
-                  }}
-                  onClick={() => {
-                    handleStatusChange(task._id, statusOption);
-                    setEditingStatus(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+        {editingStatus === task._id && (
+          <StatusDropdownPortal>
+            <div
+              ref={dropdownRef}
+              className="absolute rounded-md shadow-lg border w-40 mt-1 z-50"
+              style={{
+                position: "absolute",
+                top: dropdownPosition.top,
+                left: dropdownPosition.left,
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              }}
+            >
+              {["To Do", "In Progress", "Completed", "Obsolete"].map(
+                (statusOption) => (
+                  <div
+                    key={statusOption}
+                    className="px-4 py-2 text-sm cursor-pointer select-none hover:bg-gray-100"
+                    style={{
+                      color:
+                        statusOption === "Completed"
+                          ? colors.secondary
+                          : statusOption === "In Progress"
+                          ? colors.warning
+                          : statusOption === "To Do"
+                          ? colors.primary
+                          : "#6366F1",
+                    }}
+                    onClick={() => {
                       handleStatusChange(task._id, statusOption);
                       setEditingStatus(null);
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-pressed={task.status === statusOption}
-                >
-                  {statusOption}
-                </div>
-              )
-            )}
-          </div>
-        </StatusDropdownPortal>
-      )}
-    </td>
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleStatusChange(task._id, statusOption);
+                        setEditingStatus(null);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-pressed={task.status === statusOption}
+                  >
+                    {statusOption}
+                  </div>
+                )
+              )}
+            </div>
+          </StatusDropdownPortal>
+        )}
+      </td>
 
       <td
         className="py-3 px-4 relative text-[13px]"
@@ -1385,6 +1435,16 @@ const renderTaskCard = (task, index) => (
           </button>
         </div>
 
+        {openMessagePopup && taskForMessage?._id === task._id && (
+          <MessagePopup
+            isOpen={openMessagePopup}
+            onClose={() => setOpenMessagePopup(false)}
+            task={taskForMessage}
+            // clientId={taskForMessage.clientId}
+            sendMessage={handleMessageSend}
+          />
+        )}
+
         {openRemarkPopup === task._id && (
           <div
             className="absolute top-full left-0 mt-2 w-72 rounded-md shadow-lg border z-50 p-4"
@@ -1411,6 +1471,14 @@ const renderTaskCard = (task, index) => (
               >
                 ×
               </button>
+            </div>
+
+            {/* Add Client ID here */}
+            <div className="mb-3">
+              <span className="font-semibold text-gray-600">Client ID: </span>
+              <span className="text-gray-700">
+                {task.clientId || "No client ID available"}
+              </span>
             </div>
 
             {remarkMode === "edit" ? (
@@ -1503,6 +1571,33 @@ const renderTaskCard = (task, index) => (
       >
         {task.assignedBy?.name || "—"}
       </td>
+      <td>
+        <button
+          onClick={() => {
+            setTaskForMessage(task); // Set the current task for the popup
+            setOpenMessagePopup(true); // Open the popup
+          }}
+          className="text-indigo-600 hover:text-indigo-800 focus:outline-none py-3 px-8"
+          title="Send Message"
+        >
+          {/* <FontAwesomeIcon icon={faPen} className="h-5 w-5" /> */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-send-icon lucide-send"
+          >
+            <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+            <path d="m21.854 2.147-10.94 10.939" />
+          </svg>
+        </button>
+      </td>
 
       <td className="py-3 px-4 text-center">
         <button
@@ -1551,10 +1646,7 @@ const renderTaskCard = (task, index) => (
   };
 
   return (
-    <div
-      className="relative "
-      style={{ backgroundColor: colors.background }}
-    >
+    <div className="relative " style={{ backgroundColor: colors.background }}>
       <FilterSection
         filters={filters}
         handleFilterChange={handleFilterChange}
@@ -1583,11 +1675,11 @@ const renderTaskCard = (task, index) => (
               <th className="py-2.5 px-4 text-left min-w-[240px]">
                 Work Description <span className="font-bold">+ Code</span>
               </th>
-              <th className="py-2.5 px-4 text-left min-w-[170px]">
+              <th className="py-2.5 px-4 text-left min-w-[120px]">
                 Date of Work
               </th>
               <th
-                className="py-2.5 px-4 text-left min-w-[110px] cursor-pointer select-none"
+                className="py-2.5 px-4 text-left min-w-[100px] cursor-pointer select-none"
                 onClick={() =>
                   setDueDateSortOrder((prev) =>
                     prev === "asc" ? "desc" : "asc"
@@ -1626,15 +1718,16 @@ const renderTaskCard = (task, index) => (
                   )}
                 </span>
               </th>
-              <th className="py-2.5 px-4 text-center min-w-[120px]">Status</th>
-              <th className="py-2.5 px-4 text-left min-w-[130px]">Remarks</th>
+              <th className="py-2.5 px-4 text-center min-w-[110px]">Status</th>
+              <th className="py-2.5 px-4 text-left min-w-[100px]">Remarks</th>
               <th className="py-2.5 px-4 text-left min-w-[130px]">Team</th>
               <th className="py-2.5 px-4 text-left min-w-[80px]">
                 Assigned By
               </th>
-              <th className="py-2.5 px-4 text-center min-w-[20px]">Copy</th>
+              <th className="py-2.5 px-4 text-left min-w-[60px]">Message</th>
+              <th className="py-2.5 px-4 text-center min-w-[15px]">Copy</th>
               {role === "admin" && (
-                <th className="py-2.5 px-4 text-center min-w-[20px]">Delete</th>
+                <th className="py-2.5 px-4 text-center min-w-[15px]">Delete</th>
               )}
             </tr>
           </thead>
@@ -1667,7 +1760,7 @@ const renderTaskCard = (task, index) => (
                   <>
                     <tr>
                       <td
-                        colSpan={role === "admin" ? 11 : 10}
+                        colSpan={role === "admin" ? 12 : 10}
                         className="bg-red-50 text-red-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
                         style={{ borderColor: colors.border }}
                       >
@@ -1684,7 +1777,7 @@ const renderTaskCard = (task, index) => (
                   <>
                     <tr>
                       <td
-                        colSpan={role === "admin" ? 11 : 10}
+                        colSpan={role === "admin" ? 12 : 10}
                         className="bg-yellow-50 text-yellow-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
                         style={{ borderColor: colors.border }}
                       >
@@ -1701,8 +1794,8 @@ const renderTaskCard = (task, index) => (
                   <>
                     <tr>
                       <td
-                        colSpan={role === "admin" ? 11 : 10}
-                        className="bg-green-50 text-green-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
+                        colSpan={role === "admin" ? 12 : 10}
+                        className="bg-green-100 text-green-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
                         style={{ borderColor: colors.border }}
                       >
                         Low Priority Tasks

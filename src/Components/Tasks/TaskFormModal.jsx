@@ -64,6 +64,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [taskCategory, setTaskCategory] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("");
   const [clientName, setClientName] = useState("");
+  const [clientId, setClientId] = useState(""); // New state for client ID
   const [code, setCode] = useState("");
   const [newCode, setNewCode] = useState("");
   const [department, setDepartment] = useState([]);
@@ -87,6 +88,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       setStatus(initialData.status || "To Do");
       setAssignees(initialData.assignees || []);
       setClientName(initialData.clientName || "");
+      setClientId(initialData.clientId || ""); // Initialize client ID from initial data
       setTaskCategory(initialData.taskCategory || "");
       setTaskCode(initialData.code ? { label: initialData.code, value: initialData.code } : null);
       setDepartment(initialData.department || []);
@@ -112,9 +114,15 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             Authorization: `Bearer ${token}`,
             "x-app-client": "frontend-authenticated",
           },
-        });
+        }); 
+        console.log("Fetched clients data:", data); // Log fetched data
+        
         const formatted = Array.isArray(data)
-          ? data.map((c) => ({ label: c.name || c, value: c.name || c }))
+          ? data.map((c) => ({ 
+              label: c.name || c, 
+              value: c.name || c,
+              clientId: c.id || c._id || c.clientId // Include client ID in options
+            }))
           : [];
         setClientOptions(formatted);
       } catch (e) {
@@ -127,6 +135,19 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     "w-full h-11 rounded-xl border border-slate-200 px-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 placeholder:text-slate-400";
 
   const labelClass = "block text-[12px] font-medium text-slate-600 mb-1 ml-0.5 tracking-wide";
+
+  // Handle client selection to auto-populate client ID
+  const handleClientChange = (selectedOption) => {
+    if (selectedOption) {
+      console.log("Selected client:", selectedOption);
+
+      setClientName(selectedOption.value);
+      setClientId(selectedOption.clientId || ""); // Set client ID when client is selected
+    } else {
+      setClientName("");
+      setClientId(""); // Clear client ID when no client is selected
+    }
+  };
 
   const handleSubmit = async () => {
     if (!taskName || !dueDate || assignees.length === 0) {
@@ -143,6 +164,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       status,
       taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
       clientName,
+      clientId, // Include client ID in the payload
       department: Array.isArray(department) ? department : [department],
       code: taskCode?.value || "",
       assignedBy: assignedByUser
@@ -168,6 +190,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       taskPayload.repeatDay = null;
       taskPayload.repeatMonth = null;
     }
+    console.log("Submitting task payload:", taskPayload);
+    
 
     try {
       setIsSubmitting(true);
@@ -184,6 +208,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         body: JSON.stringify(taskPayload),
       });
       const result = await res.json();
+      console.log("Server response:", result);
+      
       if (!res.ok) throw new Error(result.message || "Failed to create task");
 
       showAlert(initialData ? "Task updated successfully!" : result.message || "Task created successfully!");
@@ -209,11 +235,11 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   }));
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-black/40 p-3 sm:p-4 md:p-6 flex items-center justify-center font-inter overflow-y-auto">
+    <div className="fixed inset-0 z-[1000] bg-black/40 p-3 sm:p-4 md:p-6 flex items-center justify-center font-inter overflow-y-auto ">
       <div className="w-full max-w-4xl bg-white rounded-none sm:rounded-2xl border border-slate-200 shadow-2xl
                       flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/90 backdrop-blur px-4 sm:px-6 py-2">
+        <div className="sticky top-0 z-10 flex items-center justify-between rounded-2xl border-b border-slate-200 bg-white/90 backdrop-blur px-4 sm:px-6 py-2">
           <div>
             <h3 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900">
               {initialData ? "Update Task" : "Create New Task"}
@@ -234,7 +260,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
         {/* Body */}
         <div className="px-4 sm:px-6 py-5 space-y-6 flex-1 overflow-y-auto">
-          {/* Your form fields grid goes here (keep same as before) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Task Name */}
             <div>
@@ -284,7 +309,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                 isClearable
                 isSearchable
                 options={clientOptions}
-                onChange={(opt) => setClientName(opt?.value || "")}
+                onChange={handleClientChange}
                 value={clientName ? clientOptions.find((o) => o.value === clientName) || null : null}
                 placeholder="Select client..."
                 classNamePrefix="select"
@@ -292,6 +317,30 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                 styles={selectBaseStyles}
               />
             </div>
+            {console.log("Client Options:", clientOptions)  // Log client options to check the structure
+
+}
+            
+            {/* Client ID - Only show when a client is selected */}
+            
+            {clientName && (
+              <div>
+                <label className={labelClass} htmlFor="clientId">Client ID</label>
+                <input
+                  id="clientId"
+                  type="text"
+                  placeholder="Client ID will appear here"
+                  
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                  className={`${inputClass} bg-slate-50`}
+                  readOnly={false} // Change to true if you want it to be read-only
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Auto-populated from selected client
+                </p>
+              </div>
+            )}
 
             {/* Task Code */}
             <div>
@@ -425,7 +474,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-4 sm:px-6 py-3">
+        <div className="sticky bottom-0 flex items-center justify-end gap-3 rounded-2xl border-t border-slate-200 bg-white px-4 sm:px-6 py-3">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400"
@@ -444,11 +493,112 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         </div>
       </div>
 
-      {/* Repeat Popup (no change needed) */}
+      {/* Repeat Popup */}
       {showRepeatPopup && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-[1100] p-3">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-5 sm:p-6">
-            {/* Repeat settings content here */}
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              Repetition Settings
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Repeat Type:
+                </label>
+                <select
+                  value={repeatType}
+                  onChange={(e) => setRepeatType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Daily">Daily</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Quarterly">Quarterly</option>
+                  <option value="Every 6 Months">Every 6 Months</option>
+                  <option value="Annually">Annually</option>
+                </select>
+              </div>
+
+              {repeatType !== "Daily" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Day of month (1-31):
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    value={customRepeat.day}
+                    onChange={(e) =>
+                      setCustomRepeat({
+                        ...customRepeat,
+                        day: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+
+              {repeatType === "Annually" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Month:
+                  </label>
+                  <select
+                    value={customRepeat.month}
+                    onChange={(e) =>
+                      setCustomRepeat({
+                        ...customRepeat,
+                        month: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Month</option>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {new Date(0, i).toLocaleString("default", {
+                          month: "long",
+                        })}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                className="px-4 py-2 text-gray-700 font-medium hover:text-red-600"
+                onClick={() => {
+                  setIsRepetitive(false);
+                  setShowRepeatPopup(false);
+                  setCustomRepeat({ day: "", month: "" });
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={() => {
+                  if (
+                    !["Daily", "Every 5 Minutes"].includes(repeatType) &&
+                    !customRepeat.day
+                  ) {
+                    alert("Please select a day");
+                    return;
+                  }
+                  if (repeatType === "Annually" && !customRepeat.month) {
+                    alert("Please select a month");
+                    return;
+                  }
+                  setShowRepeatPopup(false);
+                }}
+              >
+                Save Settings
+              </button>
+            </div>
           </div>
         </div>
       )}

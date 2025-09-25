@@ -144,17 +144,22 @@ const Clients = () => {
           <p className="text-center text-gray-500">No clients found.</p>
         </div>
       ) : (
-        <div
-          className="space-y-6 mx-auto 
-  max-h-[90vh] sm:max-h-[100vh] 
-  overflow-y-auto 
-  pb-2 sm:pb-10"
-        >
-          <ClientList
-            clients={clients}
-            onDelete={handleDeleteClient}
-            onEdit={handleEditClient}
-          />
+
+        <div className="space-y-6 mx-auto max-h-[72vh] overflow-y-auto">
+          {viewMode === "card" ? (
+            <ClientList
+              clients={clients}
+              onDelete={handleDeleteClient}
+              onEdit={handleEditClient}
+            />
+          ) : (
+            <ClientTableView
+              clients={clients}
+              onEdit={handleEditClient}
+              onDelete={handleDeleteClient}
+            />
+          )}
+
         </div>
       )}
 

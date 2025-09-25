@@ -62,6 +62,10 @@ const ShortcutHandler = ({ children }) => {
           e.preventDefault();
           navigate("/leave");
         }
+        if (e.key.toLowerCase() === "c") {
+          e.preventDefault();
+          navigate("/clients");
+        }
       }
     };
 
