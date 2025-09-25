@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   FaBell,
   FaUserCircle,
@@ -6,11 +6,12 @@ import {
   FaSignOutAlt,
   FaHome,
   FaRegStickyNote,
+  FaTools,
 } from "react-icons/fa";
+import { MdSupportAgent } from "react-icons/md";
 import useNotificationSocket from "../hook/useNotificationSocket";
 import StickyNotes from "./notes/StickyNotes";
 import QuickActionsDropdown from "./QuickActionsDropdown";
-
 import { useNavigate } from "react-router-dom";
 
 const Header = () => {
@@ -23,40 +24,75 @@ const Header = () => {
   const [showNotes, setShowNotes] = useState(false);
 
   const navigate = useNavigate();
-
   useNotificationSocket(setNotificationCount);
+
+  // Developer feedback blinking
+  const [blink, setBlink] = useState(false);
+  const [totalDevRequests, setTotalDevRequests] = useState(0);
+  const [lastSeenRequests, setLastSeenRequests] = useState(() => {
+    // Load persisted value from localStorage or default to 0
+    return parseInt(localStorage.getItem("lastSeenDevRequests") || "0", 10);
+  });
 
   // Check if device is mobile
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  //for search bar
+  // Developer support polling
+  useEffect(() => {
+    const fetchDevRequests = async () => {
+      try {
+        const res = await fetch("http://localhost:1100/api/support");
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+
+        const requestsArray = Array.isArray(data.requests) ? data.requests : [];
+        const count = requestsArray.length;
+
+        setTotalDevRequests(count);
+
+        // Blink only if new requests are greater than last seen
+        if (count > lastSeenRequests) {
+          setBlink(true);
+        }
+      } catch (err) {
+        // console.error("Error fetching developer requests:", err);
+      }
+    };
+
+    fetchDevRequests();
+    const interval = setInterval(fetchDevRequests, 10000);
+    return () => clearInterval(interval);
+  }, [lastSeenRequests]);
+
+  // Handle developer icon click
+  const handleDevClick = () => {
+    setBlink(false);
+    setLastSeenRequests(totalDevRequests);
+    localStorage.setItem("lastSeenDevRequests", totalDevRequests); // ✅ persist
+    navigate("/developer-support");
+  };
+
+  // Search highlight logic
   useEffect(() => {
     const highlightMatches = (term) => {
-      // Remove existing highlights
       document.querySelectorAll("mark[data-highlight]").forEach((mark) => {
         const parent = mark.parentNode;
         parent.replaceChild(document.createTextNode(mark.textContent), mark);
         parent.normalize();
       });
-
       if (!term) {
         setHighlightRefs([]);
         setCurrentIndex(0);
         return;
       }
-
       const regex = new RegExp(`(${term})`, "gi");
       const foundMarks = [];
-
       const walk = (node) => {
         if (
           node.nodeType === 3 &&
@@ -80,57 +116,44 @@ const Header = () => {
             node.parentNode.replaceChild(fragment, node);
           }
         } else if (node.nodeType === 1) {
-          for (let i = 0; i < node.childNodes.length; i++) {
+          for (let i = 0; i < node.childNodes.length; i++)
             walk(node.childNodes[i]);
-          }
         }
       };
-
       walk(document.body);
       setHighlightRefs(foundMarks);
       setCurrentIndex(0);
     };
-
     highlightMatches(searchTerm);
   }, [searchTerm]);
 
-  //useEffect to handle Enter key for scrolling to highlighted elements
   useEffect(() => {
     const handleEnterKey = (e) => {
       if (e.key === "Enter" && highlightRefs.length > 0) {
         e.preventDefault();
-
         const el = highlightRefs[currentIndex];
         el.scrollIntoView({ behavior: "smooth", block: "center" });
         el.style.background = "orange";
-
-        // Reset previous highlight color
         highlightRefs.forEach((mark, idx) => {
           if (idx !== currentIndex) mark.style.background = "yellow";
         });
-
         setCurrentIndex((prev) => (prev + 1) % highlightRefs.length);
       }
     };
-
     window.addEventListener("keydown", handleEnterKey);
     return () => window.removeEventListener("keydown", handleEnterKey);
   }, [highlightRefs, currentIndex]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (e.target.closest("#profile-menu") === null) {
-        setIsMenuOpen(false);
-      }
+      if (!e.target.closest("#profile-menu")) setIsMenuOpen(false);
     };
-
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   useEffect(() => {
     const name = localStorage.getItem("name");
-
     if (name) {
       const initials = name
         .split(" ")
@@ -142,19 +165,14 @@ const Header = () => {
   }, []);
 
   const handleMenuToggle = () => setIsMenuOpen((prev) => !prev);
-
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("name");
     localStorage.removeItem("role");
+    localStorage.removeItem("department");
     window.location.href = "/login";
   };
-
-  const handleSearchChange = (e) => {
-    const value = e.target.value.trim();
-    setSearchTerm(value);
-  };
-
+  const handleSearchChange = (e) => setSearchTerm(e.target.value.trim());
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey && e.key === "k") || e.key === "/") {
@@ -171,12 +189,9 @@ const Header = () => {
       {/* Search Bar */}
       <div className="flex-1 flex justify-end">
         <div className="relative w-full max-w-xl">
-          {/* Search Icon */}
           <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
             <FaSearch className="w-4 h-4" />
           </span>
-
-          {/* Search Input */}
           <input
             type="text"
             value={searchTerm}
@@ -185,17 +200,12 @@ const Header = () => {
             id="global-search-input"
             className="w-full pl-10 pr-24 py-2.5 rounded-full bg-gray-100 text-sm placeholder-gray-500 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-200"
           />
-
-          {/* Right-side controls */}
           <div className="absolute inset-y-0 right-3 flex items-center gap-2">
-            {/* Match Count */}
             {highlightRefs.length > 0 && (
               <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
                 {currentIndex + 1}/{highlightRefs.length}
               </span>
             )}
-
-            {/* Clear Button */}
             {searchTerm && (
               <button
                 onClick={() => {
@@ -228,7 +238,7 @@ const Header = () => {
 
       {/* Right Icons */}
       <div className="flex items-center gap-4 md:gap-5 ml-4 md:ml-6 relative">
-        <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full shadow-sm border border-gray-200">
+         <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full shadow-sm border border-gray-200">
           Shortcuts window:
           <kbd className="px-1.5 py-0.5 bg-gray-50 border border-gray-300 rounded text-gray-700 font-medium shadow-sm">
             Alt
@@ -238,49 +248,46 @@ const Header = () => {
             S
           </kbd>
         </span>
-        {/* Mobile view: Show Notes icon instead of Notification icon */}
-        {isMobile ? (
-          <>
-            {/* Notes button (replaces notification on mobile) */}
-            <button
-              onClick={() => setShowNotes(true)}
-              className="relative bg-gray-100 rounded-full p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-all duration-200"
-              aria-label="Notes"
-            >
-              <FaRegStickyNote className="text-gray-600 text-lg" />
-            </button>
+        {/* Notification Icon */}
+        <button
+          onClick={() => navigate("/notifications")}
+          className="relative bg-gray-100 rounded-full p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200"
+          aria-label="Notifications"
+        >
+          <FaBell className="text-gray-600 text-lg" />
+          {notificationCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center">
+              {notificationCount}
+            </span>
+          )}
+        </button>
 
-            {/* QuickActionsDropdown (without notes option) */}
-            <QuickActionsDropdown
-              notificationCount={notificationCount}
-              isMobile={isMobile}
-            />
-          </>
-        ) : (
-          /* Desktop view: Original order */
-          <>
-            <button
-              onClick={() => navigate("/notifications")}
-              className="relative bg-gray-100 rounded-full p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200"
-              aria-label="Notifications"
-            >
-              <FaBell className="text-gray-600 text-lg" />
-              {/* Notification badge */}
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center ">
-                  {notificationCount}
-                </span>
-              )}
-            </button>
+        {/* Developer Feedback Icon (Blinking) */}
+        {(localStorage.getItem("department") === "IT/Software" ||
+  ["admin"].includes(
+    localStorage.getItem("role") || localStorage.getItem("userRole") || ""
+  )) && (
+  <button
+    onClick={handleDevClick}
+    className={`flex items-center gap-2 p-2 rounded transition-colors duration-200 ${
+      blink ? "animate-pulse text-red-500" : "text-gray-700"
+    }`}
+  >
+    <FaTools className="text-lg" />
+    {totalDevRequests > lastSeenRequests && (
+      <span className="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+        {totalDevRequests - lastSeenRequests}
+      </span>
+    )}
+  </button>
+)}
 
-            <QuickActionsDropdown
-              onShowNotes={() => setShowNotes(true)}
-              isMobile={isMobile}
-            />
-          </>
-        )}
 
-        {/* Sticky Notes Modal */}
+        <QuickActionsDropdown
+          onShowNotes={() => setShowNotes(true)}
+          isMobile={isMobile}
+        />
+
         {showNotes && <StickyNotes onClose={() => setShowNotes(false)} />}
 
         {/* Profile Menu */}
@@ -294,14 +301,12 @@ const Header = () => {
             {profileInitial}
           </button>
 
-          {/* Dropdown Menu */}
           {isMenuOpen && (
             <div
               id="profile-menu-dropdown"
               className="absolute top-12 right-0 w-48 bg-white rounded-lg shadow-xl overflow-hidden py-1 z-50 border border-gray-100"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Home Button */}
               <button
                 onClick={() => {
                   navigate("/");
@@ -312,8 +317,6 @@ const Header = () => {
                 <FaHome className="text-gray-500 flex-shrink-0" />
                 <span>Home</span>
               </button>
-
-              {/* Profile Button */}
               <button
                 onClick={() => {
                   navigate("/profile");
@@ -324,10 +327,19 @@ const Header = () => {
                 <FaUserCircle className="text-gray-500 flex-shrink-0" />
                 <span>Profile</span>
               </button>
+              <button
+                onClick={() => {
+                  navigate("/support");
+                  setIsMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-2 transition-colors duration-150"
+              >
+                <MdSupportAgent className="text-gray-500 flex-shrink-0 text-xl" />
+                <span>Support</span>
+              </button>
 
               <div className="border-t border-gray-100 my-1"></div>
 
-              {/* Logout Button */}
               <button
                 onClick={() => {
                   handleLogout();

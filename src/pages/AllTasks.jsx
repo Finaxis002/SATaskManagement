@@ -171,9 +171,6 @@
 // // Tasks.jsx
 // export default AllTasks;
 
-
-
-
 import React, { useState, useEffect } from "react";
 import TaskFormModal from "../Components/Tasks/TaskFormModal";
 import TaskList from "../Components/Tasks/TaskList";
@@ -296,7 +293,7 @@ const AllTasks = () => {
   return (
     <div className="w-full min-h-screen bg-white font-inter">
       {/* Header Section */}
-      <div className="w-full   px-4 sm:px-6 md:px-8 pt-4 pb-2 border-none bg-white">
+      <div className="w-full   px-4 sm:px-6  pt-4 pb-2 border-none bg-white">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900">
             Task Manager
@@ -339,7 +336,7 @@ const AllTasks = () => {
       </div>
 
       {/* Content Area */}
-      <div className="w-full px-4 sm:px-6 md:px-8   bg-white">
+      <div className="w-full px-4 sm:px-6    bg-white">
         <div className="w-full ">
           <TaskList
             refreshTrigger={refreshTrigger}
@@ -349,6 +346,8 @@ const AllTasks = () => {
             hideCompleted={hideCompleted}
             hideObsolete={true}
           />
+        
+          
         </div>
 
         {/* Modal Form for Task */}

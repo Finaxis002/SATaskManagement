@@ -6,6 +6,7 @@ export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
   const res = await axios.get(
     "https://sataskmanagementbackend.onrender.com/api/tasks"
   );
+  
   return res.data;
 });
 
@@ -217,7 +218,7 @@ const taskSlice = createSlice({
       })
       .addCase(updateTaskCompletion.rejected, (state, action) => {
         state.loading = false;
-        console.error("Task update failed:", action.payload);
+        // console.error("Task update failed:", action.payload);
       });
   },
 });

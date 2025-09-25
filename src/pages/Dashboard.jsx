@@ -5,7 +5,6 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
- 
 } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -17,11 +16,18 @@ import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
 import { ClipboardList, CheckCircle, Clock, AlertCircle } from "lucide-react";
-import { FaCalendarAlt, FaClock, FaTimes, FaPlus } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaTimes,
+  FaPlus,
+  FaPen,
+  FaAlignLeft,
+  FaUsers,
+  FaRegClock,
+} from "react-icons/fa";
 import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
 import TaskOverview from "../Components/TaskOverview";
-
-
 
 /* ------------------ cache & helpers ------------------ */
 const K = {
@@ -147,6 +153,13 @@ const TodaysList = forwardRef(function TodaysList(
     endTime: "",
     guests: [""],
     snoozeBefore: "30",
+  };
+
+  const navigate = useNavigate();
+
+  const handleArrowClick = () => {
+    // Redirect to the /reminders page
+    navigate("/reminders");
   };
 
   const [showEventPopup, setShowEventPopup] = useState(false);
@@ -390,75 +403,99 @@ const TodaysList = forwardRef(function TodaysList(
               setEditingEventId(null);
               setNewEvent({ ...DEFAULT_EVENT });
               setShowEventPopup(true);
-              
-            }
-          }
+            }}
             className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-purple-700 transition focus:outline-none focus:ring-2 focus:ring-purple-400"
             type="button"
             whileTap={{ scale: 0.98 }}
             whileHover={{ y: -1 }}
             title="Shortcut: Alt + A"
           >
-            <FaPlus className="text-xs"   /> Add Event
+            <FaPlus className="text-xs" /> Add Event
           </motion.button>
         </div>
       </div>
 
       {/* List with vertical scroll */}
-      <div className="min-h-0 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <div className="min-h-0 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hidden md:block">
         {rows.length === 0 ? (
-          <div className="px-6 py-10 text-sm text-gray-500 text-center">
+          <div className="px-6 py-12 text-sm text-gray-600 text-center font-medium">
             No events for today.
           </div>
         ) : (
-          <ul className="divide-y divide-white/50">
+          <ul className="divide-y divide-gray-200">
             <AnimatePresence initial={false}>
               {rows.map((row, i) => (
                 <motion.li
-                  key={`${row.time}-${i}`}
-                  className="px-5 py-3 flex flex-col md:flex-row gap-2 md:gap-0 hover:bg-white/40 transition"
-                  initial={{ opacity: 0, y: 14 }}
+                  key={`${row.startTime}-${i}`}
+                  className="px-6 py-5 flex flex-col md:flex-row gap-6 md:gap-8 bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all ease-in-out"
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
                 >
-                  <div className="flex items-center w-full md:w-36">
-                    <span className="relative flex items-center">
-                      <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-tr from-gray-300 to-gray-400 mr-2 shadow-inner" />
-                      <span className="text-xs font-medium text-gray-700">
-                        {row.time}
-                      </span>
+                  {/* Event Title with Icon */}
+                  <div className="flex-shrink-0 flex items-center gap-4 ">
+                    <FaCalendarAlt className="text-teal-500 text-xl" />
+                    <span className="text-xl font-semibold text-gray-800 font-poppins">
+                      {row.title}
                     </span>
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 font-semibold truncate tracking-wide">
-                      {row.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {/* {row.location || "—"}{" "} */}
-                      {row.duration ? `• ${row.duration}` : ""}
-                    </p>
+                  {/* Event Description */}
+                  <div className="flex-1 min-w-0 ml-6">
+                    <div className="flex items-center gap-4">
+                      <FaAlignLeft className="text-indigo-600 w-6" />
+                      <p className="text-base text-gray-700 mt-1 w-full font-roboto">
+                        {row.description}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex w-full md:w-auto justify-between items-center">
+                  {/* Event Start and End Time */}
+                  <div className="flex flex-row  items-center justify-center ">
+                    {/* Start Time */}
+                    <div className="flex-1 min-w-0 mr-1">
+                      <div className="flex items-center gap-1">
+                        <FaClock className="text-indigo-800 text-xl" />
+                        <p className="text-sm text-gray-600">{row.startTime}</p>
+                      </div>
+                    </div>
+
+                    {/* "To" Text */}
+                    <div className="flex items-center justify-center mx-3 text-gray-600 font-medium">
+                      to
+                    </div>
+
+                    {/* End Time */}
+                    <div className=" flex flex-row ml-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <FaClock className="text-indigo-800 text-xl" />
+                        <p className="text-sm text-gray-600">{row.endTime}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Section: Tag and Arrow Icon */}
+                  <div className="flex items-center justify-end space-x-6">
+                    {/* Event Type Tag */}
                     {row.tag && (
                       <span
-                        className={`text-[11px] px-2 py-1 rounded-full ${tagCls(
+                        className={`text-[13px] px-4 py-2 rounded-full ${tagCls(
                           row.color
-                        )}`}
+                        )} font-medium`}
                       >
                         {row.tag}
                       </span>
                     )}
+
+                    {/* Arrow Icon */}
                     <motion.svg
-                      className="ml-3 h-4 w-4 text-gray-400"
+                      onClick={handleArrowClick}
+                      className="h-5 w-5 text-gray-400 cursor-pointer hover:text-gray-600 transition duration-300"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      initial={{ x: 0 }}
-                      whileHover={{ x: 3 }}
                     >
                       <path d="M9 18l6-6-6-6" />
                     </motion.svg>
@@ -469,6 +506,95 @@ const TodaysList = forwardRef(function TodaysList(
           </ul>
         )}
       </div>
+
+      {/* Mobile view */}
+      <div className="min-h-0 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 md:hidden">
+  {rows.length === 0 ? (
+    <div className="px-6 py-12 text-sm text-gray-600 text-center font-medium">
+      No events for today.
+    </div>
+  ) : (
+    <ul className="divide-y divide-gray-200">
+      <AnimatePresence initial={false}>
+        {rows.map((row, i) => (
+          <motion.li
+            key={`${row.startTime}-${i}`}
+            className="px-6 py-2 flex flex-col gap-4 bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all ease-in-out"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {/* Event Title with Icon */}
+            <div className="flex items-center justify-between">
+              <div className="flex-shrink-0 flex items-center gap-4 w-3/4">
+                <FaCalendarAlt className="text-teal-500 text-xl" />
+                <span className="text-xl font-semibold text-gray-800 font-poppins">
+                  {row.title}
+                </span>
+              </div>
+
+              {/* Event Type Tag */}
+              {row.tag && (
+                <span
+                  className={`text-[13px] px-4 py-2 rounded-full ${tagCls(
+                    row.color
+                  )} font-medium`}
+                >
+                  {row.tag}
+                </span>
+              )}
+
+              {/* Arrow Icon */}
+              <motion.svg
+                onClick={handleArrowClick}
+                className="h-5 w-5 text-gray-400 cursor-pointer hover:text-gray-600 transition duration-300"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </motion.svg>
+            </div>
+
+            <div className="">
+              {/* <p className="text-base text-gray-700">{row.description}</p> */}
+              <div className="flex items-center gap-4">
+                      <FaAlignLeft className="text-indigo-600 w-6" />
+                      <p className="text-base text-gray-700 mt-1 w-full font-roboto">
+                        {row.description}
+                      </p>
+                    </div>
+            </div>
+
+            {/* Event Time in Small Size */}
+            <div className="flex items-center justify-start ">
+              <div className="flex items-center gap-1">
+                <FaClock className="text-indigo-800 text-sm" />
+                <p className="text-xs text-gray-600">{row.startTime}</p>
+              </div>
+
+              <div className="flex items-center justify-center mx-2 text-gray-600 font-medium text-xs">
+                to
+              </div>
+
+              <div className="flex items-center gap-1">
+                <FaClock className="text-indigo-800 text-sm" />
+                <p className="text-xs text-gray-600">{row.endTime}</p>
+              </div>
+            </div>
+
+            {/* Event Description */}
+            
+          </motion.li>
+        ))}
+      </AnimatePresence>
+    </ul>
+  )}
+</div>
+
+      
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-white/40 bg-white/60 flex items-center justify-between">
@@ -673,36 +799,34 @@ const Dashboard = () => {
   const [reminders, setReminders] = useState(() => loadCache(rmKey(userId)));
   const [showStats, setShowStats] = useState(false);
 
-  
-
-   useEffect(() => {
-  const handleKeyDown = (e) => {
-    if (e.altKey && e.key.toLowerCase() === "a") {
-      e.preventDefault();
-      if (todaysListRef.current?.openCreateEvent) {
-        todaysListRef.current.openCreateEvent(); // 👈 triggers button click
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.altKey && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        if (todaysListRef.current?.openCreateEvent) {
+          todaysListRef.current.openCreateEvent(); // 👈 triggers button click
+        }
       }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  // const todaysListRef = useRef(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("openEvent") === "1") {
+      setTimeout(() => {
+        todaysListRef.current?.openCreateEvent();
+        // clean up query param so it doesn’t persist
+        navigate(location.pathname, { replace: true });
+      }, 200);
     }
-  };
-
-  window.addEventListener("keydown", handleKeyDown);
-  return () => window.removeEventListener("keydown", handleKeyDown);
-}, []);
-
-const location = useLocation();
-const navigate = useNavigate();
-// const todaysListRef = useRef(null);
-
-useEffect(() => {
-  const params = new URLSearchParams(location.search);
-  if (params.get("openEvent") === "1") {
-    setTimeout(() => {
-      todaysListRef.current?.openCreateEvent();
-      // clean up query param so it doesn’t persist
-      navigate(location.pathname, { replace: true });
-    }, 200);
-  }
-}, [location, navigate]);
+  }, [location, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -812,8 +936,12 @@ useEffect(() => {
     })
     .map((e) => ({
       ts: parseISO(e.startDateTime).getTime(),
-      time: format(parseISO(e.startDateTime), "h:mm a"),
+      // time: format(parseISO(e.startDateTime), "h:mm a"),
+      startTime: format(parseISO(e.startDateTime), "h:mm a"), // Extract start time
+      endTime: format(parseISO(e.endDateTime), "h:mm a"), // Extract end time
       title: e.title || e.summary || "Event",
+      description: e.description || "No description available", // Add description
+      date: format(parseISO(e.startDateTime), "MMM d, yyyy"), // Add formatted date
       tag: "Event",
       color: "indigo",
       location: e.location || "—",
@@ -859,17 +987,13 @@ useEffect(() => {
                 className={`p-2 rounded-2xl w-16 h-16 bg-white/70 border border-white/50 shadow-xl grid place-items-center ${glass}`}
                 whileHover={{ rotate: 2, scale: 1.02 }}
               >
-                <img
-                  src="/SALOGO-black.png"
-                  alt="ASA Logo"
-                  className="object-contain"
-                />
+                <img src="/new.png" alt="ASA Logo" className="object-contain" />
               </motion.div>
               <div className="inline-block ml-2 mt-1 md:mt-3">
                 <h1 className="text-xl font-semibold text-gray-800 tracking-normal leading-tight w-48  md:w-80">
                   Anunay Sharda & Associates
                 </h1>
-                <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest hidden md:block">
+                <p className="text-[#018f95] italic md:text-sm text-[13px] font-light tracking-widest hidden md:block">
                   Strategic Business Solutions
                 </p>
               </div>

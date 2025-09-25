@@ -26,8 +26,10 @@ import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
 import InvoicesPage from "./pages/InvoicesPage";
 import SettingsPage from "./pages/SettingsPage";
-
-
+import Support from "./pages/Support";
+import DeveloperSupport from "./pages/DeveloperSupport";
+import AddServicePage from "./pages/AddServicePage";
+import MessageHistory from "./Components/history/MessageHistory";
 
 // Context & Components
 import { NotesProvider } from "./context/NotesContext";
@@ -58,211 +60,250 @@ const App = () => {
   return (
     <Router>
       <ShortcutHandler>
-      <Routes>
-        {/* Public route */}
-        <Route path="/login" element={<Login />} />
+        <Routes>
+          {/* Public route */}
+          <Route path="/login" element={<Login />} />
 
-        {/* Protected routes */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Dashboard />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Dashboard />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/add-employee"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <AddEmployee />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/add-employee"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AddEmployee />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/all-employees"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <AllEmployees />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/all-employees"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AllEmployees />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-       
+          <Route
+            path="/reminders"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Reminders />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-       
+          <Route
+            path="/tasks"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Tasks />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/reminders"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Reminders />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/clients"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Clients />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/tasks"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Tasks />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+           {/* Add the new route for AddServicePage */}
+          <Route
+            path="/add-service/:clientId"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AddServicePage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/clients"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Clients />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+           <Route
+            path="/message-history/:clientId"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <MessageHistory />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Notifications />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Notifications />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/inbox"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Inbox />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/inbox"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Inbox />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/all-tasks"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <AllTasks />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/all-tasks"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AllTasks />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/departments"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Departments />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/departments"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Departments />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/completed"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Completed />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/completed"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Completed />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/calendar"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <CalendarPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <SettingsPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ProfilePage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <CalendarPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <SettingsPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ProfilePage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/support"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Support />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/developer-support"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <DeveloperSupport />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/leave"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Leave />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/leave"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Leave />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/leavemanagement"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <LeaveManagement />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/leavemanagement"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <LeaveManagement />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/invoice"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <InvoiceForm />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        {/* Add the new InvoicesPage route */}
-        <Route
-          path="/invoices"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <InvoicesPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        {/* <Route
+          <Route
+            path="/invoice"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <InvoiceForm />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          {/* Add the new InvoicesPage route */}
+          <Route
+            path="/invoices"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <InvoicesPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          {/* <Route
           path="/viewinvoices"
           element={
             <ProtectedRoute>
@@ -272,61 +313,61 @@ const App = () => {
             </ProtectedRoute>
           }
         /> */}
-        <Route
-          path="/viewinvoicewithotp"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ViewInvoiceWithOTP />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/viewinvoicewithotp"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ViewInvoiceWithOTP />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/whatsapp"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <WhatsAppPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/whatsapp"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <WhatsAppPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/mail-creation"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <MailCreation />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/mail-creation"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <MailCreation />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/mailbox"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <MailBoxEmbed />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-mailbox"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <AdminMailBoxEmbed />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </ShortcutHandler>
+          <Route
+            path="/mailbox"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <MailBoxEmbed />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-mailbox"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AdminMailBoxEmbed />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </ShortcutHandler>
     </Router>
   );
 };
