@@ -111,7 +111,7 @@ const TaskList = ({
       // payload.clientId = taskForMessage.clientId; // Add clientId to payload if available
 
       // console.log("Sending clientId:", payload.clientId);
-      
+
       // console.log("Sending payload:", payload); // Log the payload to check data
 
       // Send the message to the backend using axios
@@ -668,7 +668,6 @@ const TaskList = ({
         >
           <FontAwesomeIcon icon={faCopy} className="h-5 w-5" />
         </button>
-        
 
         {/* Task Name */}
         <h3 className="text-xl font-bold mb-3 text-gray-800 w-72">
@@ -688,40 +687,72 @@ const TaskList = ({
         </div>
 
         {/* Status */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="font-semibold text-gray-700">Status:</span>
-          <span
-            className="px-3 py-1 rounded-full text-sm font-semibold cursor-pointer shadow-sm"
-            style={{
-              backgroundColor:
-                task.status === "Completed"
-                  ? "#d1fae5"
-                  : task.status === "In Progress"
-                  ? "#fef9c3"
-                  : task.status === "To Do"
-                  ? "#e0f2fe"
-                  : "#f3e8ff",
-              color:
-                task.status === "Completed"
-                  ? "#065f46"
-                  : task.status === "In Progress"
-                  ? "#92400e"
-                  : task.status === "To Do"
-                  ? "#0369a1"
-                  : "#6d28d9",
-            }}
-            onClick={(e) => {
-              e.stopPropagation(); // prevent opening popup
-              const rect = e.target.getBoundingClientRect();
-              setDropdownPosition({
-                top: rect.top + window.scrollY + 35,
-                left: rect.left + window.scrollX,
-              });
-              setEditingStatus(task._id);
-            }}
-          >
-            {task.status}
-          </span>
+        <div className="flex items-center gap-2 mb-3 justify-between">
+          <div>
+            <span className="font-semibold text-gray-700">Status:</span>
+            <span
+              className="px-3 py-1 ml-2 rounded-full text-sm font-semibold cursor-pointer shadow-sm"
+              style={{
+                backgroundColor:
+                  task.status === "Completed"
+                    ? "#d1fae5"
+                    : task.status === "In Progress"
+                    ? "#fef9c3"
+                    : task.status === "To Do"
+                    ? "#e0f2fe"
+                    : "#f3e8ff",
+                color:
+                  task.status === "Completed"
+                    ? "#065f46"
+                    : task.status === "In Progress"
+                    ? "#92400e"
+                    : task.status === "To Do"
+                    ? "#0369a1"
+                    : "#6d28d9",
+              }}
+              onClick={(e) => {
+                e.stopPropagation(); // prevent opening popup
+                const rect = e.target.getBoundingClientRect();
+                setDropdownPosition({
+                  top: rect.top + window.scrollY + 35,
+                  left: rect.left + window.scrollX,
+                });
+                setEditingStatus(task._id);
+              }}
+            >
+              {task.status}
+            </span>
+          </div>
+          <div className="items-center flex mr-12">
+            <span className="font-semibold text-gray-700"> message:</span>
+            <span>
+              <button
+                onClick={() => {
+                  setTaskForMessage(task); // Set the current task for the popup
+                  setOpenMessagePopup(true); // Open the popup
+                }}
+                className="text-indigo-600 hover:text-indigo-800 focus:outline-none py-3 px-2"
+                title="Send Message"
+              >
+                {/* <FontAwesomeIcon icon={faPen} className="h-5 w-5" /> */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-send-icon lucide-send"
+                >
+                  <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+                  <path d="m21.854 2.147-10.94 10.939" />
+                </svg>
+              </button>
+            </span>
+          </div>
         </div>
 
         {/* Assigned By */}
@@ -733,6 +764,7 @@ const TaskList = ({
         </p>
 
         {/* 🔹 Clickable text instead of whole card */}
+
         <button
           onClick={() => setOpenTaskPopup(task._id)}
           className="text-indigo-600 text-md font-medium hover:underline focus:outline-none underline mt-1.5"
@@ -740,7 +772,15 @@ const TaskList = ({
           View Details
         </button>
       </div>
-      
+      {openMessagePopup && taskForMessage?._id === task._id && (
+        <MessagePopup
+          isOpen={openMessagePopup}
+          onClose={() => setOpenMessagePopup(false)}
+          task={taskForMessage}
+          // clientId={taskForMessage.clientId}
+          sendMessage={handleMessageSend}
+        />
+      )}
 
       {/* Popup for details */}
       {openTaskPopup === task._id && (

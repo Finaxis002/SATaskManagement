@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  MessageSquare, 
-  Calendar, 
-  RefreshCw, 
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  MessageSquare,
+  Calendar,
+  RefreshCw,
   AlertCircle,
   Clock,
   Search,
@@ -13,8 +13,8 @@ import {
   Download,
   TrendingUp,
   Send,
-  MessageCircle
-} from 'lucide-react';
+  MessageCircle,
+} from "lucide-react";
 
 const MessageHistory = () => {
   const { clientId } = useParams();
@@ -23,15 +23,17 @@ const MessageHistory = () => {
   const [filteredMessages, setFilteredMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterBy, setFilterBy] = useState('all');
-  const [clientName, setClientName] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterBy, setFilterBy] = useState("all");
+  const [clientName, setClientName] = useState("");
 
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const response = await axios.get(`https://taskbe.sharda.co.in/api/message-history?clientId=${clientId}`);
-        if (response.headers['content-type']?.includes('application/json')) {
+        const response = await axios.get(
+          `http://localhost:1100/api/message-history?clientId=${clientId}`
+        );
+        if (response.headers["content-type"]?.includes("application/json")) {
           setMessages(response.data);
           setFilteredMessages(response.data);
           if (response.data.length > 0 && response.data[0].clientName) {
@@ -52,15 +54,18 @@ const MessageHistory = () => {
   useEffect(() => {
     let filtered = messages;
     if (searchTerm) {
-      filtered = filtered.filter(message =>
-        message.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        message.sentBy.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (message) =>
+          message.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          message.sentBy.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    if (filterBy !== 'all') {
-      filtered = filtered.filter(message => {
-        if (filterBy === 'sent') return message.sentBy !== clientName && message.sentBy !== 'Client';
-        if (filterBy === 'received') return message.sentBy === clientName || message.sentBy === 'Client';
+    if (filterBy !== "all") {
+      filtered = filtered.filter((message) => {
+        if (filterBy === "sent")
+          return message.sentBy !== clientName && message.sentBy !== "Client";
+        if (filterBy === "received")
+          return message.sentBy === clientName || message.sentBy === "Client";
         return true;
       });
     }
@@ -74,13 +79,20 @@ const MessageHistory = () => {
   };
 
   const handleExport = () => {
-    const csvContent = messages.map(msg => 
-      `"${msg.sentBy}","${msg.message.replace(/"/g, '""')}","${new Date(msg.sentAt).toLocaleString()}"`
-    ).join('\n');
-    const blob = new Blob([`Sender,Message,Date\n${csvContent}`], { type: 'text/csv' });
+    const csvContent = messages
+      .map(
+        (msg) =>
+          `"${msg.sentBy}","${msg.message.replace(/"/g, '""')}","${new Date(
+            msg.sentAt
+          ).toLocaleString()}"`
+      )
+      .join("\n");
+    const blob = new Blob([`Sender,Message,Date\n${csvContent}`], {
+      type: "text/csv",
+    });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
+    const a = document.createElement("a");
+    a.style.display = "none";
     a.href = url;
     a.download = `message-history-${clientName || clientId}.csv`;
     document.body.appendChild(a);
@@ -92,7 +104,7 @@ const MessageHistory = () => {
     const now = new Date();
     const messageDate = new Date(date);
     const diff = Math.floor((now - messageDate) / 1000);
-    if (diff < 60) return 'Just now';
+    if (diff < 60) return "Just now";
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
@@ -106,7 +118,9 @@ const MessageHistory = () => {
           <div className="bg-white shadow rounded-lg p-8">
             <div className="flex items-center space-x-3">
               <RefreshCw className="w-5 h-5 animate-spin text-indigo-600" />
-              <span className="text-base font-medium text-gray-700">Loading communication history...</span>
+              <span className="text-base font-medium text-gray-700">
+                Loading communication history...
+              </span>
             </div>
           </div>
         </div>
@@ -121,7 +135,9 @@ const MessageHistory = () => {
           <div className="bg-white shadow rounded-lg p-8 max-w-md w-full mx-4">
             <div className="text-center">
               <AlertCircle className="mx-auto h-12 w-12 text-red-400" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">Unable to load messages</h3>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">
+                Unable to load messages
+              </h3>
               <p className="mt-2 text-sm text-gray-500">{error}</p>
               <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
                 <button
@@ -151,8 +167,12 @@ const MessageHistory = () => {
           <div className="bg-white shadow rounded-lg p-8 max-w-md w-full mx-4">
             <div className="text-center">
               <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">No communication history</h3>
-              <p className="mt-2 text-sm text-gray-500">There are no messages recorded for this client yet.</p>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">
+                No communication history
+              </h3>
+              <p className="mt-2 text-sm text-gray-500">
+                There are no messages recorded for this client yet.
+              </p>
               <div className="mt-6">
                 <button
                   onClick={() => navigate(-1)}
@@ -170,9 +190,9 @@ const MessageHistory = () => {
 
   return (
     // keep page scrollable too
-    <div className="min-h-screen bg-gray-50">
+    <div className="md:min-h-screen  bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -183,7 +203,9 @@ const MessageHistory = () => {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Communication History</h1>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  Communication History
+                </h1>
                 <p className="text-sm text-gray-500">
                   {clientName ? `${clientName}` : `Client ID: ${clientId}`}
                 </p>
@@ -212,45 +234,67 @@ const MessageHistory = () => {
       {/* Body */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         {/* Analytics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5 flex items-center">
-              <MessageSquare className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <div className="ml-5">
-                <div className="text-sm font-medium text-gray-500 truncate">Total Messages</div>
-                <div className="text-lg font-semibold text-gray-900">{messages.length}</div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5 flex items-center">
-              <Send className="h-6 w-6 text-blue-600 flex-shrink-0" />
-              <div className="ml-5">
-                <div className="text-sm font-medium text-gray-500 truncate">Received</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {messages.filter(m => m.sentBy === clientName || m.sentBy === 'Client').length}
+        <div className="hidden md:block">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2 ">
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5 flex items-center">
+                <MessageSquare className="h-6 w-6 text-gray-600 flex-shrink-0" />
+                <div className="ml-5">
+                  <div className="text-sm font-medium text-gray-500 truncate">
+                    Total Messages
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {messages.length}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5 flex items-center">
-              <TrendingUp className="h-6 w-6 text-green-600 flex-shrink-0" />
-              <div className="ml-5">
-                <div className="text-sm font-medium text-gray-500 truncate">Sent</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {messages.filter(m => m.sentBy !== clientName && m.sentBy !== 'Client').length}
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5 flex items-center">
+                <Send className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                <div className="ml-5">
+                  <div className="text-sm font-medium text-gray-500 truncate">
+                    Received
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {
+                      messages.filter(
+                        (m) => m.sentBy === clientName || m.sentBy === "Client"
+                      ).length
+                    }
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5 flex items-center">
-              <Clock className="h-6 w-6 text-purple-600 flex-shrink-0" />
-              <div className="ml-5">
-                <div className="text-sm font-medium text-gray-500 truncate">Latest Activity</div>
-                <div className="text-sm font-medium text-gray-900">
-                  {messages.length > 0 ? formatRelativeTime(messages[0].sentAt) : 'N/A'}
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5 flex items-center">
+                <TrendingUp className="h-6 w-6 text-green-600 flex-shrink-0" />
+                <div className="ml-5">
+                  <div className="text-sm font-medium text-gray-500 truncate">
+                    Sent
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {
+                      messages.filter(
+                        (m) => m.sentBy !== clientName && m.sentBy !== "Client"
+                      ).length
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5 flex items-center">
+                <Clock className="h-6 w-6 text-purple-600 flex-shrink-0" />
+                <div className="ml-5">
+                  <div className="text-sm font-medium text-gray-500 truncate">
+                    Latest Activity
+                  </div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {messages.length > 0
+                      ? formatRelativeTime(messages[0].sentAt)
+                      : "N/A"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -276,17 +320,18 @@ const MessageHistory = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Filter className="h-5 w-5 text-gray-400" />
+                <Filter className="h-5 w-5 text-gray-400 hidden md:block" />
                 <select
                   value={filterBy}
                   onChange={(e) => setFilterBy(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  className=" hidden md:block md:w-full pl-3 pr-10 py-2 md:text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 >
                   <option value="all">All Communications</option>
                   <option value="sent">Outbound Messages</option>
                   <option value="received">Inbound Messages</option>
                 </select>
               </div>
+              
             </div>
           </div>
         </div>
@@ -294,9 +339,12 @@ const MessageHistory = () => {
         {/* Messages Timeline (SCROLLABLE) */}
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-2 sm:px-6 border-b border-gray-200">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Message Timeline</h3>
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Message Timeline
+            </h3>
             <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Complete communication history with timestamps and message details.
+              Complete communication history with timestamps and message
+              details.
             </p>
           </div>
 
@@ -309,7 +357,7 @@ const MessageHistory = () => {
               pr-2
               scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100
             "
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
             <div className="flow-root">
               {/* removed -mb-8 to avoid clipping the last item */}
@@ -324,36 +372,49 @@ const MessageHistory = () => {
                         <div>
                           <span
                             className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white ${
-                              message.sentBy === clientName || message.sentBy === 'Client'
-                                ? 'bg-blue-500'
-                                : 'bg-green-500'
+                              message.sentBy === clientName ||
+                              message.sentBy === "Client"
+                                ? "bg-blue-500"
+                                : "bg-green-500"
                             }`}
                           >
-                            {message.sentBy === clientName || message.sentBy === 'Client'
-                              ? <MessageCircle className="h-4 w-4 text-white" />
-                              : <Send className="h-4 w-4 text-white" />
-                            }
+                            {message.sentBy === clientName ||
+                            message.sentBy === "Client" ? (
+                              <MessageCircle className="h-4 w-4 text-white" />
+                            ) : (
+                              <Send className="h-4 w-4 text-white" />
+                            )}
                           </span>
                         </div>
                         <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <p className="text-sm font-medium text-gray-900">{message.sentBy}</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {message.sentBy}
+                              </p>
                               <span
                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  message.sentBy === clientName || message.sentBy === 'Client'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-green-100 text-green-800'
+                                  message.sentBy === clientName ||
+                                  message.sentBy === "Client"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-green-100 text-green-800"
                                 }`}
                               >
-                                {message.sentBy === clientName || message.sentBy === 'Client' ? 'Inbound' : 'Outbound'}
+                                {message.sentBy === clientName ||
+                                message.sentBy === "Client"
+                                  ? "Inbound"
+                                  : "Outbound"}
                               </span>
                             </div>
                             <div className="bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
-                              <p className="text-sm text-gray-900 leading-relaxed">{message.message}</p>
+                              <p className="text-sm text-gray-900 leading-relaxed">
+                                {message.message}
+                              </p>
                             </div>
                             {message.clientName && (
-                              <p className="mt-2 text-xs text-gray-500">Client: {message.clientName}</p>
+                              <p className="mt-2 text-xs text-gray-500">
+                                Client: {message.clientName}
+                              </p>
                             )}
                           </div>
                           <div className="text-right text-sm whitespace-nowrap text-gray-500">
@@ -380,13 +441,15 @@ const MessageHistory = () => {
               {filteredMessages.length === 0 && searchTerm && (
                 <div className="text-center py-12">
                   <Search className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No messages found</h3>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    No messages found
+                  </h3>
                   <p className="mt-1 text-sm text-gray-500">
                     No messages match your search criteria: "{searchTerm}"
                   </p>
                   <div className="mt-6">
                     <button
-                      onClick={() => setSearchTerm('')}
+                      onClick={() => setSearchTerm("")}
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                       Clear search
