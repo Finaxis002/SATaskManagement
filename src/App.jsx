@@ -33,8 +33,12 @@ import MessageHistory from "./Components/history/MessageHistory";
 
 // Context & Components
 import { NotesProvider } from "./context/NotesContext";
+
+import InvoiceTab from "./pages/InvoiceTab";
+
 import ShortcutHandler from "./Components/ShortcutHandler";
 import ProtectedRoute from "./Components/ProtectedRoute";
+
 
 const App = () => {
   function MailBoxEmbed() {
@@ -98,6 +102,7 @@ const App = () => {
             }
           />
 
+
           <Route
             path="/reminders"
             element={
@@ -130,6 +135,7 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+
 
            {/* Add the new route for AddServicePage */}
           <Route
@@ -282,47 +288,51 @@ const App = () => {
             }
           />
 
-          <Route
-            path="/invoice"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <InvoiceForm />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          {/* Add the new InvoicesPage route */}
-          <Route
-            path="/invoices"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <InvoicesPage />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+
+        
           {/* <Route
           path="/viewinvoices"
           element={
             <ProtectedRoute>
               <MainLayout>
                 <ViewInvoices />
+
+        {/* <Route
+          path="/invoice"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoiceForm />
+
               </MainLayout>
             </ProtectedRoute>
           }
         /> */}
-          <Route
-            path="/viewinvoicewithotp"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <ViewInvoiceWithOTP />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+
+        {/* Add the new InvoicesPage route for mobile view*/}
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoicesPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/viewinvoicewithotp"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ViewInvoiceWithOTP />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+
 
           <Route
             path="/whatsapp"
@@ -346,28 +356,40 @@ const App = () => {
             }
           />
 
-          <Route
-            path="/mailbox"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <MailBoxEmbed />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin-mailbox"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <AdminMailBoxEmbed />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </ShortcutHandler>
+        <Route
+          path="/mailbox"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-mailbox"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <AdminMailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* <Route 
+          path="/invoice-tab"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoiceTab />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        /> */}
+      </Routes>
+    </ShortcutHandler>
+
     </Router>
   );
 };

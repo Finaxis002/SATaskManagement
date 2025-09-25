@@ -18,6 +18,8 @@ import {
   FaGolfBall,
   FaMailBulk,
   FaEnvelope,
+  FaDrupal,
+  FaBusinessTime,
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
@@ -107,7 +109,72 @@ useEffect(() => {
   useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
 
   useNotificationSocket(setNotificationCount);
-  // console.log("🔢 Notification count state:", notificationCount);
+  
+  // In your Task Management sidebar component
+const openInvoiceTab = () => {
+  const token = localStorage.getItem('authToken');
+  
+  if (!token) {
+    Swal.fire('Error', 'Please login first', 'error');
+    return;
+  }
+
+  const isLocal = window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1';
+  
+  const invoiceUrl = isLocal 
+    ? 'http://localhost:5174'
+    : 'https://invoicing.sharda.co.in';
+  
+  const newWindow = window.open(invoiceUrl, '_blank');
+  
+  if (newWindow) {
+    // Listen for acknowledgment from the invoicing app
+    const handleAcknowledgment = (event) => {
+      if (event.data.type === 'tokenReceived' && event.data.status === 'success') {
+        console.log('Token successfully received by invoicing app');
+        window.removeEventListener('message', handleAcknowledgment);
+      }
+    };
+    
+    window.addEventListener('message', handleAcknowledgment);
+    
+    // Send token via postMessage
+    let attempts = 0;
+    const maxAttempts = 15; // Try for 7.5 seconds (500ms * 15)
+    
+    const trySendToken = () => {
+      try {
+        newWindow.postMessage(
+          { 
+            type: 'authToken', 
+            token: token,
+            source: 'taskManagement',
+            timestamp: Date.now()
+          },
+          isLocal ? 'http://localhost:5174' : 'https://invoicing.sharda.co.in'
+        );
+        console.log('Token sent via postMessage, attempt', attempts + 1);
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(trySendToken, 500);
+        }
+      } catch (error) {
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(trySendToken, 500);
+        } else {
+          console.error('Failed to send token after multiple attempts:', error);
+          window.removeEventListener('message', handleAcknowledgment);
+        }
+      }
+    };
+    
+    // Start trying to send the token
+    setTimeout(trySendToken, 1000);
+  }
+};
 
 
   return (
@@ -261,31 +328,34 @@ useEffect(() => {
           />
         )}
 
-        {role === "admin" && (
+        {/* {role === "admin" && (
           <SidebarItem
             icon={<FaMoneyBill className="text-xl" />}
             label="Invoice"
             to="/invoice"
             expanded={expanded}
           />
-        )}
-{/* 
-        {role === "admin" && (
-          <SidebarItem
-            icon={<FaDochub className="text-xl" />}
-            label="View Invoice"
-            to="/viewinvoices"
-            expanded={expanded}
-          />
         )} */}
+
         {role === "admin" && (
           <SidebarItem
-            icon={<FaDochub className="text-xl" />}
-            label="View Invoice"
+            icon={<FaMoneyBill className="text-xl" />}
+            label="Invoicing"
             to="/viewinvoicewithotp"
             expanded={expanded}
           />
         )}
+
+        
+{/* {role === "admin" && (
+  <SidebarItem
+    icon={<FaBusinessTime className="text-xl" />}
+    label="Invoicing"
+    onClick={openInvoiceTab}
+    expanded={expanded}
+  />
+)} */}
+        
 
         {/* <SidebarItem
           icon={<FaEnvelope className="text-xl" />}
