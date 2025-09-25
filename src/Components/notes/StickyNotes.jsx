@@ -1,3 +1,4 @@
+// StickyNotes
 import React, { useState, useEffect } from "react";
 import { FaStickyNote, FaTimes, FaPlus, FaTrash, FaThumbtack } from "react-icons/fa";
 import NoteContainer from "./NoteContainer";

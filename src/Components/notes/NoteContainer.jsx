@@ -146,4 +146,5 @@ function NoteContainer({ notes = [], setNotes, pinNote, deleteNote }) {
   );
 }
 
+
 export default NoteContainer;

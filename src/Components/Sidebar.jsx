@@ -244,4 +244,5 @@ const SidebarItem = ({ icon, label, to, onClick, expanded, badge }) => (
   </NavLink>
 );
 
+
 export default Sidebar;

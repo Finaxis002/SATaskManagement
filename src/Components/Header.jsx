@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { FaBell, FaUserCircle, FaSearch, FaSignOutAlt, FaHome } from "react-icons/fa";
+import { FaBell, FaUserCircle, FaSearch, FaSignOutAlt, FaHome, FaNewspaper, FaStar } from "react-icons/fa";
 import { motion } from "framer-motion";
 import useNotificationSocket from "../hook/useNotificationSocket";
 import StickyNotes from "./notes/StickyNotes";
 import QuickActionsDropdown from "./QuickActionsDropdown";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-// import { listUpdates,  } from "../utils/wnDB"; // ✅ NEW import
 
 /* ---------------------------- Inline Modal UI ---------------------------- */
 function WhatsNewModal({ open, onClose, items = [], loading = false, error = "" }) {
@@ -53,8 +52,8 @@ function WhatsNewModal({ open, onClose, items = [], loading = false, error = "" 
         {/* Header */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 text-white flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white text-xs font-semibold">★</span>
-            <h2 className="text-base sm:text-lg font-semibold">What’s New</h2>
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-yellow-400 text-xs font-semibold">★</span>
+            <h2 className="text-base sm:text-lg font-semibold">What's New</h2>
           </div>
           <button
             onClick={onClose}
@@ -141,7 +140,6 @@ function WhatsNewModal({ open, onClose, items = [], loading = false, error = "" 
   );
 }
 
-
 /* --------------------------------- Header -------------------------------- */
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -156,6 +154,10 @@ const Header = () => {
   const [whatsNewItems, setWhatsNewItems] = useState([]);
   const [wnLoading, setWnLoading] = useState(false);
   const [wnError, setWnError] = useState("");
+  
+  // Add state for What's New count and last seen count
+  const [whatsNewCount, setWhatsNewCount] = useState(0);
+  const [lastSeenCount, setLastSeenCount] = useState(0);
 
   const navigate = useNavigate();
   useNotificationSocket(setNotificationCount);
@@ -168,8 +170,13 @@ const Header = () => {
     date: u.createdAt ? new Date(u.createdAt).toLocaleString() : "",
   });
 
-  const fetchWhatsNew = async () => {
+  const fetchWhatsNew = async (updateCountOnly = false) => {
     try {
+      if (!updateCountOnly) {
+        setWnLoading(true);
+        setWnError("");
+      }
+      
       const token = localStorage.getItem("authToken");
       if (token) {
         const res = await axios.get("http://localhost:1100/api/UpdateGet", {
@@ -186,18 +193,75 @@ const Header = () => {
           desc: u.description,
           tags: u.tags || [],
           date: u.createdAt ? new Date(u.createdAt).toLocaleString() : "",
+          // Store the original createdAt for sorting
+          createdAt: u.createdAt,
         }));
 
-        setWhatsNewItems(mappedItems);
-        console.log("Mapped Items:", mappedItems);
-        console.log("Axios Response Data:", res.data);
+        // Sort items by createdAt in descending order (newest first)
+        const sortedItems = mappedItems.sort((a, b) => {
+          if (!a.createdAt && !b.createdAt) return 0;
+          if (!a.createdAt) return 1;
+          if (!b.createdAt) return -1;
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
+        // Update items only if not just checking count
+        if (!updateCountOnly) {
+          setWhatsNewItems(sortedItems);
+        }
+        
+        // Always update count
+        setWhatsNewCount(sortedItems.length);
+        
+        if (!updateCountOnly) {
+          console.log("Sorted Items (newest first):", sortedItems);
+          console.log("Axios Response Data:", res.data);
+        }
       }
     } catch (apiErr) {
-      console.warn("WhatsNew server merge failed:", apiErr?.message || apiErr);
+      if (!updateCountOnly) {
+        console.warn("WhatsNew server merge failed:", apiErr?.message || apiErr);
+        setWnError("Failed to load updates. Please try again.");
+      }
+    } finally {
+      if (!updateCountOnly) {
+        setWnLoading(false);
+      }
     }
-
   };
 
+  // Load last seen count from localStorage on component mount
+  useEffect(() => {
+    const savedLastSeenCount = localStorage.getItem("whatsNewLastSeen");
+    if (savedLastSeenCount) {
+      setLastSeenCount(parseInt(savedLastSeenCount, 10));
+    }
+    // Initial fetch to get current count
+    fetchWhatsNew();
+  }, []);
+
+  // Calculate unread count
+  const unreadCount = Math.max(0, whatsNewCount - lastSeenCount);
+
+  // Handle What's New button click
+  const handleWhatsNewClick = () => {
+    setShowWhatsNew(true);
+    // Mark all current items as seen
+    localStorage.setItem("whatsNewLastSeen", whatsNewCount.toString());
+    setLastSeenCount(whatsNewCount);
+    // Fetch fresh data when opening modal
+    fetchWhatsNew(false);
+  };
+
+  // Periodically check for new updates (optional)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only update count, don't show loading or update items unless modal is open
+      fetchWhatsNew(true);
+    }, 30000); // Check every 30 seconds instead of 5 minutes
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const onEnter = (e) => {
@@ -230,6 +294,7 @@ const Header = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("name");
     localStorage.removeItem("role");
+    localStorage.removeItem("whatsNewLastSeen");
     window.location.href = "/login";
   };
   const handleSearchChange = (e) => setSearchTerm(e.target.value.trim());
@@ -267,19 +332,45 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-3 ml-6 relative">
-          {/* What’s New */}
+          {/* What's New - Desktop: Button, Mobile: Icon */}
           <motion.button
-            onClick={() => {
-              setShowWhatsNew(true);
-              fetchWhatsNew(); // ✅ load immediately on click
-            }}
-            className="bg-indigo-600 text-white text-sm px-3 py-2 rounded-full hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
+            onClick={handleWhatsNewClick}
+            className="relative focus:outline-none focus:ring-2 focus:ring-indigo-300 transition group"
             aria-label="What's New"
-            title="What’s New"
+            title="What's New"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
-            What’s New
+            {/* Desktop View - Button with Text */}
+            <span className="hidden sm:flex bg-indigo-600 text-white text-sm px-3 py-2 rounded-full hover:opacity-90 items-center gap-2">
+              <FaStar className="text-yellow-300" />
+              What's New
+            </span>
+            
+            {/* Mobile View - Icon Only with Hover Tooltip */}
+            <div className="sm:hidden relative ">
+              <span className="bg-indigo-600 rounded-full px-3 py-2 hover:bg-gray-200 flex items-center">
+                <FaStar className="text-yellow-400 text-base" />
+              </span>
+              
+              {/* Tooltip for mobile */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-20">
+                What's New
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+              </div>
+            </div>
+            
+            {/* Count Badge - Shows on both desktop and mobile */}
+            {unreadCount > 0 && (
+              <motion.span
+                className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold shadow-md z-10"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                whileHover={{ scale: 1.1 }}
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </motion.span>
+            )}
           </motion.button>
 
           {/* Notifications */}

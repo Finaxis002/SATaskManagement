@@ -1,3 +1,4 @@
+// StickyNotesDashboard
 import React, { useState, useEffect } from "react";
 import { FaStickyNote, FaPlus } from "react-icons/fa";
 import NoteContainer from "./NoteContainer";
