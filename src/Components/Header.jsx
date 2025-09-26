@@ -1,3 +1,4 @@
+// header
 import { useState, useEffect, useCallback } from "react";
 import { FaBell, FaUserCircle, FaSearch, FaSignOutAlt, FaHome, FaNewspaper, FaStar } from "react-icons/fa";
 import { motion } from "framer-motion";
