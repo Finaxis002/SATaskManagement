@@ -116,7 +116,7 @@ const TaskList = ({
 
       // Send the message to the backend using axios
       const response = await axios.post(
-        "https://taskbe.sharda.co.in/api/message-history",
+        "http://localhost:1100/api/message-history",
         payload
       );
       // console.log("Sending clientId:", payload.clientId);
@@ -1788,7 +1788,7 @@ const TaskList = ({
               lowPriorityTasks.length === 0 ? (
               <tr>
                 <td
-                  colSpan={role === "admin" ? 11 : 10}
+                  colSpan={role === "admin" ? 11 : 11}
                   className="text-center py-8 text-gray-500 select-none"
                 >
                   🚫 No tasks Assigned Yet.
@@ -1800,7 +1800,7 @@ const TaskList = ({
                   <>
                     <tr>
                       <td
-                        colSpan={role === "admin" ? 12 : 10}
+                        colSpan={role === "admin" ? 12 : 11}
                         className="bg-red-50 text-red-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
                         style={{ borderColor: colors.border }}
                       >
@@ -1817,7 +1817,7 @@ const TaskList = ({
                   <>
                     <tr>
                       <td
-                        colSpan={role === "admin" ? 12 : 10}
+                        colSpan={role === "admin" ? 12 : 11}
                         className="bg-yellow-50 text-yellow-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
                         style={{ borderColor: colors.border }}
                       >
@@ -1834,7 +1834,7 @@ const TaskList = ({
                   <>
                     <tr>
                       <td
-                        colSpan={role === "admin" ? 12 : 10}
+                        colSpan={role === "admin" ? 12 : 11}
                         className="bg-green-100 text-green-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
                         style={{ borderColor: colors.border }}
                       >
