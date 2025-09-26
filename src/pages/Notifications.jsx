@@ -22,9 +22,6 @@ const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
-
-
-
 const NotificationItem = React.memo(
   ({ notification, onMarkAsRead, selectedNotifications, toggleSelectNotification }) => {
     const isUnread = !notification.read;
@@ -71,24 +68,11 @@ const NotificationItem = React.memo(
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-gray-100 text-gray-700"
                 }`}
-              >
-                {notification.priority}
-              </span>
-            )}
-            {notification.status && (
-              <span
-                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
-                  notification.status === "completed"
-                    ? "bg-green-100 text-green-800"
-                    : notification.status === "pending"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                Status: {notification.status}
-              </span>
-            )}
-          </div>
+            >
+              Status: {notification.status}
+            </span>
+          )}
+        </div>
 
           {notification.updatedBy &&
             (() => {
@@ -161,9 +145,11 @@ const NotificationItem = React.memo(
           {notification.read ? "Read" : "Mark as Read"}
         </button>
       </div>
+      </div>
     );
   }
 );
+
 
 
 
