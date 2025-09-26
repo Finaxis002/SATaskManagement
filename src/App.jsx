@@ -24,6 +24,9 @@ import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
 import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
+// ⬇️ NEW: import the Updates page
+import Updates from "./pages/Updates";
+
 import InvoicesPage from "./pages/InvoicesPage";
 import SettingsPage from "./pages/SettingsPage";
 import Support from "./pages/Support";
@@ -38,6 +41,7 @@ import InvoiceTab from "./pages/InvoiceTab";
 
 import ShortcutHandler from "./Components/ShortcutHandler";
 import ProtectedRoute from "./Components/ProtectedRoute";
+
 
 
 const App = () => {
@@ -299,6 +303,7 @@ const App = () => {
 
         {/* <Route
           path="/invoice"
+
           element={
             <ProtectedRoute>
               <MainLayout>
@@ -307,9 +312,9 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
-        /> */}
 
         {/* Add the new InvoicesPage route for mobile view*/}
+
         <Route
           path="/invoices"
           element={
@@ -320,7 +325,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/viewinvoicewithotp"
           element={
@@ -331,6 +336,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         
 
 
@@ -356,6 +362,7 @@ const App = () => {
             }
           />
 
+
         <Route
           path="/mailbox"
           element={
@@ -366,6 +373,121 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/admin-mailbox"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <AdminMailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+           
+
+
+        {/* <Route 
+          path="/invoice-tab"
+
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoiceTab />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+
+        />
+
+        <Route
+          path="/leave"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Leave />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/leavemanagement"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <LeaveManagement />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/invoice"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InvoiceForm />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* <Route
+          path="/viewinvoices"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ViewInvoices />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        /> */}
+
+        <Route
+          path="/viewinvoicewithotp"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ViewInvoiceWithOTP />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/whatsapp"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <WhatsAppPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mail-creation"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MailCreation />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mailbox"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/admin-mailbox"
           element={
@@ -377,21 +499,24 @@ const App = () => {
           }
         />
 
-        {/* <Route 
-          path="/invoice-tab"
+        {/* ⬇️ NEW: /updates route (Sidebar link will open this) */}
+        <Route
+          path="/updates"
           element={
             <ProtectedRoute>
               <MainLayout>
-                <InvoiceTab />
+                <Updates />
               </MainLayout>
             </ProtectedRoute>
           }
-        /> */}
+        />
+
       </Routes>
     </ShortcutHandler>
 
     </Router>
   );
 };
+
 
 export default App;

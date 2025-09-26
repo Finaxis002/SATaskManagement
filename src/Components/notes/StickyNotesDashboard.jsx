@@ -1,3 +1,4 @@
+// StickyNotesDashboard
 import React, { useState, useEffect } from "react";
 import { FaStickyNote, FaPlus } from "react-icons/fa";
 import NoteContainer from "./NoteContainer";
@@ -10,14 +11,29 @@ const StickyNotesDashboard = () => {
 
   const token = localStorage.getItem("authToken");
 
-  // Fetch all notes
+  // Fetch all notes on mount
   const fetchNotes = async () => {
     try {
       const res = await fetch(API_BASE, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      setNotes(Array.isArray(data) ? data : []);
+      if (!Array.isArray(data)) return setNotes([]);
+
+      // Load pinned notes from localStorage
+      const storedPinnedNotes = JSON.parse(localStorage.getItem("pinnedNotes")) || [];
+
+      const updatedNotes = data.map((note) => ({
+        ...note,
+        pinned: storedPinnedNotes.includes(note._id),
+      }));
+
+      // Separate pinned and unpinned notes
+      const pinnedNotes = updatedNotes.filter((note) => note.pinned);
+      const unpinnedNotes = updatedNotes.filter((note) => !note.pinned);
+
+      // Set notes with pinned notes on top
+      setNotes([...pinnedNotes, ...unpinnedNotes]);
     } catch {
       setNotes([]);
     }
@@ -27,23 +43,68 @@ const StickyNotesDashboard = () => {
     fetchNotes();
   }, []);
 
-  // Create a note
+  // Create a new note (optimistic rendering)
   const createNote = async () => {
     setCreating(true);
-    const res = await fetch(API_BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content: "", color: "#fffde7" }),
-    });
-    const newNote = await res.json();
-    setNotes((prev) => [...prev, newNote]); // ✅ update instantly
-    setCreating(false);
+
+    // Create a temporary note for instant display
+    const tempNote = {
+      _id: `temp-${Date.now()}`, // temporary unique ID
+      content: "",
+      color: "#fffde7",
+      pinned: false,
+    };
+
+    setNotes((prev) => [...prev, tempNote]);
+
+    try {
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: "", color: "#fffde7" }),
+      });
+
+      const newNote = await res.json();
+
+      // Replace temporary note with actual note from backend
+      setNotes((prev) =>
+        prev.map((n) => (n._id === tempNote._id ? newNote : n))
+      );
+    } catch (err) {
+      // Remove temporary note if API call fails
+      setNotes((prev) => prev.filter((n) => n._id !== tempNote._id));
+      console.error("Failed to create note:", err);
+    } finally {
+      setCreating(false);
+    }
   };
 
-  // Delete note (passed to NoteContainer)
+  // Pin or unpin a note
+  const pinNote = (id) => {
+    setNotes((prevNotes) => {
+      const updatedNotes = prevNotes.map((note) =>
+        note._id === id ? { ...note, pinned: !note.pinned } : note
+      );
+
+      // Separate pinned and unpinned notes
+      const pinnedNotes = updatedNotes.filter((note) => note.pinned);
+      const unpinnedNotes = updatedNotes.filter((note) => !note.pinned);
+
+      // Ensure pinned notes are at the top
+      const reorderedNotes = [...pinnedNotes, ...unpinnedNotes];
+
+      // Save pinned note IDs to localStorage
+      const pinnedNoteIds = pinnedNotes.map((note) => note._id);
+      localStorage.setItem("pinnedNotes", JSON.stringify(pinnedNoteIds)); // Save pinned note IDs to localStorage
+
+      return reorderedNotes;
+    });
+  };
+
+  // Delete a note
   const deleteNote = async (id) => {
     await fetch(`${API_BASE}/${id}`, {
       method: "DELETE",
@@ -53,7 +114,7 @@ const StickyNotesDashboard = () => {
   };
 
   return (
-    <div className="bg-yellow-200 rounded-xl shadow-lg border border-yellow-100 p-2 py-4 w-full max-w-xl relative">
+    <div className="bg-yellow-200 rounded-xl shadow-lg border border-yellow-100 p-2 py-4 w-full max-w-xl relative hidden xl:block">
       {/* Header */}
       <div className="flex items-center justify-between px-4">
         <h2 className="text-xl font-bold text-yellow-900 flex items-center gap-2">
@@ -70,9 +131,9 @@ const StickyNotesDashboard = () => {
         </button>
       </div>
 
-      {/* Notes */}
-       <div className=" ">
-        <NoteContainer notes={notes} setNotes={setNotes} onDelete={deleteNote} />
+      {/* Notes - Hidden on mobile (phone) views */}
+      <div className="mt-4 hidden sm:block">
+        <NoteContainer notes={notes} setNotes={setNotes} pinNote={pinNote} deleteNote={deleteNote} />
       </div>
     </div>
   );

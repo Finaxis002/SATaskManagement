@@ -24,13 +24,12 @@ import {
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
 import useNotificationSocket from "../hook/useNotificationSocket";
-import icon from "/icon.png";
+import icon from "/icon.png";   
 import axios from "axios";
 
 const socket = io('https://taskbe.sharda.co.in', {
   query: { token: localStorage.getItem("authToken") },
 });
-
 
 const Sidebar = () => {
   const [role, setRole] = useState("");
@@ -41,25 +40,23 @@ const Sidebar = () => {
 
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
 
-const fetchPendingLeaveCount = async () => {
-  try {
-    const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
-    console.log("Leave response:", res.data); // Log the data received from the API
-    const leaveCount = res.data.length || 0;
-    setPendingLeaveCount(leaveCount);
-    console.log("pending leave count:", leaveCount); // Log the count
-  } catch (err) {
-    setPendingLeaveCount(0);
-    console.error("Error fetching pending leaves:", err);
-  }
-};
+  const fetchPendingLeaveCount = async () => {
+    try {
+      const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
+      console.log("Leave response:", res.data); // Log the data received from the API
+      const leaveCount = res.data.length || 0;
+      setPendingLeaveCount(leaveCount);
+      console.log("pending leave count:", leaveCount); // Log the count
+    } catch (err) {
+      setPendingLeaveCount(0);
+      console.error("Error fetching pending leaves:", err);
+    }
+  };
 
-useEffect(() => {
-  console.log("useEffect triggered to fetch pending leave count");
-  fetchPendingLeaveCount();
-}, []);
-
-
+  useEffect(() => {
+    console.log("useEffect triggered to fetch pending leave count");
+    fetchPendingLeaveCount();
+  }, []);
 
   useEffect(() => {
     fetchPendingLeaveCount();
@@ -107,8 +104,8 @@ useEffect(() => {
   }, []);
 
   useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
-
   useNotificationSocket(setNotificationCount);
+
   
   // In your Task Management sidebar component
 const openInvoiceTab = () => {
@@ -177,7 +174,7 @@ const openInvoiceTab = () => {
 };
 
 
-  return (
+   return (
     // <div className="bg-[#1e1f21] text-white h-screen flex flex-col justify-between border-r border-gray-700 w-[70px] hover:w-[250px] transition-all duration-300">
     <div
       className={`

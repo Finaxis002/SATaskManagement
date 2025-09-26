@@ -6,7 +6,7 @@ export const fetchDepartments = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        "https://sataskmanagementbackend.onrender.com/api/departments"
+        "https://taskbe.sharda.co.in/api/departments"
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");

@@ -4,7 +4,7 @@ import axios from "axios";
 // 🔁 Fetch tasks from backend
 export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
   const res = await axios.get(
-    "https://sataskmanagementbackend.onrender.com/api/tasks"
+    "https://taskbe.sharda.co.in/api/tasks"
   );
   
   return res.data;
@@ -15,7 +15,7 @@ export const fetchAssignees = createAsyncThunk(
   "tasks/fetchAssignees",
   async () => {
     const res = await axios.get(
-      "https://sataskmanagementbackend.onrender.com/api/employees"
+      "https://taskbe.sharda.co.in/api/employees"
     );
     return res.data;
   }
@@ -26,7 +26,7 @@ export const updateTask = createAsyncThunk(
   "tasks/updateTask",
   async (updatedTask) => {
     const res = await axios.patch(
-      `https://sataskmanagementbackend.onrender.com/api/tasks/${updatedTask._id}`,
+      `https://taskbe.sharda.co.in/api/tasks/${updatedTask._id}`,
       updatedTask
     );
     return res.data;

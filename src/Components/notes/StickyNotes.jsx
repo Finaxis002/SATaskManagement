@@ -1,10 +1,10 @@
+// StickyNotes
 import React, { useState, useEffect } from "react";
-import { FaStickyNote, FaTimes, FaPlus, FaTrash } from "react-icons/fa";
+import { FaStickyNote, FaTimes, FaPlus, FaTrash, FaThumbtack } from "react-icons/fa";
 import NoteContainer from "./NoteContainer";
 
 const API_BASE = "https://taskbe.sharda.co.in/api/stickynotes"; // Change as needed
 
-// At the top of your file
 const COLOR_OPTIONS = [
   "#fffde7", // Light yellow
   "#e1f5fe", // Light blue
@@ -15,16 +15,41 @@ const COLOR_OPTIONS = [
 ];
 
 const StickyNotes = ({ onClose }) => {
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState([]);  // Initialize notes state
   const [creating, setCreating] = useState(false);
 
+  // Fetch existing notes when the component mounts
+  useEffect(() => {
+    const fetchNotes = async () => {
+      const res = await fetch(API_BASE, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
+      });
+      const data = await res.json();
+
+      // Load pinned notes from localStorage
+      const storedPinnedNotes = JSON.parse(localStorage.getItem("pinnedNotes")) || [];
+
+      const updatedNotes = data.map((note) => ({
+        ...note,
+        pinned: storedPinnedNotes.includes(note._id), // Mark notes as pinned based on localStorage
+      }));
+
+      // Separate pinned and unpinned notes
+      const pinnedNotes = updatedNotes.filter((note) => note.pinned);
+      const unpinnedNotes = updatedNotes.filter((note) => !note.pinned);
+
+      setNotes([...pinnedNotes, ...unpinnedNotes]); // Set notes with pinned notes on top
+    };
+
+    fetchNotes();
+  }, []);
 
   // Returns a random color from the palette
   function getRandomColor() {
     return COLOR_OPTIONS[Math.floor(Math.random() * COLOR_OPTIONS.length)];
   }
 
-  // Create a note
+  // Create a new note
   const createNote = async () => {
     setCreating(true);
     const randomColor = getRandomColor();
@@ -41,13 +66,36 @@ const StickyNotes = ({ onClose }) => {
     setCreating(false);
   };
 
-  // Update note
+  // Pin a note
+  const pinNote = (id) => {
+    setNotes((prevNotes) => {
+      const updatedNotes = prevNotes.map((note) =>
+        note._id === id ? { ...note, pinned: !note.pinned } : note
+      );
 
+      // Separate pinned and unpinned notes
+      const pinnedNotes = updatedNotes.filter((note) => note.pinned);
+      const unpinnedNotes = updatedNotes.filter((note) => !note.pinned);
 
-  // Delete note
+      // Ensure pinned notes are at the top
+      const reorderedNotes = [...pinnedNotes, ...unpinnedNotes];
 
-  // Slide-in animation classes
-  // Optionally use a state for controlling animation if you want more fancy open/close
+      // Save pinned note IDs to localStorage
+      const pinnedNoteIds = pinnedNotes.map((note) => note._id);
+      localStorage.setItem("pinnedNotes", JSON.stringify(pinnedNoteIds)); // Save pinned note IDs to localStorage
+
+      return reorderedNotes;
+    });
+  };
+
+  // Delete a note
+  const deleteNote = async (id) => {
+    await fetch(`${API_BASE}/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
+    });
+    setNotes((prevNotes) => prevNotes.filter((note) => note._id !== id));
+  };
 
   return (
     <div className="fixed inset-0 z-50 ">
@@ -56,12 +104,11 @@ const StickyNotes = ({ onClose }) => {
 
       {/* Drawer */}
       <div
-        className={`
-      fixed right-0 top-0 h-full w-[440px] max-w-full
-      bg-white shadow-2xl z-50
-      transform transition-transform duration-300 ease-in-out
-      translate-x-0 flex flex-col 
-    `}
+
+        className={`fixed right-0 top-0 h-full w-[420px] max-w-full
+        bg-white shadow-2xl z-50
+        transform transition-transform duration-300 ease-in-out
+        translate-x-0 flex flex-col`}
       >
         {/* Header */}
         <div className="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
@@ -78,7 +125,13 @@ const StickyNotes = ({ onClose }) => {
         </div>
 
         {/* Notes Container */}
-        <NoteContainer  />
+        <NoteContainer
+          notes={notes}
+          setNotes={setNotes}
+          pinNote={pinNote}
+          deleteNote={deleteNote}
+        />
+
         {/* Footer */}
         <div className="border-t border-gray-100 px-6 py-4 mb-15">
           <button
