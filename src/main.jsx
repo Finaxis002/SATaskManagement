@@ -1,4 +1,4 @@
-import React, {useEffect} from "react"; // ✅ This fixes the 'React is not defined' error
+import React, { useEffect } from "react"; // ✅ This fixes the 'React is not defined' error
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
@@ -19,8 +19,6 @@ import NotificationInitializer from "./Components/NotificationInitializer.jsx";
 //   },
 // })
 
-
-
 // // Register the service worker for offline support
 // if ('serviceWorker' in navigator) {
 //   navigator.serviceWorker
@@ -33,16 +31,11 @@ import NotificationInitializer from "./Components/NotificationInitializer.jsx";
 //     });
 // }
 
-
-
 createRoot(document.getElementById("root")).render(
-  // <React.StrictMode>
-  //   <Provider store={store}>
-  //     <TaskReminderToasts />
-  //     <App />
-  //   </Provider>
-  // </React.StrictMode>
-<Provider store={store}>
-  <App />
-  </Provider>
+  <React.StrictMode>
+    <Provider store={store}>
+      <TaskReminderToasts />
+      <App />
+    </Provider>
+  </React.StrictMode>
 );
