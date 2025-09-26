@@ -47,7 +47,7 @@ const Header = () => {
   useEffect(() => {
     const fetchDevRequests = async () => {
       try {
-        const res = await fetch("http://localhost:1100/api/support");
+        const res = await fetch("https://taskbe.sharda.co.in/api/support");
         if (!res.ok) throw new Error("Failed to fetch");
         const data = await res.json();
 
