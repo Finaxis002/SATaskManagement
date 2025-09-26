@@ -11,9 +11,6 @@ const TaskReminderToasts = () => {
   const audioRef = useRef(null);
   const socketRef = useRef(null); // 🆕 Correct way to store socket
 
-  // Detect iOS
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
   // 🛠 Create handleReminder OUTSIDE
   const handleReminder = (message) => {
     console.log("RAW REMINDER MESSAGE:", message);
@@ -53,14 +50,14 @@ const TaskReminderToasts = () => {
     // }
 
     // Remove toast after 5 seconds
-    if (!isIOS && audioRef.current) {
+    if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current
         .play()
         .then(() => console.log("Audio played ✅"))
         .catch((e) => console.log("Audio play failed:", e));
     } else {
-      console.log("Audio not supported on iOS or not unlocked yet 🚫");
+      console.log("Audio not unlocked yet 🚫");
     }
 
     const rawNotificationMessage =
@@ -68,8 +65,7 @@ const TaskReminderToasts = () => {
         ? message
         : message?.message || "🔔 You have a new reminder!";
 
-    // Skip notifications on iOS as it's not supported in Safari web context
-    if (!isIOS && Notification.permission === "granted") {
+    if (Notification.permission === "granted") {
       const notification = new Notification("Task Reminder", {
         body: rawNotificationMessage,
         icon: "/icon.png", // optional: path to your favicon or bell icon

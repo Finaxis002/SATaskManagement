@@ -31,10 +31,13 @@ import NotificationInitializer from "./Components/NotificationInitializer.jsx";
 //     });
 // }
 
+// In your main App.js or index.js
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <Provider store={store}>
-      <TaskReminderToasts />
+      {!isIOS && <TaskReminderToasts />}
       <App />
     </Provider>
   </React.StrictMode>
