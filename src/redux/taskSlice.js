@@ -6,7 +6,6 @@ export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
   const res = await axios.get(
     "https://taskbe.sharda.co.in/api/tasks"
   );
-  
   return res.data;
 });
 
@@ -218,7 +217,7 @@ const taskSlice = createSlice({
       })
       .addCase(updateTaskCompletion.rejected, (state, action) => {
         state.loading = false;
-        // console.error("Task update failed:", action.payload);
+        console.error("Task update failed:", action.payload);
       });
   },
 });

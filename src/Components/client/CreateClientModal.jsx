@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 
-const CreateClientModal = ({ client, onClose, onCreate }) => {
+const CreateClientModal = ({  client, onClose, onCreate }) => {
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
@@ -12,33 +12,78 @@ const CreateClientModal = ({ client, onClose, onCreate }) => {
     GSTIN: "",
   });
 
-  const isEdit = !!(client && (client._id || client.id));
+  // const isEdit = Boolean(client && client._id);
+    const isEdit = !!(client && (client._id || client.id));
+
+   
+
+  //  useEffect(() => {
+  //   if (isEdit) {
+  //     setFormData({
+  //       name: client.name || "",
+  //       contactPerson: client.contactPerson || "",
+  //       businessName: client.businessName || "",
+  //       address: client.address || "",
+  //       mobile: client.mobile || "",
+  //       emailId: client.emailId || "",
+  //       GSTIN: client.GSTIN || "",
+  //     });
+  //   } else {
+  //     setFormData({
+  //       name: client?.name || "", // prefill typed name from invoice search
+  //       contactPerson: "",
+  //       businessName: "",
+  //       address: "",
+  //       mobile: "",
+  //       emailId: "",
+  //       GSTIN: "",
+  //     });
+  //   }
+  // }, [client, isEdit]);
+
+  //  useEffect(() => {
+  //   // normalize incoming client fields (handles different backends)
+  //   const c = client || {};
+  //   setFormData({
+  //     name: c.name || "",
+  //     contactPerson: c.contactPerson || c.contact || "",
+  //     businessName: c.businessName || c.company || "",
+  //     address: c.address || "",
+  //     mobile: c.mobile || c.phone || c.contactNo || "",
+  //     emailId: c.emailId || c.email || "",
+  //     GSTIN: c.GSTIN || c.gstin || "",
+  //   });
+  // // re-run when the actual record changes
+  // }, [client && (client._id || client.id)]);
 
   useEffect(() => {
-    const c = client || {};
-    const normalized = {
-      name: c.name || "",
-      contactPerson: c.contactPerson || c.contact || "",
-      businessName: c.businessName || c.company || "",
-      address: c.address || "",
-      mobile: c.mobile || c.phone || c.contactNo || "",
-      emailId: c.emailId || c.email || "",
-      GSTIN: c.GSTIN || c.gstin || "",
-    };
-    setFormData(
-      isEdit
-        ? normalized
-        : {
-            name: normalized.name,
-            contactPerson: "",
-            businessName: "",
-            address: "",
-            mobile: "",
-            emailId: "",
-            GSTIN: "",
-          }
-    );
-  }, [isEdit, client?._id, client?.id, client?.name]);
+  const c = client || {};
+  // normalize possible field names from different backends
+  const normalized = {
+    name: c.name || "",
+    contactPerson: c.contactPerson || c.contact || "",
+    businessName: c.businessName || c.company || "",
+    address: c.address || "",
+    mobile: c.mobile || c.phone || c.contactNo || "",
+    emailId: c.emailId || c.email || "",
+    GSTIN: c.GSTIN || c.gstin || "",
+  };
+
+  setFormData(
+    isEdit
+      ? normalized
+      : {
+          // for "create", keep only the name (e.g., typed from invoice search)
+          name: normalized.name,
+          contactPerson: "",
+          businessName: "",
+          address: "",
+          mobile: "",
+          emailId: "",
+          GSTIN: "",
+        }
+  );
+}, [isEdit, client?._id, client?.id, client?.name]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,71 +91,50 @@ const CreateClientModal = ({ client, onClose, onCreate }) => {
   };
 
   const handleSubmit = () => {
-    if (!formData.name.trim()) return;
-    onCreate(formData);
+    if (!formData.name.trim()) return; // Required field
+    onCreate(formData); // 🔁 Pass full object to parent
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 px-4">
-      {/* Modal container */}
-      <div
-        className="bg-white rounded-lg shadow-lg
-                   w-full max-w-xs sm:max-w-sm md:max-w-sm lg:max-w-sm
-                   p-4 sm:p-5 lg:p-5
-                   flex flex-col"
-      >
-        {/* Header */}
-        <div className="relative mb-3 text-center">
-          <h2 className="text-lg font-semibold text-blue-900">
+    <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg w-96">
+        <div className="flex justify-between items-center mb-4">
+         <h3 className="text-xl font-semibold">
             {isEdit ? "Update Client" : "Create New Client"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 text-red-500 transition duration-200 transform hover:text-red-700 hover:scale-110 hover:shadow-lg"
-          >
-            <FaTimes size={18} />
+          </h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <FaTimes />
           </button>
         </div>
 
-        {/* Form Inputs - Single column */}
-        <div className="grid grid-cols-1 gap-2">
-          {[
-            { name: "name", label: "Client Name" },
-            { name: "contactPerson", label: "Contact Person" },
-            { name: "businessName", label: "Business Name" },
-            { name: "address", label: "Address" },
-            { name: "mobile", label: "Mobile Number" },
-            { name: "emailId", label: "Email ID" },
-            { name: "GSTIN", label: "GSTIN" },
-          ].map((field) => (
-            <input
-              key={field.name}
-              type="text"
-              name={field.name}
-              value={formData[field.name]}
-              onChange={handleChange}
-              placeholder={field.label}
-              className="w-full p-2 border border-gray-300 rounded 
-             focus:outline-none focus:border-blue-500 
-             text-sm"
-            />
-          ))}
-        </div>
+        {/* 🔁 Render all 7 input fields dynamically */}
+        {[
+          { name: "name", label: "Client Name" },
+          { name: "contactPerson", label: "Contact Person" },
+          { name: "businessName", label: "Business Name" },
+          { name: "address", label: "Address" },
+          { name: "mobile", label: "Mobile Number" },
+          { name: "emailId", label: "Email ID" },
+          { name: "GSTIN", label: "GSTIN" },
+        ].map((field) => (
+          <input
+            key={field.name}
+            type="text"
+            name={field.name}
+            value={formData[field.name]}
+            onChange={handleChange}
+            placeholder={field.label}
+            className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
+          />
+        ))}
 
-        {/* Buttons */}
-        <div className="flex flex-row justify-end gap-2 mt-3">
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 rounded text-sm transition duration-200
-               bg-red-700 text-white
-               hover:opacity-80 hover:scale-105"
-          >
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 border rounded hover:bg-gray-50">
             Cancel
           </button>
-
           <button
             onClick={handleSubmit}
-            className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm transition duration-200 transform hover:bg-indigo-800 hover:scale-105 hover:shadow-lg"
+            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
           >
             {isEdit ? "Update" : "Create"}
           </button>

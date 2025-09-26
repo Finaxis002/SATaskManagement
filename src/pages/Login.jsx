@@ -133,13 +133,12 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("name", name);
       localStorage.setItem("role", role);
-      localStorage.setItem("department", department);
       localStorage.setItem("userId", _id);
       localStorage.setItem("birthdate", birthdate || "");
     localStorage.setItem("isBirthdayToday", JSON.stringify(!!birthdayFlag));
 
       dispatch(setAuth({ name, role, userId: _id, birthdate: birthdate || "",
-        isBirthdayToday: !!birthdayFlag,department, }));
+        isBirthdayToday: !!birthdayFlag, }));
 
       // ✅ Fetch reminders to get linked Google email
       // ✅ Fetch linked email directly from linkedemails collection

@@ -114,7 +114,7 @@ const StickyNotesDashboard = () => {
   };
 
   return (
-    <div className="bg-yellow-200 rounded-xl shadow-lg border border-yellow-100 p-2 py-4 w-full max-w-xl relative hidden xl:block">
+    <div className="bg-yellow-200 rounded-xl shadow-lg border border-yellow-100 p-2 py-4 w-full max-w-xl relative hidden md:block">
       {/* Header */}
       <div className="flex items-center justify-between px-4">
         <h2 className="text-xl font-bold text-yellow-900 flex items-center gap-2">

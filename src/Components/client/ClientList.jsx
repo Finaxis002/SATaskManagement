@@ -1,50 +1,28 @@
-
-import { FaTrashAlt, FaEdit, FaPlus, FaHistory } from "react-icons/fa"; // Import FaHistory for history button
-import { useNavigate } from "react-router-dom";
-
+// components/ClientList.jsx
 import React from "react";
-
-
-
+import { FaTrashAlt, FaEdit } from "react-icons/fa";
 const role = localStorage.getItem("role");
 
 const ClientList = ({ clients, onDelete, onEdit }) => {
-  const navigate = useNavigate(); // Hook to navigate programmatically
-
-  // Function to handle Add Service and navigate to the correct page
-  const handleAddService = (clientId) => {
-    navigate(`/add-service/${clientId}`); // Redirect to Add Service page with clientId
-  };
-
-  // Function to handle Show Message History
-  const handleShowHistory = (clientId) => {
-    navigate(`/message-history/${clientId}`); // Navigate to Message History page for the client
-  };
-
   if (!clients || clients.length === 0) {
     return <p className="text-center text-gray-500">No clients found.</p>;
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {clients.map((client, index) => (
         <div
           key={index}
-          className="bg-white grid grid-cols-[1fr_auto] items-start border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
+          className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
         >
-          {/* Left Side */}
           <div>
-
-            <h3 className="text-lg font-semibold text-indigo-800 leading-snug break-words">
+            <h3 className="text-lg font-semibold text-indigo-800">
               {client.name}
             </h3>
-
             <p className="text-sm text-gray-600">{client.contactPerson}</p>
             <p className="text-sm text-gray-600">{client.businessName}</p>
           </div>
-
-          {/* Right Side (Buttons aligned with name first line) */}
-          <div className="flex gap-3 self-start mt-1">
+          <div className="flex gap-3">
             {role === "admin" && (
               <button
                 onClick={() => onEdit(client)}
@@ -54,34 +32,15 @@ const ClientList = ({ clients, onDelete, onEdit }) => {
                 <FaEdit size={16} />
               </button>
             )}
+
             <button
               onClick={() => onDelete(client.name)}
-              className="text-red-500 transition duration-200 transform 
-             hover:text-red-700 hover:scale-110 hover:opacity-80 hover:shadow-md"
+              className="text-red-500 hover:text-red-700 transition-colors"
               title="Delete Client"
             >
               <FaTrashAlt size={16} />
             </button>
-
-
-            {/* Add Service Button */}
-            <button
-              onClick={() => handleAddService(client.id)} // Redirect to Add Service page
-              className="text-cyan-600 hover:text-green-700 transition-colors hover:cursor-pointer"
-              title="Add Service"
-            >
-              <img src="../service2.png" alt="Add Service" width={25} height={25} style={{ backgroundColor: "light-blue" }} />
-            </button>
-
-            {/* History Button */}
-            <button
-              onClick={() => handleShowHistory(client.id)} // Navigate to Message History page
-              className="text-green-600 hover:text-green-800 transition-colors"
-              title="Show Message History"
-            >
-              <FaHistory size={16} />
-            </button>
-
+            
           </div>
         </div>
       ))}
