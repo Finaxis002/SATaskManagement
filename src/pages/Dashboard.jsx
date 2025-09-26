@@ -1576,7 +1576,7 @@ const Dashboard = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
-                Anunay Sharda & Associate
+                Anunay Sharda & Associate.
               </motion.h1>
               <motion.p
                 className="text-[#018f95] text-sm font-semibold tracking-wider uppercase hidden md:block"

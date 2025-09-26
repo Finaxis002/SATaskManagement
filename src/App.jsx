@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 
@@ -45,6 +46,7 @@ import ProtectedRoute from "./Components/ProtectedRoute";
 
 
 const App = () => {
+
   function MailBoxEmbed() {
     return (
       <iframe
@@ -326,17 +328,6 @@ const App = () => {
           }
         />
 
-        <Route
-          path="/viewinvoicewithotp"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ViewInvoiceWithOTP />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-
         
 
 
@@ -351,16 +342,6 @@ const App = () => {
             }
           />
 
-          <Route
-            path="/mail-creation"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <MailCreation />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
 
 
         <Route
@@ -455,16 +436,7 @@ const App = () => {
           }
         />
 
-        <Route
-          path="/whatsapp"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <WhatsAppPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+     
 
         <Route
           path="/mail-creation"
@@ -477,27 +449,6 @@ const App = () => {
           }
         />
 
-        <Route
-          path="/mailbox"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <MailBoxEmbed />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin-mailbox"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <AdminMailBoxEmbed />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
 
         {/* ⬇️ NEW: /updates route (Sidebar link will open this) */}
         <Route
