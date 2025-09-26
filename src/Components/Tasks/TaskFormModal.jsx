@@ -387,6 +387,32 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   />
             </div>
 
+            {console.log("Client Options:", clientOptions)  // Log client options to check the structure
+
+}
+            
+            {/* Client ID - Only show when a client is selected */}
+            
+            {clientName && (
+              <div className="hidden">
+                <label className={labelClass} htmlFor="clientId">Client ID</label>
+                <input
+                  id="clientId"
+                  type="text"
+                  placeholder="Client ID will appear here"
+                  
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                  className={`${inputClass} bg-slate-50`}
+                  readOnly={false} // Change to true if you want it to be read-only
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Auto-populated from selected client
+                </p>
+              </div>
+            )}
+
+
             {/* Task Code */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
