@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
@@ -29,6 +30,7 @@ import { NotesProvider } from "./context/NotesContext";
 import Updates from "./pages/Updates";
 
 const App = () => {
+
   function MailBoxEmbed() {
     return (
       <iframe
@@ -87,6 +89,7 @@ const App = () => {
           }
         />
 
+
         <Route
           path="/reminders"
           element={
@@ -119,6 +122,22 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        
+
+
+          <Route
+            path="/whatsapp"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <WhatsAppPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+
 
         <Route
           path="/notifications"
@@ -252,16 +271,7 @@ const App = () => {
           }
         />
 
-        <Route
-          path="/whatsapp"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <WhatsAppPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+     
 
         <Route
           path="/mail-creation"
@@ -274,27 +284,6 @@ const App = () => {
           }
         />
 
-        <Route
-          path="/mailbox"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <MailBoxEmbed />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin-mailbox"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <AdminMailBoxEmbed />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
 
         {/* ⬇️ NEW: /updates route (Sidebar link will open this) */}
         <Route

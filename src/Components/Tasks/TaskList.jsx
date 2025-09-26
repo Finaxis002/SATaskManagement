@@ -87,9 +87,59 @@ const TaskList = ({
     }
   }, [users]);
 
+
   useEffect(() => {
     fetchDepartments();
   }, []);
+
+  const handleMessageSend = async (payload) => {
+    try {
+      // const payload = {
+      //   // message: {  // Send the message in the correct structure
+      //   //   taskId: taskId,
+      //   //   // clientId: taskForMessage.clientId,  // Ensure the correct task and client data
+      //   //   clientName: taskForMessage.clientName,
+      //   //   message: message,
+      //   //   sentAt: new Date().toISOString(),
+      //   //   sentBy: taskForMessage.assignedBy.name, // Ensure this is valid
+      //   taskId: taskId,
+      //   clientName: taskForMessage.clientName,
+      //   message: message,
+      //   sentAt: new Date().toISOString(),
+      //   sentBy: taskForMessage.assignedBy.name,
+      // };
+
+      // if (!taskForMessage?.clientId) {
+      //   Swal.fire('Error', 'Client ID is missing!', 'error');
+      //   return; // Exit the function if clientId is missing
+      // }
+      // payload.clientId = taskForMessage.clientId; // Add clientId to payload if available
+
+      // console.log("Sending clientId:", payload.clientId);
+
+      // console.log("Sending payload:", payload); // Log the payload to check data
+
+      // Send the message to the backend using axios
+      const response = await axios.post(
+        "https://taskbe.sharda.co.in/api/message-history",
+        payload
+      );
+      // console.log("Sending clientId:", payload.clientId);
+
+      console.log("Response from server:", response.data);
+
+      if (response.status === 201) {
+        console.log("Message sent:", response.data);
+        Swal.fire("Message sent successfully!");
+      } else {
+        throw new Error("Message sending failed");
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      Swal.fire("Error", "Failed to send message", "error");
+    }
+  };
+
 
   const fetchTasksFromAPI = async () => {
     try {
@@ -640,6 +690,381 @@ const TaskList = ({
       });
     }
   };
+
+
+  const renderTaskCard = (task, index) => (
+    <>
+      {/* Task Card */}
+      <div
+        key={task._id}
+        className="relative border border-gray-300 rounded-2xl p-5 mb-6 shadow-md hover:shadow-xl transition duration-300 bg-gray-100 cursor-pointer max-w-md mx-auto"
+        onClick={(e) => {
+          // prevent popup when clicking on action buttons
+          // if (!e.target.closest("button")) {
+          //   setOpenTaskPopup(task._id);
+          // }
+        }}
+      >
+        {/* Copy button */}
+        <button
+          className="absolute top-3 right-3 p-2 rounded-md border border-gray-300 text-gray-500 hover:text-gray-900 hover:bg-gray-100 shadow-sm"
+          onClick={() => handleCopyTask?.(task)}
+          title="Copy Task"
+          aria-label={`Copy task ${task.taskName}`}
+          type="button"
+        >
+          <FontAwesomeIcon icon={faCopy} className="h-5 w-5" />
+        </button>
+
+        {/* Task Name */}
+        <h3 className="text-xl font-bold mb-3 text-gray-800 w-72">
+          {task.taskName}
+        </h3>
+
+        {/* Dates */}
+        <div className="flex justify-between text-md text-gray-600 mb-4">
+          <div>
+            <span className="font-semibold">Work Date:</span>{" "}
+            {new Date(task.assignedDate).toLocaleDateString("en-GB")}
+          </div>
+          <div>
+            <span className="font-semibold">Due Date:</span>{" "}
+            {new Date(task.dueDate).toLocaleDateString("en-GB")}
+          </div>
+        </div>
+
+        {/* Status */}
+        <div className="flex items-center gap-2 mb-3 justify-between">
+          <div>
+            <span className="font-semibold text-gray-700">Status:</span>
+            <span
+              className="px-3 py-1 ml-2 rounded-full text-sm font-semibold cursor-pointer shadow-sm"
+              style={{
+                backgroundColor:
+                  task.status === "Completed"
+                    ? "#d1fae5"
+                    : task.status === "In Progress"
+                    ? "#fef9c3"
+                    : task.status === "To Do"
+                    ? "#e0f2fe"
+                    : "#f3e8ff",
+                color:
+                  task.status === "Completed"
+                    ? "#065f46"
+                    : task.status === "In Progress"
+                    ? "#92400e"
+                    : task.status === "To Do"
+                    ? "#0369a1"
+                    : "#6d28d9",
+              }}
+              onClick={(e) => {
+                e.stopPropagation(); // prevent opening popup
+                const rect = e.target.getBoundingClientRect();
+                setDropdownPosition({
+                  top: rect.top + window.scrollY + 35,
+                  left: rect.left + window.scrollX,
+                });
+                setEditingStatus(task._id);
+              }}
+            >
+              {task.status}
+            </span>
+          </div>
+          <div className="items-center flex mr-12">
+            <span className="font-semibold text-gray-700"> message:</span>
+            <span>
+              <button
+                onClick={() => {
+                  setTaskForMessage(task); // Set the current task for the popup
+                  setOpenMessagePopup(true); // Open the popup
+                }}
+                className="text-indigo-600 hover:text-indigo-800 focus:outline-none py-3 px-2"
+                title="Send Message"
+              >
+                {/* <FontAwesomeIcon icon={faPen} className="h-5 w-5" /> */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-send-icon lucide-send"
+                >
+                  <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+                  <path d="m21.854 2.147-10.94 10.939" />
+                </svg>
+              </button>
+            </span>
+          </div>
+        </div>
+
+        {/* Assigned By */}
+        <p className="text-md text-gray-600">
+          <span className="font-semibold">Assigned by:</span>{" "}
+          <span className="italic text-cyan-800">
+            {task.assignedBy?.name || "—"}
+          </span>
+        </p>
+
+        {/* 🔹 Clickable text instead of whole card */}
+
+        <button
+          onClick={() => setOpenTaskPopup(task._id)}
+          className="text-indigo-600 text-md font-medium hover:underline focus:outline-none underline mt-1.5"
+        >
+          View Details
+        </button>
+      </div>
+      {openMessagePopup && taskForMessage?._id === task._id && (
+        <MessagePopup
+          isOpen={openMessagePopup}
+          onClose={() => setOpenMessagePopup(false)}
+          task={taskForMessage}
+          // clientId={taskForMessage.clientId}
+          sendMessage={handleMessageSend}
+        />
+      )}
+
+      {/* Popup for details */}
+      {openTaskPopup === task._id && (
+        <div className="fixed inset-0  bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4  ">
+          <div
+            className="bg-gray-100  rounded-2xl shadow-3xl w-full   p-6 relative overflow-y-auto max-h-[90vh] border border-gray-400 "
+            style={{ width: "100%", maxWidth: "inherit" }} // ✅ popup same width as card
+          >
+            {/* Close button */}
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
+              onClick={() => setOpenTaskPopup(null)}
+            >
+              ×
+            </button>
+
+            {/* <h2 className="text-2xl font-bold mb-5 text-gray-800">
+            {task.taskName}
+          </h2> */}
+
+            {/* Full Description */}
+            <div className="mb-4">
+              <span className="block text-gray-900 font-semibold tracking-wide mb-2 select-none ">
+                Work Description + Code:
+              </span>
+              <td
+                className="relative group text-[15px]"
+                style={{ color: colors.textSecondary, minWidth: "260px" }}
+              >
+                <div>
+                  <span className="text-[15px] text-gray-400 subpixel-antialiased break-words flex-1">
+                    {(task.workDesc || "No description").length > 90
+                      ? `${task.workDesc.slice(0, 90)}…`
+                      : task.workDesc || "No description"}
+                    {task.code && (
+                      <span
+                        className="text-indigo-600 underline cursor-pointer ml-3 font-semibold hover:text-indigo-900"
+                        title="View Project Report"
+                      >
+                        (1 Project Report)
+                      </span>
+                    )}
+                  </span>
+                  {(task.workDesc || "").length > 90 && (
+                    <div className="relative inline-block">
+                      <span className="sr-only">more</span>
+                      <div
+                        className="absolute z-50 hidden group-hover:block w-96 rounded-2xl p-5 text-xs shadow-lg whitespace-pre-wrap border border-gray-300 bg-white"
+                        style={{
+                          color: colors.textSecondary,
+                          top: "36px",
+                          left: "-16px",
+                          maxHeight: "12rem",
+                          overflowY: "auto",
+                          boxShadow:
+                            "0 12px 24px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0,0,0,0.08)",
+                        }}
+                      >
+                        {task.workDesc}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    className="opacity-90 group-hover:opacity-100 text-gray-700 hover:text-gray-900 focus:outline-none transition"
+                    onClick={() => {
+                      setOpenWorkDescPopup(task._id);
+                      setWorkDescMode("edit");
+                    }}
+                    title="Edit description"
+                    aria-label={`Edit description for task ${task.taskName}`}
+                    type="button"
+                  >
+                    <FontAwesomeIcon icon={faPen} className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {openWorkDescPopup === task._id && (
+                  <div
+                    className=" top-full left-0 mt-3 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="workdesc-dialog-title"
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                      <h4
+                        id="workdesc-dialog-title"
+                        className="font-semibold text-lg"
+                        style={{ color: colors.textPrimary }}
+                      >
+                        {workDescMode === "edit"
+                          ? "Edit Description"
+                          : "Description"}
+                      </h4>
+                      <button
+                        className="text-gray-500 hover:text-gray-700 text-2xl font-light leading-none focus:outline-none"
+                        onClick={() => setOpenWorkDescPopup(null)}
+                        aria-label="Close description popup"
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {workDescMode === "edit" ? (
+                      <>
+                        <textarea
+                          value={workDescs[task._id] || task.workDesc || ""}
+                          onChange={(e) =>
+                            setWorkDescs((prev) => ({
+                              ...prev,
+                              [task._id]: e.target.value,
+                            }))
+                          }
+                          rows={5}
+                          placeholder="Enter work description…"
+                          className="w-full px-5 py-3 text-sm rounded-2xl resize-y border border-gray-300 focus:outline-none focus:ring-4 focus:ring-purple-400 transition-colors duration-300"
+                          style={{
+                            color: colors.textPrimary,
+                            backgroundColor: colors.background,
+                            boxShadow: "none",
+                          }}
+                          autoFocus
+                        />
+                        <div className="flex justify-end mt-1 gap-4">
+                          <button
+                            onClick={() => setOpenWorkDescPopup(null)}
+                            className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
+                            type="button"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleWorkDescSave(task._id);
+                              setOpenWorkDescPopup(null);
+                            }}
+                            className="px-6 py-2 text-sm rounded-2xl font-semibold text-white bg-purple-700 hover:bg-purple-800 transition"
+                            type="button"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div
+                        className="text-gray-900 text-sm whitespace-pre-wrap max-h-44 overflow-y-auto"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        {task.workDesc || "No description available"}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </td>
+            </div>
+
+            {/* Remarks */}
+            <div className="relative mb-4 flex flex-wrap items-center gap-1">
+              <span
+                className="font-bold  text-[16px] select-none italic"
+                style={{ color: colors.textPrimary }}
+              >
+                Remark:
+              </span>
+              <span
+                className={`text-sm text-gray-800 max-w-[65%] ${
+                  (remarks[task._id] ?? "").length > 40 ? "truncate" : ""
+                } select-text`}
+                style={{ color: colors.textSecondary }}
+              >
+                {remarks[task._id] ?? "No remark"}
+              </span>
+              {(remarks[task._id] || "").length > 40 && (
+                <button
+                  className="ml-2 text-indigo-600 text-xs hover:underline focus:outline-none transition-colors duration-150"
+                  onClick={() => {
+                    setOpenRemarkPopup(task._id);
+                    setRemarkMode("view");
+                  }}
+                  aria-label={`Read full remark for task ${task.taskName}`}
+                  type="button"
+                >
+                  Read more
+                </button>
+              )}
+              <button
+                className=" text-indigo-500 hover:text-indigo-800 focus:outline-none transition-colors duration-150"
+                onClick={() => {
+                  setOpenRemarkPopup(task._id);
+                  setRemarkMode("edit");
+                }}
+                title="Edit remark"
+                aria-label={`Edit remark for task ${task.taskName}`}
+                type="button"
+              >
+                <FontAwesomeIcon icon={faPen} className="h-5 w-5" />
+              </button>
+
+              {/* Assign by */}
+              {/* <p className="w-full mt-3">
+        <span className="font-bold text-gray-700 subpixel-antialiased select-none">
+          Assigned by:
+        </span>{" "}
+        <span className="text-cyan-800 italic font-semibold select-text">
+          {task.assignedBy?.name || "—"}
+        </span>
+      </p> */}
+
+              {openRemarkPopup === task._id && (
+                <div
+                  className=" top-full left-0 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="remark-dialog-title"
+                  style={{ backgroundColor: colors.surface }}
+                >
+                  <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                    <h4
+                      id="remark-dialog-title"
+                      className="font-semibold text-base"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      {remarkMode === "edit" ? "Edit Remark" : "Full Remark"}
+                    </h4>
+                    <button
+                      className="text-gray-500 hover:text-gray-700 text-2xl font-light leading-none focus:outline-none"
+                      onClick={() => setOpenRemarkPopup(null)}
+                      aria-label="Close remark popup"
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
 
 
   const renderTaskRow = (task, index) => (
