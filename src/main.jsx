@@ -36,10 +36,11 @@ registerSW({
 
 
 createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+
+  // <React.StrictMode>
     <Provider store={store}>
       <TaskReminderToasts />
       <App />
     </Provider>
-  </React.StrictMode>
+  // </React.StrictMode>
 );

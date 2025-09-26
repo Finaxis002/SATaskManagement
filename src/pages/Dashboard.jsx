@@ -537,7 +537,7 @@ const UpcomingEvents = ({ events }) => {
 
   return (
     <motion.div
-      className={`${glass} rounded-3xl p-6 shadow-xl border-0 ring-1 ring-white/20 overflow-hidden transition-all duration-500`}
+      className={`${glass} rounded-3xl p-6 shadow-xl hidden md:block  border-0 ring-1 ring-white/20 overflow-hidden transition-all duration-500`}
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 1 }}

@@ -2,6 +2,7 @@ import axios from "axios";
 
 const secureAxios = axios.create({
   baseURL: "https://taskbe.sharda.co.in/api",
+  withCredentials: true,
 });
 
 secureAxios.interceptors.request.use((config) => {

@@ -98,12 +98,13 @@ const StickyNotes = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50 ">
       {/* Overlay with subtle blur effect */}
       <div className="fixed inset-0 bg-black/40 " onClick={onClose} />
 
       {/* Drawer */}
       <div
+
         className={`fixed right-0 top-0 h-full w-[420px] max-w-full
         bg-white shadow-2xl z-50
         transform transition-transform duration-300 ease-in-out
@@ -132,7 +133,7 @@ const StickyNotes = ({ onClose }) => {
         />
 
         {/* Footer */}
-        <div className="border-t border-gray-100 px-6 py-4">
+        <div className="border-t border-gray-100 px-6 py-4 mb-15">
           <button
             className="w-full bg-yellow-500 hover:bg-yellow-300 text-yellow-900 font-medium px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
             disabled={creating}
