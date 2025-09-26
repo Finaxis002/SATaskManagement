@@ -24,25 +24,22 @@ const LeaveRequestList = () => {
   
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition max-h-[calc(100vh-200px)] overflow-y-auto ">
-
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800 text-center">Your Leave Requests</h2>
-      <div className="border-b border-gray-300 mb-4"></div> 
+    <div className="bg-gray-800 rounded-xl p-6 shadow-md max-h-[calc(100vh-200px)]  custom-scrollbar">
+      <h2 className="text-2xl font-semibold mb-4">Your Leave Requests</h2>
       {leaves.map((leave, idx) => (
         <div
           key={idx}
-          className="bg-white border border-gray-200 rounded-md p-4 mb-3 flex justify-between items-center shadow-sm hover:shadow-md transition"
-
+          className="bg-gray-700 rounded-md p-4 mb-3 flex justify-between items-center"
         >
           <div>
-            <div className="font-semibold text-gray-800">{leave.leaveType}</div>
-            <div className="text-sm text-gray-600">
+            <div className="font-semibold">{leave.leaveType}</div>
+            <div className="text-sm text-gray-300">
               {new Date(leave.fromDate).toLocaleDateString()} →{" "}
               {new Date(leave.toDate).toLocaleDateString()}
             </div>
             {/* SHOW TIME IF PRESENT */}
             {(leave.fromTime || leave.toTime) && (
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-400 mt-1">
                 <span className="font-medium">Timing: </span>
                 {leave.fromTime ? leave.fromTime : "--:--"}{" "}
                 <span className="mx-1">→</span>
@@ -51,7 +48,7 @@ const LeaveRequestList = () => {
             )}
           </div>
           <span
-            className={`text-sm font-semibold px-2 py-1 rounded-md text-white ${
+            className={`text-sm font-semibold px-2 py-1 rounded-md ${
               leave.status === "Pending"
                         ? "bg-yellow-500"
                         : leave.status === "Approved"

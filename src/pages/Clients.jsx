@@ -168,7 +168,9 @@ const Clients = () => {
           <p className="text-center text-gray-500">No clients found.</p>
         </div>
       ) : (
+
         <div className="space-y-6 mx-auto max-h-[72vh] overflow-y-auto">
+
           {viewMode === "card" ? (
             <ClientList
               clients={clients}
