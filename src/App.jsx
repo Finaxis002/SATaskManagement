@@ -38,6 +38,7 @@ import InvoiceTab from "./pages/InvoiceTab";
 
 import ShortcutHandler from "./Components/ShortcutHandler";
 import ProtectedRoute from "./Components/ProtectedRoute";
+import Updates from "./pages/Updates";
 
 
 const App = () => {
@@ -376,6 +377,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/updates" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <Updates />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
 
         {/* <Route 
           path="/invoice-tab"

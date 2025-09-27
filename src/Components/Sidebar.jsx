@@ -346,6 +346,16 @@ const openInvoiceTab = () => {
           />
         )}
 
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaClock className="text-xl" />}
+            label="Updates"
+            to="/updates"
+            expanded={expanded}
+          />
+        )}
+
+
         
 {/* {role === "admin" && (
   <SidebarItem
