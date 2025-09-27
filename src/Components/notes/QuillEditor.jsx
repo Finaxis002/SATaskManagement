@@ -1,3 +1,4 @@
+// QuillEditor
 import React, { useEffect, useRef } from "react";
 import { useQuill } from "react-quilljs";
 import "quill/dist/quill.snow.css";
@@ -7,14 +8,14 @@ const QuillEditor = ({ value, onChange }) => {
     modules: {
       toolbar: {
         container: [
-          ["bold", "italic", "underline", "strike", "link"],
-          [{ list: "ordered" }, { list: "bullet" }],
-          [{ color: [] }, { background: [] }],
+          [{ color: [] }, { background: [] }, { list: "ordered" }, { list: "bullet" }], ["bold", "italic", "underline", "strike", "link"]
+          // [{ color: [] }, { background: [] }],
         ],
       },
     },
   });
 
+  
   const isMounted = useRef(false);
 
   useEffect(() => {
