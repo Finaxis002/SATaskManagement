@@ -174,42 +174,77 @@ const Sidebar = () => {
           expanded={expanded}
         />
         {role === "admin" && (
-          <>
-            <SidebarItem
-              icon={<FaCog className="text-xl" />}
-              label="Settings"
-              to="/departments"
-              expanded={expanded}
-              badge={pendingLeaveCount > 0 ? pendingLeaveCount : null}
-            />
-            <SidebarItem
-              icon={<FaCheckCircle className="text-xl" />}
-              label="Completed Tasks"
-              to="/completed"
-              expanded={expanded}
-            />
-            <SidebarItem
-              icon={<FaMoneyBill className="text-xl" />}
-              label="Invoice"
-              to="/invoice"
-              expanded={expanded}
-            />
-            {/* View Invoice */}
-            <SidebarItem
-              icon={<FaDochub className="text-xl" />}
-              label="View Invoice"
-              to="/viewinvoicewithotp"
-              expanded={expanded}
-            />
-            {/* Updates Button */}
-            <SidebarItem
-              icon={<FaClock className="text-xl" />}
-              label="Updates"
-              to="/updates"
-              expanded={expanded}
-            />
-          </>
+          <SidebarItem
+            icon={<FaCog className="text-xl" />}
+            label="Settings"
+            to="/departments"
+            expanded={expanded}
+            badge={pendingLeaveCount > 0 ? pendingLeaveCount : null}
+          />
         )}
+
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaCheckCircle className="text-xl" />}
+            label="Completed Tasks"
+            to="/completed"
+            expanded={expanded}
+          />
+        )}
+
+        {/* {role === "admin" && (
+          <SidebarItem
+            icon={<FaMoneyBill className="text-xl" />}
+            label="Invoice"
+            to="/invoice"
+            expanded={expanded}
+          />
+        )} */}
+
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaMoneyBill className="text-xl" />}
+            label="Invoicing"
+            to="/viewinvoicewithotp"
+            expanded={expanded}
+          />
+        )}
+
+        {role === "admin" && (
+          <SidebarItem
+            icon={<FaClock className="text-xl" />}
+            label="Updates"
+            to="/updates"
+            expanded={expanded}
+          />
+        )}
+
+
+        
+{/* {role === "admin" && (
+  <SidebarItem
+    icon={<FaBusinessTime className="text-xl" />}
+    label="Invoicing"
+    onClick={openInvoiceTab}
+    expanded={expanded}
+  />
+)} */}
+        
+
+        {/* <SidebarItem
+          icon={<FaEnvelope className="text-xl" />}
+          label="Mail Box"
+          to="/mailbox"
+          expanded={expanded}
+        /> */}
+
+        {/* {role === "admin" && (
+          <SidebarItem
+            icon={<FaMailBulk className="text-xl" />}
+            label="Admin Mailbox"
+            to="/admin-mailbox"
+          />
+        )} */}
       </div>
 
       {/* Footer */}
