@@ -1,16 +1,30 @@
-// header
-import { useState, useEffect, useCallback } from "react";
-import { FaBell, FaUserCircle, FaSearch, FaSignOutAlt, FaHome, FaNewspaper, FaStar } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import {
+  FaBell,
+  FaUserCircle,
+  FaSearch,
+  FaSignOutAlt,
+  FaHome,
+  FaRegStickyNote,
+  FaTools,
+  FaStar,
+  FaTrash,
+} from "react-icons/fa";
+import { MdSupportAgent } from "react-icons/md";
 import { motion } from "framer-motion";
 import useNotificationSocket from "../hook/useNotificationSocket";
-import StickyNotes from "./notes/StickyNotes";
-import QuickActionsDropdown from "./QuickActionsDropdown";
+import StickyNotes from "../Components/notes/StickyNotes";
+import QuickActionsDropdown from "../Components/QuickActionsDropdown";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-/* ---------------------------- Inline Modal UI ---------------------------- */
-function WhatsNewModal({ open, onClose, items = [], loading = false, error = "" }) {
+/* ---------------------------- What's New Modal ---------------------------- */
+function WhatsNewModal({ open, onClose, items = [], loading = false, error = "", onDelete }) {
   if (!open) return null;
+
+  // Check if user is admin
+  const userRole = localStorage.getItem("role");
+  const isAdmin = userRole === "admin" || userRole === "Admin";
 
   const SkeletonCard = () => (
     <div className="rounded-xl border border-gray-200/60 p-4 bg-white/60 shadow-sm animate-pulse">
@@ -30,6 +44,15 @@ function WhatsNewModal({ open, onClose, items = [], loading = false, error = "" 
       </div>
     </div>
   );
+
+  const handleDelete = async (itemId) => {
+    if (!window.confirm("Are you sure you want to delete this update?")) {
+      return;
+    }
+    if (onDelete) {
+      await onDelete(itemId);
+    }
+  };
 
   return (
     <motion.div
@@ -55,6 +78,9 @@ function WhatsNewModal({ open, onClose, items = [], loading = false, error = "" 
           <div className="flex items-center gap-2">
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-yellow-400 text-xs font-semibold">★</span>
             <h2 className="text-base sm:text-lg font-semibold">What's New</h2>
+            {isAdmin && (
+              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Admin</span>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -88,9 +114,21 @@ function WhatsNewModal({ open, onClose, items = [], loading = false, error = "" 
             items.map((it) => (
               <div
                 key={it.id}
-                className="group rounded-xl border border-gray-200/70 hover:border-gray-300 bg-white shadow-sm hover:shadow-md transition-all duration-200 p-4"
+                className="group rounded-xl border border-gray-200/70 hover:border-gray-300 bg-white shadow-sm hover:shadow-md transition-all duration-200 p-4 relative"
               >
-                <div className="flex items-start justify-between gap-3 mb-1.5">
+                {/* Admin Delete Button */}
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDelete(it.id)}
+                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-all duration-200 z-10"
+                    title="Delete this update"
+                    aria-label="Delete update"
+                  >
+                    <FaTrash className="w-3 h-3" />
+                  </button>
+                )}
+
+                <div className="flex items-start justify-between gap-3 mb-1.5 pr-8">
                   <span className="text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2">
                     {it.title}
                   </span>
@@ -150,54 +188,57 @@ const Header = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
+  // What's New states
   const [showWhatsNew, setShowWhatsNew] = useState(false);
-
   const [whatsNewItems, setWhatsNewItems] = useState([]);
   const [wnLoading, setWnLoading] = useState(false);
   const [wnError, setWnError] = useState("");
-  
-  // Add state for What's New count and last seen count
   const [whatsNewCount, setWhatsNewCount] = useState(0);
   const [lastSeenCount, setLastSeenCount] = useState(0);
-
   const navigate = useNavigate();
   useNotificationSocket(setNotificationCount);
 
-  const mapStored = (u) => ({
-    id: u.id || u._id || Math.random().toString(36).slice(2),
-    title: u.title,
-    desc: u.details,
-    tags: Array.isArray(u.tags) ? u.tags : [],
-    date: u.createdAt ? new Date(u.createdAt).toLocaleString() : "",
-  });
+  // Check if user is admin for home button visibility
+  const userRole = localStorage.getItem("role");
+  const isAdmin = userRole === "admin" || userRole === "Admin";
 
+  // Developer feedback blinking
+  const [blink, setBlink] = useState(false);
+  const [totalDevRequests, setTotalDevRequests] = useState(0);
+  const [lastSeenRequests, setLastSeenRequests] = useState(() => {
+    return parseInt(localStorage.getItem("lastSeenDevRequests") || "0", 10);
+  });
+  // Check if device is mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // What's New functions
   const fetchWhatsNew = async (updateCountOnly = false) => {
     try {
       if (!updateCountOnly) {
         setWnLoading(true);
         setWnError("");
       }
-      
       const token = localStorage.getItem("authToken");
       if (token) {
-        const res = await axios.get("http://localhost:1100/api/UpdateGet", {
+        const res = await axios.get("https://taskbe.sharda.co.in/api/UpdateGet", {
           headers: {
             "Content-Type": "application/json",
           },
         });
-
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-
         const mappedItems = list.map((u) => ({
           id: u._id,
           title: u.title,
           desc: u.description,
           tags: u.tags || [],
           date: u.createdAt ? new Date(u.createdAt).toLocaleString() : "",
-          // Store the original createdAt for sorting
           createdAt: u.createdAt,
         }));
-
         // Sort items by createdAt in descending order (newest first)
         const sortedItems = mappedItems.sort((a, b) => {
           if (!a.createdAt && !b.createdAt) return 0;
@@ -205,19 +246,10 @@ const Header = () => {
           if (!b.createdAt) return -1;
           return new Date(b.createdAt) - new Date(a.createdAt);
         });
-
-        // Update items only if not just checking count
         if (!updateCountOnly) {
           setWhatsNewItems(sortedItems);
         }
-        
-        // Always update count
         setWhatsNewCount(sortedItems.length);
-        
-        if (!updateCountOnly) {
-          console.log("Sorted Items (newest first):", sortedItems);
-          console.log("Axios Response Data:", res.data);
-        }
       }
     } catch (apiErr) {
       if (!updateCountOnly) {
@@ -231,109 +263,289 @@ const Header = () => {
     }
   };
 
-  // Load last seen count from localStorage on component mount
+  // Delete function for What's New
+  const handleDeleteUpdate = async (itemId) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setWnError("Authentication required");
+        return;
+      }
+      setWnLoading(true);
+      const cleanItemId = itemId.toString().split(':')[0];
+      const response = await axios.delete(`https://taskbe.sharda.co.in/api/UpdateDelete/${cleanItemId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token
+        },
+      });
+      if (response.status === 200 || response.status === 204) {
+        setWhatsNewItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        setWhatsNewCount(prevCount => prevCount - 1);
+        const newLastSeenCount = Math.max(0, lastSeenCount - 1);
+        localStorage.setItem("whatsNewLastSeen", newLastSeenCount.toString());
+        setLastSeenCount(newLastSeenCount);
+        setWnError("");
+      }
+    } catch (error) {
+      console.error("Error deleting update:", error);
+      if (error.response?.status === 404) {
+        setWnError("Update not found. It might have been already deleted.");
+        setWhatsNewItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        setWhatsNewCount(prevCount => prevCount - 1);
+      } else if (error.response?.status === 403) {
+        setWnError("You don't have permission to delete this update.");
+      } else if (error.response?.status === 401) {
+        setWnError("Authentication failed. Please login again.");
+      } else {
+        setWnError("Failed to delete update. Please try again.");
+      }
+    } finally {
+      setWnLoading(false);
+    }
+  };
+
+  // Load What's New data
   useEffect(() => {
     const savedLastSeenCount = localStorage.getItem("whatsNewLastSeen");
     if (savedLastSeenCount) {
       setLastSeenCount(parseInt(savedLastSeenCount, 10));
     }
-    // Initial fetch to get current count
     fetchWhatsNew();
   }, []);
 
-  // Calculate unread count
+  // Calculate unread count for What's New
   const unreadCount = Math.max(0, whatsNewCount - lastSeenCount);
 
   // Handle What's New button click
   const handleWhatsNewClick = () => {
     setShowWhatsNew(true);
-    // Mark all current items as seen
     localStorage.setItem("whatsNewLastSeen", whatsNewCount.toString());
     setLastSeenCount(whatsNewCount);
-    // Fetch fresh data when opening modal
     fetchWhatsNew(false);
   };
 
-  // Periodically check for new updates (optional)
+  // Periodically check for new updates
   useEffect(() => {
     const interval = setInterval(() => {
-      // Only update count, don't show loading or update items unless modal is open
       fetchWhatsNew(true);
-    }, 30000); // Check every 30 seconds instead of 5 minutes
-
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  // Developer support polling
   useEffect(() => {
-    const onEnter = (e) => {
-      if (e.key === "Enter" && highlightRefs.length) {
-        e.preventDefault();
-        const el = highlightRefs[currentIndex];
-        if (!el) return;
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.style.background = "orange";
-        highlightRefs.forEach((m, i) => {
-          if (i !== currentIndex) m.style.background = "yellow";
-        });
-        setCurrentIndex((p) => (p + 1) % highlightRefs.length);
+    const fetchDevRequests = async () => {
+      try {
+        const res = await fetch("http://localhost:1100/api/support");
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        const requestsArray = Array.isArray(data.requests) ? data.requests : [];
+        const count = requestsArray.length;
+        setTotalDevRequests(count);
+        if (count > lastSeenRequests) {
+          setBlink(true);
+        }
+      } catch (err) {
+        // Silent fail
       }
     };
-    window.addEventListener("keydown", onEnter);
-    return () => window.removeEventListener("keydown", onEnter);
+    fetchDevRequests();
+    const interval = setInterval(fetchDevRequests, 10000);
+    return () => clearInterval(interval);
+  }, [lastSeenRequests]);
+
+  // Handle developer icon click
+  const handleDevClick = () => {
+    setBlink(false);
+    setLastSeenRequests(totalDevRequests);
+    localStorage.setItem("lastSeenDevRequests", totalDevRequests);
+    navigate("/developer-support");
+  };
+
+  // Search highlight logic
+  useEffect(() => {
+    const highlightMatches = (term) => {
+      document.querySelectorAll("mark[data-highlight]").forEach((mark) => {
+        const parent = mark.parentNode;
+        parent.replaceChild(document.createTextNode(mark.textContent), mark);
+        parent.normalize();
+      });
+      if (!term) {
+        setHighlightRefs([]);
+        setCurrentIndex(0);
+        return;
+      }
+      const regex = new RegExp(`(${term})`, "gi");
+      const foundMarks = [];
+      const walk = (node) => {
+        if (
+          node.nodeType === 3 &&
+          node.parentNode &&
+          node.parentNode.nodeName !== "SCRIPT" &&
+          node.parentNode.nodeName !== "STYLE"
+        ) {
+          const text = node.nodeValue;
+          if (regex.test(text)) {
+            const span = document.createElement("span");
+            span.innerHTML = text.replace(
+              regex,
+              `<mark data-highlight style="background: yellow;">$1</mark>`
+            );
+            const fragment = document.createDocumentFragment();
+            while (span.firstChild) {
+              const child = span.firstChild;
+              if (child.tagName === "MARK") foundMarks.push(child);
+              fragment.appendChild(child);
+            }
+            node.parentNode.replaceChild(fragment, node);
+          }
+        } else if (node.nodeType === 1) {
+          for (let i = 0; i < node.childNodes.length; i++)
+            walk(node.childNodes[i]);
+        }
+      };
+      walk(document.body);
+      setHighlightRefs(foundMarks);
+      setCurrentIndex(0);
+    };
+    highlightMatches(searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const handleEnterKey = (e) => {
+      if (e.key === "Enter" && highlightRefs.length > 0) {
+        e.preventDefault();
+        const el = highlightRefs[currentIndex];
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.style.background = "orange";
+        highlightRefs.forEach((mark, idx) => {
+          if (idx !== currentIndex) mark.style.background = "yellow";
+        });
+        setCurrentIndex((prev) => (prev + 1) % highlightRefs.length);
+      }
+    };
+    window.addEventListener("keydown", handleEnterKey);
+    return () => window.removeEventListener("keydown", handleEnterKey);
   }, [highlightRefs, currentIndex]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest("#profile-menu")) setIsMenuOpen(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const name = localStorage.getItem("name");
     if (name) {
-      const initials = name.split(" ").map((n) => n[0]?.toUpperCase()).join("").substring(0, 2);
+      const initials = name
+        .split(" ")
+        .map((n) => n[0]?.toUpperCase())
+        .join("")
+        .substring(0, 2);
       setProfileInitial(initials);
     }
   }, []);
 
   const handleMenuToggle = () => setIsMenuOpen((prev) => !prev);
+
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("name");
     localStorage.removeItem("role");
+    localStorage.removeItem("department");
     localStorage.removeItem("whatsNewLastSeen");
     window.location.href = "/login";
   };
+
   const handleSearchChange = (e) => setSearchTerm(e.target.value.trim());
 
   useEffect(() => {
-    const keyHandler = (e) => {
+    const handleKeyDown = (e) => {
       if ((e.ctrlKey && e.key === "k") || e.key === "/") {
         e.preventDefault();
         document.getElementById("global-search-input")?.focus();
       }
     };
-    window.addEventListener("keydown", keyHandler);
-    return () => window.removeEventListener("keydown", keyHandler);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   return (
     <>
-      <header className="bg-white w-full text-gray-800 px-6 py-3 flex items-center justify-between shadow-sm sticky top-0 z-50">
-        <div className="flex-1 flex justify-end">
-          <div className="relative w-full max-w-xl">
-            <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
-              <FaSearch className="w-4 h-4" />
-            </span>
+      <header className="bg-white w-full text-gray-800 px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center justify-between shadow-sm sticky top-0 z-50">
+        {/* Left Side - Home Button (Admin Only) */}
+        <div className="flex items-center">
+          {isAdmin && (
+            <button
+              onClick={() => navigate("/")}
+              className="bg-gray-100 rounded-full p-1.5 sm:p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200 mr-2 sm:mr-4"
+              aria-label="Home"
+              title="Home"
+            >
+              <FaHome className="text-gray-600 text-base sm:text-lg" />
+            </button>
+          )}
+        </div>
 
-            <motion.input
+        {/* Search Bar */}
+        <div className="flex-1 flex justify-center px-1 sm:px-2">
+          <div className="relative w-full max-w-xl">
+            <span className="absolute inset-y-0 left-2 sm:left-3 flex items-center text-gray-400">
+              <FaSearch className="w-3 h-3 sm:w-4 sm:h-4" />
+            </span>
+            <input
               type="text"
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Search..."
+              placeholder="Search"
               id="global-search-input"
-              className="w-full pl-10 pr-24 py-2.5 rounded-full bg-gray-100 text-sm placeholder-gray-500 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-200"
-              whileFocus={{ scale: 1.05 }}
+              className="w-full pl-8 sm:pl-10 pr-16 sm:pr-32 py-2 sm:py-2.5 rounded-full bg-gray-100 text-xs sm:text-sm placeholder-gray-500 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-200"
             />
+            <div className="absolute inset-y-0 right-2 sm:right-3 flex items-center gap-1 sm:gap-2">
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setHighlightRefs([]);
+                    setCurrentIndex(0);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 flex-shrink-0 transition-colors duration-200"
+                  aria-label="Clear search"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3 w-3 sm:h-4 sm:w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
+              <span className="text-xs text-gray-500 hidden lg:block px-2 py-1 font-medium">
+                Short Cut Alt + S
+              </span>
+              {highlightRefs.length > 0 && (
+                <span className="text-[10px] sm:text-xs text-gray-500 bg-gray-200 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                  {currentIndex + 1}/{highlightRefs.length}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 ml-6 relative">
-          {/* What's New - Desktop: Button, Mobile: Icon */}
+        {/* Right Icons */}
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-5 ml-2 sm:ml-4 md:ml-6 relative">
+          {/* What's New Button */}
           <motion.button
             onClick={handleWhatsNewClick}
             className="relative focus:outline-none focus:ring-2 focus:ring-indigo-300 transition group"
@@ -343,28 +555,26 @@ const Header = () => {
             whileTap={{ scale: 0.95 }}
           >
             {/* Desktop View - Button with Text */}
-            <span className="hidden sm:flex bg-indigo-600 text-white text-sm px-3 py-2 rounded-full hover:opacity-90 items-center gap-2">
-              <FaStar className="text-yellow-300" />
-              What's New
+            <span className="hidden md:flex bg-indigo-600 text-white text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-full hover:opacity-90 items-center gap-1 sm:gap-2">
+              <FaStar className="text-yellow-300 text-xs sm:text-sm" />
+              <span className="hidden lg:inline">What's New</span>
+              <span className="lg:hidden">New</span>
             </span>
-            
-            {/* Mobile View - Icon Only with Hover Tooltip */}
-            <div className="sm:hidden relative ">
-              <span className="bg-indigo-600 rounded-full px-3 py-2 hover:bg-gray-200 flex items-center">
-                <FaStar className="text-yellow-400 text-base" />
+            {/* Mobile/Tablet View - Icon Only */}
+            <div className="md:hidden relative">
+              <span className="bg-indigo-600 rounded-full px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-indigo-700 flex items-center">
+                <FaStar className="text-yellow-400 text-sm sm:text-base" />
               </span>
-              
               {/* Tooltip for mobile */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-20">
                 What's New
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
               </div>
             </div>
-            
-            {/* Count Badge - Shows on both desktop and mobile */}
+            {/* Count Badge */}
             {unreadCount > 0 && (
               <motion.span
-                className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold shadow-md z-10"
+                className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center font-bold shadow-md z-10"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 whileHover={{ scale: 1.1 }}
@@ -374,83 +584,94 @@ const Header = () => {
             )}
           </motion.button>
 
-          {/* Notifications */}
+          {/* Notification Icon */}
           <button
             onClick={() => navigate("/notifications")}
-            className="relative bg-gray-100 rounded-full px-3 py-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200 flex items-center gap-2"
+            className="relative bg-gray-100 rounded-full p-1.5 sm:p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200"
             aria-label="Notifications"
-            title="Notifications"
           >
-            <FaBell className="text-gray-600 text-base" />
+            <FaBell className="text-gray-600 text-base sm:text-lg" />
             {notificationCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center">
                 {notificationCount}
               </span>
             )}
           </button>
 
+          {/* Developer Feedback Icon */}
+          {(localStorage.getItem("department") === "IT/Software" ||
+            ["admin"].includes(
+              localStorage.getItem("role") || localStorage.getItem("userRole") || ""
+            )) && (
+              <button
+                onClick={handleDevClick}
+                className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded transition-colors duration-200 ${blink ? "animate-pulse text-red-500" : "text-gray-700"
+                  }`}
+              >
+                <FaTools className="text-base sm:text-lg" />
+                {totalDevRequests > lastSeenRequests && (
+                  <span className="bg-red-500 text-white text-[10px] rounded-full w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center">
+                    {totalDevRequests - lastSeenRequests}
+                  </span>
+                )}
+              </button>
+            )}
+
           <QuickActionsDropdown
             onShowNotes={() => setShowNotes(true)}
-            onShowInbox={() => {}}
-            onShowReminders={() => {}}
+            isMobile={isMobile}
           />
 
           {showNotes && <StickyNotes onClose={() => setShowNotes(false)} />}
 
+          {/* Profile Menu */}
           <div className="relative">
-            <motion.button
+            <button
               id="profile-menu"
               onClick={handleMenuToggle}
-              className="bg-blue-400 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+              className="bg-blue-400 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300 text-xs sm:text-sm"
               aria-label="Profile menu"
-              whileHover={{ scale: 1.1 }}
             >
               {profileInitial}
-            </motion.button>
+            </button>
 
             {isMenuOpen && (
               <div
                 id="profile-menu-dropdown"
-                className="absolute top-12 right-0 w-48 bg-white rounded-lg shadow-xl py-1 z-50 border border-gray-100"
+                className="absolute top-10 sm:top-12 right-0 w-44 sm:w-48 bg-white rounded-lg shadow-xl overflow-hidden py-1 z-50 border border-gray-100"
                 onClick={(e) => e.stopPropagation()}
               >
-                <motion.button
-                  onClick={() => {
-                    navigate("/");
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-3 transition-colors duration-150"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <FaHome className="text-gray-500 flex-shrink-0" />
-                  <span>Home</span>
-                </motion.button>
-
-                <motion.button
+                <button
                   onClick={() => {
                     navigate("/profile");
                     setIsMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-3 transition-colors duration-150"
-                  whileHover={{ scale: 1.05 }}
+                  className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-2 sm:gap-3 transition-colors duration-150 text-sm sm:text-base"
                 >
-                  <FaUserCircle className="text-gray-500 flex-shrink-0" />
+                  <FaUserCircle className="text-gray-500 flex-shrink-0 text-sm sm:text-base" />
                   <span>Profile</span>
-                </motion.button>
-
+                </button>
+                <button
+                  onClick={() => {
+                    navigate("/support");
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-2 transition-colors duration-150 text-sm sm:text-base"
+                >
+                  <MdSupportAgent className="text-gray-500 flex-shrink-0 text-lg sm:text-xl" />
+                  <span>Support</span>
+                </button>
                 <div className="border-t border-gray-100 my-1"></div>
-
-                <motion.button
+                <button
                   onClick={() => {
                     handleLogout();
                     setIsMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-3 hover:bg-red-50 text-red-500 flex items-center gap-3 transition-colors duration-150"
-                  whileHover={{ scale: 1.05 }}
+                  className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 hover:bg-red-50 text-red-500 flex items-center gap-2 sm:gap-3 transition-colors duration-150 text-sm sm:text-base"
                 >
-                  <FaSignOutAlt className="flex-shrink-0" />
+                  <FaSignOutAlt className="flex-shrink-0 text-sm sm:text-base" />
                   <span>Logout</span>
-                </motion.button>
+                </button>
               </div>
             )}
           </div>
@@ -464,9 +685,9 @@ const Header = () => {
         items={whatsNewItems}
         loading={wnLoading}
         error={wnError}
+        onDelete={handleDeleteUpdate}
       />
     </>
   );
 };
-
 export default Header;
