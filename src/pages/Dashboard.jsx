@@ -1,4 +1,5 @@
 // src/pages/Dashboard.jsx
+// src/pages/Dashboard.jsx
 import {
   useEffect,
   useMemo,
@@ -152,6 +153,8 @@ function ModalPortal({ children }) {
   return createPortal(children, elRef.current);
 }
 
+/* ------------------ Enhanced Styles ------------------ */
+// Mobile par backdrop-blur hata diya (md+ pe enable)
 /* ------------------ Enhanced Styles ------------------ */
 // Mobile par backdrop-blur hata diya (md+ pe enable)
 const glass =
@@ -537,7 +540,7 @@ const UpcomingEvents = ({ events }) => {
 
   return (
     <motion.div
-      className={`${glass} rounded-3xl p-6 shadow-xl border-0 ring-1 ring-white/20 overflow-hidden transition-all duration-500`}
+      className={`${glass} rounded-3xl p-6 shadow-xl hidden md:block  border-0 ring-1 ring-white/20 overflow-hidden transition-all duration-500`}
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 1 }}
@@ -1576,7 +1579,7 @@ const Dashboard = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
-                Anunay Sharda & Associate.
+                Anunay Sharda & Associate
               </motion.h1>
               <motion.p
                 className="text-[#018f95] text-sm font-semibold tracking-wider uppercase hidden md:block"
