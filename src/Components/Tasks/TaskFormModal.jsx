@@ -324,7 +324,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             {/* Client ID - Only show when a client is selected */}
             
             {clientName && (
-              <div>
+              <div className="hidden">
                 <label className={labelClass} htmlFor="clientId">Client ID</label>
                 <input
                   id="clientId"
