@@ -75,7 +75,7 @@ export default function ViewInvoiceWithOTP() {
             onClick={() => window.location.reload()}
             className="bg-blue-600 text-white px-4 py-2 rounded"
           >
-            Verify Again
+            Verify Again..
           </button>
         </div>
       </div>
