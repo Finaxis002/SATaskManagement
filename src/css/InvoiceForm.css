@@ -609,34 +609,3 @@
 .border-left-none {
   border-left: "none";
 }
-
-/* --- Force 2-column layout for the invoice screen --- */
-.invoice-two-col {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  align-items: flex-start !important;
-  justify-content: flex-start !important;
-  gap: 20px !important;
-  padding: 20px !important;
-  background: #f9f9f9 !important;
-}
-
-/* Left column stays a fixed width so the right preview never wraps under it */
-.invoice-two-col .asa-left {
-  flex: 0 0 520px !important;
-  width: 520px !important;
-  max-width: 520px !important;
-  box-sizing: border-box !important;
-}
-
-/* Right column just takes its content size */
-.invoice-two-col .asa-right {
-  flex: 0 0 auto !important;
-}
-
-/* If the screen is narrow, allow horizontal scroll instead of wrapping */
-@media (max-width: 1100px) {
-  .invoice-two-col {
-    overflow-x: auto !important;
-  }
-}

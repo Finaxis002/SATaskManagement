@@ -4,8 +4,9 @@ import axios from "axios";
 // 🔁 Fetch tasks from backend
 export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
   const res = await axios.get(
-    "https://taskbe.sharda.co.in/api/tasks"
+    "https://sataskmanagementbackend.onrender.com/api/tasks"
   );
+  
   return res.data;
 });
 
@@ -14,7 +15,7 @@ export const fetchAssignees = createAsyncThunk(
   "tasks/fetchAssignees",
   async () => {
     const res = await axios.get(
-      "https://taskbe.sharda.co.in/api/employees"
+      "https://sataskmanagementbackend.onrender.com/api/employees"
     );
     return res.data;
   }
@@ -25,7 +26,7 @@ export const updateTask = createAsyncThunk(
   "tasks/updateTask",
   async (updatedTask) => {
     const res = await axios.patch(
-      `https://taskbe.sharda.co.in/api/tasks/${updatedTask._id}`,
+      `https://sataskmanagementbackend.onrender.com/api/tasks/${updatedTask._id}`,
       updatedTask
     );
     return res.data;
@@ -217,7 +218,7 @@ const taskSlice = createSlice({
       })
       .addCase(updateTaskCompletion.rejected, (state, action) => {
         state.loading = false;
-        console.error("Task update failed:", action.payload);
+        // console.error("Task update failed:", action.payload);
       });
   },
 });
