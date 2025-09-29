@@ -30,7 +30,6 @@ import MessageHistory from "./Components/history/MessageHistory";
 import InvoiceTab from "./pages/InvoiceTab";
 
 import ShortcutHandler from "./Components/ShortcutHandler";
-// import ProtectedRoute from "./Components/ProtectedRoute";
 import Updates from "./pages/Updates";
 
 
