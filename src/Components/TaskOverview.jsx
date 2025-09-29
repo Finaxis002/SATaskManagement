@@ -24,12 +24,14 @@ const format = (date, formatStr) => {
 const isToday = (date) => {
   const today = new Date();
   return date.toDateString() === today.toDateString();
+
 };
 const isTomorrow = (date) => {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   return date.toDateString() === tomorrow.toDateString();
 };
+
 const isBefore = (date, compareDate) => date < compareDate;
 
 const TaskOverview = () => {
@@ -41,7 +43,16 @@ const TaskOverview = () => {
   const [justCompleted, setJustCompleted] = useState(new Set());
   const [loading, setLoading] = useState(true);
 
-  const tabs = ["today", "tomorrow", "upcoming", "overdue", "completed"];
+  const [animatingTask, setAnimatingTask] = useState(null);
+
+  const tabs = [
+    { key: "today", label: "Today", icon: Calendar, color: "blue" },
+    { key: "tomorrow", label: "Tomorrow", icon: Clock, color: "yellow" },
+    { key: "upcoming", label: "Upcoming", icon: TrendingUp, color: "orange" },
+    { key: "overdue", label: "Overdue", icon: AlertCircle, color: "red" },
+    { key: "completed", label: "Completed", icon: CheckCircle2, color: "green" }
+  ];
+
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -112,6 +123,7 @@ const TaskOverview = () => {
         return categorizedTasks.completed;
       default:
         return [];
+
     }
   };
 
@@ -196,12 +208,16 @@ const TaskOverview = () => {
   //   }
   // };
 
+
   const handleToggleCompleted = async (taskId) => {
     const updatedBy = {
       name: localStorage.getItem("name"),
       email: localStorage.getItem("userId"),
     };
+    
+    setAnimatingTask(taskId);
     setJustCompleted((prev) => new Set(prev).add(taskId));
+    
     try {
       const response = await fetch(
         `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
@@ -212,24 +228,50 @@ const TaskOverview = () => {
         }
       );
       if (!response.ok) throw new Error("Failed to update task status");
+
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           task._id === taskId ? { ...task, status: "Completed" } : task
         )
       );
+
     } catch (error) {
-      console.error("❌ Failed to update status", error);
+      console.error("Failed to update status", error);
       setJustCompleted((prev) => {
         const newSet = new Set(prev);
         newSet.delete(taskId);
         return newSet;
       });
+      setAnimatingTask(null);
     }
   };
 
   useEffect(() => {
     setJustCompleted(new Set());
   }, [activeTab]);
+
+
+  useEffect(() => {
+    const counts = {
+      completed: categorizedTasks.completed.length,
+      overdue: categorizedTasks.overdue.length,
+      progress:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length,
+      total:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length +
+        categorizedTasks.overdue.length +
+        categorizedTasks.completed.length,
+    };
+
+    if (typeof window.updateDashboardStats === "function") {
+      window.updateDashboardStats(counts);
+    }
+  }, [tasks, justCompleted]);
+
 
   const isHiddenCompletedTask = (task) =>
     task.status === "Completed" && task.isHidden === true;

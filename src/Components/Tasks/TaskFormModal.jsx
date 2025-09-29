@@ -514,9 +514,11 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             {/* Hidden field just to hold the selected clientId */}
             {clientName && (
               <div className="hidden">
+
                 <label className={labelClass} htmlFor="clientId">
                   Client ID
                 </label>
+
                 <input
                   id="clientId"
                   type="text"
