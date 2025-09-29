@@ -29,7 +29,7 @@ import { NotesProvider } from "./context/NotesContext";
 import InvoiceTab from "./pages/InvoiceTab";
 
 import ShortcutHandler from "./Components/ShortcutHandler";
-import ProtectedRoute from "./Components/ProtectedRoute";
+// import ProtectedRoute from "./Components/ProtectedRoute";
 import Updates from "./pages/Updates";
 
 
