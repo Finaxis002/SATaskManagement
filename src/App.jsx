@@ -255,16 +255,17 @@ const App = () => {
           }
         />
 
-        {/* <Route
-          path="/viewinvoices"
+        {/* Add the new InvoicesPage route for mobile view*/}
+        <Route
+          path="/viewinvoicewithotp"
           element={
             <ProtectedRoute>
               <MainLayout>
-                <ViewInvoices />
+                <ViewInvoiceWithOTP />
               </MainLayout>
             </ProtectedRoute>
           }
-        /> */}
+        /> 
 
         <Route
           path="/viewinvoicewithotp"
