@@ -192,16 +192,14 @@ const AddEmployee = ({
   const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="relative w-full max-h-screen text-gray-800 py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto">
-
+    <div className="relative w-full max-h-screen text-gray-800  py-14 px-6">
       <img
         src={bgImage}
         alt="Background"
         className="absolute top-0 left-0 w-full h-full object-cover z-0 opacity-10"
       />
 
-<div className="relative z-10 max-w-4xl mx-auto bg-white p-4 sm:p-1 md:p-8 rounded-xl shadow-lg">
-
+      <div className="relative z-10 max-w-4xl mx-auto bg-white p-10 rounded-xl shadow-lg">
         <h3 className="text-xl font-semibold mb-4 text-center">
           {employeeToEdit ? "Edit User" : "Add New User"}
         </h3>
@@ -214,7 +212,10 @@ const AddEmployee = ({
           &times;
         </button>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
           {/* Full Name */}
           <div className="relative">
             <FaUserAlt className="absolute top-4 left-4 text-gray-400" />

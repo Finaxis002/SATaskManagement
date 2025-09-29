@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import { FaRegBell, FaCheckCircle, FaClock } from "react-icons/fa";
 import { MdUpdate } from "react-icons/md";
 import { BsFillCircleFill } from "react-icons/bs";
-
+import { motion, AnimatePresence } from "framer-motion";
 // ===== Add this once under imports =====
 const api = axios.create({
   baseURL: "https://taskbe.sharda.co.in",
@@ -22,17 +22,17 @@ const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
-
-
-
 const NotificationItem = React.memo(
-  ({
-    notification,
-    onMarkAsRead,
-    selectedNotifications,
-    toggleSelectNotification,
-  }) => {
+  ({ notification, onMarkAsRead, selectedNotifications, toggleSelectNotification }) => {
     const isUnread = !notification.read;
+
+    // 🔹 Status color map
+    const statusColors = {
+      completed: "bg-green-100 text-green-700",
+      approved: "bg-blue-100 text-blue-700",
+      "pending review": "bg-yellow-100 text-yellow-700",
+      urgent: "bg-red-100 text-red-700",
+    };
 
     return (
       <div
@@ -68,24 +68,11 @@ const NotificationItem = React.memo(
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-gray-100 text-gray-700"
                 }`}
-              >
-                {notification.priority}
-              </span>
-            )}
-            {notification.status && (
-              <span
-                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
-                  notification.status === "completed"
-                    ? "bg-green-100 text-green-800"
-                    : notification.status === "pending"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                Status: {notification.status}
-              </span>
-            )}
-          </div>
+            >
+              Status: {notification.status}
+            </span>
+          )}
+        </div>
 
           {notification.updatedBy &&
             (() => {
@@ -154,14 +141,15 @@ const NotificationItem = React.memo(
                 ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
                 : "bg-green-600 text-white border-green-600 hover:bg-green-700"
             }`}
-          >
-            {notification.read ? "Read" : "Mark as Read"}
-          </button>
-        </div>
+        >
+          {notification.read ? "Read" : "Mark as Read"}
+        </button>
+      </div>
       </div>
     );
   }
 );
+
 
 
 
@@ -173,7 +161,6 @@ const getUserContext = () => {
   } catch {
     console.log("something went wrong")
   }
-
 
   const token =
     localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
@@ -535,7 +522,7 @@ const Notifications = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3 mb-5">
         {/* Group By Section */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-600 font-medium">Group by:</span>
@@ -620,7 +607,7 @@ const Notifications = () => {
           Loading notifications...
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 mb-5 ">
           {Object.keys(filteredNotifications).length === 0 ? (
             <div className="text-center text-gray-500 bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-200">
               🎉 No notifications match your filters
@@ -664,7 +651,7 @@ const Notifications = () => {
           )}
           {loading && page > 1 && (
             <div className="text-center text-sm text-gray-400 py-4">
-              Loading more notifications...
+              Loading more notification...
             </div>
           )}
         </div>

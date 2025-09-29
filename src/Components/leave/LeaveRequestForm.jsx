@@ -78,13 +78,10 @@ const LeaveRequestForm = () => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition overflow-y-auto ">
+    <div className="bg-gray-800 rounded-xl p-6 shadow-md relative">
+      <h2 className="text-2xl font-semibold mb-4">Request Leave</h2>
 
-
-      <h2 className="text-2xl font-semibold mb-4 text-gray-900 text-center ">Request Leave</h2>
-
-<div className="border-b border-gray-300 mb-4"></div> 
-      <label className="block text-sm mb-1 text-gray-700">Leave Dates</label>
+      <label className="block text-sm mb-1">Leave Dates</label>
       <input
         type="text"
         readOnly
@@ -92,13 +89,11 @@ const LeaveRequestForm = () => {
         value={`${formatDate(range[0].startDate)} - ${formatDate(
           range[0].endDate
         )}`}
-        className="w-full bg-gray-100 rounded-md p-2 mb-4 text-gray-900 cursor-pointer border border-gray-300"
-
+        className="w-full bg-gray-700 rounded-md p-2 mb-4 text-white cursor-pointer"
       />
 
       {showCalendar && (
-        <div ref={calendarRef} className="absolute z-50 mt-[-1rem] mb-4 bg-white rounded-lg shadow-lg p-2">
-
+        <div ref={calendarRef} className="absolute z-50 mt-[-1rem] mb-4">
           <DateRange
             editableDateInputs={true}
             onChange={(item) => setRange([item.selection])}
@@ -109,13 +104,11 @@ const LeaveRequestForm = () => {
         </div>
       )}
 
-      <label className="block text-sm mb-1 text-gray-700">Leave Type</label>
-
+      <label className="block text-sm mb-1">Leave Type</label>
       <select
         value={leaveType}
         onChange={(e) => setLeaveType(e.target.value)}
-         className="w-full bg-gray-100 rounded-md p-2 mb-4 border border-gray-300 text-black"
-
+        className="w-full bg-gray-700 rounded-md p-2 mb-4 text-white"
       >
         <option>Sick Leave</option>
         <option>Casual Leave</option>
@@ -124,13 +117,13 @@ const LeaveRequestForm = () => {
       </select>
       {/* leave timing for half day leave */}
       <div className="mb-4">
-        <label className="block text-sm mb-1 font-medium text-gray-700">
+        <label className="block text-sm mb-1 font-medium text-gray-300">
           Leave Timing{" "}
-          <span className="text-gray-500">(Optional, for Half Day)</span>
+          <span className="text-gray-400">(Optional, for Half Day)</span>
         </label>
-        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg border border-gray-300 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-700/60 rounded-lg border border-gray-600 shadow-sm">
           <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-300 mb-1">
               From Time
             </label>
             <TimePicker
@@ -152,13 +145,13 @@ const LeaveRequestForm = () => {
                   />
                 </svg>
               }
-              className="w-full [&_input]:bg-gray-100 [&_input]:border border-gray-300 [&_input]:text-gray-900 [&_input]:rounded-md [&_input]:py-2 [&_input]:px-10 [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_button]:text-gray-600"
+              className="w-full [&_input]:bg-gray-800 [&_input]:border-none [&_input]:text-white [&_input]:rounded-md [&_input]:py-2 [&_input]:px-10 [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_button]:text-gray-400"
               format="HH:mm"
               disableClock={false}
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-300 mb-1">
               To Time
             </label>
             <TimePicker
@@ -188,22 +181,21 @@ const LeaveRequestForm = () => {
         </div>
       </div>
 
-      <label className="block text-sm mb-1 text-gray-700">Comments (Optional)</label>
+      <label className="block text-sm mb-1">Comments (Optional)</label>
       <textarea
         value={comments}
         onChange={(e) => setComments(e.target.value)}
-        className="w-full bg-gray-100 rounded-md p-2 mb-4 text-gray-900 border border-gray-300"
+        className="w-full bg-gray-700 rounded-md p-2 mb-4 text-white"
         placeholder="Provide any additional details..."
         rows={3}
       />
 
-<button
-  onClick={handleSubmit}
-  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-md transition-colors duration-300 ease-in-out"
->
-  🚀 Submit Request
-</button>
-
+      <button
+        onClick={handleSubmit}
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-md"
+      >
+        🚀 Submit Request
+      </button>
     </div>
   );
 };

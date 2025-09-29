@@ -27,47 +27,47 @@ const Login = () => {
   };
 
   // make this safer & non-blocking
-  const subscribeToPushNotifications = async (userId, token) => {
-    try {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-      // Push requires https (or localhost)
-      const isSecure =
-        window.isSecureContext || location.hostname === "localhost";
-      if (!isSecure) return;
+  // const subscribeToPushNotifications = async (userId, token) => {
+  //   try {
+  //     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  //     // Push requires https (or localhost)
+  //     const isSecure =
+  //       window.isSecureContext || location.hostname === "localhost";
+  //     if (!isSecure) return;
 
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") return;
+  //     const permission = await Notification.requestPermission();
+  //     if (permission !== "granted") return;
 
-      const reg = await navigator.serviceWorker.register("/service-worker.js");
+  //     const reg = await navigator.serviceWorker.register("/service-worker.js");
 
-      // Don’t await .ready forever; race with timeout
-      const ready = Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise((_, rej) =>
-          setTimeout(() => rej(new Error("sw-timeout")), 2500)
-        ),
-      ]);
-      await ready;
+  //     // Don’t await .ready forever; race with timeout
+  //     const ready = Promise.race([
+  //       navigator.serviceWorker.ready,
+  //       new Promise((_, rej) =>
+  //         setTimeout(() => rej(new Error("sw-timeout")), 2500)
+  //       ),
+  //     ]);
+  //     await ready;
 
-      const subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey:
-          "BFiAnzKqV9C437P10UIT5_daMne46XuJiVuSn4zQh2MQBjUIwMP9PMgk2TFQL9LOSiQy17eie7XRYZcJ0NE7jMs",
-      });
+  //     const subscription = await reg.pushManager.subscribe({
+  //       userVisibleOnly: true,
+  //       applicationServerKey:
+  //         "BFiAnzKqV9C437P10UIT5_daMne46XuJiVuSn4zQh2MQBjUIwMP9PMgk2TFQL9LOSiQy17eie7XRYZcJ0NE7jMs",
+  //     });
 
-      await fetch(
-        "https://taskbe.sharda.co.in/api/push-notification/save-subscription",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, subscription }),
-        }
-      );
-    } catch (e) {
-      // swallow errors; don’t block login
-      console.error("Push setup failed (non-blocking):", e);
-    }
-  };
+  //     await fetch(
+  //       "https://taskbe.sharda.co.in/api/push-notification/save-subscription",
+  //       {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ userId, subscription }),
+  //       }
+  //     );
+  //   } catch (e) {
+  //     // swallow errors; don’t block login
+  //     console.error("Push setup failed (non-blocking):", e);
+  //   }
+  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -133,13 +133,12 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("name", name);
       localStorage.setItem("role", role);
-      localStorage.setItem("department", department);
       localStorage.setItem("userId", _id);
       localStorage.setItem("birthdate", birthdate || "");
     localStorage.setItem("isBirthdayToday", JSON.stringify(!!birthdayFlag));
 
       dispatch(setAuth({ name, role, userId: _id, birthdate: birthdate || "",
-        isBirthdayToday: !!birthdayFlag,department, }));
+        isBirthdayToday: !!birthdayFlag, }));
 
       // ✅ Fetch reminders to get linked Google email
       // ✅ Fetch linked email directly from linkedemails collection
@@ -165,9 +164,9 @@ const Login = () => {
         localStorage.removeItem("googleEmail");
       }
 
-      subscribeToPushNotifications(_id, token).finally(() => {
-        window.location.href = "/";
-      });
+      // subscribeToPushNotifications(_id, token).finally(() => {
+      //   window.location.href = "/";
+      // });
     } catch (err) {
       alert("Failed to log in. Please check your credentials.");
       console.error(err);

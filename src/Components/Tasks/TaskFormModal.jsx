@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAssignees } from "../../redux/taskSlice";
 import Select from "react-select";
@@ -8,6 +9,8 @@ import { io } from "socket.io-client";
 import { showAlert } from "../../utils/alert";
 import axios from "axios";
 import { FaTimes } from "react-icons/fa";
+import CreateClientModal from "../client/CreateClientModal"; // <-- make sure path is correct
+import { components } from "react-select";
 
 const socket = io("https://taskbe.sharda.co.in", { withCredentials: true });
 
@@ -25,7 +28,12 @@ const selectBaseStyles = {
   }),
   valueContainer: (base) => ({ ...base, padding: "4px 10px" }),
   input: (base) => ({ ...base, fontSize: 14, color: "#0f172a" }),
-  singleValue: (base) => ({ ...base, fontSize: 14, fontWeight: 500, color: "#0f172a" }),
+  singleValue: (base) => ({
+    ...base,
+    fontSize: 14,
+    fontWeight: 500,
+    color: "#0f172a",
+  }),
   placeholder: (base) => ({ ...base, color: "#94a3b8" }),
   dropdownIndicator: (base, state) => ({
     ...base,
@@ -44,10 +52,15 @@ const selectBaseStyles = {
     ...base,
     fontSize: 14,
     padding: "10px 12px",
-    background: state.isSelected ? "#eef2ff" : state.isFocused ? "#f8fafc" : "#fff",
+    background: state.isSelected
+      ? "#eef2ff"
+      : state.isFocused
+      ? "#f8fafc"
+      : "#fff",
     color: "#0f172a",
   }),
-  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+  // keep the select menu under your modals
+  menuPortal: (base) => ({ ...base, zIndex: 40 }),
 };
 
 const TaskFormModal = ({ onClose, onSave, initialData }) => {
@@ -64,7 +77,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [taskCategory, setTaskCategory] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("");
   const [clientName, setClientName] = useState("");
-  const [clientId, setClientId] = useState(""); // New state for client ID
+  const [clientId, setClientId] = useState("");
   const [code, setCode] = useState("");
   const [newCode, setNewCode] = useState("");
   const [department, setDepartment] = useState([]);
@@ -77,51 +90,115 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [customRepeat, setCustomRepeat] = useState({ day: "", month: "" });
   const [assignedByUser, setAssignedByUser] = useState(null);
 
-  useEffect(() => { dispatch(fetchAssignees()); }, [dispatch]);
+  // ---- Client select control (fixes the 'No options' overlay) ----
+  const clientSelectRef = useRef(null);
+  const [clientMenuOpen, setClientMenuOpen] = useState(false); // control react-select menu
+  const [clientInput, setClientInput] = useState(""); // typed text
+
+  // modal to create client
+  const [openCreateClient, setOpenCreateClient] = useState(false);
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
+
+  // Button inside the select's right-side indicators area
+  const ClientIndicatorsContainer = (props) => {
+    const { children, selectProps } = props;
+    const { showAddClient, onAddClient } = selectProps;
+
+    const openModalSafe = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // close & blur the select BEFORE opening the modal (mobile-safe)
+      setClientMenuOpen(false);
+      try {
+        clientSelectRef.current?.blur?.();
+      } catch {}
+      // open on next tick to avoid race with select events
+      setTimeout(() => onAddClient(), 0);
+    };
+
+    return (
+      <components.IndicatorsContainer {...props}>
+        {showAddClient && (
+          <button
+            type="button"
+            onPointerDown={openModalSafe}
+            onTouchStart={openModalSafe}
+            onMouseDown={openModalSafe}
+            onClick={openModalSafe}
+            className="mr-2 px-2 py-1 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+            title={`Add "${selectProps.inputValue || ""}"`}
+          >
+            Add
+          </button>
+        )}
+        {children}
+      </components.IndicatorsContainer>
+    );
+  };
+
+  useEffect(() => {
+    dispatch(fetchAssignees());
+  }, [dispatch]);
 
   useEffect(() => {
     if (initialData) {
       setTaskName(initialData.taskName || "");
       setWorkDesc(initialData.workDesc || "");
-      setDueDate(initialData.dueDate ? new Date(initialData.dueDate).toISOString().split("T")[0] : "");
+      setDueDate(
+        initialData.dueDate
+          ? new Date(initialData.dueDate).toISOString().split("T")[0]
+          : ""
+      );
       setPriority(initialData.priority || "Medium");
       setStatus(initialData.status || "To Do");
       setAssignees(initialData.assignees || []);
       setClientName(initialData.clientName || "");
-      setClientId(initialData.clientId || ""); // Initialize client ID from initial data
+      setClientId(initialData.clientId || "");
       setTaskCategory(initialData.taskCategory || "");
-      setTaskCode(initialData.code ? { label: initialData.code, value: initialData.code } : null);
+      setTaskCode(
+        initialData.code
+          ? { label: initialData.code, value: initialData.code }
+          : null
+      );
       setDepartment(initialData.department || []);
       setIsRepetitive(initialData.isRepetitive || false);
       setRepeatType(initialData.repeatType || "Monthly");
       setCustomRepeat({
         day: initialData.repeatDay ? initialData.repeatDay.toString() : "",
-        month: initialData.repeatMonth ? initialData.repeatMonth.toString() : "",
+        month: initialData.repeatMonth
+          ? initialData.repeatMonth.toString()
+          : "",
       });
-      setAssignedByUser(initialData.assignedBy ? {
-        label: `${initialData.assignedBy.name} (${initialData.assignedBy.email})`,
-        value: initialData.assignedBy.email,
-      } : null);
+      setAssignedByUser(
+        initialData.assignedBy
+          ? {
+              label: `${initialData.assignedBy.name} (${initialData.assignedBy.email})`,
+              value: initialData.assignedBy.email,
+            }
+          : null
+      );
     }
   }, [initialData]);
 
   useEffect(() => {
     (async () => {
       try {
-        const token = localStorage.getItem("authToken");
-        const { data } = await axios.get("https://taskbe.sharda.co.in/api/clients", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-app-client": "frontend-authenticated",
-          },
-        }); 
-        console.log("Fetched clients data:", data); // Log fetched data
-        
+        const token =
+          localStorage.getItem("authToken") || localStorage.getItem("token");
+        const { data } = await axios.get(
+          "https://taskbe.sharda.co.in/api/clients",
+          {
+            headers: {
+              Authorization: `Bearer ${token || ""}`,
+              "x-app-client": "frontend-authenticated",
+            },
+          }
+        );
         const formatted = Array.isArray(data)
-          ? data.map((c) => ({ 
-              label: c.name || c, 
+          ? data.map((c) => ({
+              label: c.name || c,
               value: c.name || c,
-              clientId: c.id || c._id || c.clientId // Include client ID in options
+              clientId: c.id || c._id || c.clientId || "",
             }))
           : [];
         setClientOptions(formatted);
@@ -134,18 +211,84 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const inputClass =
     "w-full h-11 rounded-xl border border-slate-200 px-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 placeholder:text-slate-400";
 
-  const labelClass = "block text-[12px] font-medium text-slate-600 mb-1 ml-0.5 tracking-wide";
+  const labelClass =
+    "block text-[12px] font-medium text-slate-600 mb-1 ml-0.5 tracking-wide";
 
-  // Handle client selection to auto-populate client ID
+  // Select a client (sets both name and id)
   const handleClientChange = (selectedOption) => {
     if (selectedOption) {
-      console.log("Selected client:", selectedOption);
-
       setClientName(selectedOption.value);
-      setClientId(selectedOption.clientId || ""); // Set client ID when client is selected
+      setClientId(selectedOption.clientId || "");
     } else {
       setClientName("");
-      setClientId(""); // Clear client ID when no client is selected
+      setClientId("");
+    }
+  };
+
+  // decide when to show the Add button
+  const showAddClient =
+    !!clientInput &&
+    !clientOptions.some(
+      (o) => (o.value || "").toLowerCase() === clientInput.toLowerCase()
+    );
+
+  // open modal with the typed name prefilled
+  const openAddClientModal = () => {
+    setOpenCreateClient(true);
+  };
+
+  // create client via API then push to options & select it
+  const handleCreateClient = async (payload) => {
+    const body = { ...payload };
+    if (!body.name && clientInput) body.name = clientInput;
+
+    try {
+      setIsCreatingClient(true);
+      const token =
+        localStorage.getItem("authToken") || localStorage.getItem("token");
+      const res = await axios.post(
+        "https://taskbe.sharda.co.in/api/clients",
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${token || ""}`,
+            "Content-Type": "application/json",
+            "x-app-client": "frontend-authenticated",
+          },
+        }
+      );
+
+      const created =
+        res.data?.client || res.data?.savedClient || res.data?.data || res.data;
+
+      const createdName = created?.name || body.name;
+      const createdId = created?._id || created?.id || created?.clientId || "";
+
+      const newOpt = {
+        label: createdName,
+        value: createdName,
+        clientId: createdId,
+      };
+      setClientOptions((prev) => {
+        const exists = prev.some(
+          (o) => o.value.toLowerCase() === createdName.toLowerCase()
+        );
+        return exists ? prev : [...prev, newOpt];
+      });
+
+      setClientName(createdName);
+      setClientId(createdId);
+      setOpenCreateClient(false);
+      showAlert("Client created successfully!");
+    } catch (err) {
+      console.error("Create client error:", err);
+      alert(
+        `Failed to create client: ${
+          err?.response?.data?.message || err.message
+        }`
+      );
+    } finally {
+      setIsCreatingClient(false);
     }
   };
 
@@ -164,7 +307,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       status,
       taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
       clientName,
-      clientId, // Include client ID in the payload
+      clientId,
       department: Array.isArray(department) ? department : [department],
       code: taskCode?.value || "",
       assignedBy: assignedByUser
@@ -172,26 +315,35 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             name: employees.find((u) => u.email === assignedByUser.value)?.name,
             email: assignedByUser.value,
           }
-        : { name: localStorage.getItem("name"), email: localStorage.getItem("userId") },
-      createdBy: { name: localStorage.getItem("name"), email: localStorage.getItem("userId") },
+        : {
+            name: localStorage.getItem("name"),
+            email: localStorage.getItem("userId"),
+          },
+      createdBy: {
+        name: localStorage.getItem("name"),
+        email: localStorage.getItem("userId"),
+      },
       isRepetitive,
     };
 
     if (initialData) {
-      taskPayload.updatedBy = { name: localStorage.getItem("name"), email: localStorage.getItem("userId") };
+      taskPayload.updatedBy = {
+        name: localStorage.getItem("name"),
+        email: localStorage.getItem("userId"),
+      };
     }
 
     if (isRepetitive) {
       taskPayload.repeatType = repeatType;
-      if (!["Daily"].includes(repeatType)) taskPayload.repeatDay = Number(customRepeat.day);
-      if (repeatType === "Annually") taskPayload.repeatMonth = Number(customRepeat.month);
+      if (!["Daily"].includes(repeatType))
+        taskPayload.repeatDay = Number(customRepeat.day);
+      if (repeatType === "Annually")
+        taskPayload.repeatMonth = Number(customRepeat.month);
     } else {
       taskPayload.repeatType = null;
       taskPayload.repeatDay = null;
       taskPayload.repeatMonth = null;
     }
-    console.log("Submitting task payload:", taskPayload);
-    
 
     try {
       setIsSubmitting(true);
@@ -208,12 +360,16 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         body: JSON.stringify(taskPayload),
       });
       const result = await res.json();
-      console.log("Server response:", result);
-      
+
       if (!res.ok) throw new Error(result.message || "Failed to create task");
 
-      showAlert(initialData ? "Task updated successfully!" : result.message || "Task created successfully!");
-      if (!initialData) socket.emit("new-task-created", { taskId: result.task._id });
+      showAlert(
+        initialData
+          ? "Task updated successfully!"
+          : result.message || "Task created successfully!"
+      );
+      if (!initialData)
+        socket.emit("new-task-created", { taskId: result.task._id });
 
       onSave(result.task);
       onClose();
@@ -226,7 +382,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   };
 
   const filteredEmployees = taskCategory
-    ? employees.filter((e) => e.department?.toLowerCase() === taskCategory.toLowerCase())
+    ? employees.filter(
+        (e) => e.department?.toLowerCase() === taskCategory.toLowerCase()
+      )
     : employees;
 
   const assigneeOptions = filteredEmployees.map((emp) => ({
@@ -236,8 +394,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
   return (
     <div className="fixed inset-0 z-[1000] bg-black/40 p-3 sm:p-4 md:p-6 flex items-center justify-center font-inter overflow-y-auto ">
-      <div className="w-full max-w-4xl bg-white rounded-none sm:rounded-2xl border border-slate-200 shadow-2xl
-                      flex flex-col max-h-[80vh]">
+      <div className="w-full max-w-4xl bg-white rounded-none sm:rounded-2xl border border-slate-200 shadow-2xl flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-2xl border-b border-slate-200 bg-white/90 backdrop-blur px-4 sm:px-6 py-2">
           <div>
@@ -279,7 +436,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
             {/* Work Description */}
             <div>
-              <label className={labelClass} htmlFor="workDesc">Work Description</label>
+              <label className={labelClass} htmlFor="workDesc">
+                Work Description
+              </label>
               <input
                 id="workDesc"
                 type="text"
@@ -299,53 +458,85 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                   setSelectedDepartments={setDepartment}
                 />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Select one or more departments.</p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Select one or more departments.
+              </p>
             </div>
 
             {/* Client */}
             <div>
               <label className={labelClass}>Client Name</label>
+
               <Select
+                ref={clientSelectRef}
                 isClearable
                 isSearchable
                 options={clientOptions}
                 onChange={handleClientChange}
-                value={clientName ? clientOptions.find((o) => o.value === clientName) || null : null}
+                value={
+                  clientName
+                    ? clientOptions.find((o) => o.value === clientName) || null
+                    : null
+                }
                 placeholder="Select client..."
                 classNamePrefix="select"
                 menuPortalTarget={document.body}
+                onInputChange={(val, meta) => {
+                  if (
+                    meta.action !== "input-blur" &&
+                    meta.action !== "menu-close"
+                  ) {
+                    setClientInput(val || "");
+                  }
+                }}
+                // control the menu so we can close it before opening the modal
+                menuIsOpen={clientMenuOpen}
+                onMenuOpen={() => setClientMenuOpen(true)}
+                onMenuClose={() => setClientMenuOpen(false)}
+                // inject Add button INSIDE the select control
+                components={{ IndicatorsContainer: ClientIndicatorsContainer }}
+                // pass props used by ClientIndicatorsContainer
+                showAddClient={
+                  !!clientInput &&
+                  !clientOptions.some(
+                    (o) =>
+                      (o.value || "").toLowerCase() === clientInput.toLowerCase()
+                  )
+                }
+                onAddClient={openAddClientModal}
+                inputValue={clientInput}
                 styles={selectBaseStyles}
+                menuPlacement="auto"
+                closeMenuOnScroll={true}
               />
             </div>
-            {console.log("Client Options:", clientOptions)  // Log client options to check the structure
 
-}
-            
-            {/* Client ID - Only show when a client is selected */}
-            
+            {/* Hidden field just to hold the selected clientId */}
             {clientName && (
               <div className="hidden">
-                <label className={labelClass} htmlFor="clientId">Client ID</label>
+
+                <label className={labelClass} htmlFor="clientId">
+                  Client ID
+                </label>
+
                 <input
                   id="clientId"
                   type="text"
-                  placeholder="Client ID will appear here"
-                  
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
                   className={`${inputClass} bg-slate-50`}
-                  readOnly={false} // Change to true if you want it to be read-only
+                  readOnly={false}
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Auto-populated from selected client
-                </p>
               </div>
             )}
 
             {/* Task Code */}
             <div>
               <label className={labelClass}>Task Code</label>
-              <TaskCodeSelector selectedCode={taskCode} setSelectedCode={setTaskCode} />
+              <TaskCodeSelector
+                selectedCode={taskCode}
+                setSelectedCode={setTaskCode}
+              />
             </div>
 
             {/* Due Date */}
@@ -365,7 +556,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
             {/* Priority */}
             <div>
-              <label className={labelClass} htmlFor="priority">Priority</label>
+              <label className={labelClass} htmlFor="priority">
+                Priority
+              </label>
               <select
                 id="priority"
                 value={priority}
@@ -380,7 +573,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
             {/* Status */}
             <div>
-              <label className={labelClass} htmlFor="status">Status</label>
+              <label className={labelClass} htmlFor="status">
+                Status
+              </label>
               <select
                 id="status"
                 value={status}
@@ -406,7 +601,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                       setIsRepetitive(checked);
                       if (checked) {
                         setRepeatType("Monthly");
-                        setCustomRepeat({ day: new Date().getDate().toString() });
+                        setCustomRepeat({
+                          day: new Date().getDate().toString(),
+                        });
                         setShowRepeatPopup(true);
                       } else {
                         setShowRepeatPopup(false);
@@ -419,7 +616,9 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                   <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transform peer-checked:translate-x-full transition"></div>
                 </div>
                 <span className="text-[14px] text-slate-700">
-                  {isRepetitive ? "This is a repetitive task" : "Is this a repetitive task?"}
+                  {isRepetitive
+                    ? "This is a repetitive task"
+                    : "Is this a repetitive task?"}
                 </span>
               </label>
             </div>
@@ -434,7 +633,10 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               isMulti
               name="assignees"
               options={assigneeOptions}
-              value={assignees.map((a) => ({ label: `${a.name} (${a.email})`, value: a.email }))}
+              value={assignees.map((a) => ({
+                label: `${a.name} (${a.email})`,
+                value: a.email,
+              }))}
               onChange={(opts) => {
                 const selected = (opts || []).map((o) => {
                   const emp = employees.find((e) => e.email === o.value);
@@ -457,7 +659,10 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           <div>
             <label className={labelClass}>Assigned By (Admin)</label>
             <Select
-              options={employees.map((emp) => ({ label: `${emp.name} (${emp.email})`, value: emp.email }))}
+              options={employees.map((emp) => ({
+                label: `${emp.name} (${emp.email})`,
+                value: emp.email,
+              }))}
               isClearable
               value={assignedByUser}
               onChange={(selected) => setAssignedByUser(selected)}
@@ -477,7 +682,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         <div className="sticky bottom-0 flex items-center justify-end gap-3 rounded-2xl border-t border-slate-200 bg-white px-4 sm:px-6 py-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400"
+            className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           >
             Cancel
           </button>
@@ -488,7 +693,11 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               isSubmitting ? "opacity-70 cursor-not-allowed" : ""
             }`}
           >
-            {isSubmitting ? "Submitting..." : initialData ? "Update Task" : "Create Task"}
+            {isSubmitting
+              ? "Submitting..."
+              : initialData
+              ? "Update Task"
+              : "Create Task"}
           </button>
         </div>
       </div>
@@ -582,10 +791,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               <button
                 className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onClick={() => {
-                  if (
-                    !["Daily", "Every 5 Minutes"].includes(repeatType) &&
-                    !customRepeat.day
-                  ) {
+                  if (!["Daily"].includes(repeatType) && !customRepeat.day) {
                     alert("Please select a day");
                     return;
                   }
@@ -601,6 +807,15 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Create Client Modal */}
+      {openCreateClient && (
+        <CreateClientModal
+          client={{ name: clientInput }}
+          onClose={() => setOpenCreateClient(false)}
+          onCreate={handleCreateClient}
+        />
       )}
     </div>
   );

@@ -5,11 +5,6 @@ import {
   FaUsers,
   FaPlus,
   FaTimes,
-  FaCode,
-  FaChartBar,
-  FaEnvelope,
-  FaUniversity,
-  FaCalendarAlt,
   FaDotCircle,
 } from "react-icons/fa";
 import Swal from "sweetalert2";
@@ -20,7 +15,6 @@ import MailCreation from "./MailCreation";
 import LeaveManagement from "./LeaveManagement";
 import socket from "../socket";
 import BankDetails from "./BankDetails";
-import { useLocation } from "react-router-dom";
 
 const Departments = () => {
   const [departmentMap, setDepartmentMap] = useState({});
@@ -41,24 +35,15 @@ const Departments = () => {
   const [activeTab, setActiveTab] = useState("department");
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
 
-  const location = useLocation();
-  useEffect(() => {
-    if (location.state?.activeTab) {
-      setActiveTab(location.state.activeTab);
-    }
-  }, [location.state]);
-
-  const fetchPendingLeaveCount = async () => {
-    try {
-      const res = await axios.get(
-        "https://taskbe.sharda.co.in/api/leave/pending"
-      );
-      setPendingLeaveCount(res.data.length || 0);
-      console.log("pending leave :", pendingLeaveCount);
-    } catch (err) {
-      setPendingLeaveCount(0);
-    }
-  };
+ const fetchPendingLeaveCount = async () => {
+  try {
+    const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
+    setPendingLeaveCount(res.data.length || 0);
+    console.log("pending leave :", pendingLeaveCount)
+  } catch (err) {
+    setPendingLeaveCount(0);
+  }
+};
 
   useEffect(() => {
     fetchDepartmentsData();
@@ -76,9 +61,10 @@ const Departments = () => {
     };
   }, []);
 
-  useEffect(() => {
+    useEffect(() => {
     localStorage.setItem("pendingLeaveCount", pendingLeaveCount);
   }, [pendingLeaveCount]);
+
 
   // console.log("pending status :", pendingLeaveCount)
 
@@ -393,15 +379,16 @@ const Departments = () => {
     }));
   };
 
+
+
   const tabs = [
-    { key: "department", label: "Department Overview", icon: <FaUsers /> },
-    { key: "code", label: "Code Overview", icon: <FaCode /> },
-    { key: "report", label: "Report Generation", icon: <FaChartBar /> },
+    { key: "department", label: "Department Overview" },
+    { key: "code", label: "Code Overview" },
+    { key: "report", label: "Report Generation" },
     {
-      key: "Manage Leave",
+      key: "manageleave",
       label: (
         <span className="relative inline-flex items-center">
-          <FaCalendarAlt className="mr-2" />
           Leave Management
           {pendingLeaveCount > 0 && (
             <span className="ml-2 flex items-center justify-center bg-red-600 text-white rounded-full text-[9px] font-semibold px-2 py-0.5 w-4 h-4">
@@ -411,89 +398,50 @@ const Departments = () => {
         </span>
       ),
     },
-    { key: "mail", label: "Mail User Creation", icon: <FaEnvelope /> },
-    { key: "bank", label: "Bank Details", icon: <FaUniversity /> },
+    { key: "mail", label: "Mail User Creation" },
+    { key: "bank", label: "Bank Details" },
+
   ];
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      {/* Header Section */}
-      {/* Large screens (md and up) */}
-      <div className="hidden md:block mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          Application Settings
-        </h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Application Settings
+      </h1>
 
-        <div className="flex flex-wrap items-center justify-between gap-1">
-          {/* Tab Buttons */}
-          <div className="flex flex-wrap gap-1 border border-gray-200 rounded-md overflow-hidden w-fit">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
-                  activeTab === tab.key
-                    ? "bg-white text-indigo-600 border-b-2 border-indigo-600"
-                    : "bg-gray-100 text-gray-700 hover:bg-white"
-                }`}
-              >
-                {/* If label is a string → show icon + text, else render JSX */}
-                {typeof tab.label === "string" ? (
-                  <>
-                    <span className="text-lg">{tab.icon}</span>
-                    {tab.label}
-                  </>
-                ) : (
-                  tab.label
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {activeTab === "department" && role === "admin" && (
-              <button
-                onClick={handleCreateDepartment}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-              >
-                <FaPlus /> Add Department
-              </button>
-            )}
-
-            {activeTab === "code" && role === "admin" && (
-              <button
-                onClick={handleCreateCode}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-              >
-                <FaPlus /> Add Code
-              </button>
-            )}
-          </div>
+      <div className="flex justify-between">
+        {/* Tab Buttons */}
+        <div className="flex gap-2 border border-gray-200 rounded-md overflow-hidden mb-6 w-fit">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-6 py-2 text-sm font-medium transition-all ${
+                activeTab === tab.key
+                  ? "bg-white text-indigo-600 border-b-2 border-indigo-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* Small screens → Show only active tab name + its related button */}
-      <div className="flex items-center justify-between md:hidden mb-4">
-        <h2 className="text-lg font-semibold text-gray-800">
-          {typeof tabs.find((tab) => tab.key === activeTab)?.label === "string"
-            ? tabs.find((tab) => tab.key === activeTab)?.label
-            : activeTab}
-        </h2>
-
-        <div>
+        {/* 🔘 Action Buttons */}
+        <div className="flex justify-end mb-2">
           {activeTab === "department" && role === "admin" && (
             <button
               onClick={handleCreateDepartment}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md flex items-center gap-1 text-sm"
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 absolute rounded-md flex items-center gap-2 transition-colors"
             >
-              <FaPlus /> Add Dept
+              <FaPlus /> Add Department
             </button>
           )}
+
           {activeTab === "code" && role === "admin" && (
             <button
               onClick={handleCreateCode}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md flex items-center gap-1 text-sm"
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 absolute rounded-md flex items-center gap-2 transition-colors"
             >
               <FaPlus /> Add Code
             </button>
@@ -658,7 +606,7 @@ const Departments = () => {
                 <p className="text-center text-gray-500">No codes found.</p>
               </div>
             ) : (
-              <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto">
+              <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {taskCodes.map((codeObj) => (
                     <div
@@ -718,7 +666,8 @@ const Departments = () => {
 
           {activeTab === "report" && role === "admin" && <ReportGeneration />}
 
-          {activeTab === "Manage Leave" && role === "admin" && (
+
+          {activeTab === "manageleave" && role === "admin" && (
             <LeaveManagement />
           )}
 
@@ -732,7 +681,7 @@ const Departments = () => {
 
       {/* Department Creation Modal */}
       {showDeptModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
+        <div className="fixed inset-0  bg-opacity-50 flex h-50 justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-96">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Create New Department</h3>
@@ -748,7 +697,7 @@ const Departments = () => {
               value={newDeptName}
               onChange={(e) => setNewDeptName(e.target.value)}
               placeholder="Enter department name"
-              className="w-full p-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               autoFocus
             />
             <div className="flex justify-end gap-2">
@@ -771,7 +720,7 @@ const Departments = () => {
 
       {/* Code Creation Modal */}
       {showCodeModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
+        <div className="fixed inset-0  bg-opacity-50 flex h-50 justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-96">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Create New Code</h3>
@@ -787,7 +736,7 @@ const Departments = () => {
               value={newCodeName}
               onChange={(e) => setNewCodeName(e.target.value)}
               placeholder="Enter code name"
-              className="w-full p-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               autoFocus
             />
             <div className="flex justify-end gap-2">
@@ -839,6 +788,7 @@ const Departments = () => {
           }}
         />
       )}
+
     </div>
   );
 };

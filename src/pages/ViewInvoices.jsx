@@ -7,7 +7,6 @@ import Swal from "sweetalert2";
 import InvoicePreview from "../Components/InvoicePreview";
 import { FaTrash } from "react-icons/fa";
 import InvoiceForm from "./InvoiceForm";
-import EditInvoiceModal from "./EditInvoiceModal"; 
 export default function ViewInvoices() {
   const [firms] = useState([
     { name: "Finaxis Business Consultancy", gstin: "GST5454" },
@@ -636,11 +635,6 @@ export default function ViewInvoices() {
                               setInvoiceToEdit(null);
                             }}
                           />
-                           {/* <EditInvoiceModal
-                        invoiceData={invoiceToEdit}
-                        onClose={() => setShowEditModal(false)}
-                        onSave={handleEdited}
-                      /> */}
                         </div>
                       </div>
                     )}
