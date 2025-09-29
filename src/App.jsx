@@ -29,6 +29,10 @@ import AddServicePage from "./pages/AddServicePage";
 import MessageHistory from "./Components/history/MessageHistory";
 import InvoiceTab from "./pages/InvoiceTab";
 
+import Support from "./pages/Support";
+import DeveloperSupport from "./pages/DeveloperSupport";
+
+
 import ShortcutHandler from "./Components/ShortcutHandler";
 import Updates from "./pages/Updates";
 
@@ -253,16 +257,17 @@ const App = () => {
           }
         />
 
-        {/* <Route
-          path="/viewinvoices"
+        {/* Add the new InvoicesPage route for mobile view*/}
+        <Route
+          path="/viewinvoicewithotp"
           element={
             <ProtectedRoute>
               <MainLayout>
-                <ViewInvoices />
+                <ViewInvoiceWithOTP />
               </MainLayout>
             </ProtectedRoute>
           }
-        /> */}
+        /> 
 
         <Route
           path="/viewinvoicewithotp"
@@ -324,6 +329,56 @@ const App = () => {
           </MainLayout>
         </ProtectedRoute>
         }/>
+
+
+        <Route path="/support" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <Support />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+         <Route path="/developer-support" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <DeveloperSupport />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+         <Route
+          path="/mail-creation"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MailCreation />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mailbox"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-mailbox"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <AdminMailBoxEmbed />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+
 
         {/* <Route 
           path="/invoice-tab"
