@@ -28,8 +28,10 @@ import { NotesProvider } from "./context/NotesContext";
 import AddServicePage from "./pages/AddServicePage";
 import MessageHistory from "./Components/history/MessageHistory";
 import InvoiceTab from "./pages/InvoiceTab";
+
 import Support from "./pages/Support";
 import DeveloperSupport from "./pages/DeveloperSupport";
+
 
 import ShortcutHandler from "./Components/ShortcutHandler";
 import Updates from "./pages/Updates";
@@ -328,6 +330,7 @@ const App = () => {
         </ProtectedRoute>
         }/>
 
+
         <Route path="/support" element={
         <ProtectedRoute>
           <MainLayout>
@@ -374,6 +377,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
 
 
         {/* <Route 

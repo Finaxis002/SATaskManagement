@@ -155,8 +155,7 @@ function ModalPortal({ children }) {
 
 /* ------------------ Enhanced Styles ------------------ */
 // Mobile par backdrop-blur hata diya (md+ pe enable)
-/* ------------------ Enhanced Styles ------------------ */
-// Mobile par backdrop-blur hata diya (md+ pe enable)
+
 const glass =
   "md:backdrop-blur-xl bg-white/80 border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.06)]";
 
