@@ -25,7 +25,8 @@ import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
 import { NotesProvider } from "./context/NotesContext";
-
+import AddServicePage from "./pages/AddServicePage";
+import MessageHistory from "./Components/history/MessageHistory";
 import InvoiceTab from "./pages/InvoiceTab";
 
 import ShortcutHandler from "./Components/ShortcutHandler";
@@ -305,6 +306,22 @@ const App = () => {
         <ProtectedRoute>
           <MainLayout>
             <Updates />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+         <Route path="/add-service/:clientId" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <AddServicePage />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+         <Route path="/message-history/:clientId" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <MessageHistory />
           </MainLayout>
         </ProtectedRoute>
         }/>
