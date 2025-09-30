@@ -68,14 +68,14 @@ export default function ViewInvoiceWithOTP() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full text-center">
-          <h2 className="text-xl font-semibold mb-4 text-green-600">OTP Verified Successfully!</h2>
-          <p className="mb-4">Invoice software has been opened in a new tab.</p>
+          <h2 className="text-xl font-semibold mb-4 text-green-600">OTP Verified Successfully!!</h2>
+          <p className="mb-4">Invoice software has been opened in a new tab..</p>
           
           <button
             onClick={() => window.location.reload()}
             className="bg-blue-600 text-white px-4 py-2 rounded"
           >
-            Verify Again
+            Verify Again..
           </button>
         </div>
       </div>
