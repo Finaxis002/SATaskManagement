@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import axios from "axios";
-import ViewInvoices from "./ViewInvoices";
 
 export default function ViewInvoiceWithOTP() {
   const [otpSent, setOtpSent] = useState(false);
@@ -14,7 +13,9 @@ export default function ViewInvoiceWithOTP() {
     setLoading(true);
     setErrMsg("");
     try {
-      await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice", { email: "caanunaysharda@gmail.com" });
+      await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice", { 
+        email: "caanunaysharda@gmail.com" 
+      });
       setOtpSent(true);
     } catch (err) {
       setErrMsg("Failed to send OTP.");
@@ -27,9 +28,33 @@ export default function ViewInvoiceWithOTP() {
     setLoading(true);
     setErrMsg("");
     try {
-      const res = await axios.post("https://taskbe.sharda.co.in/api/verify-otp-view-invoice", { otp: enteredOtp });
+      const res = await axios.post("https://taskbe.sharda.co.in/api/verify-otp-view-invoice", { 
+        otp: enteredOtp 
+      });
       if (res.data.success) {
         setOtpVerified(true);
+        
+        // Open invoice software in new tab
+        const token = localStorage.getItem('authToken');
+        const invoiceWindow = window.open('https://invoicing.sharda.co.in', '_blank');
+        
+        // Function to send token to the new window
+        const sendTokenToNewWindow = () => {
+          if (invoiceWindow && token) {
+            try {
+              invoiceWindow.postMessage(
+                { type: 'authToken', token },
+                'https://invoicing.sharda.co.in'
+              );
+            } catch (e) {
+              // Retry after a short delay if window isn't ready
+              setTimeout(sendTokenToNewWindow, 100);
+            }
+          }
+        };
+        
+        // Start trying to send the token
+        setTimeout(sendTokenToNewWindow, 500);
       } else {
         setErrMsg("Invalid OTP.");
       }
