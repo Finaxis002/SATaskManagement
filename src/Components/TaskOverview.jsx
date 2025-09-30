@@ -1,60 +1,69 @@
-import React, { useEffect, useState, useRef } from "react";
-import { format, isBefore, isToday, isTomorrow, parseISO } from "date-fns";
-import axios from "axios";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Calendar, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  Users, 
+  Loader2,
+  Filter,
+  TrendingUp
+} from "lucide-react";
 
-// Tabs
-const tabs = ["today", "tomorrow", "upcoming", "overdue", "completed"];
+// Date utility functions
+const parseISO = (dateString) => new Date(dateString);
+const format = (date, formatStr) => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  if (formatStr === "MMM d") {
+    return `${months[date.getMonth()]} ${date.getDate()}`;
+  }
+  return date.toLocaleDateString();
+};
+const isToday = (date) => {
+  const today = new Date();
+  return date.toDateString() === today.toDateString();
 
-// Tab Button Animation (desktop only)
-const buttonVariants = {
-  hidden: { opacity: 0, y: -20 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, type: "spring", stiffness: 200 },
-  }),
-  hover: {
-    scale: 1.05,
-    y: -2,
-    boxShadow: "0px 6px 15px rgba(79,70,229,0.4)",
-    transition: { type: "spring", stiffness: 300 },
-  },
+};
+const isTomorrow = (date) => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return date.toDateString() === tomorrow.toDateString();
 };
 
-// Task Row Animation
-const rowVariants = {
-  hidden: { opacity: 0, y: 25 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.05, duration: 0.4, ease: "easeOut" },
-  }),
-  exit: { opacity: 0, y: -15, transition: { duration: 0.25 } },
-};
+const isBefore = (date, compareDate) => date < compareDate;
 
 const TaskOverview = () => {
   const [tasks, setTasks] = useState([]);
   const [activeTab, setActiveTab] = useState("today");
-  const [justCompleted, setJustCompleted] = useState(new Set());
-  const [loading, setLoading] = useState(true);
-
-  const scrollRef = useRef(null);
-
   const role = localStorage.getItem("role");
   const user = JSON.parse(localStorage.getItem("user"));
   const userEmail = user?.email;
+  const [justCompleted, setJustCompleted] = useState(new Set());
+  const [loading, setLoading] = useState(true);
 
-  // Fetch tasks
+  const [animatingTask, setAnimatingTask] = useState(null);
+
+  const tabs = [
+    { key: "today", label: "Today", icon: Calendar, color: "blue" },
+    { key: "tomorrow", label: "Tomorrow", icon: Clock, color: "yellow" },
+    { key: "upcoming", label: "Upcoming", icon: TrendingUp, color: "orange" },
+    { key: "overdue", label: "Overdue", icon: AlertCircle, color: "red" },
+    { key: "completed", label: "Completed", icon: CheckCircle2, color: "green" }
+  ];
+
+
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get("https://taskbe.sharda.co.in/api/tasks");
-        setTasks(res.data);
+        const response = await fetch("https://taskbe.sharda.co.in/api/tasks");
+        const data = await response.json();
+        setTasks(data);
       } catch (err) {
         console.error("Failed to fetch tasks", err);
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 800); // Smooth loading transition
       }
     };
     fetchTasks();
@@ -62,7 +71,6 @@ const TaskOverview = () => {
 
   const now = new Date();
 
-  // Filter & categorize
   const filteredTasks = tasks.filter((task) => {
     if (task.status === "Completed" && task.isHidden) return false;
     if (role === "admin") return true;
@@ -82,21 +90,86 @@ const TaskOverview = () => {
   filteredTasks.forEach((task) => {
     if (!task.dueDate) return;
     const parsedDate = parseISO(task.dueDate);
-    const isCompleted = task.status === "Completed";
+    const isActuallyCompleted = task.status === "Completed";
     const isJustNowCompleted = justCompleted.has(task._id);
 
-    if (isCompleted && !isJustNowCompleted) {
+    if (isActuallyCompleted && !isJustNowCompleted) {
       categorizedTasks.completed.push(task);
       return;
     }
 
-    if (isToday(parsedDate)) categorizedTasks.today.push(task);
-    else if (isTomorrow(parsedDate)) categorizedTasks.tomorrow.push(task);
-    else if (isBefore(parsedDate, now)) categorizedTasks.overdue.push(task);
-    else categorizedTasks.upcoming.push(task);
+    if (isToday(parsedDate)) {
+      categorizedTasks.today.push(task);
+    } else if (isTomorrow(parsedDate)) {
+      categorizedTasks.tomorrow.push(task);
+    } else if (isBefore(parsedDate, now)) {
+      categorizedTasks.overdue.push(task);
+    } else {
+      categorizedTasks.upcoming.push(task);
+    }
   });
 
-  // Update dashboard stats
+  const getTasksByTab = () => {
+    switch (activeTab) {
+      case "today":
+        return categorizedTasks.today;
+      case "tomorrow":
+        return categorizedTasks.tomorrow;
+      case "upcoming":
+        return categorizedTasks.upcoming;
+      case "overdue":
+        return categorizedTasks.overdue;
+      case "completed":
+        return categorizedTasks.completed;
+      default:
+        return [];
+
+    }
+  };
+
+  // const handleToggleCompleted = async (taskId) => {
+  //   const updatedBy = {
+  //     name: localStorage.getItem("name"),
+  //     email: localStorage.getItem("userId"),
+  //   };
+    
+  //   setAnimatingTask(taskId);
+  //   setJustCompleted((prev) => new Set(prev).add(taskId));
+    
+  //   try {
+  //     const response = await fetch(
+  //       `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
+  //       {
+  //         method: "PUT",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ status: "Completed", updatedBy }),
+  //       }
+  //     );
+  //     if (!response.ok) throw new Error("Failed to update task status");
+      
+  //     setTimeout(() => {
+  //       setTasks((prevTasks) =>
+  //         prevTasks.map((task) =>
+  //           task._id === taskId ? { ...task, status: "Completed" } : task
+  //         )
+  //       );
+  //       setAnimatingTask(null);
+  //     }, 500);
+  //   } catch (error) {
+  //     console.error("Failed to update status", error);
+  //     setJustCompleted((prev) => {
+  //       const newSet = new Set(prev);
+  //       newSet.delete(taskId);
+  //       return newSet;
+  //     });
+  //     setAnimatingTask(null);
+  //   }
+  // };
+
+  useEffect(() => {
+    setJustCompleted(new Set());
+  }, [activeTab]);
+
   useEffect(() => {
     const counts = {
       completed: categorizedTasks.completed.length,
@@ -112,19 +185,39 @@ const TaskOverview = () => {
         categorizedTasks.overdue.length +
         categorizedTasks.completed.length,
     };
+
     if (typeof window.updateDashboardStats === "function") {
       window.updateDashboardStats(counts);
     }
   }, [tasks, justCompleted]);
 
-  const getTasksByTab = () => categorizedTasks[activeTab] || [];
+  // const getTasksByTab = () => {
+  //   switch (activeTab) {
+  //     case "today":
+  //       return categorizedTasks.today;
+  //     case "tomorrow":
+  //       return categorizedTasks.tomorrow;
+  //     case "upcoming":
+  //       return categorizedTasks.upcoming;
+  //     case "overdue":
+  //       return categorizedTasks.overdue;
+  //     case "completed":
+  //       return categorizedTasks.completed;
+  //     default:
+  //       return [];
+  //   }
+  // };
+
 
   const handleToggleCompleted = async (taskId) => {
     const updatedBy = {
       name: localStorage.getItem("name"),
       email: localStorage.getItem("userId"),
     };
+    
+    setAnimatingTask(taskId);
     setJustCompleted((prev) => new Set(prev).add(taskId));
+    
     try {
       const response = await fetch(
         `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
@@ -135,342 +228,366 @@ const TaskOverview = () => {
         }
       );
       if (!response.ok) throw new Error("Failed to update task status");
-      setTasks((prev) =>
-        prev.map((task) =>
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
           task._id === taskId ? { ...task, status: "Completed" } : task
         )
       );
+
     } catch (error) {
-      console.error("❌ Failed to update status", error);
+      console.error("Failed to update status", error);
       setJustCompleted((prev) => {
         const newSet = new Set(prev);
         newSet.delete(taskId);
         return newSet;
       });
+      setAnimatingTask(null);
     }
   };
 
-  useEffect(() => setJustCompleted(new Set()), [activeTab]);
+  useEffect(() => {
+    setJustCompleted(new Set());
+  }, [activeTab]);
+
+
+  useEffect(() => {
+    const counts = {
+      completed: categorizedTasks.completed.length,
+      overdue: categorizedTasks.overdue.length,
+      progress:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length,
+      total:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length +
+        categorizedTasks.overdue.length +
+        categorizedTasks.completed.length,
+    };
+
+    if (typeof window.updateDashboardStats === "function") {
+      window.updateDashboardStats(counts);
+    }
+  }, [tasks, justCompleted]);
+
 
   const isHiddenCompletedTask = (task) =>
     task.status === "Completed" && task.isHidden === true;
 
-  // Handle arrows in mobile (infinite loop + center focus)
-  const handleArrowClick = (direction) => {
-    const currentIndex = tabs.indexOf(activeTab);
-    let newIndex;
+  const currentTabIndex = tabs.findIndex(tab => tab.key === activeTab);
 
-    if (direction === "left") {
-      newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+  const handlePrevTab = () => {
+    if (currentTabIndex > 0) {
+      setActiveTab(tabs[currentTabIndex - 1].key);
     } else {
-      newIndex = (currentIndex + 1) % tabs.length;
+      setActiveTab(tabs[tabs.length - 1].key);
     }
+  };
 
-    setActiveTab(tabs[newIndex]);
-
-    const container = scrollRef.current;
-    const activeButton = container?.querySelector(
-      `[data-tab="${tabs[newIndex]}"]`
-    );
-    if (activeButton && container) {
-      const offset =
-        activeButton.offsetLeft -
-        container.offsetWidth / 2 +
-        activeButton.offsetWidth / 2;
-      container.scrollTo({ left: offset, behavior: "smooth" });
+  const handleNextTab = () => {
+    if (currentTabIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentTabIndex + 1].key);
+    } else {
+      setActiveTab(tabs[0].key);
     }
+  };
+
+  const getTabColorClasses = (color, isActive) => {
+    const colorMap = {
+      blue: isActive ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100",
+      yellow: isActive ? "bg-amber-500 text-white" : "bg-amber-50 text-amber-700 hover:bg-amber-100",
+      orange: isActive ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-700 hover:bg-orange-100",
+      red: isActive ? "bg-red-500 text-white" : "bg-red-50 text-red-700 hover:bg-red-100",
+      green: isActive ? "bg-green-500 text-white" : "bg-green-50 text-green-700 hover:bg-green-100"
+    };
+    return colorMap[color] || colorMap.blue;
+  };
+
+  const getMobileTabColors = (color) => {
+    const colorMap = {
+      blue: "bg-blue-500 text-white",
+      yellow: "bg-amber-500 text-white",
+      orange: "bg-orange-500 text-white",
+      red: "bg-red-500 text-white",
+      green: "bg-green-500 text-white"
+    };
+    return colorMap[color] || colorMap.blue;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[250px]">
-        <motion.div
-          className="h-10 w-10 rounded-full border-4 border-indigo-400 border-t-transparent"
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-        />
-        <span className="ml-3 text-indigo-600 font-semibold">
-          Loading tasks...
-        </span>
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 mx-2 sm:mx-0">
+        <div className="flex items-center justify-center h-[300px] sm:h-[400px]">
+          <div className="flex flex-col items-center gap-3 sm:gap-4">
+            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-500 animate-spin" />
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-gray-600 font-medium text-sm sm:text-base">Loading tasks...</span>
+              <div className="w-32 sm:w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 rounded-full animate-pulse w-3/4"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Desktop view */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-xl border border-gray-200 p-6 font-sans hidden sm:block">
-        <h2 className="text-2xl font-extrabold text-gray-800 mb-4">
-          Task Overview
-        </h2>
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 transform transition-all duration-300 hover:shadow-xl mx-2 sm:mx-0">
+      {/* Header */}
+      <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white rounded-t-xl sm:rounded-t-2xl">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="p-1.5 sm:p-2 bg-indigo-100 rounded-lg">
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">Task Overview</h2>
+        </div>
 
-        {/* Tabs */}
-        <div className="flex gap-3 flex-wrap mb-6">
-          {tabs.map((tab, i) => {
-            const visibleCount = categorizedTasks[tab]?.filter(
-              (t) => !isHiddenCompletedTask(t)
+        {/* Desktop Tabs */}
+        <div className="hidden lg:flex gap-2 bg-gray-100 rounded-xl p-1.5">
+          {tabs.map((tab) => {
+            const visibleCount = categorizedTasks[tab.key]?.filter(
+              (task) => !isHiddenCompletedTask(task)
             ).length;
-            const isActive = activeTab === tab;
+            const isActive = activeTab === tab.key;
+            const Icon = tab.icon;
+
             return (
-              <motion.button
-                key={tab}
-                custom={i}
-                initial="hidden"
-                animate="visible"
-                whileHover="hover"
-                variants={buttonVariants}
-                onClick={() => setActiveTab(tab)}
-                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200
-                  ${
-                    isActive
-                      ? "bg-indigo-600 text-white"
-                      : "bg-white text-gray-700"
-                  }
-                  shadow-md active:shadow-inner
-                `}
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
+                  getTabColorClasses(tab.color, isActive)
+                }`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                <Icon className="w-4 h-4" />
+                {tab.label}
                 {visibleCount > 0 && (
-                  <span
-                    className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-gray-200 text-gray-800"
-                    }`}
-                  >
+                  <span className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-xs font-bold min-w-[20px] text-center">
                     {visibleCount}
                   </span>
                 )}
-              </motion.button>
+              </button>
             );
           })}
         </div>
 
-        {/* Task List */}
-        <div className="overflow-y-auto h-[65vh]">
-          {getTasksByTab().filter((t) => !isHiddenCompletedTask(t)).length ===
-          0 ? (
-            <div className="text-gray-500 text-sm text-center italic py-12">
-              No tasks found
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              <AnimatePresence mode="wait">
-                {getTasksByTab()
-                  .filter((task) => !isHiddenCompletedTask(task))
-                  .map((task, idx) => (
-                    <motion.li
-                      key={task._id}
-                      custom={idx}
-                      variants={rowVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      className="bg-white rounded-xl shadow-md p-4 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={
-                            task.status === "Completed" ||
-                            justCompleted.has(task._id)
-                          }
-                          onChange={() => handleToggleCompleted(task._id)}
-                          disabled={task.status === "Completed"}
-                          className="accent-indigo-600 w-4 h-4 cursor-pointer"
-                        />
-                        <div>
-                          <p
-                            className={`font-medium ${
-                              task.status === "Completed" ||
-                              justCompleted.has(task._id)
-                                ? "line-through text-gray-400"
-                                : "text-gray-800"
-                            }`}
-                          >
-                            {task.taskName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {task.dueDate &&
-                            !isNaN(new Date(task.dueDate).getTime())
-                              ? format(new Date(task.dueDate), "MMM d, yyyy")
-                              : "No due date"}
-                          </p>
-                        </div>
-                      </div>
+        {/* Tablet Tabs */}
+        <div className="hidden sm:flex lg:hidden gap-1 bg-gray-100 rounded-lg p-1">
+          {tabs.map((tab) => {
+            const visibleCount = categorizedTasks[tab.key]?.filter(
+              (task) => !isHiddenCompletedTask(task)
+            ).length;
+            const isActive = activeTab === tab.key;
+            const Icon = tab.icon;
 
-                      <div className="flex flex-wrap gap-2">
-                        {task.assignees?.map((assignee) => (
-                          <span
-                            key={assignee.email}
-                            className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium"
-                          >
-                            {assignee.name}
-                          </span>
-                        ))}
-                      </div>
-                    </motion.li>
-                  ))}
-              </AnimatePresence>
-            </ul>
-          )}
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1 px-2 py-2 rounded-md text-xs font-medium transition-all duration-200 ${
+                  getTabColorClasses(tab.color, isActive)
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                <span className="hidden md:inline">{tab.label}</span>
+                {visibleCount > 0 && (
+                  <span className="bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-xs font-bold min-w-[16px] text-center">
+                    {visibleCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Mobile view */}
-      <div className="sm:hidden block bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-lg border border-gray-200 p-4 font-sans">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Task Overview</h2>
-
-        {/* Tabs Carousel */}
-        <div className="relative flex items-center mb-5">
+        {/* Mobile Tabs */}
+        <div className="flex sm:hidden items-center justify-between w-full">
           <button
-            onClick={() => handleArrowClick("left")}
-            className="absolute left-0 z-10 bg-white shadow-md rounded-full p-1 -ml-2"
+            onClick={handlePrevTab}
+            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-all duration-200 transform hover:scale-110"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <ChevronLeft className="w-5 h-5" />
           </button>
 
-          <div
-            ref={scrollRef}
-            id="mobile-tabs"
-            className="flex gap-2 overflow-x-auto scrollbar-hide px-8 w-full scroll-smooth"
-          >
-            {tabs.map((tab) => {
-              const visibleCount = categorizedTasks[tab]?.filter(
-                (t) => !isHiddenCompletedTask(t)
-              ).length;
-              const isActive = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  data-tab={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200
-                    ${
-                      isActive
-                        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-200"
-                    }
-                    active:scale-95`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-gray-200 text-gray-800"
-                    }`}
-                  >
-                    {visibleCount || 0}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full shadow-lg border border-gray-200 bg-white">
+            <div className={`p-1.5 rounded-lg ${getMobileTabColors(tabs[currentTabIndex].color)}`}>
+              {React.createElement(tabs[currentTabIndex].icon, { className: "w-3 h-3" })}
+            </div>
+            <span className="font-semibold text-gray-800 text-sm">
+              {tabs[currentTabIndex].label}
+            </span>
+            <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-bold min-w-[20px] text-center">
+              {categorizedTasks[activeTab]?.filter(
+                (task) => !isHiddenCompletedTask(task)
+              ).length || 0}
+            </span>
           </div>
 
           <button
-            onClick={() => handleArrowClick("right")}
-            className="absolute right-0 z-10 bg-white shadow-md rounded-full p-1 -mr-2"
+            onClick={handleNextTab}
+            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-all duration-200 transform hover:scale-110"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
+      </div>
 
-        {/* Task List */}
-        <div className="overflow-y-auto max-h-[70vh]">
-          {getTasksByTab().filter((t) => !isHiddenCompletedTask(t)).length ===
-          0 ? (
-            <div className="text-gray-500 text-xs text-center italic py-8">
-              No tasks
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              <AnimatePresence mode="wait">
-                {getTasksByTab()
-                  .filter((task) => !isHiddenCompletedTask(task))
-                  .map((task, idx) => (
-                    <motion.li
-                      key={task._id}
-                      custom={idx}
-                      variants={rowVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      className="bg-white rounded-xl shadow-md p-3 flex items-center justify-between hover:shadow-lg transition-all duration-200"
+      {/* Task List - Desktop/Tablet */}
+      <div className="hidden sm:block h-[50vh] sm:h-[60vh] overflow-auto">
+        {getTasksByTab().filter((task) => !isHiddenCompletedTask(task)).length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mb-3 opacity-50" />
+            <span className="text-sm font-medium">No tasks found</span>
+            <span className="text-xs mt-1">You're all caught up!</span>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {getTasksByTab()
+              .filter((task) => !isHiddenCompletedTask(task))
+              .map((task, index) => (
+                <div
+                  key={task._id}
+                  className={`flex justify-between items-center px-3 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 transition-all duration-200 transform hover:translate-x-1 ${
+                    animatingTask === task._id ? 'animate-pulse bg-green-50' : ''
+                  }`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                    <div className="relative flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={task.status === "Completed" || justCompleted.has(task._id)}
+                        onChange={() => handleToggleCompleted(task._id)}
+                        disabled={task.status === "Completed"}
+                        className="w-4 h-4 sm:w-5 sm:h-5 accent-indigo-600 cursor-pointer transition-transform duration-200 hover:scale-110"
+                      />
+                      {animatingTask === task._id && (
+                        <div className="absolute inset-0 w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-500 rounded animate-ping"></div>
+                      )}
+                    </div>
+                    <span
+                      className={`text-xs sm:text-sm font-medium transition-all duration-300 truncate ${
+                        task.status === "Completed" || justCompleted.has(task._id)
+                          ? "line-through text-gray-400"
+                          : "text-gray-800"
+                      }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={
-                            task.status === "Completed" ||
-                            justCompleted.has(task._id)
-                          }
-                          onChange={() => handleToggleCompleted(task._id)}
-                          disabled={task.status === "Completed"}
-                          className="accent-indigo-600 w-4 h-4 cursor-pointer"
-                        />
-                        <div>
-                          <p
-                            className={`text-sm font-medium ${
-                              task.status === "Completed" ||
-                              justCompleted.has(task._id)
-                                ? "line-through text-gray-400"
-                                : "text-gray-800"
-                            }`}
-                          >
-                            {task.taskName}
-                          </p>
-                          <p className="text-[11px] text-gray-500">
-                            {task.dueDate &&
-                            !isNaN(new Date(task.dueDate).getTime())
-                              ? format(new Date(task.dueDate), "MMM d")
-                              : "No date"}
-                          </p>
-                        </div>
+                      {task.taskName}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                    <div className="flex flex-col items-end gap-1 sm:gap-2">
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Calendar className="w-3 h-3" />
+                        <span className="text-xs">
+                          {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
+                            ? format(new Date(task.dueDate), "MMM d")
+                            : "Invalid"}
+                        </span>
                       </div>
-
-                      <div className="flex flex-wrap gap-1 max-w-[40%] justify-end">
-                        {task.assignees?.map((assignee) => (
-                          <span
-                            key={assignee.email}
-                            className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-medium truncate"
-                          >
-                            {assignee.name}
-                          </span>
+                      
+                      <div className="flex flex-wrap gap-1 max-w-24 sm:max-w-48">
+                        {task?.assignees?.slice(0, 2).map((assignee) => (
+                          <div key={assignee.email} className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                            <Users className="w-2 h-2 sm:w-3 sm:h-3" />
+                            <span className="text-xs font-medium truncate max-w-12 sm:max-w-20">
+                              {assignee.name.split(' ')[0]}
+                            </span>
+                          </div>
                         ))}
+                        {task?.assignees?.length > 2 && (
+                          <div className="flex items-center bg-gray-100 text-gray-600 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                            <span className="text-xs font-medium">+{task.assignees.length - 2}</span>
+                          </div>
+                        )}
                       </div>
-                    </motion.li>
-                  ))}
-              </AnimatePresence>
-            </ul>
-          )}
-        </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+
+      {/* Task List - Mobile */}
+      <div className="sm:hidden h-[calc(100vh-200px)] max-h-[500px] overflow-auto">
+        {getTasksByTab().filter((task) => !isHiddenCompletedTask(task)).length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 px-4">
+            <Calendar className="w-12 h-12 mb-3 opacity-50" />
+            <span className="text-sm font-medium text-center">No tasks found</span>
+            <span className="text-xs mt-1 text-center">You're all caught up for {tabs[currentTabIndex].label.toLowerCase()}!</span>
+          </div>
+        ) : (
+          <div className="p-3 space-y-3">
+            {getTasksByTab()
+              .filter((task) => !isHiddenCompletedTask(task))
+              .map((task, index) => (
+                <div
+                  key={task._id}
+                  className={`bg-gray-50 rounded-lg p-3 shadow-sm border border-gray-100 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-md active:scale-[0.99] ${
+                    animatingTask === task._id ? 'animate-pulse bg-green-50 border-green-200' : ''
+                  }`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="relative mt-0.5 flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={task.status === "Completed" || justCompleted.has(task._id)}
+                        onChange={() => handleToggleCompleted(task._id)}
+                        disabled={task.status === "Completed"}
+                        className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                      />
+                      {animatingTask === task._id && (
+                        <div className="absolute inset-0 w-4 h-4 border-2 border-green-500 rounded animate-ping"></div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <span
+                        className={`text-sm font-medium block mb-2 leading-5 transition-all duration-300 ${
+                          task.status === "Completed" || justCompleted.has(task._id)
+                            ? "line-through text-gray-400"
+                            : "text-gray-800"
+                        }`}
+                      >
+                        {task.taskName}
+                      </span>
+                      
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {task?.assignees?.slice(0, 3).map((assignee) => (
+                          <div key={assignee.email} className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                            <Users className="w-2.5 h-2.5" />
+                            <span className="text-xs font-medium">
+                              {assignee.name.split(' ')[0]}
+                            </span>
+                          </div>
+                        ))}
+                        {task?.assignees?.length > 3 && (
+                          <div className="flex items-center bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+                            <span className="text-xs font-medium">+{task.assignees.length - 3}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Calendar className="w-3 h-3" />
+                        <span>
+                          {task.dueDate && !isNaN(new Date(task.dueDate).getTime())
+                            ? format(new Date(task.dueDate), "MMM d")
+                            : "Invalid date"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );

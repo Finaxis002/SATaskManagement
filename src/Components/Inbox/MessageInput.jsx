@@ -23,9 +23,9 @@ const MessageInput = ({
 }) => {
   return (
     <div
-        className={`message-input-container relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto
-    ${dragActive ? "ring-2 ring-indigo-500" : ""}`}
-
+      className={`relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto
+    ${dragActive ? "ring-2 ring-indigo-500" : ""}
+  `}
       onDragOver={(e) => {
         e.preventDefault();
         setDragActive(true);

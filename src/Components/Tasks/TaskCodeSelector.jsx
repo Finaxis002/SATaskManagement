@@ -8,7 +8,7 @@ export const customSelectStyles = {
     borderRadius: 12,
     borderColor: state.isFocused ? "#a5b4fc" : "#e5e7eb",
     boxShadow: state.isFocused ? "0 0 0 2px #a5b4fc33" : "none",
-    minHeight: 45,
+    minHeight: 40,
     fontSize: 15,
     background: "#f9fafb",
     transition: "border-color 0.2s, box-shadow 0.2s",

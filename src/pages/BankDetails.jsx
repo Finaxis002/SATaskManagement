@@ -246,11 +246,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "../utils/secureAxios";
 import Swal from "sweetalert2";
-import { FaPen, FaTrash } from "react-icons/fa";
 
 const BankDetails = () => {
 
-  const [submittingFirm, setSubmittingFirm] = useState(false);
+const [submittingFirm, setSubmittingFirm] = useState(false);
 
   const [firms, setFirms] = useState([]);
   const [showFirmModal, setShowFirmModal] = useState(false);
@@ -327,12 +326,12 @@ const BankDetails = () => {
   };
 
   const Toast = Swal.mixin({
-    toast: true,
-    position: "top-end",
-    showConfirmButton: false,
-    timer: 2000,
-    timerProgressBar: true,
-  });
+  toast: true,
+  position: "top-end",
+  showConfirmButton: false,
+  timer: 2000,
+  timerProgressBar: true,
+});
 
   // submit
   // const submitFirm = async () => {
@@ -358,107 +357,107 @@ const BankDetails = () => {
   // };
 
 
-  //   const submitFirm = async () => {
-  //   const payload = {
-  //     name: formFirm.name,
-  //     address: formFirm.address,
-  //     gstin: formFirm.gstin,
-  //     phone: formFirm.phone,
-  //     prefix: formFirm.prefix,
-  //   };
+//   const submitFirm = async () => {
+//   const payload = {
+//     name: formFirm.name,
+//     address: formFirm.address,
+//     gstin: formFirm.gstin,
+//     phone: formFirm.phone,
+//     prefix: formFirm.prefix,
+//   };
 
-  //   try {
-  //     setSubmittingFirm(true);
+//   try {
+//     setSubmittingFirm(true);
 
-  //     if (firmModalMode === "add") {
-  //       await axios.post("https://taskbe.sharda.co.in/firms", payload);
-  //       alert("Firm created successfully.");
-  //     } else {
-  //       await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
-  //       alert("Firm updated successfully.");
-  //     }
+//     if (firmModalMode === "add") {
+//       await axios.post("https://taskbe.sharda.co.in/firms", payload);
+//       alert("Firm created successfully.");
+//     } else {
+//       await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
+//       alert("Firm updated successfully.");
+//     }
 
-  //     closeFirmModal();
-  //     fetchFirms();
-  //   } catch (err) {
-  //     // Try to understand backend error shapes
-  //     const status = err?.response?.status;
-  //     const msg = err?.response?.data?.message ?? err?.message ?? "Unknown error";
-  //     const code = err?.response?.data?.code;
+//     closeFirmModal();
+//     fetchFirms();
+//   } catch (err) {
+//     // Try to understand backend error shapes
+//     const status = err?.response?.status;
+//     const msg = err?.response?.data?.message ?? err?.message ?? "Unknown error";
+//     const code = err?.response?.data?.code;
 
-  //     const isDupPrefix =
-  //       status === 409 ||                              // common for conflicts
-  //       code === 11000 ||                              // Mongo duplicate key
-  //       err?.response?.data?.keyPattern?.prefix ||    // Mongo key pattern
-  //       /duplicate/i.test(String(msg)) && /prefix/i.test(String(msg));
+//     const isDupPrefix =
+//       status === 409 ||                              // common for conflicts
+//       code === 11000 ||                              // Mongo duplicate key
+//       err?.response?.data?.keyPattern?.prefix ||    // Mongo key pattern
+//       /duplicate/i.test(String(msg)) && /prefix/i.test(String(msg));
 
-  //     if (isDupPrefix) {
-  //       alert("This firm prefix already exists. Please choose a different prefix.");
-  //     } else {
-  //       alert(`Failed to ${firmModalMode === "add" ? "create" : "update"} firm: ${msg}`);
-  //     }
-  //   } finally {
-  //     setSubmittingFirm(false);
-  //   }
-  // };
+//     if (isDupPrefix) {
+//       alert("This firm prefix already exists. Please choose a different prefix.");
+//     } else {
+//       alert(`Failed to ${firmModalMode === "add" ? "create" : "update"} firm: ${msg}`);
+//     }
+//   } finally {
+//     setSubmittingFirm(false);
+//   }
+// };
 
 
-  const submitFirm = async () => {
-    const payload = {
-      name: (formFirm.name || "").trim(),
-      address: (formFirm.address || "").trim(),
-      gstin: (formFirm.gstin || "").trim(),
-      phone: (formFirm.phone || "").trim(),
-      prefix: (formFirm.prefix || "").trim(),
-    };
-
-    try {
-      setSubmittingFirm(true);
-
-      if (firmModalMode === "add") {
-        await axios.post("https://taskbe.sharda.co.in/firms", payload);
-        Toast.fire({ icon: "success", title: "Firm created successfully" });
-      } else {
-        await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
-        Toast.fire({ icon: "success", title: "Firm updated successfully" });
-      }
-
-      closeFirmModal();
-      fetchFirms();
-    } catch (err) {
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      const msg = data?.message ?? err?.message ?? "Unknown error";
-      const code = data?.code;
-
-      const isDupPrefix =
-        status === 409 ||
-        code === 11000 ||
-        data?.keyPattern?.prefix ||
-        (/duplicate/i.test(String(msg)) && /prefix/i.test(String(msg))) ||
-        ((status === 400 || status === 422) && /prefix/i.test(String(msg)) && /exist/i.test(String(msg)));
-
-      if (isDupPrefix) {
-        await Swal.fire({
-          icon: "error",
-          title: "Duplicate Prefix",
-          text: "This firm prefix already exists. Please choose a different prefix.",
-          confirmButtonText: "OK",
-          confirmButtonColor: "#2563eb",
-        });
-      } else {
-        await Swal.fire({
-          icon: "error",
-          title: `Failed to ${firmModalMode === "add" ? "create" : "update"} firm`,
-          text: msg,
-          confirmButtonText: "OK",
-          confirmButtonColor: "#2563eb",
-        });
-      }
-    } finally {
-      setSubmittingFirm(false);
-    }
+const submitFirm = async () => {
+  const payload = {
+    name: (formFirm.name || "").trim(),
+    address: (formFirm.address || "").trim(),
+    gstin: (formFirm.gstin || "").trim(),
+    phone: (formFirm.phone || "").trim(),
+    prefix: (formFirm.prefix || "").trim(),
   };
+
+  try {
+    setSubmittingFirm(true);
+
+    if (firmModalMode === "add") {
+      await axios.post("https://taskbe.sharda.co.in/firms", payload);
+      Toast.fire({ icon: "success", title: "Firm created successfully" });
+    } else {
+      await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
+      Toast.fire({ icon: "success", title: "Firm updated successfully" });
+    }
+
+    closeFirmModal();
+    fetchFirms();
+  } catch (err) {
+    const status = err?.response?.status;
+    const data   = err?.response?.data;
+    const msg    = data?.message ?? err?.message ?? "Unknown error";
+    const code   = data?.code;
+
+    const isDupPrefix =
+      status === 409 ||
+      code === 11000 ||
+      data?.keyPattern?.prefix ||
+      (/duplicate/i.test(String(msg)) && /prefix/i.test(String(msg))) ||
+      ((status === 400 || status === 422) && /prefix/i.test(String(msg)) && /exist/i.test(String(msg)));
+
+    if (isDupPrefix) {
+      await Swal.fire({
+        icon: "error",
+        title: "Duplicate Prefix",
+        text: "This firm prefix already exists. Please choose a different prefix.",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#2563eb",
+      });
+    } else {
+      await Swal.fire({
+        icon: "error",
+        title: `Failed to ${firmModalMode === "add" ? "create" : "update"} firm`,
+        text: msg,
+        confirmButtonText: "OK",
+        confirmButtonColor: "#2563eb",
+      });
+    }
+  } finally {
+    setSubmittingFirm(false);
+  }
+};
 
 
   // open/close
@@ -648,291 +647,292 @@ const BankDetails = () => {
   return (
     <div
       className="max-w-6xl mx-auto  flex flex-col"
-
+  
     >
-      <div className="max-h-[calc(100vh-220px)] overflow-y-auto pb-8 pr-2">
-        <div className="px-4 pt-4 flex-shrink-0">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-3xl font-bold text-gray-800">
-              Firm & Bank Management
-            </h1>
-            <button
-              className="px-4 py-1 sm:px-6 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm sm:text-base"
-              // onClick={() => setShowFirmModal(true)}
-              onClick={openAddFirm}
+     <div className="max-h-[calc(100vh-220px)] overflow-y-auto pb-8 pr-2">
+       <div className="px-4 pt-4 flex-shrink-0">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-800">
+            Firm & Bank Management
+          </h1>
+          <button
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-colors flex items-center gap-2"
+            // onClick={() => setShowFirmModal(true)}
+            onClick={openAddFirm}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
             >
+              <path
+                fillRule="evenodd"
+                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Add New Firm
+          </button>
+        </div>
+      </div>
+
+      <div className="">
+        <div className="space-y-6 pb-6">
+          {firms.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
+                className="h-12 w-12 mx-auto text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
                 <path
-                  fillRule="evenodd"
-                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                  clipRule="evenodd"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                 />
               </svg>
-              Add New Firm
-            </button>
-          </div>
-        </div>
-
-        <div className="">
-          <div className="space-y-6 pb-6">
-            {firms.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12 mx-auto text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">
-                  No firms found
-                </h3>
-                <p className="mt-1 text-gray-500">
-                  Get started by adding your first firm
-                </p>
-                <button
-                  className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                  onClick={() => setShowFirmModal(true)}
-                >
-                  Add Firm
-                </button>
-              </div>
-            ) : (
-              firms.map((firm) => (
+              <h3 className="mt-4 text-lg font-medium text-gray-900">
+                No firms found
+              </h3>
+              <p className="mt-1 text-gray-500">
+                Get started by adding your first firm
+              </p>
+              <button
+                className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                onClick={() => setShowFirmModal(true)}
+              >
+                Add Firm
+              </button>
+            </div>
+          ) : (
+            firms.map((firm) => (
+              <div
+                key={firm._id}
+                className="bg-white rounded-xl shadow-md overflow-hidden"
+              >
                 <div
-                  key={firm._id}
-                  className="bg-white rounded-xl shadow-md overflow-hidden"
+                  className="p-6 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-center"
+                  onClick={() => toggleFirmExpansion(firm._id)}
                 >
-                  <div
-                    className="p-6 cursor-pointer hover:bg-gray-300 transition-colors flex flex-col sm:flex-row justify-between items-center rounded-lg shadow-lg hover:shadow-xl bg-gray-200"
-                    onClick={() => toggleFirmExpansion(firm._id)}
-                  >
-
-                    <div className="w-full sm:w-auto mb-4 sm:mb-0">
-                      <h2 className="text-2xl font-semibold text-gray-800 text-center sm:text-left">{firm.name}</h2>
-                      <p className="text-gray-500 mt-1">{firm.address}</p>
-                    </div>
-
-                    <div className="flex flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-                      {/* Bank Count */}
-                      <span className="text-sm font-medium text-blue-700  px-3 py-1 ">
-                        {firm.banks?.length || 0}{" "}
-                        {firm.banks?.length === 1 ? "Bank" : "Banks"}
-                      </span>
-
-                      {/* Add Bank */}
-                      <div className="flex flex-row flex-wrap items-center gap-3 sm:gap-6">
-                        {/* Add Bank */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openAddBank(firm._id);
-                          }}
-                          className="px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 text-sm sm:text-base justify-center"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <span>Add Bank</span>
-                        </button>
-
-                        {/* Edit Firm */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditFirm(firm);
-                          }}
-                          className="px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 justify-center"
-                        >
-                          <FaPen className="h-4 w-4" />
-                          <span className="sm:hidden"></span>
-                        </button>
-
-                        {/* Delete Firm */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            confirmDelete("firm", () => handleDeleteFirm(firm._id));
-                          }}
-                          className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 justify-center"
-                        >
-                          <FaTrash className="h-4 w-4" />
-                          <span className="sm:hidden"></span>
-                        </button>
-                      </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800">
+                      {firm.name}
+                    </h2>
+                    <p className="text-gray-500 mt-1">{firm.address}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                      {firm.banks?.length || 0}{" "}
+                      {firm.banks?.length === 1 ? "Bank" : "Banks"}
+                    </span>
+                    <button
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center gap-2"
+                      // onClick={(e) => {
+                      //   e.stopPropagation();
+                      //   setActiveFirmId(firm._id);
+                      //   setShowBankModal(true);
+                      // }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAddBank(firm._id);
+                      }}
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className={`h-5 w-5 text-gray-500 transition-transform ${expandedFirms[firm._id] ? "rotate-180" : ""
-                          }`}
+                        className="h-4 w-4"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
                         <path
                           fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
                           clipRule="evenodd"
                         />
                       </svg>
-                    </div>
+                      Add Bank
+                    </button>
+
+                    <button
+                      // onClick={(e) => {
+                      //   e.stopPropagation();
+                      //   handleUpdateFirm(firm);
+                      // }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditFirm(firm);
+                      }}
+                      className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        confirmDelete("firm", () => handleDeleteFirm(firm._id));
+                      }}
+                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
+                    >
+                      Delete
+                    </button>
+
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-5 w-5 text-gray-500 transition-transform ${
+                        expandedFirms[firm._id] ? "rotate-180" : ""
+                      }`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </div>
-                  {expandedFirms[firm._id] && (
-                    <div className="border-t border-gray-200 p-6 pb-8">
-                      {firm.banks && firm.banks.length > 0 ? (
-                        <div
-                          className="overflow-x-auto "
-                          style={{ maxHeight: "400px", overflowY: "auto" }}
-                        >
-                          <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th
-                                  scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                  Bank Name
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                  A/C Name
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                  A/C Number
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                  IFSC
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                  UPI Details
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Actions
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                              {firm.banks.map((bank, idx) => (
-                                <tr
-                                  key={idx}
-                                  className={
-                                    idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                  }
-                                >
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {bank.bankName}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {bank.accountName}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {bank.accountNumber}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {bank.ifsc}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <div>Name: {bank.upiIdName || "-"}</div>
-                                    <div>Mobile: {bank.upiMobile || "-"}</div>
-                                    <div>ID: {bank.upiId || "-"}</div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <button
-                                      // onClick={() =>
-                                      //   handleUpdateBank(firm._id, bank)
-                                      // }
-                                      onClick={() => openEditBank(firm._id, bank)}
-                                      className="mr-2 text-blue-600 hover:text-blue-800"
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        confirmDelete("bank", () =>
-                                          handleDeleteBank(firm._id, bank._id)
-                                        )
-                                      }
-                                      className="text-red-600 hover:text-red-800"
-                                    >
-                                      Delete
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-12 w-12 mx-auto text-gray-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
-                            />
-                          </svg>
-                          <h3 className="mt-4 text-lg font-medium text-gray-900">
-                            No banks added
-                          </h3>
-                          <p className="mt-1 text-gray-500">
-                            Add a bank account to this firm
-                          </p>
-                          <button
-                            className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-                            onClick={() => {
-                              setActiveFirmId(firm._id);
-                              setShowBankModal(true);
-                            }}
-                          >
-                            Add Bank Account
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
-              ))
-            )}
-          </div>
+
+                {expandedFirms[firm._id] && (
+                  <div className="border-t border-gray-200 p-6 pb-8">
+                    {firm.banks && firm.banks.length > 0 ? (
+                      <div
+                        className="overflow-x-auto "
+                        style={{ maxHeight: "400px", overflowY: "auto" }}
+                      >
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th
+                                scope="col"
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Bank Name
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                A/C Name
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                A/C Number
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                IFSC
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                UPI Details
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {firm.banks.map((bank, idx) => (
+                              <tr
+                                key={idx}
+                                className={
+                                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                }
+                              >
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {bank.bankName}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {bank.accountName}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {bank.accountNumber}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {bank.ifsc}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <div>Name: {bank.upiIdName || "-"}</div>
+                                  <div>Mobile: {bank.upiMobile || "-"}</div>
+                                  <div>ID: {bank.upiId || "-"}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <button
+                                    // onClick={() =>
+                                    //   handleUpdateBank(firm._id, bank)
+                                    // }
+                                    onClick={() => openEditBank(firm._id, bank)}
+                                    className="mr-2 text-blue-600 hover:text-blue-800"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      confirmDelete("bank", () =>
+                                        handleDeleteBank(firm._id, bank._id)
+                                      )
+                                    }
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    Delete
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-12 w-12 mx-auto text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+                          />
+                        </svg>
+                        <h3 className="mt-4 text-lg font-medium text-gray-900">
+                          No banks added
+                        </h3>
+                        <p className="mt-1 text-gray-500">
+                          Add a bank account to this firm
+                        </p>
+                        <button
+                          className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+                          onClick={() => {
+                            setActiveFirmId(firm._id);
+                            setShowBankModal(true);
+                          }}
+                        >
+                          Add Bank Account
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
+     </div>
 
       {/* Add Firm Modal */}
 
@@ -1043,16 +1043,16 @@ const BankDetails = () => {
                   {firmModalMode === "add" ? "Add Firm" : "Update Firm"}
                 </button> */}
                 <button
-                  onClick={submitFirm}
-                  disabled={submittingFirm}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-md"
-                >
-                  {submittingFirm
-                    ? "Saving..."
-                    : firmModalMode === "add"
-                      ? "Add Firm"
-                      : "Update Firm"}
-                </button>
+  onClick={submitFirm}
+  disabled={submittingFirm}
+  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-md"
+>
+  {submittingFirm
+    ? "Saving..."
+    : firmModalMode === "add"
+      ? "Add Firm"
+      : "Update Firm"}
+</button>
 
               </div>
             </div>
@@ -1063,8 +1063,8 @@ const BankDetails = () => {
       {/* Add Bank Modal */}
 
       {isBankModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">

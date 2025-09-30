@@ -1,11 +1,11 @@
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
-
-// Pages
 import Dashboard from "./pages/Dashboard";
 import AddEmployee from "./pages/AddEmployee";
 import AllEmployees from "./pages/AllEmployees";
-import Login from "./pages/Login";
+import Login from "./pages/Login"; // Import the login page
+import ProtectedRoute from "./Components/ProtectedRoute";
 import Tasks from "./pages/Tasks";
 import Notifications from "./pages/Notifications";
 import Reminders from "./pages/Reminders";
@@ -14,9 +14,9 @@ import AllTasks from "./pages/AllTasks";
 import Departments from "./pages/Departments";
 import Completed from "./pages/Completed";
 import CalendarPage from "./pages/CalendarPage";
-import ProfilePage from "./pages/ProfilePage";
+import ProfilePage from "./pages/ProfilePage"; // Adjust the path as per your structure
 import Leave from "./pages/Leave";
-import LeaveManagement from "./pages/LeaveManagement";
+import LeaveManagement from "./pages/LeaveManagement"; // Adjust the path as per your structure
 import InvoiceForm from "./pages/InvoiceForm";
 import Clients from "./pages/Clients";
 import ViewInvoices from "./pages/ViewInvoices";
@@ -24,21 +24,21 @@ import ViewInvoiceWithOTP from "./pages/ViewInvoiceWithOTP";
 import WhatsAppPage from "./pages/WhatsAppPage";
 import MailCreation from "./pages/MailCreation";
 import MailBox from "./pages/MailBox";
-import InvoicesPage from "./pages/InvoicesPage";
-import SettingsPage from "./pages/SettingsPage";
-
-
-
-// Context & Components
 import { NotesProvider } from "./context/NotesContext";
-
+import AddServicePage from "./pages/AddServicePage";
+import MessageHistory from "./Components/history/MessageHistory";
 import InvoiceTab from "./pages/InvoiceTab";
 
+import Support from "./pages/Support";
+import DeveloperSupport from "./pages/DeveloperSupport";
+
+
 import ShortcutHandler from "./Components/ShortcutHandler";
-import ProtectedRoute from "./Components/ProtectedRoute";
+import Updates from "./pages/Updates";
 
 
 const App = () => {
+
   function MailBoxEmbed() {
     return (
       <iframe
@@ -61,12 +61,9 @@ const App = () => {
 
   return (
     <Router>
-      <ShortcutHandler>
       <Routes>
-        {/* Public route */}
         <Route path="/login" element={<Login />} />
 
-        {/* Protected routes */}
         <Route
           path="/"
           element={
@@ -100,7 +97,7 @@ const App = () => {
           }
         />
 
- 
+
         <Route
           path="/reminders"
           element={
@@ -133,6 +130,22 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        
+
+
+          <Route
+            path="/whatsapp"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <WhatsAppPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+
 
         <Route
           path="/notifications"
@@ -199,16 +212,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <SettingsPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/profile"
           element={
@@ -242,7 +246,7 @@ const App = () => {
           }
         />
 
-        {/* <Route
+        <Route
           path="/invoice"
           element={
             <ProtectedRoute>
@@ -251,19 +255,20 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           }
-        /> */}
+        />
+
         {/* Add the new InvoicesPage route for mobile view*/}
         <Route
-          path="/invoices"
+          path="/viewinvoicewithotp"
           element={
             <ProtectedRoute>
               <MainLayout>
-                <InvoicesPage />
+                <ViewInvoiceWithOTP />
               </MainLayout>
             </ProtectedRoute>
           }
-        />
-        
+        /> 
+
         <Route
           path="/viewinvoicewithotp"
           element={
@@ -274,18 +279,8 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        
 
-        <Route
-          path="/whatsapp"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <WhatsAppPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+     
 
         <Route
           path="/mail-creation"
@@ -298,6 +293,70 @@ const App = () => {
           }
         />
 
+
+        {/* ⬇️ NEW: /updates route (Sidebar link will open this) */}
+        <Route
+          path="/updates"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Updates />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/updates" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <Updates />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+         <Route path="/add-service/:clientId" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <AddServicePage />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+         <Route path="/message-history/:clientId" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <MessageHistory />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+
+        <Route path="/support" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <Support />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+         <Route path="/developer-support" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <DeveloperSupport />
+          </MainLayout>
+        </ProtectedRoute>
+        }/>
+
+         <Route
+          path="/mail-creation"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MailCreation />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/mailbox"
           element={
@@ -319,6 +378,8 @@ const App = () => {
           }
         />
 
+
+
         {/* <Route 
           path="/invoice-tab"
           element={
@@ -330,9 +391,9 @@ const App = () => {
           }
         /> */}
       </Routes>
-    </ShortcutHandler>
     </Router>
   );
 };
+
 
 export default App;
