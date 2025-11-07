@@ -3,43 +3,6 @@ import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import axios from "axios";
-import TimePicker from "react-time-picker";
-import "react-time-picker/dist/TimePicker.css";
-import "react-clock/dist/Clock.css";
-
-// Toast Component
-const Toast = ({ message, type, isVisible, onClose }) => {
-  useEffect(() => {
-    if (isVisible) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 3000); // Auto close after 3 seconds
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, onClose]);
-
-  if (!isVisible) return null;
-
-  return (
-    <div className={`fixed top-16 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform ${type === 'success'
-        ? 'bg-green-500 text-white'
-        : 'bg-red-500 text-white'
-      } ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-[-100px] opacity-0'}`}>
-      <div className="flex items-center gap-2">
-        <span className="text-lg">
-          {type === 'success' ? '✅' : '❌'}
-        </span>
-        <span className="font-medium">{message}</span>
-        <button
-          onClick={onClose}
-          className="ml-2 text-white hover:text-gray-200 font-bold text-lg"
-        >
-          ×
-        </button>
-      </div>
-    </div>
-  );
-};
 
 const LeaveRequestForm = () => {
   const userName = localStorage.getItem("name");
@@ -55,15 +18,17 @@ const LeaveRequestForm = () => {
   const [comments, setComments] = useState("");
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
-
-  // Toast states
-  const [toast, setToast] = useState({
-    isVisible: false,
-    message: '',
-    type: 'success'
-  });
-
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  
   const calendarRef = useRef(null);
+
+  // Show toast notification
+  const showToast = (message, type) => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: "", type: "" });
+    }, 3000);
+  };
 
   // Format dates
   const formatDate = (date) =>
@@ -84,20 +49,38 @@ const LeaveRequestForm = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const showToast = (message, type = 'success') => {
-    setToast({
-      isVisible: true,
-      message,
-      type
-    });
-  };
-
-  const hideToast = () => {
-    setToast(prev => ({ ...prev, isVisible: false }));
-  };
-
   const handleSubmit = async () => {
     const userId = localStorage.getItem("userId");
+    const today = new Date();
+    // Calculate the required minimum start date (48 hours from now)
+    const minCasualLeaveDate = new Date();
+    minCasualLeaveDate.setDate(today.getDate() + 2); // 2 days in advance
+
+    // --- 1. Casual Leave 48-Hour Validation ---
+    if (leaveType === "Casual Leave") {
+      const selectedStartDate = new Date(range[0].startDate);
+      // Ensure the selected date is strictly after the minimum required date
+      if (selectedStartDate < minCasualLeaveDate) {
+        showToast(
+          "Casual Leave must be requested at least 48 hours (2 days) in advance of the start date.",
+          "error"
+        );
+        return; // Stop the submission
+      }
+    }
+
+    // --- 2. Comments Word Count Validation (Minimum 30 words for all leave types) ---
+    // Remove extra spaces and split by space to count words
+    const wordCount = comments.trim().split(/\s+/).filter(word => word.length > 0).length;
+
+    if (wordCount < 30) {
+        showToast(
+            `You must provide a detailed comment of at least 30 words for ${leaveType}. Your current comment has only ${wordCount} words.`,
+            "error"
+        );
+        return; // Stop the submission
+    }
+    // --- End Validations ---
 
     try {
       const payload = {
@@ -122,149 +105,164 @@ const LeaveRequestForm = () => {
       // Trigger 'storage' event to update sidebar alert in real-time
       const event = new Event("storage");
       window.dispatchEvent(event);
-
-      // Show success toast instead of alert
-      showToast("Leave request submitted successfully! 🎉", "success");
+      showToast("Leave submitted successfully! 🎉", "success");
       setComments("");
     } catch (error) {
-      // Show error toast
       showToast("Error submitting leave request. Please try again.", "error");
     }
   };
 
   return (
-    <>
+    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition overflow-y-auto">
       {/* Toast Notification */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.isVisible}
-        onClose={hideToast}
+      {toast.show && (
+        <div className={`fixed top-20 right-4 z-50 max-w-sm w-full animate-slide-in ${
+          toast.type === "success" ? "bg-green-500" : "bg-red-500"
+        } text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3`}>
+          <div className="flex-shrink-0">
+            {toast.type === "success" ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
+              </svg>
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-sm">{toast.message}</p>
+          </div>
+          <button 
+            onClick={() => setToast({ show: false, message: "", type: "" })}
+            className="flex-shrink-0 hover:bg-white hover:bg-opacity-20 rounded p-1 transition"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      )}
+
+      <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 text-gray-900 text-center">Request Leave</h2>
+
+      <div className="border-b border-gray-300 mb-3 sm:mb-4"></div> 
+      
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Leave Dates</label>
+      <input
+        type="text"
+        readOnly
+        onClick={() => setShowCalendar(!showCalendar)}
+        value={`${formatDate(range[0].startDate)} - ${formatDate(
+          range[0].endDate
+        )}`}
+        className="w-full bg-gray-100 rounded-md p-2 sm:p-3 mb-3 sm:mb-4 text-sm sm:text-base text-gray-900 cursor-pointer border border-gray-300 hover:border-blue-400 transition"
       />
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition overflow-y-auto ">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-900 text-center ">Request Leave</h2>
+      {showCalendar && (
+        <div ref={calendarRef} className="fixed sm:absolute left-1/2 transform -translate-x-1/2 z-50 mt-[-1rem] mb-4 bg-white rounded-lg shadow-2xl p-2 max-w-[95vw] sm:max-w-none">
+          <DateRange
+            editableDateInputs={true}
+            onChange={(item) => setRange([item.selection])}
+            moveRangeOnFirstSelection={false}
+            ranges={range}
+            className="rounded-md text-sm"
+          />
+        </div>
+      )}
 
-        <div className="border-b border-gray-300 mb-4"></div>
-        <label className="block text-sm mb-1 text-gray-700">Leave Dates</label>
-        <input
-          type="text"
-          readOnly
-          onClick={() => setShowCalendar(!showCalendar)}
-          value={`${formatDate(range[0].startDate)} - ${formatDate(
-            range[0].endDate
-          )}`}
-          className="w-full bg-gray-100 rounded-md p-2 mb-4 text-gray-900 cursor-pointer border border-gray-300"
-        />
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Leave Type</label>
+      <select
+        value={leaveType}
+        onChange={(e) => setLeaveType(e.target.value)}
+        className="w-full bg-gray-100 rounded-md p-2 sm:p-3 mb-3 sm:mb-4 border border-gray-300 text-sm sm:text-base text-black hover:border-blue-400 transition"
+      >
+        <option>Sick Leave</option>
+        <option>Casual Leave</option>
+        <option>Earned Leave</option>
+        <option>Half Day Leave</option>
+      </select>
 
-        {showCalendar && (
-          <div ref={calendarRef} className="absolute z-50 mt-[-1rem] mb-4 bg-white rounded-lg shadow-lg p-2">
-            <DateRange
-              editableDateInputs={true}
-              onChange={(item) => setRange([item.selection])}
-              moveRangeOnFirstSelection={false}
-              ranges={range}
-              className="rounded-md"
-            />
-          </div>
-        )}
-
-        <label className="block text-sm mb-1 text-gray-700">Leave Type</label>
-        <select
-          value={leaveType}
-          onChange={(e) => setLeaveType(e.target.value)}
-          className="w-full bg-gray-100 rounded-md p-2 mb-4 border border-gray-300 text-black"
-        >
-          <option>Sick Leave</option>
-          <option>Casual Leave</option>
-          <option>Earned Leave</option>
-          <option>Half Day Leave</option>
-        </select>
-
-        {/* leave timing for half day leave */}
-        <div className="mb-4">
-          <label className="block text-sm mb-1 font-medium text-gray-700">
-            Leave Timing{" "}
-            <span className="text-gray-500">(Optional, for Half Day)</span>
-          </label>
-          <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg border border-gray-300 shadow-sm">
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                From Time
-              </label>
-              <TimePicker
-                onChange={setFromTime}
+      {/* leave timing for half day leave */}
+      <div className="mb-3 sm:mb-4">
+        <label className="block text-xs sm:text-sm mb-2 font-medium text-gray-700">
+          Leave Timing{" "}
+          <span className="text-gray-500 text-xs">(Optional, for Half Day)</span>
+        </label>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          {/* From Time */}
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1 sm:hidden">Start Time</label>
+            <div className="relative flex items-center">
+              <input
+                type="time"
                 value={fromTime}
-                clearIcon={null}
-                clockIcon={
-                  <svg
-                    className="w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                }
-                className="w-full [&_input]:bg-gray-100 [&_input]:border border-gray-300 [&_input]:text-gray-900 [&_input]:rounded-md [&_input]:py-2 [&_input]:px-10 [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_button]:text-gray-600"
-                format="HH:mm"
-                disableClock={false}
+                onChange={(e) => setFromTime(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 sm:p-2.5 text-sm sm:text-base text-gray-900 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                placeholder="Start Time"
               />
             </div>
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                To Time
-              </label>
-              <TimePicker
-                onChange={setToTime}
+          </div>
+
+          {/* To Text (Desktop only) */}
+          <div className="hidden sm:flex items-center justify-center text-gray-600 font-medium">
+            to
+          </div>
+
+          {/* To Time */}
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1 sm:hidden">End Time</label>
+            <div className="relative flex items-center">
+              <input
+                type="time"
                 value={toTime}
-                clearIcon={null}
-                clockIcon={
-                  <svg
-                    className="w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                }
-                className="w-full [&>div]:w-full"
-                format="HH:mm"
-                disableClock={false}
+                onChange={(e) => setToTime(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 sm:p-2.5 text-sm sm:text-base text-gray-900 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                placeholder="End Time"
               />
             </div>
           </div>
         </div>
-
-        <label className="block text-sm mb-1 text-gray-700">Comments (Optional)</label>
-        <textarea
-          value={comments}
-          onChange={(e) => setComments(e.target.value)}
-          className="w-full bg-gray-100 rounded-md p-2 mb-4 text-gray-900 border border-gray-300"
-          placeholder="Provide any additional details..."
-          rows={3}
-        />
-
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-md transition-colors duration-300 ease-in-out"
-        >
-          🚀 Submit Request
-        </button>
       </div>
-    </>
+
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+        Comments <span className="text-red-500 text-xs">(Required - Minimum 30 words)</span>
+      </label>
+      <textarea
+        value={comments}
+        onChange={(e) => setComments(e.target.value)}
+        className="w-full bg-gray-100 rounded-md p-2 sm:p-3 mb-3 sm:mb-4 text-sm sm:text-base text-gray-900 border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition resize-none"
+        placeholder="Provide any additional details..."
+        rows={3}
+      />
+
+      <button
+        onClick={handleSubmit}
+        className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-2.5 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base shadow-md hover:shadow-lg"
+      >
+        🚀 Submit Request
+      </button>
+    </div>
   );
 };
 
 export default LeaveRequestForm;
+
+// Add CSS for animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+`;
+document.head.appendChild(style);
