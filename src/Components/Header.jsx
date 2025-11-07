@@ -5,11 +5,10 @@ import {
   FaSearch,
   FaSignOutAlt,
   FaHome,
-  FaRegStickyNote,
-  FaTools,
   FaStar,
   FaTrash,
 } from "react-icons/fa";
+import { HiSparkles } from "react-icons/hi";
 import { MdSupportAgent } from "react-icons/md";
 import { motion } from "framer-motion";
 import useNotificationSocket from "../hook/useNotificationSocket";
@@ -202,12 +201,6 @@ const Header = () => {
   const userRole = localStorage.getItem("role");
   const isAdmin = userRole === "admin" || userRole === "Admin";
 
-  // Developer feedback blinking
-  const [blink, setBlink] = useState(false);
-  const [totalDevRequests, setTotalDevRequests] = useState(0);
-  const [lastSeenRequests, setLastSeenRequests] = useState(() => {
-    return parseInt(localStorage.getItem("lastSeenDevRequests") || "0", 10);
-  });
   // Check if device is mobile
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
@@ -333,36 +326,6 @@ const Header = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Developer support polling
-  useEffect(() => {
-    const fetchDevRequests = async () => {
-      try {
-        const res = await fetch("https://taskbe.sharda.co.in/api/support");
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        const requestsArray = Array.isArray(data.requests) ? data.requests : [];
-        const count = requestsArray.length;
-        setTotalDevRequests(count);
-        if (count > lastSeenRequests) {
-          setBlink(true);
-        }
-      } catch (err) {
-        // Silent fail
-      }
-    };
-    fetchDevRequests();
-    const interval = setInterval(fetchDevRequests, 10000);
-    return () => clearInterval(interval);
-  }, [lastSeenRequests]);
-
-  // Handle developer icon click
-  const handleDevClick = () => {
-    setBlink(false);
-    setLastSeenRequests(totalDevRequests);
-    localStorage.setItem("lastSeenDevRequests", totalDevRequests);
-    navigate("/developer-support");
-  };
-
   // Search highlight logic
   useEffect(() => {
     const highlightMatches = (term) => {
@@ -481,7 +444,7 @@ const Header = () => {
           {isAdmin && (
             <button
               onClick={() => navigate("/")}
-              className="bg-gray-100 rounded-full p-1.5 sm:p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200 mr-2 sm:mr-4"
+              className="bg-gray-100 md:hidden rounded-full p-1.5 sm:p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200 mr-2 sm:mr-4"
               aria-label="Home"
               title="Home"
             >
@@ -563,7 +526,7 @@ const Header = () => {
             {/* Mobile/Tablet View - Icon Only */}
             <div className="md:hidden relative">
               <span className="bg-indigo-600 rounded-full px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-indigo-700 flex items-center">
-                <FaStar className="text-yellow-400 text-sm sm:text-base" />
+                <HiSparkles className="text-yellow-400 text-sm sm:text-base" />
               </span>
               {/* Tooltip for mobile */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-20">
@@ -597,25 +560,6 @@ const Header = () => {
               </span>
             )}
           </button>
-
-          {/* Developer Feedback Icon */}
-          {(localStorage.getItem("department") === "IT/Software" ||
-            ["admin"].includes(
-              localStorage.getItem("role") || localStorage.getItem("userRole") || ""
-            )) && (
-              <button
-                onClick={handleDevClick}
-                className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded transition-colors duration-200 ${blink ? "animate-pulse text-red-500" : "text-gray-700"
-                  }`}
-              >
-                <FaTools className="text-base sm:text-lg" />
-                {totalDevRequests > lastSeenRequests && (
-                  <span className="bg-red-500 text-white text-[10px] rounded-full w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center">
-                    {totalDevRequests - lastSeenRequests}
-                  </span>
-                )}
-              </button>
-            )}
 
           <QuickActionsDropdown
             onShowNotes={() => setShowNotes(true)}
@@ -690,4 +634,5 @@ const Header = () => {
     </>
   );
 };
+
 export default Header;
