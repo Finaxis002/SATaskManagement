@@ -7,7 +7,6 @@ import {
   FaClock,
   FaUser,
 } from "react-icons/fa";
-import { motion } from "framer-motion";
 
 const LeaveOverview = () => {
   const [leaves, setLeaves] = useState([]);
@@ -20,12 +19,9 @@ const LeaveOverview = () => {
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
-        const { data } = await axios.get(
-          "https://taskbe.sharda.co.in/api/leave"
-        );
+        const { data } = await axios.get("https://taskbe.sharda.co.in/api/leave");
         setLeaves(data);
 
-        // Unique months
         const monthSet = new Set(
           data.map((l) =>
             new Date(l.fromDate).toLocaleString("default", { month: "long" })
@@ -33,7 +29,6 @@ const LeaveOverview = () => {
         );
         setMonths(["All Months", ...Array.from(monthSet)]);
 
-        // Unique users
         const userSet = new Set(data.map((l) => l.userId));
         setUsers(["All Users", ...Array.from(userSet)]);
 
@@ -65,21 +60,14 @@ const LeaveOverview = () => {
   }, [selectedUser, selectedMonth, leaves]);
 
   return (
-    <div className=" sm:p-6 rounded-xl">
-      {/* Title */}
+    <div className="sm:p-6 rounded-xl">
       <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">
         Leave Overview
       </h2>
 
       {/* Filters */}
-      {/* Filters */}
       <div className="flex md:flex-row flex-col sm:flex-row gap-3 md:gap-4 mb-6">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="w-full md:w-auto"
-        >
+        <div className="w-full md:w-auto">
           <label className="block text-sm font-medium text-gray-600 mb-1">
             Filter by Month
           </label>
@@ -94,14 +82,9 @@ const LeaveOverview = () => {
               </option>
             ))}
           </select>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-          className="w-full md:w-auto"
-        >
+        <div className="w-full md:w-auto">
           <label className="block text-sm font-medium text-gray-600 mb-1">
             Filter by User
           </label>
@@ -116,10 +99,10 @@ const LeaveOverview = () => {
               </option>
             ))}
           </select>
-        </motion.div>
+        </div>
       </div>
 
-      {/* Table */}
+      {/* Table View */}
       <div className="hidden sm:block overflow-x-auto">
         <table className="min-w-full text-gray-700 text-sm">
           <thead className="bg-gray-200 text-gray-600">
@@ -132,12 +115,9 @@ const LeaveOverview = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredLeaves.map((leave, index) => (
-              <motion.tr
+            {filteredLeaves.map((leave) => (
+              <tr
                 key={leave._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
                 className="border-t border-gray-200 hover:bg-gray-50"
               >
                 <td className="px-4 py-2">{leave.userName || leave.userId}</td>
@@ -169,9 +149,8 @@ const LeaveOverview = () => {
                     {leave.status}
                   </span>
                 </td>
-              </motion.tr>
+              </tr>
             ))}
-
             {filteredLeaves.length === 0 && (
               <tr>
                 <td
@@ -189,13 +168,10 @@ const LeaveOverview = () => {
       {/* Mobile Card View */}
       <div className="block sm:hidden space-y-2">
         {filteredLeaves.length > 0 ? (
-          filteredLeaves.map((leave, index) => (
-            <motion.div
+          filteredLeaves.map((leave) => (
+            <div
               key={leave._id}
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="bg-gradient-to-r from-white to-blue-50 rounded-xl shadow-xl p-2 hover:shadow-xl transition-transform"
+              className="bg-gradient-to-r from-white to-blue-50 rounded-xl shadow-xl p-2 hover:shadow-xl"
             >
               {/* User & Status */}
               <div className="flex items-center justify-between mb-3 mt-2">
@@ -218,7 +194,7 @@ const LeaveOverview = () => {
                 </span>
               </div>
 
-              {/* Dates row */}
+              {/* Dates */}
               <div className="flex justify-between text-xs text-gray-600 mb-2">
                 <p className="flex items-center gap-1">
                   <FaCalendarAlt className="text-blue-400" />
@@ -251,7 +227,7 @@ const LeaveOverview = () => {
                 <FaCommentDots className="text-green-400" />
                 {leave.comments || "No comments"}
               </p>
-            </motion.div>
+            </div>
           ))
         ) : (
           <p className="text-center text-gray-400 italic py-3">

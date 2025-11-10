@@ -7,7 +7,6 @@ import {
   FaClock,
   FaUser,
 } from "react-icons/fa";
-import { motion } from "framer-motion"; // 👈 added
 
 const ManageRequests = () => {
   const [leaves, setLeaves] = useState([]);
@@ -41,19 +40,12 @@ const ManageRequests = () => {
     const matchesSearch =
       leave.userName?.toLowerCase().includes(search.toLowerCase()) ||
       leave.leaveType?.toLowerCase().includes(search.toLowerCase());
-
     const matchesFilter = filter === "All" ? true : leave.status === filter;
-
     return matchesSearch && matchesFilter;
   });
 
   return (
-    <motion.div
-      className="mt-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="mt-6">
       {/* -------- DESKTOP VIEW -------- */}
       <div className="hidden md:block bg-white rounded-xl p-4 shadow">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">
@@ -84,12 +76,7 @@ const ManageRequests = () => {
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden table-fixed">
-            <motion.thead
-              className="bg-gray-100 text-gray-700 text-sm sticky top-0 z-10"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
+            <thead className="bg-gray-100 text-gray-700 text-sm sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-2 text-left w-[15%]">User Name</th>
                 <th className="px-20 py-2 text-left w-[20%]">Dates</th>
@@ -98,26 +85,13 @@ const ManageRequests = () => {
                 <th className="px-4 py-2 text-left w-[25%]">Comments</th>
                 <th className="px-4 py-2 text-left w-[15%]">Actions</th>
               </tr>
-            </motion.thead>
-            <motion.tbody
-              className="text-gray-700 text-sm"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: {},
-                visible: { transition: { staggerChildren: 0.1 } },
-              }}
-            >
+            </thead>
+            <tbody className="text-gray-700 text-sm">
               {filteredLeaves.length > 0 ? (
                 filteredLeaves.map((leave) => (
-                  <motion.tr
+                  <tr
                     key={leave._id}
                     className="border-t border-gray-200 hover:bg-gray-50"
-                    variants={{
-                      hidden: { opacity: 0, y: 15 },
-                      visible: { opacity: 1, y: 0 },
-                    }}
-                    transition={{ duration: 0.4 }}
                   >
                     <td className="px-4 py-2">
                       {leave.userName || leave.userId}
@@ -160,26 +134,22 @@ const ManageRequests = () => {
                         </div>
                       ) : (
                         <>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                          <button
                             onClick={() => handleStatus(leave._id, "Approved")}
                             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm"
                           >
                             Approve
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                          </button>
+                          <button
                             onClick={() => handleStatus(leave._id, "Rejected")}
                             className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm"
                           >
                             Reject
-                          </motion.button>
+                          </button>
                         </>
                       )}
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))
               ) : (
                 <tr>
@@ -191,7 +161,7 @@ const ManageRequests = () => {
                   </td>
                 </tr>
               )}
-            </motion.tbody>
+            </tbody>
           </table>
         </div>
       </div>
@@ -215,19 +185,17 @@ const ManageRequests = () => {
         <div className="sticky top-0 z-20 bg-gradient-to-b from-blue-50 to-white py-2 mb-4">
           <div className="flex space-x-2 overflow-x-auto px-1 scrollbar-hide">
             {["All", "Approved", "Pending", "Rejected"].map((status) => (
-              <motion.button
+              <button
                 key={status}
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ scale: 1.05 }}
                 onClick={() => setFilter(status)}
-                className={`px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-all ${
+                className={`px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 ${
                   filter === status
                     ? "bg-blue-500 text-white shadow-md"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 {status}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -235,13 +203,10 @@ const ManageRequests = () => {
         {/* Cards */}
         <div className="space-y-4">
           {filteredLeaves.length > 0 ? (
-            filteredLeaves.map((leave, index) => (
-              <motion.div
+            filteredLeaves.map((leave) => (
+              <div
                 key={leave._id}
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="bg-white border border-gray-300 rounded-2xl p-4 shadow hover:shadow-lg transition-all"
+                className="bg-white border border-gray-300 rounded-2xl p-4 shadow hover:shadow-lg"
               >
                 {/* Header */}
                 <div className="flex justify-between items-center mb-2">
@@ -268,9 +233,8 @@ const ManageRequests = () => {
                 <div className="space-y-1 text-xs sm:text-sm text-gray-600">
                   <p className="flex items-center gap-2">
                     <FaCalendarAlt className="text-blue-400" />
-                    {new Date(leave.fromDate).toLocaleDateString(
-                      "en-GB"
-                    )} → {new Date(leave.toDate).toLocaleDateString("en-GB")}
+                    {new Date(leave.fromDate).toLocaleDateString("en-GB")} →{" "}
+                    {new Date(leave.toDate).toLocaleDateString("en-GB")}
                   </p>
                   <p className="flex items-center gap-2">
                     <FaTag className="text-purple-400" /> {leave.leaveType}
@@ -292,30 +256,28 @@ const ManageRequests = () => {
                   {loadingRow === leave._id ? (
                     <div className="flex items-center gap-2 w-full justify-center">
                       <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-xs text-gray-500">Updating...</span>
+                      <span className="text-xs text-gray-500">
+                        Updating...
+                      </span>
                     </div>
                   ) : (
                     <>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      <button
                         onClick={() => handleStatus(leave._id, "Approved")}
                         className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg shadow text-sm font-medium"
                       >
                         ✅ Approve
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      </button>
+                      <button
                         onClick={() => handleStatus(leave._id, "Rejected")}
                         className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-2 rounded-lg shadow text-sm font-medium"
                       >
                         ❌ Reject
-                      </motion.button>
+                      </button>
                     </>
                   )}
                 </div>
-              </motion.div>
+              </div>
             ))
           ) : (
             <p className="text-center text-gray-500 italic">
@@ -324,7 +286,7 @@ const ManageRequests = () => {
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

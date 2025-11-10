@@ -6,7 +6,6 @@ import {
   UsersIcon,
   ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
-import { motion } from "framer-motion"; // ✅ import framer-motion
 
 const LeaveDashboardCards = () => {
   const [stats, setStats] = useState({
@@ -67,11 +66,19 @@ const LeaveDashboardCards = () => {
   ];
 
   if (loading) {
-    return <div className="flex justify-center items-center h-40 text-gray-500 text-lg">Loading dashboard...</div>;
+    return (
+      <div className="flex justify-center items-center h-40 text-gray-500 text-lg">
+        Loading dashboard...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="flex justify-center items-center h-40 text-red-500 text-lg">{error}</div>;
+    return (
+      <div className="flex justify-center items-center h-40 text-red-500 text-lg">
+        {error}
+      </div>
+    );
   }
 
   return (
@@ -82,22 +89,21 @@ const LeaveDashboardCards = () => {
         </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {cardData.map(({ title, value, icon, color }, index) => (
-            <motion.div
+          {cardData.map(({ title, value, icon, color }) => (
+            <div
               key={title}
-              initial={{ opacity: 0, x: index < 2 ? -100 : 100 }} // first 2 from left, last 2 from right
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
               className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow flex items-center gap-4"
             >
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color} shadow-md`}>
+              <div
+                className={`w-12 h-12 rounded-lg flex items-center justify-center ${color} shadow-md`}
+              >
                 {icon}
               </div>
               <div>
                 <p className="text-sm text-gray-500">{title}</p>
                 <p className="text-2xl font-bold text-gray-900">{value}</p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -106,6 +112,7 @@ const LeaveDashboardCards = () => {
 };
 
 export default LeaveDashboardCards;
+
 
 
 
