@@ -130,7 +130,7 @@ const LeaveRequestForm = () => {
     };
 
     try {
-      await axios.post("http://localhost:1100/api/leave/", payload, {
+      await axios.post("https://taskbe.sharda.co.in/api/leave", payload, {
         headers: { "Content-Type": "application/json" },
       });
       localStorage.setItem("showLeaveAlert", "true");
