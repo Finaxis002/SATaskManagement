@@ -84,13 +84,13 @@ const LeaveRequestForm = () => {
     const minCasualLeaveDate = new Date(today);
     minCasualLeaveDate.setDate(today.getDate() + 2);
 
-    if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
+  if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
       const selectedStartDate = new Date(range[0].startDate);
       selectedStartDate.setHours(0, 0, 0, 0);
       if (selectedStartDate < minCasualLeaveDate) {
         const formattedMinDate = formatDate(minCasualLeaveDate);
         showToast(
-          `❌ Casual Leave must be requested at least 2 days in advance. Please select a date from ${formattedMinDate} onwards.`,
+          `❌ Casual Leave requires at least 2 days advance notice. Please select a date from ${formattedMinDate} onwards.\n\n💡 For immediate leave, you can apply for Emergency Leave instead!`,
           "error"
         );
         return;
@@ -128,9 +128,10 @@ const LeaveRequestForm = () => {
       fromTime: leaveDuration === "Half Day" ? fromTime : "",
       toTime: leaveDuration === "Half Day" ? toTime : "",
     };
-
+    // http://localhost:1100/api/leave
+    // https://taskbe.sharda.co.in/api/leave
     try {
-      await axios.post("https://taskbe.sharda.co.in/api/leave", payload, {
+      await axios.post("http://localhost:1100/api/leave", payload, {
         headers: { "Content-Type": "application/json" },
       });
       localStorage.setItem("showLeaveAlert", "true");
@@ -153,8 +154,8 @@ const LeaveRequestForm = () => {
             className={`max-w-md w-full mx-4 animate-scale-in ${
               toast.type === "success"
                 ? "bg-gradient-to-r from-green-500 to-green-600"
-                : "bg-gradient-to-r from-red-500 to-red-600"
-            } text-white px-8 py-6 rounded-2xl shadow-2xl`}
+                : "bg-gradient-to-r from-white to-white"
+            } text-black px-8 py-6 rounded-2xl shadow-2xl`}
           >
             <div className="flex flex-col items-center text-center gap-4">
               <div className="rounded-full p-4 bg-white bg-opacity-30">
