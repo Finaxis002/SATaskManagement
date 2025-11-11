@@ -30,20 +30,20 @@ const Departments = () => {
   const [role, setRole] = useState("");
   const [editCodeId, setEditCodeId] = useState(null);
   const [editCodeName, setEditCodeName] = useState("");
-  const [editingDept, setEditingDept] = useState(null); // department name being edited
-  const [editableUsersMap, setEditableUsersMap] = useState({}); // { [dept]: [users] }
+  const [editingDept, setEditingDept] = useState(null);
+  const [editableUsersMap, setEditableUsersMap] = useState({});
   const [activeTab, setActiveTab] = useState("department");
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
 
- const fetchPendingLeaveCount = async () => {
-  try {
-    const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
-    setPendingLeaveCount(res.data.length || 0);
-    console.log("pending leave :", pendingLeaveCount)
-  } catch (err) {
-    setPendingLeaveCount(0);
-  }
-};
+  const fetchPendingLeaveCount = async () => {
+    try {
+      const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
+      setPendingLeaveCount(res.data.length || 0);
+      console.log("pending leave :", pendingLeaveCount)
+    } catch (err) {
+      setPendingLeaveCount(0);
+    }
+  };
 
   useEffect(() => {
     fetchDepartmentsData();
@@ -51,9 +51,8 @@ const Departments = () => {
     fetchClients();
     fetchPendingLeaveCount();
 
-    // Listen for new leaves via socket (optional, for real-time update)
     socket.on("new-leave", fetchPendingLeaveCount);
-    socket.on("leave-status-updated", fetchPendingLeaveCount); // Optional, handle approve/reject too
+    socket.on("leave-status-updated", fetchPendingLeaveCount);
 
     return () => {
       socket.off("new-leave", fetchPendingLeaveCount);
@@ -61,66 +60,55 @@ const Departments = () => {
     };
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     localStorage.setItem("pendingLeaveCount", pendingLeaveCount);
   }, [pendingLeaveCount]);
-
-
-  // console.log("pending status :", pendingLeaveCount)
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     if (storedRole) {
       setRole(storedRole);
       if (storedRole !== "admin") {
-        setView("client"); // Default to client view for users
+        setView("client");
       }
     }
   }, []);
-  // Fetch departments overview with users and tasks
+
   const fetchDepartmentsData = async () => {
     try {
       setLoading(true);
 
-      // Fetch departments
       const deptRes = await axios.get(
         "https://taskbe.sharda.co.in/api/departments"
       );
       const departments = deptRes.data;
 
-      // Fetch employees
       const employeeRes = await axios.get(
         "https://taskbe.sharda.co.in/api/employees"
       );
       const employees = employeeRes.data;
 
-      // Fetch tasks
       const taskRes = await axios.get("https://taskbe.sharda.co.in/api/tasks");
       const tasks = taskRes.data;
 
       const deptMap = {};
 
-      // Initialize departments in the map
       departments.forEach((dept) => {
         deptMap[dept.name] = { users: [], tasks: [] };
       });
 
-      // Add employees to the deptMap
       employees.forEach((emp) => {
-        // Ensure that 'department' is always an array
         const departmentsArray = Array.isArray(emp.department)
           ? emp.department
           : [emp.department];
 
         departmentsArray.forEach((dept) => {
-          // Add employee to the corresponding department
           if (deptMap[dept]) {
             deptMap[dept].users.push(emp);
           }
         });
       });
 
-      // Add tasks to the deptMap
       tasks.forEach((task) => {
         const dept = task.taskCategory || "Unassigned";
         if (deptMap[dept]) {
@@ -141,7 +129,6 @@ const Departments = () => {
       const res = await axios.get("https://taskbe.sharda.co.in/api/task-codes");
 
       const sortedData = res.data.sort((a, b) => {
-        // Extract the leading number from the name (before first space)
         const getNumber = (str) => {
           const match = str.match(/^\d+/);
           return match ? parseInt(match[0], 10) : 0;
@@ -178,11 +165,10 @@ const Departments = () => {
 
   useEffect(() => {
     fetchDepartmentsData();
-    fetchTaskCodes(); // 👈 add this
-    fetchClients(); // 👈 Add this line
+    fetchTaskCodes();
+    fetchClients();
   }, []);
 
-  // Delete a task code
   const handleDeleteDepartment = async (dept) => {
     const result = await Swal.fire({
       title: `Delete "${dept}" department?`,
@@ -242,9 +228,8 @@ const Departments = () => {
   const handleDeleteCode = async (codeId) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-
       text: "This code will be permanently deleted!",
-      icon: "warning", // ✅ default icon
+      icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
@@ -266,7 +251,7 @@ const Departments = () => {
       Swal.fire({
         title: "Deleted!",
         text: "The code has been deleted successfully.",
-        icon: "success", // ✅ default success icon
+        icon: "success",
         confirmButtonText: "OK",
         customClass: {
           popup: "custom-alert-popup",
@@ -274,14 +259,14 @@ const Departments = () => {
         },
       });
 
-      fetchTaskCodes(); // Refresh list
+      fetchTaskCodes();
     } catch (err) {
       console.error(err);
 
       Swal.fire({
         title: "Error!",
         text: "Failed to delete the code. Please try again.",
-        icon: "error", // ✅ default error icon
+        icon: "error",
         confirmButtonText: "OK",
         customClass: {
           popup: "custom-alert-popup",
@@ -328,7 +313,6 @@ const Departments = () => {
       fetchTaskCodes();
       setNewCodeName("");
       setShowCodeModal(false);
-      // ✅ Success Alert
       Swal.fire({
         icon: "success",
         title: "Created!",
@@ -343,7 +327,6 @@ const Departments = () => {
 
   const handleEditCode = (code) => {
     setEditCodeId(code._id);
-    // Remove serial number prefix while editing
     const parts = code.name.split(" ");
     const nameWithoutSerial = parts.slice(1).join(" ");
     setEditCodeName(nameWithoutSerial);
@@ -358,7 +341,6 @@ const Departments = () => {
         }
       );
       if (res.status === 200) {
-        // Update state
         const updated = res.data;
         setTaskCodes((prev) =>
           prev.map((code) => (code._id === id ? updated : code))
@@ -379,44 +361,41 @@ const Departments = () => {
     }));
   };
 
-
-
   const tabs = [
-    { key: "department", label: "Department Overview" },
-    { key: "code", label: "Code Overview" },
-    { key: "report", label: "Report Generation" },
+    { key: "department", label: "Department" },
+    { key: "code", label: "Code" },
+    { key: "report", label: "Report" },
     {
       key: "manageleave",
       label: (
         <span className="relative inline-flex items-center">
-          Leave Management
+          Leave
           {pendingLeaveCount > 0 && (
-            <span className="ml-2 flex items-center justify-center bg-red-600 text-white rounded-full text-[9px] font-semibold px-2 py-0.5 w-4 h-4">
+            <span className="ml-1 md:ml-2 flex items-center justify-center bg-red-600 text-white rounded-full text-[9px] font-semibold px-1.5 py-0.5 min-w-[16px] h-4">
               {pendingLeaveCount}
             </span>
           )}
         </span>
       ),
     },
-    { key: "mail", label: "Mail User Creation" },
-    { key: "bank", label: "Bank Details" },
-
+    { key: "mail", label: "Mail" },
+    { key: "bank", label: "Bank" },
   ];
 
   return (
-    <div className="p-4 bg-gray-100 min-h-screen">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+    <div className="p-2 sm:p-4 bg-gray-100 min-h-screen">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">
         Application Settings
       </h1>
 
-      <div className="flex justify-between">
-        {/* Tab Buttons */}
-        <div className="flex gap-2 border border-gray-200 rounded-md overflow-hidden mb-6 w-fit">
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-3 sm:gap-0">
+        {/* Tab Buttons - Scrollable on mobile */}
+        <div className="flex gap-1 sm:gap-2 border border-gray-200 rounded-md overflow-x-auto mb-4 sm:mb-6 w-full sm:w-fit scrollbar-hide">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-6 py-2 text-sm font-medium transition-all ${
+              className={`px-3 sm:px-6 py-2 text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab.key
                   ? "bg-white text-indigo-600 border-b-2 border-indigo-600"
                   : "bg-gray-100 text-gray-700 hover:bg-white"
@@ -427,29 +406,31 @@ const Departments = () => {
           ))}
         </div>
 
-        {/* 🔘 Action Buttons */}
+        {/* Action Buttons */}
         <div className="flex justify-end mb-2">
           {activeTab === "department" && role === "admin" && (
             <button
               onClick={handleCreateDepartment}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 absolute rounded-md flex items-center gap-2 transition-colors"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-md flex items-center gap-2 transition-colors text-sm sm:text-base w-full sm:w-auto justify-center"
             >
-              <FaPlus /> Add Department
+              <FaPlus className="text-xs sm:text-base" /> 
+              <span className="hidden sm:inline">Add Department</span>
+              <span className="sm:hidden">Add Dept</span>
             </button>
           )}
 
           {activeTab === "code" && role === "admin" && (
             <button
               onClick={handleCreateCode}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 absolute rounded-md flex items-center gap-2 transition-colors"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-md flex items-center gap-2 transition-colors text-sm sm:text-base w-full sm:w-auto justify-center"
             >
-              <FaPlus /> Add Code
+              <FaPlus className="text-xs sm:text-base" /> Add Code
             </button>
           )}
         </div>
       </div>
 
-      {/* 🔁 View Content */}
+      {/* View Content */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <p className="text-center text-gray-500">Loading data...</p>
@@ -460,31 +441,31 @@ const Departments = () => {
             role === "admin" &&
             (Object.keys(departmentMap).length === 0 ? (
               <div className="flex justify-center items-center h-60">
-                <p className="text-center text-gray-500 text-lg">
+                <p className="text-center text-gray-500 text-base sm:text-lg">
                   No departments or data found.
                 </p>
               </div>
             ) : (
-              <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto">
+              <div className="space-y-4 sm:space-y-6 mx-auto max-h-[70vh] overflow-y-auto">
                 {Object.entries(departmentMap).map(([dept, { users }]) => (
                   <div
                     key={dept}
-                    className="bg-white rounded-lg shadow-md border border-gray-200 p-6 relative"
+                    className="bg-white rounded-lg shadow-md border border-gray-200 p-4 sm:p-6 relative"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <FaUsers className="text-indigo-600 text-2xl" />
-                        <h2 className="text-2xl font-semibold text-indigo-800">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <FaUsers className="text-indigo-600 text-xl sm:text-2xl flex-shrink-0" />
+                        <h2 className="text-lg sm:text-2xl font-semibold text-indigo-800 break-words">
                           {dept}
                         </h2>
-                        <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full">
+                        <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap">
                           {users.length} user{users.length !== 1 && "s"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto">
                         <button
                           onClick={() => handleEditDepartment(dept, users)}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm"
                         >
                           ✏️ Edit
                         </button>
@@ -494,35 +475,25 @@ const Departments = () => {
                           className="text-red-500 hover:text-red-700 transition-colors"
                           title="Delete Department"
                         >
-                          <FaTrashAlt size={18} />
+                          <FaTrashAlt size={16} className="sm:w-[18px] sm:h-[18px]" />
                         </button>
                       </div>
                     </div>
                     <div className="flex flex-col gap-4">
-                      {/* {users.map((user) => (
-                        <div
-                          key={user._id}
-                          className="bg-gray-50 border border-gray-200 p-4 rounded-md hover:shadow transition"
-                        >
-                          <div className="font-medium text-gray-900">
-                            {user.name}
-                          </div>
-                        </div>
-                      ))} */}
                       {editingDept === dept && editableUsersMap[dept] && (
                         <>
                           {/* Close Button */}
                           <div className="flex justify-end mb-4">
                             <button
                               onClick={() => setEditingDept(null)}
-                              className="inline-flex items-center gap-2 text-sm px-4 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 transition shadow-sm"
+                              className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 transition shadow-sm"
                             >
-                              ✖ Close Edit Mode
+                              ✖ Close Edit
                             </button>
                           </div>
 
-                          {/* User Cards Grid */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                          {/* User Cards Grid - 1 column on mobile */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                             {editableUsersMap[dept].map((user, index) => (
                               <div
                                 key={user._id}
@@ -546,7 +517,7 @@ const Departments = () => {
                                 </button>
 
                                 {/* Avatar */}
-                                <div className="h-14 w-14 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-md mb-2 shadow-sm">
+                                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm sm:text-md mb-2 shadow-sm">
                                   {user.name
                                     .split(" ")
                                     .map((n) => n[0])
@@ -556,10 +527,10 @@ const Departments = () => {
 
                                 {/* Name + Position */}
                                 <div className="mb-2">
-                                  <h3 className="text-base font-semibold text-gray-800">
+                                  <h3 className="text-sm sm:text-base font-semibold text-gray-800">
                                     {user.name}
                                   </h3>
-                                  <p className="text-sm text-gray-500">
+                                  <p className="text-xs sm:text-sm text-gray-500">
                                     {user.position}
                                   </p>
                                 </div>
@@ -581,7 +552,7 @@ const Departments = () => {
                                         [dept]: updated,
                                       }));
                                     }}
-                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-2 sm:px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                   >
                                     <option value="user">User</option>
                                     <option value="manager">Manager</option>
@@ -606,58 +577,59 @@ const Departments = () => {
                 <p className="text-center text-gray-500">No codes found.</p>
               </div>
             ) : (
-              <div className="space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-4 sm:space-y-6 mx-auto max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {taskCodes.map((codeObj) => (
                     <div
                       key={codeObj._id}
-                      className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
+                      className="bg-white flex justify-between items-center border border-gray-200 p-3 sm:p-4 rounded-md shadow hover:shadow-md transition"
                     >
                       {editCodeId === codeObj._id ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 mr-2">
                           <input
                             type="text"
                             value={editCodeName}
                             onChange={(e) => setEditCodeName(e.target.value)}
-                            className="border px-2 py-1 text-sm rounded"
+                            className="border px-2 py-1 text-xs sm:text-sm rounded flex-1 min-w-0"
                           />
                           <button
                             onClick={() => handleUpdateCode(codeObj._id)}
-                            className="text-green-600 hover:text-green-800"
+                            className="text-green-600 hover:text-green-800 flex-shrink-0"
                             title="Save"
                           >
                             ✅
                           </button>
                           <button
                             onClick={() => setEditCodeId(null)}
-                            className="text-gray-500 hover:text-gray-700"
+                            className="text-gray-500 hover:text-gray-700 flex-shrink-0"
                             title="Cancel"
                           >
                             ❌
                           </button>
                         </div>
                       ) : (
-                        <h3 className="text-lg font-semibold text-indigo-800">
-                          {codeObj.name}
-                        </h3>
+                        <>
+                          <h3 className="text-sm sm:text-lg font-semibold text-indigo-800 break-words flex-1 mr-2">
+                            {codeObj.name}
+                          </h3>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleEditCode(codeObj)}
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Edit Code"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCode(codeObj._id)}
+                              className="text-red-500 hover:text-red-700"
+                              title="Delete Code"
+                            >
+                              <FaTrashAlt size={14} className="sm:w-4 sm:h-4" />
+                            </button>
+                          </div>
+                        </>
                       )}
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEditCode(codeObj)}
-                          className="text-blue-500 hover:text-blue-700"
-                          title="Edit Code"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCode(codeObj._id)}
-                          className="text-red-500 hover:text-red-700"
-                          title="Delete Code"
-                        >
-                          <FaTrashAlt size={16} />
-                        </button>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -665,7 +637,6 @@ const Departments = () => {
             ))}
 
           {activeTab === "report" && role === "admin" && <ReportGeneration />}
-
 
           {activeTab === "manageleave" && role === "admin" && (
             <LeaveManagement />
@@ -681,10 +652,10 @@ const Departments = () => {
 
       {/* Department Creation Modal */}
       {showDeptModal && (
-        <div className="fixed inset-0  bg-opacity-50 flex h-50 justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-96">
+        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-lg w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Create New Department</h3>
+              <h3 className="text-lg sm:text-xl font-semibold">Create New Department</h3>
               <button
                 onClick={() => setShowDeptModal(false)}
                 className="text-gray-500 hover:text-gray-700 transition-colors"
@@ -697,19 +668,19 @@ const Departments = () => {
               value={newDeptName}
               onChange={(e) => setNewDeptName(e.target.value)}
               placeholder="Enter department name"
-              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm sm:text-base"
               autoFocus
             />
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowDeptModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                className="px-3 sm:px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitDepartment}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm sm:text-base"
               >
                 Create
               </button>
@@ -720,10 +691,10 @@ const Departments = () => {
 
       {/* Code Creation Modal */}
       {showCodeModal && (
-        <div className="fixed inset-0  bg-opacity-50 flex h-50 justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-96">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-lg w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Create New Code</h3>
+              <h3 className="text-lg sm:text-xl font-semibold">Create New Code</h3>
               <button
                 onClick={() => setShowCodeModal(false)}
                 className="text-gray-500 hover:text-gray-700 transition-colors"
@@ -736,19 +707,19 @@ const Departments = () => {
               value={newCodeName}
               onChange={(e) => setNewCodeName(e.target.value)}
               placeholder="Enter code name"
-              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm sm:text-base"
               autoFocus
             />
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowCodeModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                className="px-3 sm:px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitCode}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm sm:text-base"
               >
                 Create
               </button>
@@ -788,7 +759,6 @@ const Departments = () => {
           }}
         />
       )}
-
     </div>
   );
 };
