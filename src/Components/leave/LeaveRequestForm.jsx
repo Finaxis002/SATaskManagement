@@ -14,7 +14,7 @@ const LeaveRequestForm = () => {
     },
   ]);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarAbove, setCalendarAbove] = useState(false); // 🔥 new
+  const [calendarAbove, setCalendarAbove] = useState(false);
   const [leaveDuration, setLeaveDuration] = useState("Full Day");
   const [leaveType, setLeaveType] = useState("Sick Leave");
   const [comments, setComments] = useState("");
@@ -23,9 +23,14 @@ const LeaveRequestForm = () => {
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   const calendarRef = useRef(null);
-  const inputRef = useRef(null); // 🔥 new for positioning
+  const inputRef = useRef(null);
 
   const MIN_COMMENT_WORDS = 10;
+
+  // 🔥 GET API URL FROM ENVIRONMENT VARIABLE
+  const API_URL = import.meta.env.VITE_API_URL || "https://taskbe.sharda.co.in/api/leave";
+
+  console.log("🔍 Using API URL:", API_URL);
 
   const showToast = (message, type) => {
     setToast({ show: true, message, type });
@@ -52,12 +57,11 @@ const LeaveRequestForm = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Detect if calendar should open above or below (auto-position)
   useEffect(() => {
     if (showCalendar && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      setCalendarAbove(spaceBelow < 350); // if less than 350px space below, open upward
+      setCalendarAbove(spaceBelow < 350);
     }
   }, [showCalendar]);
 
@@ -84,7 +88,7 @@ const LeaveRequestForm = () => {
     const minCasualLeaveDate = new Date(today);
     minCasualLeaveDate.setDate(today.getDate() + 2);
 
-  if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
+    if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
       const selectedStartDate = new Date(range[0].startDate);
       selectedStartDate.setHours(0, 0, 0, 0);
       if (selectedStartDate < minCasualLeaveDate) {
@@ -128,12 +132,17 @@ const LeaveRequestForm = () => {
       fromTime: leaveDuration === "Half Day" ? fromTime : "",
       toTime: leaveDuration === "Half Day" ? toTime : "",
     };
-    // http://localhost:1100/api/leave
-    // https://taskbe.sharda.co.in/api/leave
+
     try {
-      await axios.post("https://taskbe.sharda.co.in/api/leave", payload, {
+      console.log("📤 Submitting leave to:", `${API_URL}/api/leave`);
+      
+      // 🔥 USE ENVIRONMENT VARIABLE FOR API URL
+      await axios.post(`${API_URL}/api/leave`, payload, {
         headers: { "Content-Type": "application/json" },
       });
+      
+      console.log("✅ Leave submitted successfully!");
+      
       localStorage.setItem("showLeaveAlert", "true");
       const event = new Event("storage");
       window.dispatchEvent(event);
@@ -142,12 +151,17 @@ const LeaveRequestForm = () => {
       setFromTime("");
       setToTime("");
     } catch (error) {
-      showToast("Error submitting leave request. Please try again.", "error");
+      console.error("❌ Error submitting leave:", error);
+      console.error("API URL used:", `${API_URL}/api/leave`);
+      showToast(
+        error.response?.data?.message || "Error submitting leave request. Please try again.",
+        "error"
+      );
     }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition overflow-y-auto min-h-[77vh] flex flex-col justify-between  ">
+    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition overflow-y-auto min-h-[77vh] flex flex-col justify-between">
       {toast.show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 animate-fade-in">
           <div
@@ -344,7 +358,7 @@ const LeaveRequestForm = () => {
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg marg]]]"
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg"
       >
         🚀 Submit Request
       </button>
