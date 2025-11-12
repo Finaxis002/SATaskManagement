@@ -21,16 +21,22 @@ const LeaveRequestForm = () => {
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const calendarRef = useRef(null);
   const inputRef = useRef(null);
 
   const MIN_COMMENT_WORDS = 10;
 
-  // 🔥 FIXED: Always use production URL
+  // 🔥 IMPROVED: Better API URL handling
   const API_URL = import.meta.env.VITE_API_URL || "https://taskbe.sharda.co.in";
 
-  console.log("🔍 Using API URL:", API_URL);
+  // 🔥 Log API URL on component mount (for debugging)
+  useEffect(() => {
+    console.log("🔍 LeaveRequestForm initialized");
+    console.log("🔍 Using API URL:", API_URL);
+    console.log("🔍 Environment:", import.meta.env.MODE);
+  }, []);
 
   const showToast = (message, type) => {
     setToast({ show: true, message, type });
@@ -66,13 +72,26 @@ const LeaveRequestForm = () => {
   }, [showCalendar]);
 
   const handleSubmit = async () => {
+    // 🔥 Prevent double submission
+    if (isSubmitting) {
+      console.log("⚠️ Already submitting, please wait...");
+      return;
+    }
+
     const userId = localStorage.getItem("userId");
+
+    // Validation: User ID
+    if (!userId) {
+      showToast("❌ User ID not found. Please login again.", "error");
+      return;
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const minCasualLeaveDate = new Date(today);
     minCasualLeaveDate.setDate(today.getDate() + 2);
 
+    // Validation: Casual Leave advance notice
     if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
       const selectedStartDate = new Date(range[0].startDate);
       selectedStartDate.setHours(0, 0, 0, 0);
@@ -86,21 +105,23 @@ const LeaveRequestForm = () => {
       }
     }
 
+    // Validation: Comment word count
     const wordCount = comments
       .trim()
       .split(/\s+/)
       .filter((w) => w.length > 0).length;
     if (wordCount < MIN_COMMENT_WORDS) {
       showToast(
-        `You must provide a detailed comment of at least ${MIN_COMMENT_WORDS} words. Your current comment has only ${wordCount} words.`,
+        `❌ You must provide a detailed comment of at least ${MIN_COMMENT_WORDS} words. Your current comment has only ${wordCount} words.`,
         "error"
       );
       return;
     }
 
+    // Validation: Half day timing
     if (leaveDuration === "Half Day" && (!fromTime || !toTime)) {
       showToast(
-        "Please select both start and end time for Half Day leave.",
+        "❌ Please select both start and end time for Half Day leave.",
         "error"
       );
       return;
@@ -118,36 +139,71 @@ const LeaveRequestForm = () => {
       toTime: leaveDuration === "Half Day" ? toTime : "",
     };
 
+    setIsSubmitting(true);
+
     try {
-      console.log("📤 Submitting leave to:", `${API_URL}/api/leave`);
+      console.log("\n📤 Submitting leave request...");
+      console.log("🔍 API URL:", `${API_URL}/api/leave`);
+      console.log("🔍 Payload:", payload);
       
-      await axios.post(`${API_URL}/api/leave`, payload, {
+      const response = await axios.post(`${API_URL}/api/leave`, payload, {
         headers: { "Content-Type": "application/json" },
+        timeout: 30000, // 30 second timeout
       });
       
       console.log("✅ Leave submitted successfully!");
+      console.log("📨 Response:", response.data);
       
+      // Trigger storage event for real-time updates
       localStorage.setItem("showLeaveAlert", "true");
       const event = new Event("storage");
       window.dispatchEvent(event);
-      showToast("Leave submitted successfully! 🎉", "success");
+      
+      showToast("✅ Leave submitted successfully! Admin will be notified via email. 🎉", "success");
+      
+      // Reset form
       setComments("");
       setFromTime("");
       setToTime("");
+      setRange([
+        {
+          startDate: new Date(),
+          endDate: new Date(),
+          key: "selection",
+        },
+      ]);
+      
     } catch (error) {
-      console.error("❌ Error submitting leave:", error);
+      console.error("\n❌ Error submitting leave:");
+      console.error("Error:", error);
       console.error("API URL used:", `${API_URL}/api/leave`);
-      showToast(
-        error.response?.data?.message || "Error submitting leave request. Please try again.",
-        "error"
-      );
+      
+      // 🔥 Better error messages
+      let errorMessage = "❌ Error submitting leave request. Please try again.";
+      
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = "❌ Request timed out. Please check your internet connection and try again.";
+      } else if (error.code === 'ERR_NETWORK') {
+        errorMessage = "❌ Network error. Please check your internet connection.";
+      } else if (error.response) {
+        // Server responded with error
+        errorMessage = error.response.data?.message || `❌ Server error: ${error.response.status}`;
+      } else if (error.request) {
+        // Request made but no response
+        errorMessage = "❌ No response from server. Please check if server is running.";
+      }
+      
+      showToast(errorMessage, "error");
+      
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition overflow-y-auto min-h-[77vh] flex flex-col justify-between">
       {toast.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 animate-fade-in">
           <div
             className={`max-w-md w-full mx-4 animate-scale-in ${
               toast.type === "success"
@@ -191,7 +247,7 @@ const LeaveRequestForm = () => {
                 <h3 className="font-bold text-xl mb-2">
                   {toast.type === "success" ? "Success!" : "Oops!"}
                 </h3>
-                <p className="font-medium text-base leading-relaxed">
+                <p className="font-medium text-base leading-relaxed whitespace-pre-line">
                   {toast.message}
                 </p>
               </div>
@@ -225,6 +281,7 @@ const LeaveRequestForm = () => {
           }
         }}
         className="w-full bg-gray-100 rounded-md p-2 border border-gray-300 text-sm text-black hover:border-blue-400 transition mb-3"
+        disabled={isSubmitting}
       >
         <option>Full Day</option>
         <option>Half Day</option>
@@ -239,6 +296,7 @@ const LeaveRequestForm = () => {
             value={leaveType}
             onChange={(e) => setLeaveType(e.target.value)}
             className="w-full bg-gray-100 rounded-md p-2 border border-gray-300 text-sm text-black hover:border-blue-400 transition mb-3"
+            disabled={isSubmitting}
           >
             <option>Sick Leave</option>
             <option>Casual Leave</option>
@@ -254,7 +312,7 @@ const LeaveRequestForm = () => {
         ref={inputRef}
         type="text"
         readOnly
-        onClick={() => setShowCalendar(!showCalendar)}
+        onClick={() => !isSubmitting && setShowCalendar(!showCalendar)}
         value={
           leaveDuration === "Full Day"
             ? `${formatDate(range[0].startDate)} - ${formatDate(
@@ -262,11 +320,12 @@ const LeaveRequestForm = () => {
               )}`
             : formatDate(range[0].startDate)
         }
-        className="w-full bg-gray-100 rounded-md p-2 mb-2 text-sm text-gray-900 cursor-pointer border border-gray-300 hover:border-blue-400 transition"
+        className="w-full bg-gray-100 rounded-md p-2 mb-2 text-sm text-gray-900 cursor-pointer border border-gray-300 hover:border-blue-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isSubmitting}
       />
 
       {showCalendar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div
             ref={calendarRef}
             className="bg-white rounded-lg shadow-2xl p-4 sm:p-6 max-w-[95vw] sm:max-w-lg animate-scale-in"
@@ -314,13 +373,15 @@ const LeaveRequestForm = () => {
               type="time"
               value={fromTime}
               onChange={(e) => setFromTime(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-md p-2 text-sm text-gray-900 hover:border-blue-400 focus:border-blue-500"
+              className="flex-1 border border-gray-300 rounded-md p-2 text-sm text-gray-900 hover:border-blue-400 focus:border-blue-500 disabled:opacity-50"
+              disabled={isSubmitting}
             />
             <input
               type="time"
               value={toTime}
               onChange={(e) => setToTime(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-md p-2 text-sm text-gray-900 hover:border-blue-400 focus:border-blue-500"
+              className="flex-1 border border-gray-300 rounded-md p-2 text-sm text-gray-900 hover:border-blue-400 focus:border-blue-500 disabled:opacity-50"
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -335,16 +396,31 @@ const LeaveRequestForm = () => {
       <textarea
         value={comments}
         onChange={(e) => setComments(e.target.value)}
-        className="w-full bg-gray-100 rounded-md p-2 mb-3 text-sm text-gray-900 border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition resize-none"
+        className="w-full bg-gray-100 rounded-md p-2 mb-3 text-sm text-gray-900 border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition resize-none disabled:opacity-50"
         rows={3}
         placeholder="Provide any additional details..."
+        disabled={isSubmitting}
       />
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg"
+        disabled={isSubmitting}
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        🚀 Submit Request
+        {isSubmitting ? (
+          <>
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Submitting...</span>
+          </>
+        ) : (
+          <>
+            <span>🚀</span>
+            <span>Submit Request</span>
+          </>
+        )}
       </button>
     </div>
   );
