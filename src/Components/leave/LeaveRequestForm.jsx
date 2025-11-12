@@ -27,8 +27,8 @@ const LeaveRequestForm = () => {
 
   const MIN_COMMENT_WORDS = 10;
 
-  // 🔥 GET API URL FROM ENVIRONMENT VARIABLE
-  const API_URL = import.meta.env.VITE_API_URL || "https://taskbe.sharda.co.in/api/leave";
+  // 🔥 FIXED: Always use production URL
+  const API_URL = import.meta.env.VITE_API_URL || "https://taskbe.sharda.co.in";
 
   console.log("🔍 Using API URL:", API_URL);
 
@@ -64,21 +64,6 @@ const LeaveRequestForm = () => {
       setCalendarAbove(spaceBelow < 350);
     }
   }, [showCalendar]);
-
-  const isCasualLeaveValid = () => {
-    if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const minCasualLeaveDate = new Date(today);
-      minCasualLeaveDate.setDate(today.getDate() + 2);
-
-      const selectedStartDate = new Date(range[0].startDate);
-      selectedStartDate.setHours(0, 0, 0, 0);
-
-      return selectedStartDate >= minCasualLeaveDate;
-    }
-    return true;
-  };
 
   const handleSubmit = async () => {
     const userId = localStorage.getItem("userId");
@@ -136,7 +121,6 @@ const LeaveRequestForm = () => {
     try {
       console.log("📤 Submitting leave to:", `${API_URL}/api/leave`);
       
-      // 🔥 USE ENVIRONMENT VARIABLE FOR API URL
       await axios.post(`${API_URL}/api/leave`, payload, {
         headers: { "Content-Type": "application/json" },
       });
