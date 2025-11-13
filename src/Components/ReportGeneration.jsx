@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { updateTaskStatus, fetchTasks } from "../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../redux/departmentSlice";
-
+import ExcelJS from "exceljs";
 import {
   faFilter,
   faPen,
@@ -25,7 +25,7 @@ import { io } from "socket.io-client";
 const socket = io("https://taskbe.sharda.co.in");
 
 const ReportGeneration = ({
-  onEdit,
+  onEdit = () => { console.warn("onEdit function not provided to ReportGeneration."); }, 
   refreshTrigger,
   setTaskListExternally,
   tasksOverride,
@@ -55,12 +55,22 @@ const ReportGeneration = ({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
   const role = localStorage.getItem("role");
   const userEmail = localStorage.getItem("userId");
   const users = useSelector((state) => state.users.list);
   const reportRef = useRef();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     dispatch(fetchUsers());
@@ -144,14 +154,6 @@ const ReportGeneration = ({
       fetchTasksFromAPI();
     }
   }, [role, userEmail, refreshTrigger, departmentsLoaded]);
-
-  useEffect(() => {
-    socket.on("task-updated", (data) => {
-      fetchTasksFromAPI();
-    });
-
-    return () => socket.off("task-updated");
-  }, []);
 
   useEffect(() => {
     const handleTaskEvent = () => {
@@ -289,36 +291,49 @@ const ReportGeneration = ({
     }
   };
 
-  const filteredTasks = (tasksOverride || tasks)
-    .filter((task) => {
-      const assignedDate = new Date(task.assignedDate);
-      const from = fromDate ? new Date(fromDate) : null;
-      const to = toDate ? new Date(toDate) : null;
+  const sortedTasks = (tasksOverride || tasks).sort((a, b) => {
+    if (dueDateSortOrder === "asc") {
+      return new Date(a.dueDate) - new Date(b.dueDate);
+    }
+    if (dueDateSortOrder === "desc") {
+      return new Date(b.dueDate) - new Date(a.dueDate);
+    }
+    return 0;
+  });
 
-      if (to) to.setHours(23, 59, 59, 999);
+  const filteredTasks = sortedTasks.filter((task) => {
+    const assignedDate = new Date(task.assignedDate);
+    const from = fromDate ? new Date(fromDate) : null;
+    const to = toDate ? new Date(toDate) : null;
 
-      const matchesUser =
-        filters.user &&
-        (task.assignees?.some((a) => a.name === filters.user) ||
-          task.assignedBy?.name === filters.user);
+    if (to) to.setHours(23, 59, 59, 999);
 
-      const matchesDateRange =
-        (!from || assignedDate >= from) && (!to || assignedDate <= to);
+    const matchesUser =
+      filters.user &&
+      (task.assignees?.some((a) => a.name === filters.user) ||
+        task.assignedBy?.name === filters.user);
 
-      const matchesOtherFilters =
-        (filters.department === "" ||
-          task.department.includes(filters.department)) &&
-        (filters.code === "" || task.code === filters.code) &&
-        (filters.priority === "" || task.priority === filters.priority) &&
-        (filters.status === "" || task.status === filters.status);
+    const matchesDateRange =
+      (!from || assignedDate >= from) && (!to || assignedDate <= to);
 
-      const shouldHide = hideCompleted && task.status === "Completed";
+    const matchesOtherFilters =
+      (filters.department === "" ||
+        task.department.includes(filters.department)) &&
+      (filters.code === "" || task.code === filters.code) &&
+      (filters.priority === "" || task.priority === filters.priority) &&
+      (filters.status === "" || task.status === filters.status);
 
-      return (
-        matchesUser && matchesDateRange && matchesOtherFilters && !shouldHide
-      );
-    })
-    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    const shouldHide = hideCompleted && task.status === "Completed";
+
+    const userSelected = filters.user; 
+    
+    const isFiltered = (
+        !userSelected || 
+        (userSelected && matchesUser) 
+    ) && matchesDateRange && matchesOtherFilters && !shouldHide;
+
+    return isFiltered;
+  });
 
   const highPriorityTasks = filteredTasks.filter(
     (task) => task.priority === "High"
@@ -344,194 +359,6 @@ const ReportGeneration = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [dropdownRef]);
-
-  const renderTaskRow = (task, index) => (
-    <tr
-      key={task._id}
-      id={`task-${task._id}`}
-      className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200 
-    ${
-      new Date(task.dueDate) < new Date() &&
-      task.status !== "Completed" &&
-      task.status !== "Obsolete"
-        ? "bg-orange-100 hover:bg-orange-200"
-        : ""
-    }
-  `}
-    >
-      <td className="py-3 px-2 sm:px-4 font-medium text-xs">{index + 1}</td>
-
-      <td className="py-3 px-2 sm:px-6 relative flex items-center gap-2">
-        <span className="text-xs break-words">{task.taskName}</span>
-        <FontAwesomeIcon
-          icon={faPen}
-          className="cursor-pointer text-blue-500 hover:text-blue-700 flex-shrink-0"
-          onClick={() => onEdit(task)}
-        />
-      </td>
-
-      <td className="py-3 px-2 sm:px-6 relative group">
-        <div className="flex items-center gap-2 min-h-[24px]">
-          <span className="text-xs text-gray-700 break-words">
-            {(task.workDesc || "No description").length > 60
-              ? `${task.workDesc.slice(0, 60)}...`
-              : task.workDesc || "No description"}
-            {task.code && (
-              <span className="ml-2 text-blue-600 font-medium">
-                ({task.code})
-              </span>
-            )}
-          </span>
-
-          {(task.workDesc || "").length > 60 && (
-            <button
-              className="text-blue-500 hover:text-blue-700 text-xs font-medium transition-colors flex-shrink-0"
-              onClick={() => {
-                setOpenWorkDescPopup(task._id);
-                setWorkDescMode("view");
-              }}
-            >
-              Read more
-            </button>
-          )}
-          <FontAwesomeIcon
-            icon={faPen}
-            className="cursor-pointer text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity w-3 h-3 flex-shrink-0"
-            onClick={() => {
-              setOpenWorkDescPopup(task._id);
-              setWorkDescMode("edit");
-            }}
-          />
-        </div>
-
-        {openWorkDescPopup === task._id && (
-          <div className="fixed sm:absolute top-1/2 left-1/2 sm:top-full sm:left-0 transform -translate-x-1/2 -translate-y-1/2 sm:translate-x-0 sm:translate-y-0 sm:mt-1 w-11/12 sm:w-80 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-4 transition-all duration-200 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
-              <span className="font-semibold text-sm text-gray-800">
-                {workDescMode === "edit" ? "Edit Description" : "Description"}
-              </span>
-              <button
-                className="text-gray-400 hover:text-gray-600 transition-colors text-lg"
-                onClick={() => setOpenWorkDescPopup(null)}
-              >
-                ×
-              </button>
-            </div>
-
-            {workDescMode === "edit" ? (
-              <>
-                <textarea
-                  value={workDescs[task._id] || task.workDesc || ""}
-                  onChange={(e) =>
-                    setWorkDescs((prev) => ({
-                      ...prev,
-                      [task._id]: e.target.value,
-                    }))
-                  }
-                  rows={4}
-                  placeholder="Enter work description..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
-                  autoFocus
-                />
-
-                <div className="flex justify-end mt-3 gap-2">
-                  <button
-                    onClick={() => setOpenWorkDescPopup(null)}
-                    className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleWorkDescSave(task._id);
-                      setOpenWorkDescPopup(null);
-                    }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Save
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="text-gray-700 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
-                {task.workDesc || "No description available"}
-              </div>
-            )}
-
-            {task.code && (
-              <div className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100">
-                <span className="font-medium">Code:</span> {task.code}
-              </div>
-            )}
-          </div>
-        )}
-      </td>
-
-      <td className="py-3 px-2 sm:px-6 text-xs">
-        {formatAssignedDate(task.assignedDate)}
-      </td>
-
-      <td className="py-3 px-2 sm:px-6 text-xs">
-        {new Date(task.dueDate).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })}
-      </td>
-
-      <td className="py-3 px-2 sm:px-6 text-center relative">
-        {editingStatus === task._id ? (
-          <div
-            ref={dropdownRef}
-            className="flex flex-col w-32 sm:w-40 justify-between bg-white absolute shadow-lg rounded-lg z-50 right-0 sm:left-0"
-          >
-            {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
-              (statusOption) => (
-                <span
-                  key={statusOption}
-                  className={`py-2 px-2 sm:px-4 text-center rounded-md text-xs font-semibold cursor-pointer mb-1 ${
-                    statusOption === "Completed"
-                      ? "bg-green-200 text-green-600"
-                      : statusOption === "In Progress"
-                      ? "bg-yellow-200 text-yellow-600"
-                      : statusOption === "To Do"
-                      ? "bg-blue-200 text-blue-600"
-                      : statusOption === "Abbstulate"
-                      ? "bg-purple-200 text-purple-600"
-                      : "bg-red-200 text-red-600"
-                  }`}
-                  onClick={() => {
-                    setNewStatus(statusOption);
-                    handleStatusChange(task._id, statusOption);
-                    setEditingStatus(null);
-                  }}
-                >
-                  {statusOption}
-                </span>
-              )
-            )}
-          </div>
-        ) : (
-          <span
-            className={`py-1 px-2 sm:px-3 rounded-full text-xs font-semibold ${
-              task.status === "Completed"
-                ? "bg-green-200 text-green-600"
-                : task.status === "In Progress"
-                ? "bg-yellow-200 text-yellow-600"
-                : task.status === "To Do"
-                ? "bg-blue-200 text-blue-600"
-                : task.status === "Abbstulate"
-                ? "bg-purple-200 text-purple-600"
-                : "bg-red-200 text-red-600"
-            }`}
-            onClick={() => setEditingStatus(task._id)}
-          >
-            {task.status}
-          </span>
-        )}
-      </td>
-    </tr>
-  );
 
   const handleDownloadPDF = () => {
     if (!filters.user) {
@@ -612,45 +439,598 @@ const ReportGeneration = ({
     doc.save(`${filters.user.replace(/\s+/g, "_")}-Task-Report.pdf`);
   };
 
-  const handleDownloadExcel = () => {
+const handleDownloadExcel = async () => {
     if (!filters.user) {
       alert("Please select a user to generate the report.");
       return;
     }
 
-    const exportData = filteredTasks.map((task, index) => ({
-      "S. No": index + 1,
-      "Task Name": task.taskName,
-      "Work Description": task.workDesc || "No description",
-      Code: task.code || "",
-      "Date of Work": formatAssignedDate(task.assignedDate),
-      "Due Date": new Date(task.dueDate).toLocaleDateString("en-GB"),
-      Status: task.status,
-      Priority: task.priority,
-    }));
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Task Report', {
+        pageSetup: { paperSize: 9, orientation: 'landscape' },
+        views: [{ state: 'frozen', xSplit: 0, ySplit: 3 }]
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
+      // Set column widths
+      worksheet.columns = [
+        { width: 10 },  // S. No
+        { width: 35 },  // Task Name
+        { width: 50 },  // Work Description
+        { width: 18 },  // Code
+        { width: 24 },  // Date of Work
+        { width: 16 },  // Due Date
+        { width: 16 },  // Status
+        { width: 14 },  // Priority
+      ];
 
-    const fileName = `${filters.user.replace(/\s+/g, "_")}-Task-Report.xlsx`;
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
-    });
+      // Title Row with gradient effect
+      worksheet.mergeCells('A1:H1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = `📋 ${filters.user}'s Task Report`;
+      titleCell.font = { bold: true, size: 18, color: { argb: 'FFFFFFFF' }, name: 'Calibri' };
+      titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E40AF' } // Deep blue
+      };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.border = {
+        top: { style: 'medium', color: { argb: 'FF1E3A8A' } },
+        left: { style: 'medium', color: { argb: 'FF1E3A8A' } },
+        bottom: { style: 'medium', color: { argb: 'FF1E3A8A' } },
+        right: { style: 'medium', color: { argb: 'FF1E3A8A' } }
+      };
+      worksheet.getRow(1).height = 35;
 
-    const dataBlob = new Blob([excelBuffer], {
-      type: "application/octet-stream",
-    });
-    saveAs(dataBlob, fileName);
+      // Date Range Row with better styling
+      if (fromDate && toDate) {
+        worksheet.mergeCells('A2:H2');
+        const dateCell = worksheet.getCell('A2');
+        dateCell.value = `📅 Report Period: ${new Date(fromDate).toLocaleDateString("en-GB")} to ${new Date(toDate).toLocaleDateString("en-GB")}`;
+        dateCell.font = { italic: true, size: 12, color: { argb: 'FF475569' }, name: 'Calibri' };
+        dateCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E7FF' } // Light blue
+        };
+        dateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        dateCell.border = {
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+        worksheet.getRow(2).height = 24;
+      }
+
+      let currentRow = fromDate && toDate ? 4 : 3;
+
+      const addPrioritySection = (tasks, label, headerColor, iconColor) => {
+        if (tasks.length === 0) return;
+
+        // Priority Header with shadow effect
+        worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
+        const priorityHeader = worksheet.getCell(`A${currentRow}`);
+        priorityHeader.value = label;
+        priorityHeader.font = { 
+          bold: true, 
+          size: 14, 
+          color: { argb: 'FFFFFFFF' },
+          name: 'Calibri'
+        };
+        priorityHeader.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: headerColor }
+        };
+        priorityHeader.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+        priorityHeader.border = {
+          top: { style: 'medium', color: { argb: iconColor } },
+          left: { style: 'medium', color: { argb: iconColor } },
+          bottom: { style: 'medium', color: { argb: iconColor } },
+          right: { style: 'medium', color: { argb: iconColor } }
+        };
+        worksheet.getRow(currentRow).height = 28;
+        currentRow++;
+
+        // Column Headers with gradient
+        const headerRow = worksheet.getRow(currentRow);
+        const headers = ['S. No', 'Task Name', 'Work Description', 'Code', 'Date of Work', 'Due Date', 'Status', 'Priority'];
+        headers.forEach((header, idx) => {
+          const cell = headerRow.getCell(idx + 1);
+          cell.value = header;
+          cell.font = { 
+            bold: true, 
+            size: 11, 
+            color: { argb: 'FFFFFFFF' },
+            name: 'Calibri'
+          };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF334155' } // Dark gray
+          };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+            top: { style: 'medium', color: { argb: 'FF1E293B' } },
+            left: { style: 'thin', color: { argb: 'FF475569' } },
+            bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+            right: { style: 'thin', color: { argb: 'FF475569' } }
+          };
+        });
+        headerRow.height = 22;
+        currentRow++;
+
+        // Data Rows with enhanced styling
+        tasks.forEach((task, index) => {
+          const dataRow = worksheet.getRow(currentRow);
+          const isEven = index % 2 === 0;
+          
+          const rowData = [
+            index + 1,
+            task.taskName,
+            task.workDesc || "No description",
+            task.code || "-",
+            formatAssignedDate(task.assignedDate),
+            new Date(task.dueDate).toLocaleDateString("en-GB"),
+            task.status,
+            task.priority,
+          ];
+
+          rowData.forEach((value, idx) => {
+            const cell = dataRow.getCell(idx + 1);
+            cell.value = value;
+            cell.font = { 
+              size: 10, 
+              name: 'Calibri',
+              color: { argb: 'FF1F2937' }
+            };
+            
+            // Special styling for status column
+            if (idx === 6) { // Status column
+              let statusColor = 'FF3B82F6'; // Blue for To Do
+              if (value === 'Completed') statusColor = 'FF10B981';
+              else if (value === 'In Progress') statusColor = 'FFF59E0B';
+              else if (value === 'Overdue') statusColor = 'FFEF4444';
+              else if (value === 'Abbstulate') statusColor = 'FF8B5CF6';
+              
+              cell.font = { 
+                size: 10, 
+                bold: true,
+                name: 'Calibri',
+                color: { argb: statusColor }
+              };
+            }
+            
+            // Special styling for priority column
+            if (idx === 7) { // Priority column
+              let priorityColor = 'FF10B981'; // Green for Low
+              if (value === 'High') priorityColor = 'FFEF4444';
+              else if (value === 'Medium') priorityColor = 'FFF59E0B';
+              
+              cell.font = { 
+                size: 10, 
+                bold: true,
+                name: 'Calibri',
+                color: { argb: priorityColor }
+              };
+            }
+
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: isEven ? 'FFFAFAFA' : 'FFFFFFFF' }
+            };
+            cell.alignment = { 
+              vertical: 'middle', 
+              wrapText: true,
+              horizontal: idx === 0 ? 'center' : 'left',
+              indent: idx > 0 && idx !== 6 && idx !== 7 ? 1 : 0
+            };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+              left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+              bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+              right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+            };
+          });
+          
+          dataRow.height = 20;
+          currentRow++;
+        });
+
+        // Add summary row
+        const summaryRow = worksheet.getRow(currentRow);
+        summaryRow.getCell(1).value = `Total ${label.split(' ')[1]} Priority Tasks: ${tasks.length}`;
+        worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
+        summaryRow.getCell(1).font = { 
+          bold: true, 
+          size: 10, 
+          color: { argb: 'FF475569' },
+          italic: true,
+          name: 'Calibri'
+        };
+        summaryRow.getCell(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF1F5F9' }
+        };
+        summaryRow.getCell(1).alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
+        summaryRow.getCell(1).border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+        summaryRow.height = 18;
+        currentRow += 2; // Empty row separator
+      };
+
+      // Add sections by priority with enhanced colors
+      addPrioritySection(highPriorityTasks, '🔴 HIGH PRIORITY TASKS', 'FFDC2626', 'FFB91C1C');
+      addPrioritySection(mediumPriorityTasks, '🟡 MEDIUM PRIORITY TASKS', 'FFF59E0B', 'FFD97706');
+      addPrioritySection(lowPriorityTasks, '🟢 LOW PRIORITY TASKS', 'FF10B981', 'FF059669');
+
+      // Add footer with total summary
+      currentRow += 1;
+      worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
+      const footerCell = worksheet.getCell(`A${currentRow}`);
+      footerCell.value = `📊 Total Tasks: ${filteredTasks.length} | Generated on: ${new Date().toLocaleString('en-GB')}`;
+      footerCell.font = { 
+        italic: true, 
+        size: 10, 
+        color: { argb: 'FF64748B' },
+        name: 'Calibri'
+      };
+      footerCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF8FAFC' }
+      };
+      footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      footerCell.border = {
+        top: { style: 'medium', color: { argb: 'FFCBD5E1' } }
+      };
+      worksheet.getRow(currentRow).height = 20;
+
+      // Generate and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      const fileName = `${filters.user.replace(/\s+/g, "_")}-Task-Report.xlsx`;
+      saveAs(blob, fileName);
+
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      alert('Error generating Excel file. Please try again.');
+    }
+  };
+  const renderTaskCardOrRow = (task, index) => {
+    const isOverdue =
+      new Date(task.dueDate) < new Date() &&
+      task.status !== "Completed" &&
+      task.status !== "Obsolete";
+    
+    const StatusBadge = ({ status, onClick }) => {
+      let bgColor, textColor;
+      switch (status) {
+        case "Completed":
+          bgColor = "bg-green-200";
+          textColor = "text-green-600";
+          break;
+        case "In Progress":
+          bgColor = "bg-yellow-200";
+          textColor = "text-yellow-600";
+          break;
+        case "To Do":
+          bgColor = "bg-blue-200";
+          textColor = "text-blue-600";
+          break;
+        case "Abbstulate":
+          bgColor = "bg-purple-200";
+          textColor = "text-purple-600";
+          break;
+        default:
+          bgColor = "bg-red-200";
+          textColor = "text-red-600";
+          break;
+      }
+
+      return (
+        <span
+          className={`py-1 px-2 sm:px-3 rounded-full text-xs font-semibold ${bgColor} ${textColor} cursor-pointer`}
+          onClick={onClick}
+        >
+          {status}
+        </span>
+      );
+    };
+
+    if (isMobile) {
+      return (
+        <div
+          key={task._id}
+          className={`bg-white p-4 rounded-lg shadow-md border-l-4 mb-3 relative ${
+            editingStatus === task._id ? "z-[100]" : "z-10"
+          } ${
+            isOverdue ? "border-red-500 bg-red-50" : "border-indigo-500"
+          }`}
+        >
+          <div className="flex justify-between items-start mb-2 border-b pb-2">
+            <h3 className="text-sm font-bold text-gray-800 break-words">
+              {index + 1}. {task.taskName}
+            </h3>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <StatusBadge
+                status={task.status}
+                onClick={() => setEditingStatus(task._id)}
+              />
+              <FontAwesomeIcon
+                icon={faPen}
+                className="cursor-pointer text-blue-500 hover:text-blue-700 w-3 h-3"
+                onClick={() => onEdit(task)}
+              />
+            </div>
+          </div>
+
+          <div className="text-xs text-gray-600 space-y-1">
+            <p className="flex justify-between">
+              <span className="font-medium">Priority:</span>
+              <span className={`font-semibold ${
+                  task.priority === "High" ? "text-red-500" :
+                  task.priority === "Medium" ? "text-yellow-600" : "text-green-600"
+              }`}>{task.priority}</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-medium">Date of Work:</span>
+              <span>{formatAssignedDate(task.assignedDate)}</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-medium">Due Date:</span>
+              <span>{new Date(task.dueDate).toLocaleDateString("en-GB")}</span>
+            </p>
+
+            <div className="pt-2 border-t mt-2">
+              <span className="font-medium block mb-1">Description:</span>
+              <div className="text-xs text-gray-700 whitespace-pre-wrap">
+                {(task.workDesc || "No description").length > 100
+                  ? `${task.workDesc.slice(0, 100)}...`
+                  : task.workDesc || "No description"}
+                {task.code && (
+                  <span className="ml-2 text-blue-600 font-medium">
+                    ({task.code})
+                  </span>
+                )}
+                {(task.workDesc || "").length > 100 && (
+                  <button
+                    className="text-blue-500 hover:text-blue-700 text-xs font-medium ml-1"
+                    onClick={() => {
+                      setOpenWorkDescPopup(task._id);
+                      setWorkDescMode("view");
+                    }}
+                  >
+                    Read more
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {editingStatus === task._id && (
+              <div 
+                className="absolute right-2 top-12 z-[9999] w-36 max-w-xs bg-white   rounded-lg shadow-2xl"
+                ref={dropdownRef}
+                style={{ position: 'absolute' }}
+              >
+                  <div className="p-2 flex flex-col gap-1 w-full">
+                      <h4 className="text-xs font-semibold text-gray-700 mb-1 border-b pb-1">Change Status:</h4>
+                      
+                      {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
+                          (statusOption) => (
+                              <span
+                                  key={statusOption}
+                                  className={`py-1.5 px-2 text-center rounded-md text-xs font-semibold cursor-pointer transition-colors 
+                                      ${statusOption === "Completed" ? "bg-green-100 text-green-700 hover:bg-green-200" :
+                                        statusOption === "In Progress" ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" :
+                                        statusOption === "To Do" ? "bg-blue-100 text-blue-700 hover:bg-blue-200" :
+                                        statusOption === "Abbstulate" ? "bg-purple-100 text-purple-700 hover:bg-purple-200" :
+                                        "bg-red-100 text-red-700 hover:bg-red-200"
+                                      }`}
+                                  onClick={() => {
+                                      setNewStatus(statusOption);
+                                      handleStatusChange(task._id, statusOption);
+                                      setEditingStatus(null);
+                                  }}
+                              >
+                                  {statusOption}
+                              </span>
+                          )
+                      )}
+                     
+                  </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <tr
+        key={task._id}
+        id={`task-${task._id}`}
+        className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200 
+      ${
+        isOverdue
+          ? "bg-orange-100 hover:bg-orange-200"
+          : ""
+      }
+    `}
+      >
+        <td className="py-3 px-2 sm:px-4 font-medium text-xs">{index + 1}</td>
+
+        <td className="py-3 px-2 sm:px-6 relative flex items-center gap-2">
+          <span className="text-xs break-words">{task.taskName}</span>
+          <FontAwesomeIcon
+            icon={faPen}
+            className="cursor-pointer text-blue-500 hover:text-blue-700 flex-shrink-0"
+            onClick={() => onEdit(task)}
+          />
+        </td>
+
+        <td className="py-3 px-2 sm:px-6 relative group">
+          <div className="flex items-center gap-2 min-h-[24px]">
+            <span className="text-xs text-gray-700 break-words">
+              {(task.workDesc || "No description").length > 60
+                ? `${task.workDesc.slice(0, 60)}...`
+                : task.workDesc || "No description"}
+              {task.code && (
+                <span className="ml-2 text-blue-600 font-medium">
+                  ({task.code})
+                </span>
+              )}
+            </span>
+
+            {(task.workDesc || "").length > 60 && (
+              <button
+                className="text-blue-500 hover:text-blue-700 text-xs font-medium transition-colors flex-shrink-0"
+                onClick={() => {
+                  setOpenWorkDescPopup(task._id);
+                  setWorkDescMode("view");
+                }}
+              >
+                Read more
+              </button>
+            )}
+            <FontAwesomeIcon
+              icon={faPen}
+              className="cursor-pointer text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity w-3 h-3 flex-shrink-0"
+              onClick={() => {
+                setOpenWorkDescPopup(task._id);
+                setWorkDescMode("edit");
+              }}
+            />
+          </div>
+
+          {openWorkDescPopup === task._id && (
+            <div className="fixed sm:absolute top-1/2 left-1/2 sm:top-full sm:left-0 transform -translate-x-1/2 -translate-y-1/2 sm:translate-x-0 sm:translate-y-0 sm:mt-1 w-11/12 sm:w-80 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-4 transition-all duration-200 max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+                <span className="font-semibold text-sm text-gray-800">
+                  {workDescMode === "edit" ? "Edit Description" : "Description"}
+                </span>
+                <button
+                  className="text-gray-400 hover:text-gray-600 transition-colors text-lg"
+                  onClick={() => setOpenWorkDescPopup(null)}
+                >
+                  ×
+                </button>
+              </div>
+
+              {workDescMode === "edit" ? (
+                <>
+                  <textarea
+                    value={workDescs[task._id] || task.workDesc || ""}
+                    onChange={(e) =>
+                      setWorkDescs((prev) => ({
+                        ...prev,
+                        [task._id]: e.target.value,
+                      }))
+                    }
+                    rows={4}
+                    placeholder="Enter work description..."
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                    autoFocus
+                  />
+
+                  <div className="flex justify-end mt-3 gap-2">
+                    <button
+                      onClick={() => setOpenWorkDescPopup(null)}
+                      className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleWorkDescSave(task._id);
+                        setOpenWorkDescPopup(null);
+                      }}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-gray-700 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
+                  {task.workDesc || "No description available"}
+                </div>
+              )}
+
+              {task.code && (
+                <div className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100">
+                  <span className="font-medium">Code:</span> {task.code}
+                </div>
+              )}
+            </div>
+          )}
+        </td>
+
+        <td className="py-3 px-2 sm:px-6 text-xs">
+          {formatAssignedDate(task.assignedDate)}
+        </td>
+
+        <td className="py-3 px-2 sm:px-6 text-xs">
+          {new Date(task.dueDate).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })}
+        </td>
+
+       <td className="py-3 px-2 sm:px-6 text-center relative">
+  {editingStatus === task._id ? (
+    <div
+      ref={dropdownRef}
+      className="flex flex-col w-32 sm:w-40 justify-between bg-white absolute shadow-lg rounded-lg z-50 right-0 sm:left-1/2 sm:-translate-x-[65%] top-10 p-2"
+    >
+      {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
+        (statusOption) => (
+          <span
+            key={statusOption}
+            className={`py-2 px-2 sm:px-4 text-center rounded-md text-xs font-semibold cursor-pointer mb-1 ${
+              statusOption === "Completed"
+                ? "bg-green-200 text-green-600 hover:bg-green-300"
+                : statusOption === "In Progress"
+                ? "bg-yellow-200 text-yellow-600 hover:bg-yellow-300"
+                : statusOption === "To Do"
+                ? "bg-blue-200 text-blue-600 hover:bg-blue-300"
+                : statusOption === "Abbstulate"
+                ? "bg-purple-200 text-purple-600 hover:bg-purple-300"
+                : "bg-red-200 text-red-600 hover:bg-red-300"
+            }`}
+            onClick={() => {
+              setNewStatus(statusOption);
+              handleStatusChange(task._id, statusOption);
+              setEditingStatus(null);
+            }}
+          >
+            {statusOption}
+          </span>
+        )
+      )}
+    </div>
+  ) : (
+    <StatusBadge status={task.status} onClick={() => setEditingStatus(task._id)} />
+  )}
+</td>
+
+      </tr>
+    );
   };
 
   return (
-    <div className="overflow-x-auto h-auto sm:h-[68vh] w-full px-2 sm:px-0 sm:w-[195vh] relative">
+    <div className="p-2 sm:p-4 bg-gray-100 min-h-screen"> 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-        {/* Left section: Filters */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6 w-full sm:w-auto">
-          {/* User Filter */}
           {role === "admin" && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
               <label
@@ -677,7 +1057,6 @@ const ReportGeneration = ({
             </div>
           )}
 
-          {/* Date Filters */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
             <div className="flex items-center space-x-2 w-full sm:w-auto">
               <label className="text-xs font-medium text-gray-700 whitespace-nowrap">From:</label>
@@ -701,7 +1080,6 @@ const ReportGeneration = ({
           </div>
         </div>
 
-        {/* Right section: Download buttons */}
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <button
             onClick={handleDownloadExcel}
@@ -725,128 +1103,173 @@ const ReportGeneration = ({
       ) : (
         <>
           <div ref={reportRef} className="w-full p-2 sm:p-4">
-            <div className="overflow-x-auto w-full relative">
-              <h2 className="text-sm sm:text-base font-semibold mb-4">
-                {filters.user ? (
-                  <>
-                    <span className="capitalize block sm:inline">
-                      {filters.user}'s Task Report
-                    </span>
-                    {fromDate && toDate && (
-                      <span className="block sm:inline sm:ml-2 text-xs sm:text-sm font-medium text-gray-700 mt-2 sm:mt-0">
-                        (from{" "}
-                        <span className="font-semibold text-gray-800">
-                          {new Date(fromDate).toLocaleDateString("en-GB")}
-                        </span>{" "}
-                        to{" "}
-                        <span className="font-semibold text-gray-800">
-                          {new Date(toDate).toLocaleDateString("en-GB")}
-                        </span>
-                        )
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-gray-500">
-                    Please select a user to view report
+            <h2 className="text-sm sm:text-base font-semibold mb-4">
+              {filters.user ? (
+                <>
+                  <span className="capitalize block sm:inline">
+                    {filters.user}'s Task Report
                   </span>
-                )}
-              </h2>
-            </div>
+                  {fromDate && toDate && (
+                    <span className="block sm:inline sm:ml-2 text-xs sm:text-sm font-medium text-gray-700 mt-2 sm:mt-0">
+                      (from{" "}
+                      <span className="font-semibold text-gray-800">
+                        {new Date(fromDate).toLocaleDateString("en-GB")}
+                      </span>{" "}
+                      to{" "}
+                      <span className="font-semibold text-gray-800">
+                        {new Date(toDate).toLocaleDateString("en-GB")}
+                      </span>
+                      )
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-gray-500">
+                  Please select a user to view report
+                </span>
+              )}
+            </h2>
 
-            <div className="overflow-x-auto overflow-y-auto max-h-[60vh] sm:max-h-none">
-              <table className="w-full table-auto border-collapse text-xs text-gray-800 min-w-[600px]">
-                <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs sticky top-0 z-10">
-                  <tr className="text-left">
-                    <th className="py-3 px-2 sm:px-4 min-w-[50px] sm:min-w-[70px] font-semibold">
-                      S. No
-                    </th>
-                    <th className="py-3 px-2 sm:px-6 min-w-[120px] sm:min-w-[180px] font-semibold">
-                      Task Name
-                    </th>
-                    <th className="py-3 px-2 sm:px-6 min-w-[180px] sm:min-w-[250px] font-semibold">
-                      Work Description + Code
-                    </th>
-                    <th className="py-3 px-2 sm:px-6 min-w-[120px] sm:min-w-[150px] font-semibold">
-                      Date of Work
-                    </th>
-                    <th
-                      className="py-3 px-2 sm:px-6 min-w-[100px] font-semibold cursor-pointer"
-                      onClick={() => {
-                        setDueDateSortOrder((prev) =>
-                          prev === "asc" ? "desc" : "asc"
-                        );
-                      }}
-                    >
-                      Due Date
-                      {dueDateSortOrder === "asc"
-                        ? " 🔼"
-                        : dueDateSortOrder === "desc"
-                        ? " 🔽"
-                        : ""}
-                    </th>
-                    <th className="py-3 px-2 sm:px-6 min-w-[100px] sm:min-w-[140px] font-semibold text-center">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="text-xs text-gray-700">
+            <div className="overflow-x-auto h-auto max-h-screen relative">
+            {isMobile ? (
+                <div className="space-y-3 pb-20 relative">
                   {highPriorityTasks.length === 0 &&
                   mediumPriorityTasks.length === 0 &&
                   lowPriorityTasks.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="13"
-                        className="text-center py-6 text-gray-500"
-                      >
-                        🚫 No tasks Assigned Yet.
-                      </td>
-                    </tr>
+                    <div className="text-center py-6 text-gray-500">
+                      🚫 No tasks Assigned Yet.
+                    </div>
                   ) : (
                     <>
                       {highPriorityTasks.length > 0 && (
                         <>
-                          <tr className="bg-red-100 text-red-800 font-bold text-xs">
-                            <td colSpan="13" className="py-2 px-2 sm:px-6">
-                              High Priority Tasks
-                            </td>
-                          </tr>
+                          <div className="bg-red-200 text-red-800 font-bold text-xs p-2 rounded-md">
+                            High Priority Tasks
+                          </div>
                           {highPriorityTasks.map((task, idx) =>
-                            renderTaskRow(task, idx)
+                            renderTaskCardOrRow(task, idx)
                           )}
                         </>
                       )}
-
                       {mediumPriorityTasks.length > 0 && (
                         <>
-                          <tr className="bg-yellow-100 text-yellow-800 font-bold text-xs">
-                            <td colSpan="13" className="py-2 px-2 sm:px-6">
-                              Medium Priority Tasks
-                            </td>
-                          </tr>
+                          <div className="bg-yellow-200 text-yellow-800 font-bold text-xs p-2 rounded-md">
+                            Medium Priority Tasks
+                          </div>
                           {mediumPriorityTasks.map((task, idx) =>
-                            renderTaskRow(task, idx)
+                            renderTaskCardOrRow(task, idx)
                           )}
                         </>
                       )}
-
                       {lowPriorityTasks.length > 0 && (
                         <>
-                          <tr className="bg-green-100 text-green-800 font-bold text-xs">
-                            <td colSpan="13" className="py-2 px-2 sm:px-6">
-                              Low Priority Tasks
-                            </td>
-                          </tr>
+                          <div className="bg-green-200 text-green-800 font-bold text-xs p-2 rounded-md">
+                            Low Priority Tasks
+                          </div>
                           {lowPriorityTasks.map((task, idx) =>
-                            renderTaskRow(task, idx)
+                            renderTaskCardOrRow(task, idx)
                           )}
                         </>
                       )}
                     </>
                   )}
-                </tbody>
-              </table>
+                </div>
+              ) : (
+                <div className="overflow-y-auto max-h-[70vh]">
+                  <table className="w-full table-auto border-collapse text-xs text-gray-800 min-w-[600px]">
+                    <thead className="bg-gradient-to-r from-indigo-400 to-indigo-700 text-white text-xs sticky top-0 z-10">
+                      <tr className="text-left">
+                        <th className="py-3 px-2 sm:px-4 min-w-[50px] sm:min-w-[70px] font-semibold">
+                          S. No
+                        </th>
+                        <th className="py-3 px-2 sm:px-6 min-w-[120px] sm:min-w-[180px] font-semibold">
+                          Task Name
+                        </th>
+                        <th className="py-3 px-2 sm:px-6 min-w-[180px] sm:min-w-[250px] font-semibold">
+                          Work Description + Code
+                        </th>
+                        <th className="py-3 px-2 sm:px-6 min-w-[120px] sm:min-w-[150px] font-semibold">
+                          Date of Work
+                        </th>
+                        <th
+                          className="py-3 px-2 sm:px-6 min-w-[100px] font-semibold cursor-pointer"
+                          onClick={() => {
+                            setDueDateSortOrder((prev) =>
+                              prev === "asc" ? "desc" : "asc"
+                            );
+                          }}
+                        >
+                          Due Date
+                          {dueDateSortOrder === "asc"
+                            ? " 🔼"
+                            : dueDateSortOrder === "desc"
+                            ? " 🔽"
+                            : ""}
+                        </th>
+                        <th className="py-3 px-2 sm:px-6 min-w-[100px] sm:min-w-[140px] font-semibold text-center">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="text-xs text-gray-700">
+                      {highPriorityTasks.length === 0 &&
+                      mediumPriorityTasks.length === 0 &&
+                      lowPriorityTasks.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan="13"
+                            className="text-center py-6 text-gray-500"
+                          >
+                            🚫 No tasks Assigned Yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        <>
+                          {highPriorityTasks.length > 0 && (
+                            <>
+                              <tr className="bg-red-100 text-red-800 font-bold text-xs">
+                                <td colSpan="13" className="py-2 px-2 sm:px-6">
+                                  High Priority Tasks
+                                </td>
+                              </tr>
+                              {highPriorityTasks.map((task, idx) =>
+                                renderTaskCardOrRow(task, idx)
+                              )}
+                            </>
+                          )}
+
+                          {mediumPriorityTasks.length > 0 && (
+                            <>
+                              <tr className="bg-yellow-100 text-yellow-800 font-bold text-xs">
+                                <td colSpan="13" className="py-2 px-2 sm:px-6">
+                                  Medium Priority Tasks
+                                </td>
+                              </tr>
+                              {mediumPriorityTasks.map((task, idx) =>
+                                renderTaskCardOrRow(task, idx)
+                              )}
+                            </>
+                          )}
+
+                          {lowPriorityTasks.length > 0 && (
+                            <>
+                              <tr className="bg-green-100 text-green-800 font-bold text-xs">
+                                <td colSpan="13" className="py-2 px-2 sm:px-6">
+                                  Low Priority Tasks
+                                </td>
+                              </tr>
+                              {lowPriorityTasks.map((task, idx) =>
+                                renderTaskCardOrRow(task, idx)
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </>
