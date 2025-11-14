@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Bell, XCircle } from "lucide-react"; // icons
 import socket from "../socket";
 import LeaveDashboardCards from "../Components/leave/adminPanel/LeaveDashboardCards";
 import ManageRequests from "../Components/leave/adminPanel/ManageRequests";
@@ -6,7 +7,7 @@ import LeaveOverview from "../Components/leave/adminPanel/LeaveOverview";
 
 const LeaveManagement = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [leaveAlert, setLeaveAlert] = useState("false");
+  const [leaveAlert, setLeaveAlert] = useState(false);
 
   const formatDate = (date) =>
     new Date(date).toLocaleDateString("en-IN", {
@@ -17,7 +18,7 @@ const LeaveManagement = () => {
 
   if (Notification.permission !== "granted") {
     Notification.requestPermission().then((perm) => {
-      console.log("🔔 Notification permission notification permission:", perm);
+      console.log("🔔 Notification permission:", perm);
     });
   }
 
@@ -30,7 +31,6 @@ const LeaveManagement = () => {
     }
 
     const handleNewLeave = (data) => {
-      console.log("New leave request received:", data);
       const role = localStorage.getItem("role");
 
       if (role === "admin") {
@@ -42,7 +42,6 @@ const LeaveManagement = () => {
           });
         }
 
-        // Only show the alert if this is a new leave request
         const lastLeaveTimestamp = localStorage.getItem("lastLeaveTimestamp");
         const currentTimestamp = new Date().getTime().toString();
 
@@ -52,7 +51,6 @@ const LeaveManagement = () => {
           localStorage.setItem("lastLeaveTimestamp", currentTimestamp);
         }
 
-        // Dispatch event to update other parts of the app (sidebar)
         const event = new StorageEvent("storage", {
           key: "showLeaveAlert",
           newValue: "true",
@@ -62,10 +60,7 @@ const LeaveManagement = () => {
     };
 
     socket.on("new-leave", handleNewLeave);
-
-    return () => {
-      socket.off("new-leave", handleNewLeave);
-    };
+    return () => socket.off("new-leave", handleNewLeave);
   }, []);
 
   useEffect(() => {
@@ -74,10 +69,8 @@ const LeaveManagement = () => {
       setLeaveAlert(leaveAlertFlag === "true");
     };
 
-    // Initial load to update the leave alert state
     updateLeaveAlert();
 
-    // Handle changes in localStorage (e.g., when alert is reset)
     const handleStorageChange = (e) => {
       if (e.key === "showLeaveAlert") {
         setLeaveAlert(e.newValue === "true");
@@ -100,55 +93,62 @@ const LeaveManagement = () => {
 
   useEffect(() => {
     if (activeTab === "requests") {
-      resetLeaveAlert(); // Reset the leave alert when switching to the "Manage Requests" tab
-      // Emit custom event if localStorage isn't enough
+      resetLeaveAlert();
       const event = new CustomEvent("leaveAlertUpdate");
       window.dispatchEvent(event);
     }
   }, [activeTab]);
 
   return (
-    <div className="p-6 text-white bg-gray-900 h-[68vh] overflow-y-scroll">
-      <h1 className="text-3xl font-bold mb-4">Leave Management (Admin)</h1>
-      {/* Leave Alert Notification */}
-      {leaveAlert && (
-        <div className="bg-yellow-600 text-white p-3 rounded mb-4">
-          You have a new leave request!
-        </div>
-      )}
-      {/* TAB NAVIGATION */}
-      <div className="flex space-x-4 mb-6">
-        <button
-          onClick={() => setActiveTab("dashboard")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "dashboard" ? "bg-blue-600" : "bg-gray-700"
-          }`}
-        >
-          Dashboard
-        </button>
-        <button
-          onClick={() => setActiveTab("requests")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "requests" ? "bg-blue-600" : "bg-gray-700"
-          }`}
-        >
-          Manage Requests
-        </button>
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "overview" ? "bg-blue-600" : "bg-gray-700"
-          }`}
-        >
-          Leave Overview
-        </button>
-      </div>
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-[85vh] overflow-y-auto">
 
-      {/* SECTION DISPLAY */}
-      {activeTab === "dashboard" && <LeaveDashboardCards />}
-      {activeTab === "requests" && <ManageRequests />}
-      {activeTab === "overview" && <LeaveOverview />}
+  {/* Header */}
+  <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">
+    Leave Management (Admin)
+  </h1>
+
+  {/* Leave Alert Notification */}
+  {leaveAlert && (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-yellow-100 text-yellow-800 px-4 py-3 rounded-lg mb-4 sm:mb-6 shadow">
+      <div className="flex items-center gap-2 mb-2 sm:mb-0">
+        <Bell className="w-5 h-5" />
+        <span className="text-sm sm:text-base">You have a new leave request!</span>
+      </div>
+      <button onClick={resetLeaveAlert} className="self-end sm:self-auto">
+        <XCircle className="w-5 h-5 text-yellow-600 hover:text-yellow-800" />
+      </button>
     </div>
+  )}
+
+  {/* Tabs */}
+  <div className="flex gap-2 sm:gap-3 mb-3 sm:mb-6 overflow-x-auto">
+    {[ 
+      { key: "dashboard", label: "Dashboard" },
+      { key: "requests", label: "Manage Requests" },
+      { key: "overview", label: "Leave Overview" },
+    ].map((tab) => (
+      <button
+        key={tab.key}
+        onClick={() => setActiveTab(tab.key)}
+        className={`flex-shrink-0 px-2.5 sm:px-5 py-2 ml-0.5 rounded-lg font-medium transition-all text-sm sm:text-base ${
+          activeTab === tab.key
+            ? "bg-blue-600 text-white shadow"
+            : "bg-white text-gray-700 border hover:bg-gray-100"
+        }`}
+      >
+        {tab.label}
+      </button>
+    ))}
+  </div>
+
+  {/* Content Section */}
+  <div className="bg-white rounded-xl shadow p-4 sm:p-6">
+    {activeTab === "dashboard" && <LeaveDashboardCards />}
+    {activeTab === "requests" && <ManageRequests />}
+    {activeTab === "overview" && <LeaveOverview />}
+  </div>
+</div>
+
   );
 };
 

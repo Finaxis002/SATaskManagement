@@ -1,29 +1,20 @@
-// sidebar
+// Professional Sidebar - Cleaned Version (Minimal Animations)
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   FaHome,
-  FaInbox,
-  FaPlus,
   FaUsers,
-  FaBell,
   FaClipboardList,
-  FaClock,
-  FaCheckCircle,
-  FaCog,
-  FaUber,
-  FaDotCircle,
   FaBriefcase,
+  FaCog,
+  FaCheckCircle,
+  FaClock,
   FaMoneyBill,
-  FaDochub,
   FaGolfBall,
-  FaMailBulk,
-  FaEnvelope,
 } from "react-icons/fa";
 import { io } from "socket.io-client";
-import useMessageSocket from "../hook/useMessageSocket"; // ✅ For inbox
+import useMessageSocket from "../hook/useMessageSocket";
 import useNotificationSocket from "../hook/useNotificationSocket";
-import icon from "/icon.png";   
 import axios from "axios";
 
 const socket = io('https://taskbe.sharda.co.in', {
@@ -36,64 +27,25 @@ const Sidebar = () => {
   const [inboxCount, setInboxCount] = useState(0);
   const [leaveAlert, setLeaveAlert] = useState(false);
   const [expanded, setExpanded] = useState(false);
-
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
 
   const fetchPendingLeaveCount = async () => {
     try {
       const res = await axios.get("https://taskbe.sharda.co.in/api/leave/pending");
-      console.log("Leave response:", res.data); // Log the data received from the API
       const leaveCount = res.data.length || 0;
       setPendingLeaveCount(leaveCount);
-      console.log("pending leave count:", leaveCount); // Log the count
-    } catch (err) {
+    } catch {
       setPendingLeaveCount(0);
-      console.error("Error fetching pending leaves:", err);
     }
   };
 
   useEffect(() => {
-    console.log("useEffect triggered to fetch pending leave count");
     fetchPendingLeaveCount();
-  }, []);
-
-  useEffect(() => {
-    fetchPendingLeaveCount();
-
-    // Listen for new leaves via socket (optional, for real-time update)
     socket.on("new-leave", fetchPendingLeaveCount);
-    socket.on("leave-status-updated", fetchPendingLeaveCount); // Optional, handle approve/reject too
-
+    socket.on("leave-status-updated", fetchPendingLeaveCount);
     return () => {
       socket.off("new-leave", fetchPendingLeaveCount);
       socket.off("leave-status-updated", fetchPendingLeaveCount);
-    };
-  }, []);
-
-  useEffect(() => {
-    const updateLeaveAlert = () => {
-      const leaveAlertFlag = localStorage.getItem("showLeaveAlert");
-      setLeaveAlert(leaveAlertFlag === "true");
-    };
-
-    // Initial load
-    updateLeaveAlert();
-
-    // Custom event listener for more reliable updates
-    const handleStorageChange = (e) => {
-      if (e.key === "showLeaveAlert") {
-        setLeaveAlert(e.newValue === "true");
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    // Also listen to custom events if localStorage isn't reliable
-    window.addEventListener("leaveAlertUpdate", updateLeaveAlert);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("leaveAlertUpdate", updateLeaveAlert);
     };
   }, []);
 
@@ -102,183 +54,175 @@ const Sidebar = () => {
     setRole(storedRole);
   }, []);
 
-  useMessageSocket(setInboxCount); // ✅ Inbox badge real-time
+  useMessageSocket(setInboxCount);
   useNotificationSocket(setNotificationCount);
 
   return (
-    <div
-      className={`
-        fixed left-0 top-0 h-screen z-100
-        bg-[#0b1425] text-white flex flex-col justify-between border-r border-gray-700
-        transition-all duration-300
-        ${expanded ? "w-[220px]" : "w-[70px]"}
-      `}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-    >
-      {/* Logo at the top */}
-      <div className="flex justify-center pt-2">
-        <NavLink to="/">
-          <img
-            src="/SALOGO.png"
-            alt="Logo"
-            className="w-10 h-10 object-contain rounded-4xl z-0"
-          />
-        </NavLink>
-      </div>
+    <>
+      {/* Desktop Sidebar */}
+      <div
+        className={`hidden md:flex fixed left-0 top-0 h-screen z-[999]
+        bg-gradient-to-b from-blue-50 to-indigo-50 text-gray-800 flex-col
+        transition-all duration-200 border-r border-indigo-200/50 shadow-lg
+        ${expanded ? "w-[220px]" : "w-[70px]"}`}
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+      >
+        {/* Logo Section */}
+        <div className="flex items-center justify-center h-20 mb-4 border-b border-indigo-200/50">
+          <NavLink to="/" className="flex items-center justify-center px-4">
+            {expanded ? (
+              <div className="flex items-center gap-3 w-full">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xl">ASA</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-indigo-700 font-bold text-lg leading-tight">Finaxis</span>
+                  <span className="text-gray-500 text-xs font-medium">Task Manager</span>
+                </div>
+              </div>
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-xl">ASA</span>
+              </div>
+            )}
+          </NavLink>
+        </div>
 
-      {/* Main Navigation */}
-      <div className="flex-1 px-3 py-4 pt-2">
-        {/* Core nav */}
-        <SidebarItem
-          icon={<FaHome className="text-xl" />}
-          label="Home"
-          to="/"
-          expanded={expanded}
-        />
-        {role === "admin" && (
-          <>
+        {/* Main Navigation */}
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 sidebar-scroll">
+          <SidebarItem icon={<FaHome />} label="Home" to="/" expanded={expanded} />
+
+          {role === "admin" && (
+            <SidebarItem icon={<FaUsers />} label="All Users" to="/all-employees" expanded={expanded} />
+          )}
+
+          <SidebarItem icon={<FaClipboardList />} label="Tasks" to="/all-tasks" expanded={expanded} />
+
+          <SidebarItem icon={<FaBriefcase />} label="Clients" to="/clients" expanded={expanded} />
+
+          <SidebarItem
+            icon={
+              <div className="relative">
+                <FaGolfBall />
+                {leaveAlert && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
+              </div>
+            }
+            label="Leave"
+            to="/leave"
+            expanded={expanded}
+          />
+
+          {role === "admin" && (
             <SidebarItem
-              icon={<FaUsers className="text-xl" />}
-              label="All Users"
-              to="/all-employees"
+              icon={<FaCog />}
+              label="Settings"
+              to="/departments"
               expanded={expanded}
+              badge={pendingLeaveCount > 0 ? pendingLeaveCount : null}
             />
-          </>
-        )}
-        <SidebarItem
-          icon={<FaClipboardList className="text-xl" />}
-          label="Tasks"
-          to="/all-tasks"
-          expanded={expanded}
-        />
-        <SidebarItem
-          icon={<FaBriefcase className="text-xl" />}
-          label="Clients"
-          to="/clients"
-          expanded={expanded}
-        />
-        <SidebarItem
-          icon={
-            <div className="relative">
-              <FaGolfBall className="text-xl" />
-              {leaveAlert && (
-                <span className="absolute -top-2 -right-2 text-red-500 text-lg leave-alert-animation">
-                  <FaDotCircle />
-                </span>
-              )}
-            </div>
-          }
-          label="Leave"
-          to="/leave"
-          expanded={expanded}
-        />
-        {role === "admin" && (
-          <SidebarItem
-            icon={<FaCog className="text-xl" />}
-            label="Settings"
-            to="/departments"
-            expanded={expanded}
-            badge={pendingLeaveCount > 0 ? pendingLeaveCount : null}
-          />
-        )}
+          )}
 
-        {role === "admin" && (
-          <SidebarItem
-            icon={<FaCheckCircle className="text-xl" />}
-            label="Completed Tasks"
-            to="/completed"
-            expanded={expanded}
-          />
-        )}
+          {role === "admin" && (
+            <SidebarItem icon={<FaCheckCircle />} label="Completed Tasks" to="/completed" expanded={expanded} />
+          )}
 
-        {/* {role === "admin" && (
-          <SidebarItem
-            icon={<FaMoneyBill className="text-xl" />}
-            label="Invoice"
-            to="/invoice"
-            expanded={expanded}
-          />
-        )} */}
+          {role === "admin" && (
+            <SidebarItem icon={<FaMoneyBill />} label="Invoicing" to="/viewinvoicewithotp" expanded={expanded} />
+          )}
 
-        {role === "admin" && (
-          <SidebarItem
-            icon={<FaMoneyBill className="text-xl" />}
-            label="Invoicing"
-            to="/viewinvoicewithotp"
-            expanded={expanded}
-          />
-        )}
+          {role === "admin" && (
+            <SidebarItem icon={<FaClock />} label="Updates" to="/updates" expanded={expanded} />
+          )}
+        </div>
 
-        {role === "admin" && (
-          <SidebarItem
-            icon={<FaClock className="text-xl" />}
-            label="Updates"
-            to="/updates"
-            expanded={expanded}
-          />
-        )}
-
-
-        
-{/* {role === "admin" && (
-  <SidebarItem
-    icon={<FaBusinessTime className="text-xl" />}
-    label="Invoicing"
-    onClick={openInvoiceTab}
-    expanded={expanded}
-  />
-)} */}
-        
-
-        {/* <SidebarItem
-          icon={<FaEnvelope className="text-xl" />}
-          label="Mail Box"
-          to="/mailbox"
-          expanded={expanded}
-        /> */}
-
-        {/* {role === "admin" && (
-          <SidebarItem
-            icon={<FaMailBulk className="text-xl" />}
-            label="Admin Mailbox"
-            to="/admin-mailbox"
-          />
-        )} */}
+        {/* Footer */}
+        <div className="h-12 flex items-center justify-center px-3 text-xs text-gray-600 border-t border-indigo-200/50 bg-indigo-100/20">
+          {expanded ? "© 2025 Finaxis" : "©"}
+        </div>
       </div>
 
-      {/* Footer */}
-      <div className="px-2 py-3 border-t border-gray-700 text-xs text-gray-400">
-        © 2025 Finaxis
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-gray-200 shadow-lg pb-safe">
+        <div className={`grid ${role === "admin" ? "grid-cols-6" : "grid-cols-4"} gap-0 px-1 py-2`}>
+          {role === "admin" ? (
+            <>
+              <MobileNavItem icon={<FaUsers />} label="All Users" to="/all-employees" />
+              <MobileNavItem icon={<FaClipboardList />} label="Tasks" to="/all-tasks" />
+              <MobileNavItem icon={<FaBriefcase />} label="Clients" to="/clients" />
+              <MobileNavItem icon={<FaGolfBall />} label="Leave" to="/leave" />
+              <MobileNavItem icon={<FaCog />} label="Settings" to="/departments" badge={pendingLeaveCount} />
+              <MobileNavItem icon={<FaMoneyBill />} label="Invoices" to="/viewinvoicewithotp" />
+            </>
+          ) : (
+            <>
+              <MobileNavItem icon={<FaHome />} label="Home" to="/" />
+              <MobileNavItem icon={<FaClipboardList />} label="Tasks" to="/all-tasks" />
+              <MobileNavItem icon={<FaBriefcase />} label="Clients" to="/clients" />
+              <MobileNavItem icon={<FaGolfBall />} label="Leave" to="/leave" />
+            </>
+          )}
+        </div>
       </div>
-    </div>
+
+      <style jsx>{`
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background: rgba(99, 102, 241, 0.3);
+          border-radius: 10px;
+        }
+        .pb-safe {
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+      `}</style>
+    </>
   );
 };
 
-const SidebarItem = ({ icon, label, to, onClick, expanded, badge }) => (
+const SidebarItem = ({ icon, label, to, expanded, badge }) => (
   <NavLink
     to={to}
-    onClick={onClick}
     className={({ isActive }) =>
-      `flex items-center gap-3 px-3 py-2 rounded transition-all duration-300 text-sm relative
+      `flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200
         ${
           isActive
-            ? "bg-indigo-700 text-white border-l-4 border-indigo-400 shadow-md"
-            : "hover:bg-[#2b2c2f] text-white border-l-4 border-transparent"
+            ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md"
+            : "text-gray-600 hover:bg-white/70 hover:text-indigo-700"
         }`
     }
   >
-    <span className="text-base relative">
+    <span className="relative flex items-center justify-center min-w-[24px] text-lg">
       {icon}
       {badge && (
-        <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-600 text-white text-[9px] font-semibold rounded-full px-2 flex items-center justify-center">
-          {badge}
+        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
+          {badge > 9 ? "9+" : badge}
         </span>
       )}
     </span>
-    {expanded && <span className="ml-1.5 whitespace-nowrap">{label}</span>}
+    {expanded && <span className="text-sm font-semibold">{label}</span>}
   </NavLink>
 );
 
+const MobileNavItem = ({ icon, label, to, badge }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) =>
+      `flex flex-col items-center justify-center py-2 px-1 transition-all duration-150
+        ${isActive ? "text-indigo-600" : "text-gray-500"}`
+    }
+  >
+    <div className="relative mb-1 text-lg">{icon}</div>
+    <span className="text-[9px] font-medium text-center leading-tight">{label}</span>
+    {badge && (
+      <span className="absolute top-1 right-3 min-w-[14px] h-[14px] bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+        {badge > 9 ? "9+" : badge}
+      </span>
+    )}
+  </NavLink>
+);
 
 export default Sidebar;

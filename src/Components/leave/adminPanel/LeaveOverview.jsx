@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import {
+  FaCalendarAlt,
+  FaTag,
+  FaCommentDots,
+  FaClock,
+  FaUser,
+} from "react-icons/fa";
 
 const LeaveOverview = () => {
   const [leaves, setLeaves] = useState([]);
@@ -15,7 +22,6 @@ const LeaveOverview = () => {
         const { data } = await axios.get("https://taskbe.sharda.co.in/api/leave");
         setLeaves(data);
 
-        // Unique months from leaves
         const monthSet = new Set(
           data.map((l) =>
             new Date(l.fromDate).toLocaleString("default", { month: "long" })
@@ -23,7 +29,6 @@ const LeaveOverview = () => {
         );
         setMonths(["All Months", ...Array.from(monthSet)]);
 
-        // Unique users
         const userSet = new Set(data.map((l) => l.userId));
         setUsers(["All Users", ...Array.from(userSet)]);
 
@@ -55,35 +60,41 @@ const LeaveOverview = () => {
   }, [selectedUser, selectedMonth, leaves]);
 
   return (
-    <div className="bg-gray-800 p-6 rounded-xl max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
-      <h2 className="text-2xl font-bold mb-4">Leave Overview</h2>
+    <div className="sm:p-6 rounded-xl">
+      <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">
+        Leave Overview
+      </h2>
 
       {/* Filters */}
-      <div className="flex gap-6 mb-6">
-        <div>
-          <label className="block text-sm mb-1">Filter by Month</label>
+      <div className="flex md:flex-row flex-col sm:flex-row gap-3 md:gap-4 mb-6">
+        <div className="w-full md:w-auto">
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Filter by Month
+          </label>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-gray-700 text-white p-2 rounded w-52"
+            className="border rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-65"
           >
             {months.map((m, i) => (
-              <option key={i} value={m}>
+              <option className="text-sm" key={i} value={m}>
                 {m}
               </option>
             ))}
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm mb-1">Filter by User</label>
+        <div className="w-full md:w-auto">
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Filter by User
+          </label>
           <select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            className="bg-gray-700 text-white p-2 rounded w-52"
+            className="border rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {users.map((u, i) => (
-              <option key={i} value={u}>
+              <option className="text-sm" key={i} value={u}>
                 {u}
               </option>
             ))}
@@ -91,46 +102,48 @@ const LeaveOverview = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-white text-sm">
-          <thead>
-            <tr className="bg-gray-700 text-left">
-              <th className="px-4 py-2">User Name</th>
-              <th className="px-4 py-2">Start Date</th>
-              <th className="px-4 py-2">End Date</th>
-              <th className="px-4 py-2">Type</th>
-              <th className="px-4 py-2">Status</th>
+      {/* Table View */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="min-w-full text-gray-700 text-sm">
+          <thead className="bg-gray-200 text-gray-600">
+            <tr>
+              <th className="px-4 py-2 text-left">User Name</th>
+              <th className="px-4 py-2 text-left">Start Date</th>
+              <th className="px-4 py-2 text-left">End Date</th>
+              <th className="px-4 py-2 text-left">Type</th>
+              <th className="px-4 py-2 text-left">Status</th>
             </tr>
           </thead>
           <tbody>
             {filteredLeaves.map((leave) => (
-              <tr key={leave._id} className="border-t border-gray-700">
+              <tr
+                key={leave._id}
+                className="border-t border-gray-200 hover:bg-gray-50"
+              >
                 <td className="px-4 py-2">{leave.userName || leave.userId}</td>
                 <td className="px-4 py-2">
-                  {new Date(leave.fromDate).toLocaleDateString()}
+                  {new Date(leave.fromDate).toLocaleDateString("en-GB")}
                 </td>
                 <td className="px-4 py-2">
-                  {new Date(leave.toDate).toLocaleDateString()}
+                  {new Date(leave.toDate).toLocaleDateString("en-GB")}
                 </td>
-                <td className="px-4 py-2">{leave.leaveType}
-                 {(leave.fromTime || leave.toTime) && (
-              <div className="text-xs text-gray-400 mt-1">
-                <span className="font-medium">Timing: </span>
-                {leave.fromTime ? leave.fromTime : "--:--"}{" "}
-                <span className="mx-1">→</span>
-                {leave.toTime ? leave.toTime : "--:--"}
-              </div>
-            )}
-            </td>
+                <td className="px-4 py-2">
+                  {leave.leaveType}
+                  {(leave.fromTime || leave.toTime) && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      <span className="font-medium">Timing: </span>
+                      {leave.fromTime || "--:--"} → {leave.toTime || "--:--"}
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   <span
-                    className={`px-2 py-1 rounded text-sm ${
-                      leave.status === "Pending"
-                        ? "bg-yellow-500"
-                        : leave.status === "Approved"
-                        ? "bg-green-500"
-                        : "bg-red-500"
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      leave.status === "Approved"
+                        ? "bg-green-100 text-green-700"
+                        : leave.status === "Pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-red-100 text-red-700"
                     }`}
                   >
                     {leave.status}
@@ -138,16 +151,89 @@ const LeaveOverview = () => {
                 </td>
               </tr>
             ))}
-
             {filteredLeaves.length === 0 && (
               <tr>
-                <td className="px-4 py-4 text-center text-gray-400" colSpan={5}>
+                <td
+                  colSpan={5}
+                  className="px-4 py-4 text-center text-gray-400 italic"
+                >
                   No records found
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="block sm:hidden space-y-2">
+        {filteredLeaves.length > 0 ? (
+          filteredLeaves.map((leave) => (
+            <div
+              key={leave._id}
+              className="bg-gradient-to-r from-white to-blue-50 rounded-xl shadow-xl p-2 hover:shadow-xl"
+            >
+              {/* User & Status */}
+              <div className="flex items-center justify-between mb-3 mt-2">
+                <div className="flex items-center gap-2">
+                  <FaUser className="text-blue-500" />
+                  <p className="text-sm font-semibold text-gray-800">
+                    {leave.userName || leave.userId}
+                  </p>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    leave.status === "Approved"
+                      ? "bg-green-100 text-green-700"
+                      : leave.status === "Pending"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {leave.status}
+                </span>
+              </div>
+
+              {/* Dates */}
+              <div className="flex justify-between text-xs text-gray-600 mb-2">
+                <p className="flex items-center gap-1">
+                  <FaCalendarAlt className="text-blue-400" />
+                  <span className="font-medium">Start:</span>{" "}
+                  {new Date(leave.fromDate).toLocaleDateString("en-GB")}
+                </p>
+                <p className="flex items-center gap-1">
+                  <FaCalendarAlt className="text-red-400" />
+                  <span className="font-medium">End:</span>{" "}
+                  {new Date(leave.toDate).toLocaleDateString("en-GB")}
+                </p>
+              </div>
+
+              {/* Type & Timing */}
+              <div className="flex justify-between items-center text-xs text-gray-700 mb-2">
+                <p className="flex items-center gap-1">
+                  <FaTag className="text-purple-400" />
+                  <span className="font-medium">Type:</span> {leave.leaveType}
+                </p>
+                {(leave.fromTime || leave.toTime) && (
+                  <p className="flex items-center gap-1 text-gray-500 text-[11px]">
+                    <FaClock className="text-orange-400" />
+                    {leave.fromTime || "--:--"} → {leave.toTime || "--:--"}
+                  </p>
+                )}
+              </div>
+
+              {/* Comments */}
+              <p className="flex items-center gap-1 text-gray-600 text-xs">
+                <FaCommentDots className="text-green-400" />
+                {leave.comments || "No comments"}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p className="text-center text-gray-400 italic py-3">
+            No records found
+          </p>
+        )}
       </div>
     </div>
   );

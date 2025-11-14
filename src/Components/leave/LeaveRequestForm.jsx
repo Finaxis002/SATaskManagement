@@ -3,43 +3,6 @@ import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import axios from "axios";
-import TimePicker from "react-time-picker";
-import "react-time-picker/dist/TimePicker.css";
-import "react-clock/dist/Clock.css";
-
-// Toast Component
-const Toast = ({ message, type, isVisible, onClose }) => {
-  useEffect(() => {
-    if (isVisible) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 3000); // Auto close after 3 seconds
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, onClose]);
-
-  if (!isVisible) return null;
-
-  return (
-    <div className={`fixed top-16 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform ${type === 'success'
-        ? 'bg-green-500 text-white'
-        : 'bg-red-500 text-white'
-      } ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-[-100px] opacity-0'}`}>
-      <div className="flex items-center gap-2">
-        <span className="text-lg">
-          {type === 'success' ? '✅' : '❌'}
-        </span>
-        <span className="font-medium">{message}</span>
-        <button
-          onClick={onClose}
-          className="ml-2 text-white hover:text-gray-200 font-bold text-lg"
-        >
-          ×
-        </button>
-      </div>
-    </div>
-  );
-};
 
 const LeaveRequestForm = () => {
   const userName = localStorage.getItem("name");
@@ -51,21 +14,23 @@ const LeaveRequestForm = () => {
     },
   ]);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarAbove, setCalendarAbove] = useState(false); // 🔥 new
+  const [leaveDuration, setLeaveDuration] = useState("Full Day");
   const [leaveType, setLeaveType] = useState("Sick Leave");
   const [comments, setComments] = useState("");
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
-
-  // Toast states
-  const [toast, setToast] = useState({
-    isVisible: false,
-    message: '',
-    type: 'success'
-  });
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   const calendarRef = useRef(null);
+  const inputRef = useRef(null); // 🔥 new for positioning
 
-  // Format dates
+  const MIN_COMMENT_WORDS = 10;
+
+  const showToast = (message, type) => {
+    setToast({ show: true, message, type });
+  };
+
   const formatDate = (date) =>
     new Date(date).toLocaleDateString("en-IN", {
       year: "numeric",
@@ -73,10 +38,13 @@ const LeaveRequestForm = () => {
       day: "numeric",
     });
 
-  // Close calendar on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target) &&
+        !inputRef.current.contains(event.target)
+      ) {
         setShowCalendar(false);
       }
     };
@@ -84,187 +52,314 @@ const LeaveRequestForm = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const showToast = (message, type = 'success') => {
-    setToast({
-      isVisible: true,
-      message,
-      type
-    });
-  };
+  // Detect if calendar should open above or below (auto-position)
+  useEffect(() => {
+    if (showCalendar && inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setCalendarAbove(spaceBelow < 350); // if less than 350px space below, open upward
+    }
+  }, [showCalendar]);
 
-  const hideToast = () => {
-    setToast(prev => ({ ...prev, isVisible: false }));
+  const isCasualLeaveValid = () => {
+    if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const minCasualLeaveDate = new Date(today);
+      minCasualLeaveDate.setDate(today.getDate() + 2);
+
+      const selectedStartDate = new Date(range[0].startDate);
+      selectedStartDate.setHours(0, 0, 0, 0);
+
+      return selectedStartDate >= minCasualLeaveDate;
+    }
+    return true;
   };
 
   const handleSubmit = async () => {
     const userId = localStorage.getItem("userId");
 
-    try {
-      const payload = {
-        userId, // Include user ID
-        userName,
-        fromDate: range[0].startDate,
-        toDate: range[0].endDate,
-        leaveType,
-        comments,
-        fromTime,
-        toTime,
-      };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const minCasualLeaveDate = new Date(today);
+    minCasualLeaveDate.setDate(today.getDate() + 2);
 
-      await axios.post(
-        "https://taskbe.sharda.co.in/api/leave",
-        payload
+  if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
+      const selectedStartDate = new Date(range[0].startDate);
+      selectedStartDate.setHours(0, 0, 0, 0);
+      if (selectedStartDate < minCasualLeaveDate) {
+        const formattedMinDate = formatDate(minCasualLeaveDate);
+        showToast(
+          `❌ Casual Leave requires at least 2 days advance notice. Please select a date from ${formattedMinDate} onwards.\n\n💡 For immediate leave, you can apply for Emergency Leave instead!`,
+          "error"
+        );
+        return;
+      }
+    }
+
+    const wordCount = comments
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 0).length;
+    if (wordCount < MIN_COMMENT_WORDS) {
+      showToast(
+        `You must provide a detailed comment of at least ${MIN_COMMENT_WORDS} words. Your current comment has only ${wordCount} words.`,
+        "error"
       );
+      return;
+    }
 
-      // Set alert in localStorage for new leave request
+    if (leaveDuration === "Half Day" && (!fromTime || !toTime)) {
+      showToast(
+        "Please select both start and end time for Half Day leave.",
+        "error"
+      );
+      return;
+    }
+
+    const payload = {
+      userId,
+      userName,
+      fromDate: range[0].startDate,
+      toDate: range[0].endDate,
+      leaveDuration,
+      leaveType: leaveDuration === "Full Day" ? leaveType : "Half Day Leave",
+      comments,
+      fromTime: leaveDuration === "Half Day" ? fromTime : "",
+      toTime: leaveDuration === "Half Day" ? toTime : "",
+    };
+    // http://localhost:1100/api/leave
+    // https://taskbe.sharda.co.in/api/leave
+    try {
+      await axios.post(" https://taskbe.sharda.co.in/api/leave", payload, {
+        headers: { "Content-Type": "application/json" },
+      });
       localStorage.setItem("showLeaveAlert", "true");
-
-      // Trigger 'storage' event to update sidebar alert in real-time
       const event = new Event("storage");
       window.dispatchEvent(event);
-
-      // Show success toast instead of alert
-      showToast("Leave request submitted successfully! 🎉", "success");
+      showToast("Leave submitted successfully! 🎉", "success");
       setComments("");
+      setFromTime("");
+      setToTime("");
     } catch (error) {
-      // Show error toast
       showToast("Error submitting leave request. Please try again.", "error");
     }
   };
 
   return (
-    <>
-      {/* Toast Notification */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.isVisible}
-        onClose={hideToast}
-      />
-
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition overflow-y-auto ">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-900 text-center ">Request Leave</h2>
-
-        <div className="border-b border-gray-300 mb-4"></div>
-        <label className="block text-sm mb-1 text-gray-700">Leave Dates</label>
-        <input
-          type="text"
-          readOnly
-          onClick={() => setShowCalendar(!showCalendar)}
-          value={`${formatDate(range[0].startDate)} - ${formatDate(
-            range[0].endDate
-          )}`}
-          className="w-full bg-gray-100 rounded-md p-2 mb-4 text-gray-900 cursor-pointer border border-gray-300"
-        />
-
-        {showCalendar && (
-          <div ref={calendarRef} className="absolute z-50 mt-[-1rem] mb-4 bg-white rounded-lg shadow-lg p-2">
-            <DateRange
-              editableDateInputs={true}
-              onChange={(item) => setRange([item.selection])}
-              moveRangeOnFirstSelection={false}
-              ranges={range}
-              className="rounded-md"
-            />
-          </div>
-        )}
-
-        <label className="block text-sm mb-1 text-gray-700">Leave Type</label>
-        <select
-          value={leaveType}
-          onChange={(e) => setLeaveType(e.target.value)}
-          className="w-full bg-gray-100 rounded-md p-2 mb-4 border border-gray-300 text-black"
-        >
-          <option>Sick Leave</option>
-          <option>Casual Leave</option>
-          <option>Earned Leave</option>
-          <option>Half Day Leave</option>
-        </select>
-
-        {/* leave timing for half day leave */}
-        <div className="mb-4">
-          <label className="block text-sm mb-1 font-medium text-gray-700">
-            Leave Timing{" "}
-            <span className="text-gray-500">(Optional, for Half Day)</span>
-          </label>
-          <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg border border-gray-300 shadow-sm">
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                From Time
-              </label>
-              <TimePicker
-                onChange={setFromTime}
-                value={fromTime}
-                clearIcon={null}
-                clockIcon={
+    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition overflow-y-auto min-h-[77vh] flex flex-col justify-between  ">
+      {toast.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 animate-fade-in">
+          <div
+            className={`max-w-md w-full mx-4 animate-scale-in ${
+              toast.type === "success"
+                ? "bg-gradient-to-r from-green-500 to-green-600"
+                : "bg-gradient-to-r from-white to-white"
+            } text-black px-8 py-6 rounded-2xl shadow-2xl`}
+          >
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="rounded-full p-4 bg-white bg-opacity-30">
+                {toast.type === "success" ? (
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-16 h-16 text-black"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth={2}
                     viewBox="0 0 24 24"
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+                      strokeWidth="3"
+                      d="M5 13l4 4L19 7"
+                    ></path>
                   </svg>
-                }
-                className="w-full [&_input]:bg-gray-100 [&_input]:border border-gray-300 [&_input]:text-gray-900 [&_input]:rounded-md [&_input]:py-2 [&_input]:px-10 [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_button]:text-gray-600"
-                format="HH:mm"
-                disableClock={false}
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                To Time
-              </label>
-              <TimePicker
-                onChange={setToTime}
-                value={toTime}
-                clearIcon={null}
-                clockIcon={
+                ) : (
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-16 h-16 text-black"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth={2}
                     viewBox="0 0 24 24"
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+                      strokeWidth="2.5"
+                      d="M6 18L18 6M6 6l12 12"
+                    ></path>
                   </svg>
-                }
-                className="w-full [&>div]:w-full"
-                format="HH:mm"
-                disableClock={false}
-              />
+                )}
+              </div>
+              <div>
+                <h3 className="font-bold text-xl mb-2">
+                  {toast.type === "success" ? "Success!" : "Oops!"}
+                </h3>
+                <p className="font-medium text-base leading-relaxed">
+                  {toast.message}
+                </p>
+              </div>
+              <button
+                onClick={() => setToast({ show: false, message: "", type: "" })}
+                className="mt-2 bg-white text-gray-800 hover:bg-gray-100 font-bold px-8 py-2.5 rounded-lg transition-all duration-200 hover:scale-105 shadow-md"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
+      )}
 
-        <label className="block text-sm mb-1 text-gray-700">Comments (Optional)</label>
-        <textarea
-          value={comments}
-          onChange={(e) => setComments(e.target.value)}
-          className="w-full bg-gray-100 rounded-md p-2 mb-4 text-gray-900 border border-gray-300"
-          placeholder="Provide any additional details..."
-          rows={3}
-        />
+      <h2 className="text-xl sm:text-2xl font-semibold mb-3 text-gray-900 text-center">
+        Request Leave
+      </h2>
+      <div className="border-b border-gray-300 mb-4"></div>
 
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-md transition-colors duration-300 ease-in-out"
-        >
-          🚀 Submit Request
-        </button>
-      </div>
-    </>
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+        Leave Duration
+      </label>
+      <select
+        value={leaveDuration}
+        onChange={(e) => {
+          setLeaveDuration(e.target.value);
+          if (e.target.value === "Full Day") {
+            setLeaveType("Sick Leave");
+            setFromTime("");
+            setToTime("");
+          }
+        }}
+        className="w-full bg-gray-100 rounded-md p-2 border border-gray-300 text-sm text-black hover:border-blue-400 transition mb-3"
+      >
+        <option>Full Day</option>
+        <option>Half Day</option>
+      </select>
+
+      {leaveDuration === "Full Day" && (
+        <>
+          <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+            Leave Type
+          </label>
+          <select
+            value={leaveType}
+            onChange={(e) => setLeaveType(e.target.value)}
+            className="w-full bg-gray-100 rounded-md p-2 border border-gray-300 text-sm text-black hover:border-blue-400 transition mb-3"
+          >
+            <option>Sick Leave</option>
+            <option>Casual Leave</option>
+            <option>Emergency Leave</option>
+          </select>
+        </>
+      )}
+
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+        Leave Date{leaveDuration === "Full Day" ? "s" : ""}
+      </label>
+      <input
+        ref={inputRef}
+        type="text"
+        readOnly
+        onClick={() => setShowCalendar(!showCalendar)}
+        value={
+          leaveDuration === "Full Day"
+            ? `${formatDate(range[0].startDate)} - ${formatDate(
+                range[0].endDate
+              )}`
+            : formatDate(range[0].startDate)
+        }
+        className="w-full bg-gray-100 rounded-md p-2 mb-2 text-sm text-gray-900 cursor-pointer border border-gray-300 hover:border-blue-400 transition"
+      />
+
+      {showCalendar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-40">
+          <div
+            ref={calendarRef}
+            className="bg-white rounded-lg shadow-2xl p-4 sm:p-6 max-w-[95vw] sm:max-w-lg animate-scale-in"
+          >
+            <DateRange
+              editableDateInputs={true}
+              onChange={(item) => {
+                if (leaveDuration === "Half Day") {
+                  setRange([
+                    {
+                      startDate: item.selection.startDate,
+                      endDate: item.selection.startDate,
+                      key: "selection",
+                    },
+                  ]);
+                } else {
+                  setRange([item.selection]);
+                }
+              }}
+              moveRangeOnFirstSelection={false}
+              ranges={range}
+              className="rounded-md text-sm"
+            />
+
+            <div className="text-center mt-4">
+              <button
+                onClick={() => setShowCalendar(false)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-semibold transition-all duration-200"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {leaveDuration === "Half Day" && (
+        <div className="mb-3">
+          <label className="block text-xs sm:text-sm mb-2 font-medium text-gray-700">
+            Leave Timing{" "}
+            <span className="text-red-500 text-xs">(Required)</span>
+          </label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="time"
+              value={fromTime}
+              onChange={(e) => setFromTime(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-md p-2 text-sm text-gray-900 hover:border-blue-400 focus:border-blue-500"
+            />
+            <input
+              type="time"
+              value={toTime}
+              onChange={(e) => setToTime(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-md p-2 text-sm text-gray-900 hover:border-blue-400 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      )}
+
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+        Comments{" "}
+        <span className="text-red-500 text-xs">
+          (min {MIN_COMMENT_WORDS} words)
+        </span>
+      </label>
+      <textarea
+        value={comments}
+        onChange={(e) => setComments(e.target.value)}
+        className="w-full bg-gray-100 rounded-md p-2 mb-3 text-sm text-gray-900 border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition resize-none"
+        rows={3}
+        placeholder="Provide any additional details..."
+      />
+
+      <button
+        onClick={handleSubmit}
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg marg]]]"
+      >
+        🚀 Submit Request
+      </button>
+    </div>
   );
 };
+
+// Animations
+const style = document.createElement("style");
+style.textContent = `
+  @keyframes fade-in { from {opacity: 0;} to {opacity: 1;} }
+  @keyframes scale-in { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+  .animate-fade-in { animation: fade-in 0.2s ease-out; }
+  .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+`;
+document.head.appendChild(style);
 
 export default LeaveRequestForm;
