@@ -1,0 +1,29 @@
+/* whatsapp.css */
+@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500&display=swap');
+
+.whatsapp-bg {
+  background-color: #efeae2;
+  background-image: url('whatsapp-bg-pattern.png');
+  background-position: center;
+  background-size: 412.5px 749.25px;
+}
+
+.chat-input-container {
+  background-color: #f0f2f5;
+}
+
+.chat-input {
+  background-color: white;
+}
+
+.avatar-placeholder {
+  background-color: #dfe5e7;
+}
+
+.send-button {
+  background-color: #008069;
+}
+
+.empty-state-circle {
+  background-color: #f0f2f5;
+}

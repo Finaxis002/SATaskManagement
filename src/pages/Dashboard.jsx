@@ -1,3 +1,5 @@
+// src/pages/Dashboard.jsx
+// src/pages/Dashboard.jsx
 import {
   useEffect,
   useMemo,
@@ -5,23 +7,40 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
- 
 } from "react";
-
 import { useLocation, useNavigate } from "react-router-dom";
-
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+import { AnimatePresence, useInView, motion } from "framer-motion";
 import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import StickyNotesDashboard from "../Components/notes/StickyNotesDashboard";
-import { ClipboardList, CheckCircle, Clock, AlertCircle } from "lucide-react";
-import { FaCalendarAlt, FaClock, FaTimes, FaPlus } from "react-icons/fa";
-import { isToday, parseISO, format, startOfToday, endOfToday } from "date-fns";
+import {
+  ClipboardList,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Calendar,
+  Plus,
+  ArrowRight,
+} from "lucide-react";
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaTimes,
+  FaPlus,
+  FaAlignLeft,
+} from "react-icons/fa";
+import {
+  isToday,
+  parseISO,
+  format,
+  startOfToday,
+  endOfToday,
+  formatDistanceToNow,
+} from "date-fns";
 import TaskOverview from "../Components/TaskOverview";
-
-
+import axios from "axios";
 
 /* ------------------ cache & helpers ------------------ */
 const K = {
@@ -30,12 +49,25 @@ const K = {
   USER_ID: "userId",
   GOOGLE_EMAIL: "googleEmail",
 };
+
+function lsGet(k) {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+}
+function lsSet(k, v) {
+  try {
+    localStorage.setItem(k, v);
+  } catch {}
+}
 const evKey = (uid) => `events_cache__${uid || "anon"}`;
 const rmKey = (uid) => `reminders_cache__${uid || "anon"}`;
 
 const loadCache = (key) => {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = lsGet(key);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -43,34 +75,23 @@ const loadCache = (key) => {
 };
 const saveCache = (key, list) => {
   try {
-    localStorage.setItem(key, JSON.stringify(list || []));
+    lsSet(key, JSON.stringify(list || []));
   } catch {}
 };
 const mergeById = (serverList = [], cachedList = []) => {
   const out = [];
   const byId = new Map();
   for (const it of cachedList) {
-    const id = it?._id || it?.tempId;
+    const id = it && (it._id || it.tempId);
     if (id) byId.set(id, it);
   }
   for (const it of serverList) {
-    const id = it?._id || it?.tempId;
+    const id = it && (it._id || it.tempId);
     if (id) byId.set(id, { ...(byId.get(id) || {}), ...it, optimistic: false });
   }
   if ((serverList || []).length === 0) return cachedList;
   byId.forEach((v) => out.push(v));
   return out;
-};
-
-const toLocalParts = (isoString) => {
-  const d = new Date(isoString);
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}` };
 };
 
 function getTimeBasedGreeting() {
@@ -81,9 +102,9 @@ function getTimeBasedGreeting() {
 }
 
 const openGoogleConnect = () => {
-  const raw = localStorage.getItem(K.USER);
+  const raw = lsGet(K.USER);
   const u = raw ? JSON.parse(raw) : null;
-  const uid = u?.userId || localStorage.getItem(K.USER_ID);
+  const uid = (u && u.userId) || lsGet(K.USER_ID);
   if (!uid) {
     alert("Please login first.");
     return;
@@ -96,8 +117,8 @@ const openGoogleConnect = () => {
 };
 
 const ensureLinkedOrPrompt = async () => {
-  const token = localStorage.getItem(K.TOKEN);
-  const email = localStorage.getItem(K.GOOGLE_EMAIL);
+  const token = lsGet(K.TOKEN);
+  const email = lsGet(K.GOOGLE_EMAIL);
   if (!token || !email) {
     if (
       window.confirm(
@@ -124,19 +145,461 @@ function ModalPortal({ children }) {
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prevOverflow;
-      document.body.removeChild(el);
+      try {
+        document.body.removeChild(el);
+      } catch {}
     };
   }, []);
   return createPortal(children, elRef.current);
 }
 
-/* ------------------ styles ------------------ */
-const glass =
-  "backdrop-blur-xl bg-white/60 border border-white/30 shadow-[0_10px_30px_rgba(0,0,0,0.08)]";
+/* ------------------ Enhanced Styles ------------------ */
+// Mobile par backdrop-blur hata diya (md+ pe enable)
 
-/* ------------------ TodaysList ------------------ */
+const glass =
+  "md:backdrop-blur-xl bg-white/80 border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.06)]";
+
+const endT = endOfToday();
+const startT = startOfToday();
+
+/* ---------- Enhanced Quick Actions Floating Panel ---------- */
+const QuickActionsPanel = ({ onCreateEvent, stats }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const quickActions = [
+    {
+      icon: <Calendar className="h-5 w-5" />,
+      label: "New Event",
+      action: onCreateEvent,
+      color: "from-purple-500 to-blue-600",
+      shortcut: "Alt + A",
+    },
+    {
+      icon: <Clock className="h-5 w-5" />,
+      label: "Set Reminder",
+      action: () => console.log("Create reminder"),
+      color: "from-amber-500 to-orange-600",
+      shortcut: "Alt + R",
+    },
+    {
+      icon: <Plus className="h-5 w-5" />,
+      label: "Sticky Notes ",
+      action: () => console.log("Create note"),
+      color: "from-emerald-500 to-green-600",
+      shortcut: "Alt + N",
+    },
+  ];
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      {/* Quick Actions Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="absolute bottom-16 right-0 space-y-3"
+            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
+            {quickActions.map((action, index) => (
+              <motion.button
+                key={action.label}
+                onClick={action.action}
+                className={`group relative flex items-center gap-3 px-4 py-3 bg-gradient-to-r ${action.color} text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 min-w-[160px]`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ x: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-3 flex-1">
+                  {action.icon}
+                  <span className="font-semibold text-sm">{action.label}</span>
+                </div>
+                <span className="text-xs opacity-75 font-mono">
+                  {action.shortcut}
+                </span>
+                <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main FAB Button */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`relative w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group ${glass}`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        animate={{ rotate: isOpen ? 45 : 0 }}
+      >
+        <Plus className="h-6 w-6" />
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-blue-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Notification Badge */}
+        {/* {stats && stats.Overdue > 0 && (
+          <motion.div
+            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+          >
+            <span className="text-xs font-bold text-white">{stats.Overdue}</span>
+          </motion.div>
+        )} */}
+      </motion.button>
+    </div>
+  );
+};
+
+/* ---------- Enhanced Progress Ring Component ---------- */
+const ProgressRing = ({
+  value,
+  maxValue,
+  size = 120,
+  strokeWidth = 8,
+  color = "purple",
+}) => {
+  const center = size / 2;
+  const radius = center - strokeWidth;
+  const circumference = 2 * Math.PI * radius;
+  const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  const colorClasses = {
+    purple: "stroke-purple-500",
+    blue: "stroke-blue-500",
+    green: "stroke-emerald-500",
+    orange: "stroke-amber-500",
+    red: "stroke-rose-500",
+  };
+
+  return (
+    <div className="relative">
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          fill="none"
+          className="text-gray-200"
+        />
+        <motion.circle
+          cx={center}
+          cy={center}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          fill="none"
+          className={colorClasses[color]}
+          strokeLinecap="round"
+          strokeDasharray={strokeDasharray}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset }}
+          transition={{ duration: 1, ease: "easeOut" }}
+        />
+      </svg>
+
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-gray-900">{value}</span>
+        <span className="text-sm text-gray-600">of {maxValue}</span>
+      </div>
+    </div>
+  );
+};
+
+/* ---------- Enhanced Productivity Insights Panel ---------- */
+const ProductivityInsights = ({ stats }) => {
+  const total = stats ? stats.TotalTask : 0;
+  const completed = stats ? stats.Completed : 0;
+  const progress = stats ? stats.Progress : 0;
+  const overdue = stats ? stats.Overdue : 0;
+
+  const completionRate = total > 0 ? (completed / total) * 100 : 0;
+
+  const insights = [
+    {
+      title: "Completion Rate",
+      value: `${Math.round(completionRate)}%`,
+      trend:
+        completionRate >= 75 ? "up" : completionRate >= 50 ? "stable" : "down",
+      color:
+        completionRate >= 75
+          ? "text-green-600"
+          : completionRate >= 50
+          ? "text-amber-600"
+          : "text-red-600",
+    },
+    {
+      title: "Active Tasks",
+      value: progress,
+      trend: progress <= 3 ? "good" : "high",
+      color: progress <= 3 ? "text-blue-600" : "text-amber-600",
+    },
+    {
+      title: "Overdue Items",
+      value: overdue,
+      trend: overdue === 0 ? "excellent" : "needs-attention",
+      color: overdue === 0 ? "text-green-600" : "text-red-600",
+    },
+  ];
+
+  return (
+    <motion.div
+      className={`${glass} rounded-3xl p-6 shadow-xl border-0 ring-1 ring-white/20`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600">
+          <svg
+            className="h-6 w-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">
+            Productivity Insights
+          </h3>
+          <p className="text-sm text-gray-600">Your performance overview</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {insights.map((insight, index) => (
+          <motion.div
+            key={insight.title}
+            className="text-center p-4 rounded-xl bg-white/50"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 + index * 0.1 }}
+          >
+            <div className={`text-2xl font-bold ${insight.color} mb-1`}>
+              {insight.value}
+            </div>
+            <div className="text-sm text-gray-600 font-medium">
+              {insight.title}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="flex justify-center">
+        <ProgressRing
+          value={completed}
+          maxValue={total}
+          size={100}
+          strokeWidth={6}
+          color="green"
+        />
+      </div>
+    </motion.div>
+  );
+};
+
+/* ---------- Compact Weather Widget (safe for iOS) ---------- */
+const CompactWeatherWidget = () => {
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    const fetchWeather = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `https://api.open-meteo.com/v1/forecast?latitude=23.2599&longitude=77.4126&current_weather=true`
+        );
+        const cw =
+          (response && response.data && response.data.current_weather) || {};
+        const weatherData = {
+          location: "Bhopal, MP",
+          temperature: cw.temperature,
+          condition: cw.weathercode,
+          windSpeed: cw.windspeed,
+        };
+        if (alive) {
+          setWeather(weatherData);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (alive) {
+          setError("Failed to fetch weather data.");
+          setLoading(false);
+        }
+      }
+    };
+    fetchWeather();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <motion.div
+        className={`${glass} rounded-2xl p-4 shadow-lg border-0 ring-1 ring-white/20`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <div className="animate-pulse">
+          <div className="h-3 bg-gray-200 rounded w-1/2 mb-3"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+          <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (error) {
+    return (
+      <motion.div
+        className={`${glass} rounded-2xl p-4 shadow-lg border-0 ring-1 ring-white/20`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <div className="text-center text-red-600">{error}</div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      className={`${glass} rounded-2xl pt-3 pl-4 pr-4 shadow-lg border-0 ring-1 ring-white/20 w-55 hidden md:block`}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.8 }}
+    >
+      <div className="flex items-center justify-between ">
+        <div className="flex gap-2">
+          <h3 className="text-sm font-bold text-gray-900">Weather</h3>
+          <p className="text-xs text-gray-600 pt-0.5">
+            {weather ? weather.location : ""}
+          </p>
+        </div>
+        <div className=" p-2 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500">
+          <svg
+            className="h-4 w-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="mt-[-8px]">
+          <div className="text-xl font-bold text-gray-900 mb-1">
+            {weather ? weather.temperature : "--"}°C
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+/* ---------- Enhanced Upcoming Events Preview ---------- */
+const UpcomingEvents = ({ events }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const safeEvents = Array.isArray(events) ? events : [];
+  const upcomingEvents = safeEvents
+    .filter(
+      (e) => e && e.startDateTime && parseISO(e.startDateTime) > new Date()
+    )
+    .slice(0, 3)
+    .map((e) => ({
+      title: e.title || e.summary,
+      time: format(parseISO(e.startDateTime), "MMM d, h:mm a"),
+      timeUntil: formatDistanceToNow(parseISO(e.startDateTime)),
+    }));
+
+  const toggleEventsVisibility = () => setIsOpen((prev) => !prev);
+
+  return (
+    <motion.div
+      className={`${glass} rounded-3xl p-6 shadow-xl hidden md:block  border-0 ring-1 ring-white/20 overflow-hidden transition-all duration-500`}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 1 }}
+      style={{ WebkitOverflowScrolling: "touch" }}
+    >
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600">
+            <Clock className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Upcoming</h3>
+            <p className="text-sm text-gray-600">Next events</p>
+          </div>
+        </div>
+
+        <button
+          onClick={toggleEventsVisibility}
+          className="text-sm font-semibold text-purple-600 hover:text-purple-800 transition-all duration-300"
+          type="button"
+        >
+          {isOpen ? "Hide" : "Show"} Events
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {isOpen && upcomingEvents.length === 0 ? (
+          <div className="text-center py-4 text-gray-500">
+            No upcoming events
+          </div>
+        ) : (
+          isOpen &&
+          upcomingEvents.map((event, index) => (
+            <motion.div
+              key={`${event.title}-${index}`}
+              className="flex items-center gap-3 p-3 rounded-xl bg-white/50 hover:bg-white/70 transition-colors"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.2 + index * 0.1 }}
+            >
+              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" />
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 text-sm truncate">
+                  {event.title}
+                </div>
+                <div className="text-xs text-gray-600">
+                  {event.time} • in {event.timeUntil}
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+/* ------------------ Enhanced TodaysList ------------------ */
 const TodaysList = forwardRef(function TodaysList(
-  { rows = [], events, setEvents, userId },
+  { rows = [], setEvents, userId },
   ref
 ) {
   const DEFAULT_EVENT = {
@@ -149,10 +612,27 @@ const TodaysList = forwardRef(function TodaysList(
     snoozeBefore: "30",
   };
 
+  const navigate = useNavigate();
+  const handleArrowClick = () => navigate("/reminders");
+
   const [showEventPopup, setShowEventPopup] = useState(false);
   const [newEvent, setNewEvent] = useState({ ...DEFAULT_EVENT });
   const [editingEventId, setEditingEventId] = useState(null);
   const [saving, setSaving] = useState(false);
+  
+  // Add state for tracking expanded descriptions
+  const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
+
+  // Function to toggle description visibility
+  const toggleDescription = (rowIndex) => {
+    const newExpanded = new Set(expandedDescriptions);
+    if (newExpanded.has(rowIndex)) {
+      newExpanded.delete(rowIndex);
+    } else {
+      newExpanded.add(rowIndex);
+    }
+    setExpandedDescriptions(newExpanded);
+  };
 
   useImperativeHandle(ref, () => ({
     openCreateEvent: () => {
@@ -165,13 +645,11 @@ const TodaysList = forwardRef(function TodaysList(
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const email = params.get("email");
-    theToken: {
-      const token = params.get("token");
-      const uid = params.get("user_id");
-      if (email) localStorage.setItem(K.GOOGLE_EMAIL, email);
-      if (token) localStorage.setItem(K.TOKEN, token);
-      if (uid) localStorage.setItem(K.USER_ID, uid);
-    }
+    const token = params.get("token");
+    const uid = params.get("user_id");
+    if (email) lsSet(K.GOOGLE_EMAIL, email);
+    if (token) lsSet(K.TOKEN, token);
+    if (uid) lsSet(K.USER_ID, uid);
   }, []);
 
   const saveEvent = async () => {
@@ -179,7 +657,7 @@ const TodaysList = forwardRef(function TodaysList(
     setSaving(true);
 
     try {
-      if (!newEvent.title?.trim()) {
+      if (!newEvent.title || !newEvent.title.trim()) {
         alert("Please enter an event title.");
         setSaving(false);
         return;
@@ -201,8 +679,8 @@ const TodaysList = forwardRef(function TodaysList(
 
       await ensureLinkedOrPrompt();
 
-      const token = localStorage.getItem(K.TOKEN);
-      const userEmail = localStorage.getItem(K.GOOGLE_EMAIL) || "";
+      const token = lsGet(K.TOKEN);
+      const userEmail = lsGet(K.GOOGLE_EMAIL) || "";
 
       const payload = {
         summary: newEvent.title.trim(),
@@ -218,7 +696,7 @@ const TodaysList = forwardRef(function TodaysList(
       };
 
       const isEdit = Boolean(editingEventId);
-      let tempId = `tmp_${Date.now()}`;
+      const tempId = `tmp_${Date.now()}`;
 
       if (!isEdit) {
         const optimisticItem = {
@@ -233,21 +711,27 @@ const TodaysList = forwardRef(function TodaysList(
           optimistic: true,
           createdAt: Date.now(),
         };
-        setEvents((prev) => {
-          const next = [...prev, optimisticItem];
-          saveCache(evKey(userId), next);
-          return next;
-        });
+        if (typeof setEvents === "function") {
+          setEvents((prev) => {
+            const p = Array.isArray(prev) ? prev : [];
+            const next = [...p, optimisticItem];
+            saveCache(evKey(userId), next);
+            return next;
+          });
+        }
       } else {
-        setEvents((prev) => {
-          const next = prev.map((e) =>
-            e._id === editingEventId
-              ? { ...e, ...payload, title: payload.summary, optimistic: true }
-              : e
-          );
-          saveCache(evKey(userId), next);
-          return next;
-        });
+        if (typeof setEvents === "function") {
+          setEvents((prev) => {
+            const p = Array.isArray(prev) ? prev : [];
+            const next = p.map((e) =>
+              e && e._id === editingEventId
+                ? { ...e, ...payload, title: payload.summary, optimistic: true }
+                : e
+            );
+            saveCache(evKey(userId), next);
+            return next;
+          });
+        }
       }
 
       const url = isEdit
@@ -280,24 +764,29 @@ const TodaysList = forwardRef(function TodaysList(
       }
 
       const data = await res.json().catch(() => ({}));
-      const saved = data?.event || data || {};
+      const saved = (data && (data.event || data)) || {};
 
-      setEvents((prev) => {
-        let next;
-        if (!isEdit) {
-          next = prev.map((e) =>
-            e.tempId === tempId ? { ...saved, optimistic: false } : e
-          );
-        } else {
-          next = prev.map((e) =>
-            e._id === editingEventId ? { ...e, ...saved, optimistic: false } : e
-          );
-        }
-        saveCache(evKey(userId), next);
-        return next;
-      });
+      if (typeof setEvents === "function") {
+        setEvents((prev) => {
+          const p = Array.isArray(prev) ? prev : [];
+          let next;
+          if (!isEdit) {
+            next = p.map((e) =>
+              e && e.tempId === tempId ? { ...saved, optimistic: false } : e
+            );
+          } else {
+            next = p.map((e) =>
+              e && e._id === editingEventId
+                ? { ...e, ...saved, optimistic: false }
+                : e
+            );
+          }
+          saveCache(evKey(userId), next);
+          return next;
+        });
+      }
     } catch (err) {
-      if (err?.message !== "Google not linked") {
+      if (!(err && err.message === "Google not linked")) {
         console.error("❌ Failed to save event:", err);
         alert(
           "Network error — Event stored locally. It will persist across refresh."
@@ -311,173 +800,364 @@ const TodaysList = forwardRef(function TodaysList(
     }
   };
 
-  const handleEditEvent = (event) => {
-    setEditingEventId(event._id);
-    const { date: sDate, time: sTime } = toLocalParts(event.startDateTime);
-    const { time: eTime } = toLocalParts(event.endDateTime);
-    setNewEvent({
-      title: event.title || event.summary || "",
-      description: event.description || "",
-      date: sDate,
-      startTime: sTime,
-      endTime: eTime,
-      guests: event.guestEmails || [""],
-      snoozeBefore: String(event.snoozeBefore ?? 30),
-    });
-    setShowEventPopup(true);
-  };
-
-  const handleDeleteEvent = async (idOrTemp) => {
-    setEvents((prev) => {
-      const next = prev.filter((e) => (e._id || e.tempId) !== idOrTemp);
-      saveCache(evKey(userId), next);
-      return next;
-    });
-    if (String(idOrTemp).startsWith("tmp_")) return;
-
-    try {
-      const uid =
-        userId || JSON.parse(localStorage.getItem(K.USER) || "{}")?.userId;
-      await fetch(
-        `https://taskbe.sharda.co.in/api/events/${idOrTemp}?userId=${encodeURIComponent(
-          uid
-        )}`,
-        { method: "DELETE" }
-      );
-    } catch (err) {
-      console.error("❌ Error deleting event:", err);
-    }
-  };
-
   const tagCls = (c) =>
     ({
-      indigo: "bg-indigo-50 text-indigo-700 border border-indigo-200",
-      emerald: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-      amber: "bg-amber-50 text-amber-700 border border-amber-200",
-      rose: "bg-rose-50 text-rose-700 border border-rose-200",
-      gray: "bg-gray-100 text-gray-700 border border-gray-200",
-    }[c] || "bg-gray-100 text-gray-700 border border-gray-200");
+      indigo: "bg-gradient-to-r from-indigo-500 to-blue-500 text-white",
+      emerald: "bg-gradient-to-r from-emerald-500 to-green-500 text-white",
+      amber: "bg-gradient-to-r from-amber-500 to-orange-500 text-white",
+      rose: "bg-gradient-to-r from-rose-500 to-pink-500 text-white",
+      gray: "bg-gradient-to-r from-gray-500 to-slate-500 text-white",
+    }[c] || "bg-gradient-to-r from-gray-500 to-slate-500 text-white");
+
+  const safeRows = Array.isArray(rows) ? rows : [];
 
   return (
     <motion.div
-      className={`mt-4 mb-4 rounded-3xl ${glass} overflow-hidden flex flex-col relative`}
+      className={`mb-4 rounded-3xl ${glass} overflow-hidden flex flex-col relative shadow-2xl border-0 ring-1 ring-white/30`}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 120, damping: 18 }}
+      style={{ WebkitOverflowScrolling: "touch" }}
     >
       {/* Header */}
-      <div className="px-5 py-3 border-b border-white/40 bg-gradient-to-r from-white/60 to-white/20 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-            <svg
-              className="h-4 w-4 text-gray-500"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
+      <div className="top-0 z-20 px-3 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-[#E6E6FA] via-[#D4D9F2] to-[#B3D9FF] relative overflow-hidden rounded-b-2xl">
+        <div className="absolute inset-0 opacity-20 sm:opacity-10 pointer-events-none">
+          <svg className="w-full h-full" viewBox="0 0 100 100">
+            <pattern
+              id="grid"
+              width="10"
+              height="10"
+              patternUnits="userSpaceOnUse"
             >
               <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                d="M 10 0 L 0 0 0 10"
+                fill="none"
+                stroke="white"
+                strokeWidth="0.5"
               />
-            </svg>
-            Today’s Event
-          </h3>
+            </pattern>
+            <rect width="100" height="100" fill="url(#grid)" />
+          </svg>
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+              <svg
+                className="h-4 w-4 sm:h-5 sm:w-5 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 01-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-lg font-bold text-black truncate">
+                Today's Events
+              </h3>
+              <p className="text-xs sm:text-sm text-black/80 truncate">
+                Your schedule for today
+              </p>
+            </div>
+          </div>
 
           <motion.button
             onClick={() => {
               setEditingEventId(null);
               setNewEvent({ ...DEFAULT_EVENT });
               setShowEventPopup(true);
-              
-            }
-          }
-            className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 text-sm rounded-full shadow hover:bg-purple-700 transition focus:outline-none focus:ring-2 focus:ring-purple-400"
+            }}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-3 sm:py-2.5 text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold active:scale-[0.98]"
             type="button"
             whileTap={{ scale: 0.98 }}
-            whileHover={{ y: -1 }}
+            whileHover={{ scale: 1.02, y: -1 }}
             title="Shortcut: Alt + A"
+            aria-label="Add Event"
           >
-            <FaPlus className="text-xs"   /> Add Event
+            <FaPlus className="text-base sm:text-xs" />
+            <span className="sm:hidden">Add</span>
+            <span className="hidden sm:inline">Add Event</span>
           </motion.button>
         </div>
       </div>
 
-      {/* List with vertical scroll */}
-      <div className="min-h-0 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-        {rows.length === 0 ? (
-          <div className="px-6 py-10 text-sm text-gray-500 text-center">
-            No events for today.
-          </div>
+      {/* Desktop List */}
+      <div
+        className="min-h-0 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hidden md:block bg-gradient-to-b from-white to-slate-50"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        {safeRows.length === 0 ? (
+          <motion.div
+            className="px-6 py-16 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="w-20 h-20 mx-auto mb-4 opacity-20">
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                className="w-full h-full text-slate-400"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 01-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <p className="text-slate-500 font-medium text-lg">
+              No events scheduled
+            </p>
+            <p className="text-slate-400 text-sm mt-1">Your day is free!</p>
+          </motion.div>
         ) : (
-          <ul className="divide-y divide-white/50">
+          <div className="p-4 space-y-3">
             <AnimatePresence initial={false}>
-              {rows.map((row, i) => (
-                <motion.li
-                  key={`${row.time}-${i}`}
-                  className="px-5 py-3 flex flex-col md:flex-row gap-2 md:gap-0 hover:bg-white/40 transition"
-                  initial={{ opacity: 0, y: 14 }}
+              {safeRows.map((row, i) => (
+                <motion.div
+                  key={`${row.startTime}-${i}`}
+                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl border border-slate-100 overflow-hidden transition-all duration-300"
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  whileHover={{ y: -2 }}
                 >
-                  <div className="flex items-center w-full md:w-36">
-                    <span className="relative flex items-center">
-                      <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-tr from-gray-300 to-gray-400 mr-2 shadow-inner" />
-                      <span className="text-xs font-medium text-gray-700">
-                        {row.time}
-                      </span>
-                    </span>
-                  </div>
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-purple-600"></div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 font-semibold truncate tracking-wide">
-                      {row.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {/* {row.location || "—"}{" "} */}
-                      {row.duration ? `• ${row.duration}` : ""}
-                    </p>
-                  </div>
+                  <div className="p-5 pl-7">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg shadow-md">
+                          <FaCalendarAlt className="text-white text-sm" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-lg font-bold text-slate-800 truncate group-hover:text-slate-900 transition-colors">
+                            {row.title}
+                          </h4>
+                          {/* Date and Time displayed side by side */}
+                          <div className="flex gap-3 text-slate-600 text-sm">
+                            <span>{row.date}</span> {/* Display the date */}
+                            {row.tag === "Event" && (
+                              <span>
+                                {row.startTime} - {row.endTime}
+                              </span> // Display event start and end time
+                            )}
+                            {row.tag === "Reminder" && (
+                              <span>{row.time || "No time set"}</span> // Display reminder time or fallback
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 ml-4">
+                        {row.tag && (
+                          <span
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-md ${tagCls(
+                              row.color
+                            )}`}
+                          >
+                            {row.tag}
+                          </span>
+                        )}
+                        <motion.button
+                          onClick={handleArrowClick}
+                          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors group/btn"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                        >
+                          <ArrowRight className="h-4 w-4 text-slate-500 group-hover/btn:text-slate-700 transition-colors" />
+                        </motion.button>
+                      </div>
+                    </div>
 
-                  <div className="flex w-full md:w-auto justify-between items-center">
-                    {row.tag && (
-                      <span
-                        className={`text-[11px] px-2 py-1 rounded-full ${tagCls(
-                          row.color
-                        )}`}
-                      >
-                        {row.tag}
-                      </span>
+                    {/* Description */}
+                    {row.description && (
+                      <div className="flex items-start gap-3 mt-3 pt-3 border-t border-slate-100">
+                        <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-md shadow-sm">
+                          <FaAlignLeft className="text-white text-xs" />
+                        </div>
+                        <p className="text-slate-600 text-sm leading-relaxed flex-1">
+                          {row.description}
+                        </p>
+                      </div>
                     )}
-                    <motion.svg
-                      className="ml-3 h-4 w-4 text-gray-400"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      initial={{ x: 0 }}
-                      whileHover={{ x: 3 }}
-                    >
-                      <path d="M9 18l6-6-6-6" />
-                    </motion.svg>
                   </div>
-                </motion.li>
+
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                </motion.div>
               ))}
             </AnimatePresence>
-          </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile view */}
+      <div
+        className="min-h-0 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 md:hidden bg-gradient-to-b from-white to-slate-50"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        {safeRows.length === 0 ? (
+          <motion.div
+            className="px-6 py-12 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="w-16 h-16 mx-auto mb-3 opacity-20">
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                className="w-full h-full text-slate-400"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 01-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <p className="text-slate-500 font-medium">No events today</p>
+            <p className="text-slate-400 text-sm">Enjoy your free time!</p>
+          </motion.div>
+        ) : (
+          <div className="p-3 space-y-2">
+            <AnimatePresence initial={false}>
+              {safeRows.map((row, i) => (
+                <motion.div
+                  key={`${row.startTime}-${i}`}
+                  className="group bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                >
+                  <div className="h-1 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="p-1.5 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-md shadow-sm">
+                          <FaCalendarAlt className="text-white text-xs" />
+                        </div>
+                        <h4 className="text-base font-bold text-slate-800 truncate">
+                          {row.title}
+                        </h4>
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-2">
+                        {row.tag && (
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-bold ${tagCls(
+                              row.color
+                            )}`}
+                          >
+                            {row.tag}
+                          </span>
+                        )}
+                        
+                        {/* Description toggle button - only show if description exists */}
+                        {row.description && (
+                          <motion.button
+                            onClick={() => toggleDescription(i)}
+                            className={`p-1.5 rounded-md transition-colors ${
+                              expandedDescriptions.has(i) 
+                                ? 'bg-gradient-to-br from-indigo-500 to-purple-600' 
+                                : 'bg-slate-100 hover:bg-slate-200'
+                            }`}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                          >
+                            <FaAlignLeft className={`text-xs ${
+                              expandedDescriptions.has(i) ? 'text-white' : 'text-slate-500'
+                            }`} />
+                          </motion.button>
+                        )}
+                        
+                        <motion.button
+                          onClick={handleArrowClick}
+                          className="p-1.5 rounded-md bg-slate-100 hover:bg-slate-200 transition-colors"
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                        >
+                          <ArrowRight className="h-3 w-3 text-slate-500" />
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    {/* Date and Time displayed vertically for Mobile */}
+                    <div className="flex flex-col gap-2 text-slate-600 text-sm">
+                      <span className="font-semibold text-gray-800">
+                        {row.date}
+                      </span>{" "}
+                      {/* Display the date */}
+                      {row.tag === "Event" && (
+                        <span className="text-sm">
+                          {row.startTime} - {row.endTime}
+                        </span> // Display event start and end time
+                      )}
+                      {row.tag === "Reminder" && (
+                        <span className="text-sm">
+                          {row.time || "No time set"}
+                        </span> // Display reminder time or fallback
+                      )}
+                    </div>
+
+                    {/* Collapsible Description */}
+                    <AnimatePresence>
+                      {row.description && expandedDescriptions.has(i) && (
+                        <motion.div
+                          className="mt-3"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                        >
+                          <div className="flex items-start gap-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div className="p-1 bg-gradient-to-br from-indigo-500 to-purple-600 rounded shadow-sm">
+                              <FaAlignLeft className="text-white text-xs" />
+                            </div>
+                            <p className="text-slate-600 text-sm leading-relaxed flex-1">
+                              {row.description}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-white/40 bg-white/60 flex items-center justify-between">
-        <span className="text-xs text-gray-600">
-          {rows.length} event{rows.length > 1 ? "s" : ""} today
-        </span>
+      <div className="px-6 py-3 bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-slate-600">
+            {safeRows.length} event{safeRows.length !== 1 ? "s" : ""} scheduled
+          </span>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-xs text-slate-500">Live</span>
+          </div>
+        </div>
       </div>
 
-      {/* Modal (via Portal so it never hides/clips) */}
+      {/* Modal */}
       <AnimatePresence>
         {showEventPopup && (
           <ModalPortal>
@@ -505,8 +1185,8 @@ const TodaysList = forwardRef(function TodaysList(
                 >
                   <FaTimes size={18} />
                 </button>
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  📅 {editingEventId ? "Update Event" : "Create Event"}
+                <h3 className="text-xl font-semibold  text-gray-800 mb-4">
+                  {editingEventId ? "Update Event" : "Create Event"}
                 </h3>
 
                 <input
@@ -566,7 +1246,7 @@ const TodaysList = forwardRef(function TodaysList(
 
                 <div className="flex flex-col sm:flex-row sm:gap-4 mb-4 gap-2 text-sm text-gray-700">
                   <label htmlFor="event-snooze" className="text-gray-700">
-                    ⏳ Snooze Before:
+                    Snooze Before:
                   </label>
                   <select
                     id="event-snooze"
@@ -586,7 +1266,10 @@ const TodaysList = forwardRef(function TodaysList(
                   </select>
                 </div>
 
-                <div className="mb-4 max-h-[20vh] overflow-y-auto">
+                <div
+                  className="mb-4 max-h-[20vh] overflow-y-auto"
+                  style={{ WebkitOverflowScrolling: "touch" }}
+                >
                   <label className="text-sm font-medium text-gray-700 mb-2 block">
                     Add Guests
                   </label>
@@ -658,60 +1341,120 @@ const TodaysList = forwardRef(function TodaysList(
   );
 });
 
-/* ---------- Dashboard ---------- */
+/* ---------- Enhanced Dashboard ---------- */
 const Dashboard = () => {
   useSocketSetup();
   useStickyNotes(3);
   const { loading } = useSelector((s) => s.auth);
 
-  const rawUser = localStorage.getItem(K.USER);
+  const rawUser = lsGet(K.USER);
   const userObj = rawUser ? JSON.parse(rawUser) : null;
-  const userId = userObj?.userId || localStorage.getItem(K.USER_ID) || null;
-  const name = userObj?.name || "Guest";
+  const userId = (userObj && userObj.userId) || lsGet(K.USER_ID) || null;
+  const name = (userObj && userObj.name) || "Guest";
 
   const [events, setEvents] = useState(() => loadCache(evKey(userId)));
   const [reminders, setReminders] = useState(() => loadCache(rmKey(userId)));
   const [showStats, setShowStats] = useState(false);
 
-  
+  const [stats, setStats] = useState({
+    TotalTask: 0,
+    Completed: 0,
+    Progress: 0,
+    Overdue: 0,
+  });
 
-   useEffect(() => {
-  const handleKeyDown = (e) => {
-    if (e.altKey && e.key.toLowerCase() === "a") {
-      e.preventDefault();
-      if (todaysListRef.current?.openCreateEvent) {
-        todaysListRef.current.openCreateEvent(); // 👈 triggers button click
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    window.updateDashboardStats = (counts) => {
+      setStats({
+        TotalTask: counts.total,
+        Completed: counts.completed,
+        Progress: counts.progress,
+        Overdue: counts.overdue,
+      });
+    };
+  }, []);
+
+  const todayEventRows = (Array.isArray(events) ? events : [])
+    .filter((e) => e && e.startDateTime && e.endDateTime)
+    .filter((e) => {
+      const s = parseISO(e.startDateTime);
+      const en = parseISO(e.endDateTime);
+      return s <= endT && en >= startT;
+    })
+    .map((e) => ({
+      ts: parseISO(e.startDateTime).getTime(),
+      startTime: format(parseISO(e.startDateTime), "h:mm a"),
+      endTime: format(parseISO(e.endDateTime), "h:mm a"),
+      title: e.title || e.summary || "Event",
+      description: e.description || "No description available",
+      date: format(parseISO(e.startDateTime), "MMM d, yyyy"), // Ensure date is formatted correctly
+      tag: "Event",
+      color: "indigo",
+      location: e.location || "—",
+    }));
+
+  const todayReminderRows = (Array.isArray(reminders) ? reminders : [])
+    .filter((r) => r && r.datetime && isToday(parseISO(r.datetime)))
+    .map((r) => ({
+      ts: parseISO(r.datetime).getTime(),
+      time: format(parseISO(r.datetime), "h:mm a"),
+      title: r.text || "Reminder",
+      tag: "Reminder",
+      color: "amber",
+      location: "—",
+      date: format(parseISO(r.datetime), "MMM d, yyyy"), // Ensure date is displayed
+    }));
+
+  const todaysRows = useMemo(
+    () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
+    [events, reminders]
+  );
+
+  const todaysListRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.altKey && String(e.key || "").toLowerCase() === "a") {
+        e.preventDefault();
+        if (
+          todaysListRef.current &&
+          typeof todaysListRef.current.openCreateEvent === "function"
+        ) {
+          todaysListRef.current.openCreateEvent();
+        }
       }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("openEvent") === "1") {
+      setTimeout(() => {
+        if (
+          todaysListRef.current &&
+          typeof todaysListRef.current.openCreateEvent === "function"
+        ) {
+          todaysListRef.current.openCreateEvent();
+        }
+        navigate(location.pathname, { replace: true });
+      }, 200);
     }
-  };
-
-  window.addEventListener("keydown", handleKeyDown);
-  return () => window.removeEventListener("keydown", handleKeyDown);
-}, []);
-
-const location = useLocation();
-const navigate = useNavigate();
-// const todaysListRef = useRef(null);
-
-useEffect(() => {
-  const params = new URLSearchParams(location.search);
-  if (params.get("openEvent") === "1") {
-    setTimeout(() => {
-      todaysListRef.current?.openCreateEvent();
-      // clean up query param so it doesn’t persist
-      navigate(location.pathname, { replace: true });
-    }, 200);
-  }
-}, [location, navigate]);
+  }, [location, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const email = params.get("email");
     const token = params.get("token");
     const uid = params.get("user_id");
-    if (email) localStorage.setItem(K.GOOGLE_EMAIL, email);
-    if (token) localStorage.setItem(K.TOKEN, token);
-    if (uid) localStorage.setItem(K.USER_ID, uid);
+    if (email) lsSet(K.GOOGLE_EMAIL, email);
+    if (token) lsSet(K.TOKEN, token);
+    if (uid) lsSet(K.USER_ID, uid);
   }, []);
 
   useEffect(() => {
@@ -726,6 +1469,7 @@ useEffect(() => {
           evRes.json(),
           remRes.json(),
         ]);
+
         const currentEvCache = loadCache(evKey(userId));
         const currentRmCache = loadCache(rmKey(userId));
 
@@ -749,375 +1493,444 @@ useEffect(() => {
   }, [userId]);
 
   useEffect(() => {
-    saveCache(evKey(userId), events);
+    saveCache(evKey(userId), Array.isArray(events) ? events : []);
   }, [events, userId]);
+
   useEffect(() => {
-    saveCache(rmKey(userId), reminders);
+    saveCache(rmKey(userId), Array.isArray(reminders) ? reminders : []);
   }, [reminders, userId]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <svg
-          className="animate-spin h-10 w-10 text-blue-600"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center">
+        <motion.div
+          className="flex flex-col items-center gap-6"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a 8 8 0 018-8v8z"
-          />
-        </svg>
-        <span className="ml-3 text-lg text-gray-600">Loading dashboard...</span>
+          <div className="relative">
+            <div className="h-16 w-16 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin" />
+            <div className="absolute inset-2 h-12 w-12 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin animation-delay-150" />
+          </div>
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              Loading Dashboard
+            </h3>
+            <p className="text-gray-600">Preparing your workspace...</p>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
-  const [stats, setStats] = useState({
-    TotalTask: 0,
-    Completed: 0,
-    Progress: 0,
-    Overdue: 0,
-  });
-  useEffect(() => {
-    window.updateDashboardStats = (counts) => {
-      setStats({
-        TotalTask: counts.total,
-        Completed: counts.completed,
-        Progress: counts.progress,
-        Overdue: counts.overdue,
-      });
-    };
-  }, []);
-
-  const startT = startOfToday();
-  const endT = endOfToday();
-
-  const todayEventRows = (events || [])
-    .filter((e) => e?.startDateTime && e?.endDateTime)
-    .filter((e) => {
-      const s = parseISO(e.startDateTime);
-      const en = parseISO(e.endDateTime);
-      return s <= endT && en >= startT;
-    })
-    .map((e) => ({
-      ts: parseISO(e.startDateTime).getTime(),
-      time: format(parseISO(e.startDateTime), "h:mm a"),
-      title: e.title || e.summary || "Event",
-      tag: "Event",
-      color: "indigo",
-      location: e.location || "—",
-    }));
-
-  const todayReminderRows = (reminders || [])
-    .filter((r) => r?.datetime && isToday(parseISO(r.datetime)))
-    .map((r) => ({
-      ts: parseISO(r.datetime).getTime(),
-      time: format(parseISO(r.datetime), "h:mm a"),
-      title: r.text || "Reminder",
-      tag: "Reminder",
-      color: "amber",
-      location: "—",
-    }));
-
-  const todaysRows = useMemo(
-    () => [...todayEventRows, ...todayReminderRows].sort((a, b) => a.ts - b.ts),
-    [events, reminders]
-  );
-
-  const todaysListRef = useRef(null);
-
   return (
-    <div className="relative w-full h-full bg-gradient-to-b from-indigo-50 via-white to-white pb-24 overflow-y-auto px-2 md:px-5">
-      {/* animated bg blobs */}
-      <div className="pointer-events-none absolute -z-10 inset-0 overflow-hidden">
-        <div className="absolute -top-24 -left-24 w-[32rem] h-[32rem] rounded-full bg-purple-300/30 blur-3xl animate-pulse" />
-        <div className="absolute top-32 -right-16 w-[28rem] h-[28rem] rounded-full bg-cyan-300/30 blur-3xl animate-[pulse_8s_ease-in-out_infinite]" />
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
+      {/* Background Effects — MOBILE DISABLED */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none hidden md:block">
+        <motion.div
+          className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-gradient-to-br from-purple-300/30 to-blue-300/30 blur-3xl"
+          animate={{ scale: [1, 1.1, 1], rotate: [0, 90, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="absolute top-1/4 -right-32 w-80 h-80 rounded-full bg-gradient-to-br from-cyan-300/30 to-teal-300/30 blur-3xl"
+          animate={{ scale: [1.1, 1, 1.1], rotate: [0, -90, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-1/3 w-72 h-72 rounded-full bg-gradient-to-br from-rose-300/20 to-pink-300/20 blur-3xl"
+          animate={{ scale: [1, 1.2, 1], x: [-20, 20, -20] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        />
       </div>
 
-      {/* header */}
-      <div className="py-5 md:pl-0 pl-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Main Content */}
+      <div
+        className="relative z-10 pb-24 overflow-y-auto px-4 sm:px-6 lg:px-8"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        {/* Header */}
         <motion.div
-          className="flex items-center"
-          initial={{ opacity: 0, y: 14 }}
+          className="py-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2"
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.6 }}
         >
-          <div className="flex flex-col md:items-start space-x-4 md:space-x-0  ">
-            <div className="flex ">
-              <motion.div
-                className={`p-2 rounded-2xl w-16 h-16 bg-white/70 border border-white/50 shadow-xl grid place-items-center ${glass}`}
-                whileHover={{ rotate: 2, scale: 1.02 }}
+          <div className="flex items-center mt-3 gap-3">
+            <motion.div
+              className={`relative  p-4 rounded-2xl ${glass} shadow-xl sm:-mt-1 -mt-10`}
+              whileHover={{ rotate: 5, scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-2xl" />
+              <img
+                src="/SALOGO-black.png"
+                alt="ASA Logo"
+                className="relative h-6 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain"
+              />
+            </motion.div>
+
+            <div>
+              <motion.h1
+                className="text-xl lg:text-3xl sm:-mt-1 -mt-8 font-bold text-gray-900 tracking-tight"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
               >
-                <img
-                  src="/SALOGO-black.png"
-                  alt="ASA Logo"
-                  className="object-contain"
-                />
-              </motion.div>
-              <div className="inline-block ml-2 mt-1 md:mt-3">
-                <h1 className="text-xl font-semibold text-gray-800 tracking-normal leading-tight w-48  md:w-80">
-                  Anunay Sharda & Associates
-                </h1>
-                <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest hidden md:block">
-                  Strategic Business Solutions
+                Anunay Sharda & Associate
+              </motion.h1>
+              <motion.p
+                className="text-[#018f95] text-sm font-semibold tracking-wider uppercase hidden md:block"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+                Strategic Business Solutions
+              </motion.p>
+            </div>
+          </div>
+          <p className="text-[#018f95] mt-[-6px] md:text-sm text-[13px] font-light tracking-widest md:hidden ml-1">
+            Strategic Business Solutions
+          </p>
+
+          <div className="flex gap-2 ">
+            <CompactWeatherWidget />
+            <motion.div
+              className={`px-6 py-4 rounded-2xl ${glass} shadow-lg`}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
+              <div className="text-left">
+                <h2 className="text-lg font-bold mr-10 text-gray-800">
+                  {getTimeBasedGreeting()},{" "}
+                  <span className="text-transparent text-xl bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
+                    {name}
+                  </span>
+                </h2>
+                <p className="text-sm text-gray-600 font-medium">
+                  {new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </p>
               </div>
-            </div>
-            <p className="text-[#018f95] md:text-sm text-[13px] font-light tracking-widest md:hidden ml-1">
-              Strategic Business Solutions
-            </p>
+            </motion.div>
           </div>
         </motion.div>
 
+        {/* Mobile stats toggle */}
         <motion.div
-          className="flex items-center gap-3"
-          initial={{ opacity: 0, y: 14 }}
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.05 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
         >
-          <div className="">
-            <div className="text-gray-700">
-              {getTimeBasedGreeting()},{" "}
-              <span className="text-[#018f95] font-medium">{name}</span>
-            </div>
-            <div className="text-gray-500 text-sm italic">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Stats */}
-      <div className="bg-transparent">
-        <div className="w-full ">
-          <button
-            className="md:hidden flex items-center justify-between w-full bg-indigo-600 text-white px-6 py-3 rounded-md shadow"
+          <motion.button
+            className="lg:hidden w-full mb-4 flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl shadow-lg"
             onClick={() => setShowStats(!showStats)}
             type="button"
+            whileTap={{ scale: 0.98 }}
           >
-            <span className="text-sm">Show Statistics</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-5 w-5 transition ${showStats ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
+            <span className="font-semibold">View Statistics</span>
+            <motion.div
+              animate={{ rotate: showStats ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-
-          <div className="hidden md:grid md:grid-cols-4 gap-4 mt-0">
-            <StatCard
-              pillLabel="Total Task"
-              variant="blue"
-              label="All Tasks"
-              value={stats.TotalTask}
-              icon={<ClipboardList />}
-            />
-            <StatCard
-              pillLabel="Completed"
-              variant="green"
-              label="Done"
-              value={stats.Completed}
-              icon={<CheckCircle />}
-            />
-            <StatCard
-              pillLabel="Progress"
-              variant="gray"
-              label="In progress"
-              value={stats.Progress}
-              icon={<Clock />}
-            />
-            <StatCard
-              pillLabel="Overdue"
-              variant="red"
-              label="Past Due"
-              value={stats.Overdue}
-              icon={<AlertCircle />}
-            />
-          </div>
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </motion.div>
+          </motion.button>
 
           <AnimatePresence>
             {showStats && (
               <motion.div
-                className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 md:hidden"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
               >
                 <StatCard
-                  pillLabel="Total Task"
+                  pillLabel="Total"
                   variant="blue"
                   label="All Tasks"
                   value={stats.TotalTask}
-                  icon={<ClipboardList />}
+                  icon={<ClipboardList className="h-5 w-5" />}
                 />
                 <StatCard
-                  pillLabel="Completed"
+                  pillLabel="Done"
                   variant="green"
-                  label="Done"
+                  label="Completed"
                   value={stats.Completed}
-                  icon={<CheckCircle />}
+                  icon={<CheckCircle className="h-5 w-5" />}
                 />
                 <StatCard
-                  pillLabel="Progress"
-                  variant="gray"
-                  label="In progress"
+                  pillLabel="Active"
+                  variant="orange"
+                  label="In Progress"
                   value={stats.Progress}
-                  icon={<Clock />}
+                  icon={<Clock className="h-5 w-5" />}
                 />
                 <StatCard
-                  pillLabel="Overdue"
+                  pillLabel="Late"
                   variant="red"
-                  label="Past Due"
+                  label="Overdue"
                   value={stats.Overdue}
-                  icon={<AlertCircle />}
+                  icon={<AlertCircle className="h-5 w-5" />}
                 />
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Main */}
-      <div className="md:mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6">
-        <div className="sticky top-0 max-h-[90vh] space-y-4">
-          <TodaysList
-            ref={todaysListRef}
-            rows={todaysRows}
-            events={events}
-            setEvents={setEvents}
-            userId={userId}
-          />
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.05 }}
-          >
-            <TaskOverview />
-          </motion.div>
-        </div>
-
-        <div className="lg:border-l lg:border-white/50 lg:pl-6 hidden md:block max-h-[90vh] overflow-y-auto">
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
+          {/* Left Column */}
           <motion.div
             className="space-y-6"
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.08 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
           >
-            <StickyNotesDashboard />
+            {/* Desktop stats row */}
+            <motion.div
+              className="hidden lg:grid lg:grid-cols-4 gap-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+            >
+              <StatCard
+                pillLabel="Total"
+                variant="blue"
+                label="All Tasks"
+                value={stats.TotalTask}
+                icon={<ClipboardList className="h-4 w-4" />}
+                isCompact
+              />
+              <StatCard
+                pillLabel="Done"
+                variant="green"
+                label="Completed"
+                value={stats.Completed}
+                icon={<CheckCircle className="h-4 w-4" />}
+                isCompact
+              />
+              <StatCard
+                pillLabel="Active"
+                variant="orange"
+                label="In Progress"
+                value={stats.Progress}
+                icon={<Clock className="h-4 w-4" />}
+                isCompact
+              />
+              <StatCard
+                pillLabel="Late"
+                variant="red"
+                label="Overdue"
+                value={stats.Overdue}
+                icon={<AlertCircle className="h-4 w-4" />}
+                isCompact
+              />
+            </motion.div>
+
+            <TodaysList
+              ref={todaysListRef}
+              rows={todaysRows}
+              events={events}
+              setEvents={setEvents}
+              userId={userId}
+            />
+
+            <TaskOverview />
+            <ProductivityInsights stats={stats} />
+          </motion.div>
+
+          {/* Right Column */}
+          <motion.div
+            className="space-y-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1, duration: 0.5 }}
+          >
+            <div className="sticky top-8 space-y-4">
+              <UpcomingEvents events={events} />
+
+              <div className="hidden xl:block md:block">
+                <StickyNotesDashboard />
+              </div>
+            </div>
           </motion.div>
         </div>
+
+        {/* Mobile Sticky Notes */}
+        <motion.div
+          className="xl:hidden mt-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.2 }}
+        >
+          <StickyNotesDashboard />
+        </motion.div>
       </div>
+
+      {/* Quick Actions Panel */}
+      <QuickActionsPanel
+        onCreateEvent={() => {
+          if (
+            todaysListRef.current &&
+            typeof todaysListRef.current.openCreateEvent === "function"
+          ) {
+            todaysListRef.current.openCreateEvent();
+          }
+        }}
+        stats={stats}
+      />
     </div>
   );
 };
 
-/* ---------- Stat Card: glow strictly BEHIND the card ---------- */
-const StatCard = ({ pillLabel, variant = "gray", label, value, icon }) => {
-  const pill =
-    {
-      blue: "bg-indigo-100 text-indigo-700 border border-indigo-200",
-      green: "bg-emerald-100 text-emerald-700 border border-emerald-200",
-      gray: "bg-amber-200 text-amber-700 border border-amber-300",
-      red: "bg-rose-100 text-rose-700 border border-rose-200",
-    }[variant] || "bg-gray-100 text-gray-700 border border-gray-200";
+/* ---------- Enhanced Stat Card ---------- */
+const StatCard = ({
+  pillLabel,
+  variant = "gray",
+  label,
+  value,
+  icon,
+  isCompact = false,
+}) => {
+  const variants = {
+    blue: {
+      pill: "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200/60",
+      glow: "from-blue-500/20 via-indigo-500/15 to-cyan-500/10",
+      shadow: "hover:shadow-[0_20px_40px_rgba(59,130,246,0.15)]",
+      iconBg: "bg-gradient-to-br from-blue-500 to-indigo-600",
+    },
+    green: {
+      pill: "bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border border-emerald-200/60",
+      glow: "from-emerald-500/20 via-green-500/15 to-teal-500/10",
+      shadow: "hover:shadow-[0_20px_40px_rgba(16,185,129,0.15)]",
+      iconBg: "bg-gradient-to-br from-emerald-500 to-green-600",
+    },
+    orange: {
+      pill: "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200/60",
+      glow: "from-amber-500/20 via-orange-500/15 to-yellow-500/10",
+      shadow: "hover:shadow-[0_20px_40px_rgba(245,158,11,0.15)]",
+      iconBg: "bg-gradient-to-br from-amber-500 to-orange-600",
+    },
+    red: {
+      pill: "bg-gradient-to-r from-rose-50 to-red-50 text-rose-700 border border-rose-200/60",
+      glow: "from-rose-500/20 via-red-500/15 to-pink-500/10",
+      shadow: "hover:shadow-[0_20px_40px_rgba(244,63,94,0.15)]",
+      iconBg: "bg-gradient-to-br from-rose-500 to-red-600",
+    },
+  };
 
-  // gradient colors for the BACK glow
-  const glowGradient =
-    {
-      blue: "from-indigo-500/45 via-indigo-400/35 to-cyan-300/30",
-      green: "from-emerald-500/45 via-emerald-400/35 to-lime-300/30",
-      gray: "from-amber-500/45 via-amber-400/35 to-orange-300/30",
-      red: "from-rose-500/45 via-rose-400/35 to-red-300/30",
-    }[variant] || "from-indigo-400/40 via-indigo-300/30 to-cyan-300/25";
+  const config = variants[variant] || variants.blue;
 
-  // tinted drop shadow on the card itself (subtle)
-  const hoverShadow =
-    {
-      blue: "hover:shadow-[0_22px_30px_rgba(79,70,229,0.28)]",
-      green: "hover:shadow-[0_22px_30px_rgba(16,185,129,0.28)]",
-      gray: "hover:shadow-[0_22px_30px_rgba(245,158,11,0.28)]",
-      red: "hover:shadow-[0_22px_30px_rgba(244,63,94,0.28)]",
-    }[variant] || "hover:shadow-[0_22px_30px_rgba(99,102,241,0.24)]";
-
-  // count-up
   const numRef = useRef(null);
-  const isInView = useInView(numRef, { once: true, margin: "-20% 0px" });
+  const isInView = useInView(numRef, { once: true, margin: "-10% 0px" });
   const [display, setDisplay] = useState(0);
+
   useEffect(() => {
     if (!isInView) return;
     const target = Number(value || 0);
-    const duration = 700;
+    const duration = 1000;
     const start = performance.now();
     let raf;
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
     const tick = (t) => {
-      const p = Math.min(1, (t - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
+      const elapsed = (t - start) / duration;
+      const progress = Math.min(1, elapsed);
+      const eased = easeOutCubic(progress);
       setDisplay(Math.round(target * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
+
+      if (progress < 1) {
+        raf = requestAnimationFrame(tick);
+      }
     };
+
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [value, isInView]);
 
+  const cardPadding = isCompact ? "p-4" : "p-6";
+  const textSize = isCompact ? "text-2xl" : "text-4xl";
+  const iconSize = isCompact ? "p-2" : "p-2.5";
+  const glowInset = isCompact ? "-inset-2" : "-inset-3";
+
   return (
-    <div className="relative group">
-      {/* BEHIND layer: stays strictly behind the card */}
+    <motion.div
+      className="group relative"
+      whileHover={{ y: isCompact ? -4 : -6 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+    >
       <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute -inset-2 rounded-3xl -z-10 opacity-0 group-hover:opacity-100 transition duration-300 blur-2xl bg-gradient-to-br ${glowGradient}`}
-        // keep behind & outside the card; no overlay on content
-        style={{ filter: "saturate(115%)" }}
+        className={`absolute ${glowInset} rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl bg-gradient-to-br ${config.glow} -z-10`}
       />
-      <motion.div
-        className={`relative rounded-2xl ${glass} px-6 py-4 transition ${hoverShadow} overflow-visible`}
-        whileHover={{ y: -4 }}
-        transition={{ type: "spring", stiffness: 180, damping: 18 }}
+      <div
+        className={`relative ${glass} rounded-2xl ${cardPadding} transition-all duration-300 ${config.shadow} border-0 ring-1 ring-white/20`}
       >
-        <div className="relative flex items-center justify-between">
-          <span className={`text-[11px] px-2 py-1 rounded-full ${pill}`}>
+        <div
+          className={`flex items-center justify-between ${
+            isCompact ? "mb-3" : "mb-4"
+          }`}
+        >
+          <span
+            className={`text-xs px-3 py-1 rounded-full font-semibold ${config.pill}`}
+          >
             {pillLabel}
           </span>
           <motion.div
-            className="grid place-items-center"
-            initial={{ rotate: -6, scale: 0.95 }}
-            animate={{ rotate: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 180, damping: 12 }}
+            className={`${iconSize} rounded-lg ${config.iconBg} text-white shadow-md`}
+            whileHover={{ rotate: 15, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
           >
             {icon}
           </motion.div>
         </div>
 
-        <p
+        <motion.div
           ref={numRef}
-          className="mt-3 text-4xl font-extrabold tracking-tight text-gray-900"
+          className={`${textSize} font-black text-gray-900 ${
+            isCompact ? "mb-1" : "mb-2"
+          } tracking-tight`}
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
         >
           {display}
+        </motion.div>
+
+        <p
+          className={`${
+            isCompact ? "text-xs" : "text-sm"
+          } font-semibold text-gray-600`}
+        >
+          {label}
         </p>
-        <p className="mt-1 text-xs text-gray-600">{label}</p>
-      </motion.div>
-    </div>
+        <div
+          className={`absolute bottom-0 right-0 ${
+            isCompact ? "w-16 h-16" : "w-24 h-24"
+          } bg-gradient-to-br from-white/10 to-transparent rounded-full blur-2xl -z-10`}
+        />
+      </div>
+    </motion.div>
   );
 };
 
