@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -11,6 +12,7 @@ import {
   FaUniversity,
   FaCalendarAlt,
   FaDotCircle,
+  FaSpinner,
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ReportGeneration from "../Components/ReportGeneration";
@@ -84,6 +86,7 @@ const Departments = () => {
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
+    console.log("Stored Role:", storedRole);
     if (storedRole) {
       setRole(storedRole);
       if (storedRole !== "admin") {
@@ -135,6 +138,8 @@ const Departments = () => {
       });
 
       setDepartmentMap(deptMap);
+      console.log("Department Map:", deptMap);
+      console.log("Total Departments:", Object.keys(deptMap).length);
     } catch (err) {
       console.error("Failed to fetch departments, employees, and tasks", err);
     } finally {
@@ -386,6 +391,14 @@ const Departments = () => {
     { key: "bank", label: "Bank Details", icon: <FaUniversity /> },
   ];
 
+  // Loading Spinner Component
+  const LoadingSpinner = () => (
+    <div className="flex flex-col justify-center items-center h-64">
+      <FaSpinner className="animate-spin text-indigo-600 text-5xl mb-4" />
+      <p className="text-gray-600 text-lg">Loading data...</p>
+    </div>
+  );
+
   return (
     <div className="p-0 md:p-4 md:bg-gray-100 min-h-screen bg-gray-50">
       {/* Mobile Menu List */}
@@ -517,11 +530,10 @@ const Departments = () => {
       {(!showMobileMenu || window.innerWidth >= 768) && (
         <>
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <p className="text-center text-gray-500">Loading data...</p>
-            </div>
+            <LoadingSpinner />
           ) : (
             <div className="px-0 md:px-0">
+              
               {activeTab === "department" &&
                 role === "admin" &&
                 (Object.keys(departmentMap).length === 0 ? (
@@ -531,16 +543,16 @@ const Departments = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto px-4 md:px-0">
+                  <div className="space-y-4 mx-auto max-h-auto overflow-y-auto px-4 md:px-0">
                     {Object.entries(departmentMap).map(([dept, { users }]) => (
                       <div
                         key={dept}
-                        className="bg-white rounded-lg shadow-md border border-gray-200 p-6 relative"
+                        className="bg-white rounded-lg shadow-md border border-gray-200 p-4 relative"
                       >
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <FaUsers className="text-indigo-600 text-2xl" />
-                            <h2 className="text-2xl font-semibold text-indigo-800">
+                            <FaUsers className="text-indigo-600 text-xl" />
+                            <h2 className="text-xl font-semibold text-indigo-800">
                               {dept}
                             </h2>
                             <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full">
@@ -560,27 +572,27 @@ const Departments = () => {
                               className="text-red-500 hover:text-red-700 transition-colors"
                               title="Delete Department"
                             >
-                              <FaTrashAlt size={18} />
+                              <FaTrashAlt size={16} />
                             </button>
                           </div>
                         </div>
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3">
                           {editingDept === dept && editableUsersMap[dept] && (
                             <>
-                              <div className="flex justify-end mb-4">
+                              <div className="flex justify-end mb-2">
                                 <button
                                   onClick={() => setEditingDept(null)}
-                                  className="inline-flex items-center gap-2 text-sm px-4 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 transition shadow-sm"
+                                  className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 transition shadow-sm"
                                 >
                                   ✖ Close Edit Mode
                                 </button>
                               </div>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                                 {editableUsersMap[dept].map((user, index) => (
                                   <div
                                     key={user._id}
-                                    className="relative bg-white rounded-xl border border-gray-200 shadow-md p-4 hover:shadow-lg transition-all flex flex-col items-center text-center"
+                                    className="relative bg-white rounded-lg border border-gray-200 shadow-sm p-3 hover:shadow-md transition-all flex flex-col items-center text-center"
                                   >
                                     <button
                                       onClick={() => {
@@ -592,13 +604,13 @@ const Departments = () => {
                                           [dept]: filtered,
                                         }));
                                       }}
-                                      className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm"
+                                      className="absolute top-1 right-1 text-red-500 hover:text-red-700 text-xs"
                                       title="Remove user"
                                     >
                                       ✖
                                     </button>
 
-                                    <div className="h-14 w-14 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-md mb-2 shadow-sm">
+                                    <div className="h-12 w-12 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm mb-2 shadow-sm">
                                       {user.name
                                         .split(" ")
                                         .map((n) => n[0])
@@ -606,16 +618,16 @@ const Departments = () => {
                                         .slice(0, 2)}
                                     </div>
 
-                                    <div className="mb-2">
-                                      <h3 className="text-base font-semibold text-gray-800">
+                                    <div className="mb-2 w-full">
+                                      <h3 className="text-sm font-semibold text-gray-800 truncate">
                                         {user.name}
                                       </h3>
-                                      <p className="text-sm text-gray-500">
+                                      <p className="text-xs text-gray-500 truncate">
                                         {user.position}
                                       </p>
                                     </div>
 
-                                    <div className="w-full mt-2">
+                                    <div className="w-full mt-1">
                                       <label className="block text-xs text-gray-500 mb-1">
                                         Role
                                       </label>
@@ -631,7 +643,7 @@ const Departments = () => {
                                             [dept]: updated,
                                           }));
                                         }}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                       >
                                         <option value="user">User</option>
                                         <option value="manager">Manager</option>
@@ -656,12 +668,12 @@ const Departments = () => {
                     <p className="text-center text-gray-500">No codes found.</p>
                   </div>
                 ) : (
-                  <div className="space-y-6 mx-auto max-h-[70vh] overflow-y-auto px-4 md:px-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-4 mx-auto max-h-[calc(100vh-300px)] overflow-y-auto px-4 md:px-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {taskCodes.map((codeObj) => (
                         <div
                           key={codeObj._id}
-                          className="bg-white flex justify-between items-center border border-gray-200 p-4 rounded-md shadow hover:shadow-md transition"
+                          className="bg-white flex justify-between items-center border border-gray-200 p-3 rounded-md shadow hover:shadow-md transition"
                         >
                           {editCodeId === codeObj._id ? (
                             <div className="flex items-center gap-2">
@@ -687,7 +699,7 @@ const Departments = () => {
                               </button>
                             </div>
                           ) : (
-                            <h3 className="text-lg font-semibold text-indigo-800">
+                            <h3 className="text-base font-semibold text-indigo-800">
                               {codeObj.name}
                             </h3>
                           )}
@@ -748,45 +760,6 @@ const Departments = () => {
               value={newDeptName}
               onChange={(e) => setNewDeptName(e.target.value)}
               placeholder="Enter department name"
-              className="w-full p-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowDeptModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitDepartment}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Code Creation Modal */}
-      {showCodeModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Create New Code</h3>
-              <button
-                onClick={() => setShowCodeModal(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <input
-              type="text"
-              value={newCodeName}
-              onChange={(e) => setNewCodeName(e.target.value)}
-              placeholder="Enter code name"
               className="w-full p-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               autoFocus
             />

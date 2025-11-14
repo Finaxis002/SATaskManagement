@@ -19,59 +19,26 @@ const Login = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
+  const [error, setError] = useState("");
 
   const dispatch = useDispatch();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(""); // Clear error when user types
   };
 
-  // make this safer & non-blocking
-  // const subscribeToPushNotifications = async (userId, token) => {
-  //   try {
-  //     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-  //     // Push requires https (or localhost)
-  //     const isSecure =
-  //       window.isSecureContext || location.hostname === "localhost";
-  //     if (!isSecure) return;
-
-  //     const permission = await Notification.requestPermission();
-  //     if (permission !== "granted") return;
-
-  //     const reg = await navigator.serviceWorker.register("/service-worker.js");
-
-  //     // Don’t await .ready forever; race with timeout
-  //     const ready = Promise.race([
-  //       navigator.serviceWorker.ready,
-  //       new Promise((_, rej) =>
-  //         setTimeout(() => rej(new Error("sw-timeout")), 2500)
-  //       ),
-  //     ]);
-  //     await ready;
-
-  //     const subscription = await reg.pushManager.subscribe({
-  //       userVisibleOnly: true,
-  //       applicationServerKey:
-  //         "BFiAnzKqV9C437P10UIT5_daMne46XuJiVuSn4zQh2MQBjUIwMP9PMgk2TFQL9LOSiQy17eie7XRYZcJ0NE7jMs",
-  //     });
-
-  //     await fetch(
-  //       "https://taskbe.sharda.co.in/api/push-notification/save-subscription",
-  //       {
-  //         method: "POST",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify({ userId, subscription }),
-  //       }
-  //     );
-  //   } catch (e) {
-  //     // swallow errors; don’t block login
-  //     console.error("Push setup failed (non-blocking):", e);
-  //   }
-  // };
+  const computeIsToday = (iso) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    const t = new Date();
+    return d.getDate() === t.getDate() && d.getMonth() === t.getMonth();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(""); // Clear previous errors
 
     if (!captchaToken) {
       Swal.fire({
@@ -84,13 +51,6 @@ const Login = () => {
       return;
     }
 
-     const computeIsToday = (iso) => {
-    if (!iso) return false;
-    const d = new Date(iso);
-    const t = new Date();
-    return d.getDate() === t.getDate() && d.getMonth() === t.getMonth();
-  };
-
     try {
       const response = await axios.post(
         "https://taskbe.sharda.co.in/api/employees/login",
@@ -100,21 +60,18 @@ const Login = () => {
         }
       );
 
-      const { token, _id, name, role, email, position, department, userId , birthdate,
-      isBirthdayToday, } =
-        response.data;
+      const { token, _id, name, role, email, position, department, userId, birthdate, isBirthdayToday } = response.data;
 
-         const birthdayFlag =
-      typeof isBirthdayToday === "boolean"
-        ? isBirthdayToday
-        : computeIsToday(birthdate);
+      const birthdayFlag =
+        typeof isBirthdayToday === "boolean"
+          ? isBirthdayToday
+          : computeIsToday(birthdate);
 
       const loginExpiryHours = 10;
       const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
 
       const userData = {
         _id,
-        
         name,
         email,
         position,
@@ -122,25 +79,28 @@ const Login = () => {
         userId,
         role,
         birthdate: birthdate || "",
-      isBirthdayToday: birthdayFlag,
+        isBirthdayToday: birthdayFlag,
       };
 
       localStorage.setItem("authToken", token);
       localStorage.setItem("loginExpiry", loginExpiryTime);
       localStorage.setItem("tokenLocal", token);
       localStorage.setItem("triggerLoginReminder", "true");
-
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("name", name);
       localStorage.setItem("role", role);
       localStorage.setItem("userId", _id);
       localStorage.setItem("birthdate", birthdate || "");
-    localStorage.setItem("isBirthdayToday", JSON.stringify(!!birthdayFlag));
+      localStorage.setItem("isBirthdayToday", JSON.stringify(!!birthdayFlag));
 
-      dispatch(setAuth({ name, role, userId: _id, birthdate: birthdate || "",
-        isBirthdayToday: !!birthdayFlag, }));
+      dispatch(setAuth({ 
+        name, 
+        role, 
+        userId: _id, 
+        birthdate: birthdate || "",
+        isBirthdayToday: !!birthdayFlag 
+      }));
 
-      // ✅ Fetch reminders to get linked Google email
       // ✅ Fetch linked email directly from linkedemails collection
       try {
         const linkedEmailResponse = await axios.get(
@@ -164,16 +124,13 @@ const Login = () => {
         localStorage.removeItem("googleEmail");
       }
 
-      // subscribeToPushNotifications(_id, token).finally(() => {
-      //   window.location.href = "/";
-      // });
+      navigate("/", { replace: true });
     } catch (err) {
-      alert("Failed to log in. Please check your credentials.");
+      const errorMessage = err.response?.data?.message || "Invalid User ID or Password. Please try again.";
+      setError(errorMessage);
       console.error(err);
       setCaptchaToken(null);
-    } finally {
       setLoading(false);
-      navigate("/", { replace: true });
     }
   };
 
@@ -181,54 +138,10 @@ const Login = () => {
     setPasswordVisible(!passwordVisible);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-gray-50">
-        <div className="flex flex-col items-center">
-          <svg
-            className="animate-spin h-12 w-12 text-indigo-600 mb-4"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v8z"
-            ></path>
-          </svg>
-          <span className="text-lg text-indigo-600 font-semibold">
-            Signing you in...
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-50 flex items-center justify-center p-6">
       <div className="max-w-md w-full bg-white rounded-2xl overflow-hidden shadow-xl">
         {/* Branding Header */}
-        {/* <div className="bg-indigo-700 px-8 flex items-center justify-center space-x-4">
-          <div className=" p-2">
-           
-            <img
-              src="/SALOGO.png" // or your ASA logo path
-              alt="ASA Logo"
-              className="h-16 w-16 object-contain transition-transform duration-300 group-hover:scale-105"
-            />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Anunay Sharda Associates</h1>
-          </div>
-        </div> */}
-
         <div className="bg-gradient-to-r from-indigo-800 to-indigo-600 py-4 px-6 shadow-md">
           <div className="max-w-6xl mx-auto flex items-center justify-start space-x-5">
             {/* Logo with subtle shine effect */}
@@ -262,6 +175,24 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+                <svg
+                  className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
             {/* User ID Field */}
             <div className="space-y-1">
               <label
@@ -322,6 +253,8 @@ const Login = () => {
                 </button>
               </div>
             </div>
+
+            {/* reCAPTCHA */}
             <ReCAPTCHA
               sitekey={RECAPTCHA_SITE_KEY}
               onChange={(token) => setCaptchaToken(token)}
@@ -332,9 +265,35 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                 {loading ? "Signing in..." : "Sign In"}
+                {loading ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </button>
             </div>
           </form>
