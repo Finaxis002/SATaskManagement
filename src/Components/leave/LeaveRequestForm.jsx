@@ -14,16 +14,17 @@ const LeaveRequestForm = () => {
     },
   ]);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarAbove, setCalendarAbove] = useState(false); // 🔥 new
+  const [calendarAbove, setCalendarAbove] = useState(false);
   const [leaveDuration, setLeaveDuration] = useState("Full Day");
   const [leaveType, setLeaveType] = useState("Sick Leave");
   const [comments, setComments] = useState("");
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false); // 🔥 NEW: Loading state
 
   const calendarRef = useRef(null);
-  const inputRef = useRef(null); // 🔥 new for positioning
+  const inputRef = useRef(null);
 
   const MIN_COMMENT_WORDS = 10;
 
@@ -52,12 +53,11 @@ const LeaveRequestForm = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Detect if calendar should open above or below (auto-position)
   useEffect(() => {
     if (showCalendar && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      setCalendarAbove(spaceBelow < 350); // if less than 350px space below, open upward
+      setCalendarAbove(spaceBelow < 350);
     }
   }, [showCalendar]);
 
@@ -84,7 +84,7 @@ const LeaveRequestForm = () => {
     const minCasualLeaveDate = new Date(today);
     minCasualLeaveDate.setDate(today.getDate() + 2);
 
-  if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
+    if (leaveDuration === "Full Day" && leaveType === "Casual Leave") {
       const selectedStartDate = new Date(range[0].startDate);
       selectedStartDate.setHours(0, 0, 0, 0);
       if (selectedStartDate < minCasualLeaveDate) {
@@ -128,32 +128,106 @@ const LeaveRequestForm = () => {
       fromTime: leaveDuration === "Half Day" ? fromTime : "",
       toTime: leaveDuration === "Half Day" ? toTime : "",
     };
-    // http://localhost:1100/api/leave
-    // https://taskbe.sharda.co.in/api/leave
+
+    setIsSubmitting(true); // 🔥 Start loading
+
     try {
-      await axios.post("https://taskbe.sharda.co.in/api/leave/apply", payload, {
-        headers: { "Content-Type": "application/json" },
-      });
+      // ========================================
+      // STEP 1: Submit Leave Application
+      // ========================================
+      console.log("📝 Submitting leave application...");
+      const applyResponse = await axios.post(
+        "https://taskbe.sharda.co.in/api/leave/apply",
+        payload,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      console.log("✅ Leave submitted:", applyResponse.data);
+
+      // Check if leave was successfully saved
+      if (!applyResponse.data.success || !applyResponse.data.leaveId) {
+        throw new Error("Failed to get leave ID from server");
+      }
+
+      const leaveId = applyResponse.data.leaveId;
+
+      // ========================================
+      // STEP 2: Send Email Notification
+      // ========================================
+      console.log("📧 Sending email notification for leave ID:", leaveId);
+      
+      try {
+        const mailResponse = await axios.post(
+          "https://taskbe.sharda.co.in/api/leave/leavemail",
+          { leaveId },
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        console.log("✅ Email sent:", mailResponse.data);
+
+        if (mailResponse.data.success) {
+          showToast(
+            "Leave submitted successfully! 🎉\nAdmin has been notified via email.",
+            "success"
+          );
+        } else {
+          showToast(
+            "Leave submitted successfully! ✅\nBut email notification failed. Admin will be notified through the system.",
+            "warning"
+          );
+        }
+      } catch (emailError) {
+        console.error("⚠️ Email notification failed:", emailError);
+        showToast(
+          "Leave submitted successfully! ✅\nEmail notification failed, but admin can see your request in the system.",
+          "warning"
+        );
+      }
+
+      // ========================================
+      // Reset Form & Trigger Alert
+      // ========================================
       localStorage.setItem("showLeaveAlert", "true");
       const event = new Event("storage");
       window.dispatchEvent(event);
-      showToast("Leave submitted successfully! 🎉", "success");
+
+      // Clear form
       setComments("");
       setFromTime("");
       setToTime("");
+      setRange([
+        {
+          startDate: new Date(),
+          endDate: new Date(),
+          key: "selection",
+        },
+      ]);
+
     } catch (error) {
-      showToast("Error submitting leave request. Please try again.", "error");
+      console.error("❌ Error submitting leave:", error);
+      showToast(
+        "Error submitting leave request. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsSubmitting(false); // 🔥 Stop loading
     }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition overflow-y-auto min-h-[77vh] flex flex-col justify-between  ">
+    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition overflow-y-auto min-h-[77vh] flex flex-col justify-between">
       {toast.show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 animate-fade-in">
           <div
             className={`max-w-md w-full mx-4 animate-scale-in ${
               toast.type === "success"
                 ? "bg-gradient-to-r from-green-500 to-green-600"
+                : toast.type === "warning"
+                ? "bg-gradient-to-r from-yellow-400 to-yellow-500"
                 : "bg-gradient-to-r from-white to-white"
             } text-black px-8 py-6 rounded-2xl shadow-2xl`}
           >
@@ -171,6 +245,20 @@ const LeaveRequestForm = () => {
                       strokeLinejoin="round"
                       strokeWidth="3"
                       d="M5 13l4 4L19 7"
+                    ></path>
+                  </svg>
+                ) : toast.type === "warning" ? (
+                  <svg
+                    className="w-16 h-16 text-black"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.5"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                     ></path>
                   </svg>
                 ) : (
@@ -191,9 +279,13 @@ const LeaveRequestForm = () => {
               </div>
               <div>
                 <h3 className="font-bold text-xl mb-2">
-                  {toast.type === "success" ? "Success!" : "Oops!"}
+                  {toast.type === "success"
+                    ? "Success!"
+                    : toast.type === "warning"
+                    ? "Partial Success"
+                    : "Oops!"}
                 </h3>
-                <p className="font-medium text-base leading-relaxed">
+                <p className="font-medium text-base leading-relaxed whitespace-pre-line">
                   {toast.message}
                 </p>
               </div>
@@ -227,6 +319,7 @@ const LeaveRequestForm = () => {
           }
         }}
         className="w-full bg-gray-100 rounded-md p-2 border border-gray-300 text-sm text-black hover:border-blue-400 transition mb-3"
+        disabled={isSubmitting}
       >
         <option>Full Day</option>
         <option>Half Day</option>
@@ -241,6 +334,7 @@ const LeaveRequestForm = () => {
             value={leaveType}
             onChange={(e) => setLeaveType(e.target.value)}
             className="w-full bg-gray-100 rounded-md p-2 border border-gray-300 text-sm text-black hover:border-blue-400 transition mb-3"
+            disabled={isSubmitting}
           >
             <option>Sick Leave</option>
             <option>Casual Leave</option>
@@ -256,7 +350,7 @@ const LeaveRequestForm = () => {
         ref={inputRef}
         type="text"
         readOnly
-        onClick={() => setShowCalendar(!showCalendar)}
+        onClick={() => !isSubmitting && setShowCalendar(!showCalendar)}
         value={
           leaveDuration === "Full Day"
             ? `${formatDate(range[0].startDate)} - ${formatDate(
@@ -265,6 +359,7 @@ const LeaveRequestForm = () => {
             : formatDate(range[0].startDate)
         }
         className="w-full bg-gray-100 rounded-md p-2 mb-2 text-sm text-gray-900 cursor-pointer border border-gray-300 hover:border-blue-400 transition"
+        disabled={isSubmitting}
       />
 
       {showCalendar && (
@@ -317,12 +412,14 @@ const LeaveRequestForm = () => {
               value={fromTime}
               onChange={(e) => setFromTime(e.target.value)}
               className="flex-1 border border-gray-300 rounded-md p-2 text-sm text-gray-900 hover:border-blue-400 focus:border-blue-500"
+              disabled={isSubmitting}
             />
             <input
               type="time"
               value={toTime}
               onChange={(e) => setToTime(e.target.value)}
               className="flex-1 border border-gray-300 rounded-md p-2 text-sm text-gray-900 hover:border-blue-400 focus:border-blue-500"
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -340,13 +437,45 @@ const LeaveRequestForm = () => {
         className="w-full bg-gray-100 rounded-md p-2 mb-3 text-sm text-gray-900 border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition resize-none"
         rows={3}
         placeholder="Provide any additional details..."
+        disabled={isSubmitting}
       />
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg"
+        disabled={isSubmitting}
+        className={`w-full font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg ${
+          isSubmitting
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-500 hover:bg-blue-600 text-white"
+        }`}
       >
-        🚀 Submit Request
+        {isSubmitting ? (
+          <span className="flex items-center justify-center gap-2">
+            <svg
+              className="animate-spin h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Submitting...
+          </span>
+        ) : (
+          "🚀 Submit Request"
+        )}
       </button>
     </div>
   );
