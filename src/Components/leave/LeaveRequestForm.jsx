@@ -344,7 +344,7 @@ const LeaveRequestForm = () => {
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg marg]]]"
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg"
       >
         🚀 Submit Request
       </button>
