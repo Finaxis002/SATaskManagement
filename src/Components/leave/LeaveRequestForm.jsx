@@ -4,7 +4,7 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import axios from "axios";
 
-const LeaveRequestForm = () => {
+export default function LeaveRequestForm() {
   const userName = localStorage.getItem("name");
   const [range, setRange] = useState([
     {
@@ -21,7 +21,7 @@ const LeaveRequestForm = () => {
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
-  const [isSubmitting, setIsSubmitting] = useState(false); // 🔥 NEW: Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const calendarRef = useRef(null);
   const inputRef = useRef(null);
@@ -110,10 +110,7 @@ const LeaveRequestForm = () => {
     }
 
     if (leaveDuration === "Half Day" && (!fromTime || !toTime)) {
-      showToast(
-        "Please select both start and end time for Half Day leave.",
-        "error"
-      );
+      showToast("Please select both start and end time for Half Day leave.", "error");
       return;
     }
 
@@ -129,12 +126,9 @@ const LeaveRequestForm = () => {
       toTime: leaveDuration === "Half Day" ? toTime : "",
     };
 
-    setIsSubmitting(true); // 🔥 Start loading
+    setIsSubmitting(true);
 
     try {
-      // ========================================
-      // STEP 1: Submit Leave Application
-      // ========================================
       console.log("📝 Submitting leave application...");
       const applyResponse = await axios.post(
         "https://taskbe.sharda.co.in/api/leave/apply",
@@ -146,56 +140,46 @@ const LeaveRequestForm = () => {
 
       console.log("✅ Leave submitted:", applyResponse.data);
 
-      // Check if leave was successfully saved
-      if (!applyResponse.data.success || !applyResponse.data.leaveId) {
+      // Defensive checks & helpful logs
+      if (!applyResponse || !applyResponse.data) {
+        console.error("No response data from /apply API", applyResponse);
         throw new Error("Failed to get leave ID from server");
       }
 
-      const leaveId = applyResponse.data.leaveId;
+      const { success, leaveId } = applyResponse.data;
 
-      // ========================================
-      // STEP 2: Send Email Notification
-      // ========================================
+      if (!success || !leaveId) {
+        console.error("Invalid response from /apply:", applyResponse.data);
+        throw new Error("Failed to get leave ID from server");
+      }
+
+      // Step 2: Send email notification
       console.log("📧 Sending email notification for leave ID:", leaveId);
-      
+
       try {
         const mailResponse = await axios.post(
           "https://taskbe.sharda.co.in/api/leave/leavemail",
           { leaveId },
-          {
-            headers: { "Content-Type": "application/json" },
-          }
+          { headers: { "Content-Type": "application/json" } }
         );
 
         console.log("✅ Email sent:", mailResponse.data);
 
-        if (mailResponse.data.success) {
-          showToast(
-            "Leave submitted successfully! 🎉\nAdmin has been notified via email.",
-            "success"
-          );
+        if (mailResponse.data && mailResponse.data.success) {
+          showToast("Leave submitted successfully! 🎉\nAdmin has been notified via email.", "success");
         } else {
-          showToast(
-            "Leave submitted successfully! ✅\nBut email notification failed. Admin will be notified through the system.",
-            "warning"
-          );
+          showToast("Leave submitted successfully! ✅\nBut email notification failed. Admin will be notified through the system.", "warning");
         }
       } catch (emailError) {
         console.error("⚠️ Email notification failed:", emailError);
-        showToast(
-          "Leave submitted successfully! ✅\nEmail notification failed, but admin can see your request in the system.",
-          "warning"
-        );
+        showToast("Leave submitted successfully! ✅\nEmail notification failed, but admin can see your request in the system.", "warning");
       }
 
-      // ========================================
-      // Reset Form & Trigger Alert
-      // ========================================
+      // Trigger change for other tabs
       localStorage.setItem("showLeaveAlert", "true");
-      const event = new Event("storage");
-      window.dispatchEvent(event);
+      window.dispatchEvent(new Event("storage"));
 
-      // Clear form
+      // Reset form
       setComments("");
       setFromTime("");
       setToTime("");
@@ -209,12 +193,9 @@ const LeaveRequestForm = () => {
 
     } catch (error) {
       console.error("❌ Error submitting leave:", error);
-      showToast(
-        "Error submitting leave request. Please try again.",
-        "error"
-      );
+      showToast("Error submitting leave request. Please try again.", "error");
     } finally {
-      setIsSubmitting(false); // 🔥 Stop loading
+      setIsSubmitting(false);
     }
   };
 
@@ -300,14 +281,10 @@ const LeaveRequestForm = () => {
         </div>
       )}
 
-      <h2 className="text-xl sm:text-2xl font-semibold mb-3 text-gray-900 text-center">
-        Request Leave
-      </h2>
+      <h2 className="text-xl sm:text-2xl font-semibold mb-3 text-gray-900 text-center">Request Leave</h2>
       <div className="border-b border-gray-300 mb-4"></div>
 
-      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
-        Leave Duration
-      </label>
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Leave Duration</label>
       <select
         value={leaveDuration}
         onChange={(e) => {
@@ -327,9 +304,7 @@ const LeaveRequestForm = () => {
 
       {leaveDuration === "Full Day" && (
         <>
-          <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
-            Leave Type
-          </label>
+          <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Leave Type</label>
           <select
             value={leaveType}
             onChange={(e) => setLeaveType(e.target.value)}
@@ -343,9 +318,7 @@ const LeaveRequestForm = () => {
         </>
       )}
 
-      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
-        Leave Date{leaveDuration === "Full Day" ? "s" : ""}
-      </label>
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Leave Date{leaveDuration === "Full Day" ? "s" : ""}</label>
       <input
         ref={inputRef}
         type="text"
@@ -353,9 +326,7 @@ const LeaveRequestForm = () => {
         onClick={() => !isSubmitting && setShowCalendar(!showCalendar)}
         value={
           leaveDuration === "Full Day"
-            ? `${formatDate(range[0].startDate)} - ${formatDate(
-                range[0].endDate
-              )}`
+            ? `${formatDate(range[0].startDate)} - ${formatDate(range[0].endDate)}`
             : formatDate(range[0].startDate)
         }
         className="w-full bg-gray-100 rounded-md p-2 mb-2 text-sm text-gray-900 cursor-pointer border border-gray-300 hover:border-blue-400 transition"
@@ -402,10 +373,7 @@ const LeaveRequestForm = () => {
 
       {leaveDuration === "Half Day" && (
         <div className="mb-3">
-          <label className="block text-xs sm:text-sm mb-2 font-medium text-gray-700">
-            Leave Timing{" "}
-            <span className="text-red-500 text-xs">(Required)</span>
-          </label>
+          <label className="block text-xs sm:text-sm mb-2 font-medium text-gray-700">Leave Timing <span className="text-red-500 text-xs">(Required)</span></label>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="time"
@@ -425,12 +393,7 @@ const LeaveRequestForm = () => {
         </div>
       )}
 
-      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
-        Comments{" "}
-        <span className="text-red-500 text-xs">
-          (min {MIN_COMMENT_WORDS} words)
-        </span>
-      </label>
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Comments <span className="text-red-500 text-xs">(min {MIN_COMMENT_WORDS} words)</span></label>
       <textarea
         value={comments}
         onChange={(e) => setComments(e.target.value)}
@@ -457,19 +420,8 @@ const LeaveRequestForm = () => {
               fill="none"
               viewBox="0 0 24 24"
             >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             Submitting...
           </span>
@@ -477,18 +429,14 @@ const LeaveRequestForm = () => {
           "🚀 Submit Request"
         )}
       </button>
+
+      {/* Animations */}
+      <style jsx global>{`
+        @keyframes fade-in { from {opacity: 0;} to {opacity: 1;} }
+        @keyframes scale-in { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        .animate-fade-in { animation: fade-in 0.2s ease-out; }
+        .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      `}</style>
     </div>
   );
-};
-
-// Animations
-const style = document.createElement("style");
-style.textContent = `
-  @keyframes fade-in { from {opacity: 0;} to {opacity: 1;} }
-  @keyframes scale-in { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
-  .animate-fade-in { animation: fade-in 0.2s ease-out; }
-  .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-`;
-document.head.appendChild(style);
-
-export default LeaveRequestForm;
+}
