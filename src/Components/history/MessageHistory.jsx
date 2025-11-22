@@ -31,7 +31,7 @@ const MessageHistory = () => {
     const fetchMessages = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:1100/api/message-history?clientId=${clientId}`
+          `https://taskbe.sharda.co.in/api/message-history?clientId=${clientId}`
         );
         if (response.headers["content-type"]?.includes("application/json")) {
           setMessages(response.data);

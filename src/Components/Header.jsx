@@ -18,7 +18,14 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 /* ---------------------------- What's New Modal ---------------------------- */
-function WhatsNewModal({ open, onClose, items = [], loading = false, error = "", onDelete }) {
+function WhatsNewModal({
+  open,
+  onClose,
+  items = [],
+  loading = false,
+  error = "",
+  onDelete,
+}) {
   if (!open) return null;
 
   // Check if user is admin
@@ -70,15 +77,24 @@ function WhatsNewModal({ open, onClose, items = [], loading = false, error = "",
         initial={{ y: 30, scale: 0.98 }}
         animate={{ y: 0, scale: 1 }}
         exit={{ y: 30, opacity: 0.9 }}
-        transition={{ duration: 0.35, type: "spring", stiffness: 120, damping: 18 }}
+        transition={{
+          duration: 0.35,
+          type: "spring",
+          stiffness: 120,
+          damping: 18,
+        }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 text-white flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-yellow-400 text-xs font-semibold">★</span>
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-yellow-400 text-xs font-semibold">
+              ★
+            </span>
             <h2 className="text-base sm:text-lg font-semibold">What's New</h2>
             {isAdmin && (
-              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Admin</span>
+              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                Admin
+              </span>
             )}
           </div>
           <button
@@ -106,8 +122,12 @@ function WhatsNewModal({ open, onClose, items = [], loading = false, error = "",
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-10">
               <div className="text-4xl mb-3">📰</div>
-              <p className="text-gray-800 font-medium">Nothing to see here (yet)</p>
-              <p className="text-sm text-gray-500 mt-1">New updates will show up as soon as they're published.</p>
+              <p className="text-gray-800 font-medium">
+                Nothing to see here (yet)
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                New updates will show up as soon as they're published.
+              </p>
             </div>
           ) : (
             items.map((it) => (
@@ -218,11 +238,14 @@ const Header = () => {
       }
       const token = localStorage.getItem("authToken");
       if (token) {
-        const res = await axios.get("https://taskbe.sharda.co.in/api/UpdateGet", {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        const res = await axios.get(
+          "https://taskbe.sharda.co.in/api/UpdateGet",
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
         const mappedItems = list.map((u) => ({
           id: u._id,
@@ -246,7 +269,10 @@ const Header = () => {
       }
     } catch (apiErr) {
       if (!updateCountOnly) {
-        console.warn("WhatsNew server merge failed:", apiErr?.message || apiErr);
+        console.warn(
+          "WhatsNew server merge failed:",
+          apiErr?.message || apiErr
+        );
         setWnError("Failed to load updates. Please try again.");
       }
     } finally {
@@ -265,16 +291,21 @@ const Header = () => {
         return;
       }
       setWnLoading(true);
-      const cleanItemId = itemId.toString().split(':')[0];
-      const response = await axios.delete(`https://taskbe.sharda.co.in/api/UpdateDelete/${cleanItemId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": token
-        },
-      });
+      const cleanItemId = itemId.toString().split(":")[0];
+      const response = await axios.delete(
+        `https://taskbe.sharda.co.in/api/UpdateDelete/${cleanItemId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token,
+          },
+        }
+      );
       if (response.status === 200 || response.status === 204) {
-        setWhatsNewItems(prevItems => prevItems.filter(item => item.id !== itemId));
-        setWhatsNewCount(prevCount => prevCount - 1);
+        setWhatsNewItems((prevItems) =>
+          prevItems.filter((item) => item.id !== itemId)
+        );
+        setWhatsNewCount((prevCount) => prevCount - 1);
         const newLastSeenCount = Math.max(0, lastSeenCount - 1);
         localStorage.setItem("whatsNewLastSeen", newLastSeenCount.toString());
         setLastSeenCount(newLastSeenCount);
@@ -284,8 +315,10 @@ const Header = () => {
       console.error("Error deleting update:", error);
       if (error.response?.status === 404) {
         setWnError("Update not found. It might have been already deleted.");
-        setWhatsNewItems(prevItems => prevItems.filter(item => item.id !== itemId));
-        setWhatsNewCount(prevCount => prevCount - 1);
+        setWhatsNewItems((prevItems) =>
+          prevItems.filter((item) => item.id !== itemId)
+        );
+        setWhatsNewCount((prevCount) => prevCount - 1);
       } else if (error.response?.status === 403) {
         setWnError("You don't have permission to delete this update.");
       } else if (error.response?.status === 401) {
@@ -542,7 +575,7 @@ const Header = () => {
                 animate={{ scale: 1 }}
                 whileHover={{ scale: 1.1 }}
               >
-                {unreadCount > 99 ? '99+' : unreadCount}
+                {unreadCount > 99 ? "99+" : unreadCount}
               </motion.span>
             )}
           </motion.button>
@@ -573,7 +606,8 @@ const Header = () => {
             <button
               id="profile-menu"
               onClick={handleMenuToggle}
-              className="bg-blue-400 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300 text-xs sm:text-sm"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 text-xs sm:text-sm"
+              style={{ backgroundColor: "#4332d2", focusRingColor: "#e0dcf9" }}
               aria-label="Profile menu"
             >
               {profileInitial}

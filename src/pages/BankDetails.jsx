@@ -236,12 +236,7 @@
 
 // export default BankDetails;
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////
-
-
 
 // import React, { useState, useEffect } from "react";
 // import axios from "../utils/secureAxios";
@@ -253,7 +248,7 @@
 //   const [firms, setFirms] = useState([]);
 //   const [activeFirmId, setActiveFirmId] = useState(null);
 //   const [expandedFirms, setExpandedFirms] = useState({});
-  
+
 //   const [isFirmModalOpen, setIsFirmModalOpen] = useState(false);
 //   const [firmModalMode, setFirmModalMode] = useState("add");
 //   const [formFirm, setFormFirm] = useState({
@@ -387,90 +382,92 @@
 //     setIsBankModalOpen(true);
 //   };
 
-  
+// submit
+// const submitFirm = async () => {
+//   if (firmModalMode === "add") {
+//     await axios.post("https://taskbe.sharda.co.in/firms", {
+//       name: formFirm.name,
+//       address: formFirm.address,
+//       gstin: formFirm.gstin,
+//       phone: formFirm.phone,
+//       prefix: formFirm.prefix,
+//     });
+//   } else {
+//     await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, {
+//       name: formFirm.name,
+//       address: formFirm.address,
+//       gstin: formFirm.gstin,
+//       phone: formFirm.phone,
+//       prefix: formFirm.prefix,
+//     });
+//   }
+//   closeFirmModal();
+//   fetchFirms();
+// };
 
-  // submit
-  // const submitFirm = async () => {
-  //   if (firmModalMode === "add") {
-  //     await axios.post("https://taskbe.sharda.co.in/firms", {
-  //       name: formFirm.name,
-  //       address: formFirm.address,
-  //       gstin: formFirm.gstin,
-  //       phone: formFirm.phone,
-  //       prefix: formFirm.prefix,
-  //     });
-  //   } else {
-  //     await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, {
-  //       name: formFirm.name,
-  //       address: formFirm.address,
-  //       gstin: formFirm.gstin,
-  //       phone: formFirm.phone,
-  //       prefix: formFirm.prefix,
-  //     });
-  //   }
-  //   closeFirmModal();
-  //   fetchFirms();
-  // };
+//   const submitFirm = async () => {
+//   const payload = {
+//     name: formFirm.name,
+//     address: formFirm.address,
+//     gstin: formFirm.gstin,
+//     phone: formFirm.phone,
+//     prefix: formFirm.prefix,
+//   };
 
+//   try {
+//     setSubmittingFirm(true);
 
-  //   const submitFirm = async () => {
-  //   const payload = {
-  //     name: formFirm.name,
-  //     address: formFirm.address,
-  //     gstin: formFirm.gstin,
-  //     phone: formFirm.phone,
-  //     prefix: formFirm.prefix,
-  //   };
+//     if (firmModalMode === "add") {
+//       await axios.post("https://taskbe.sharda.co.in/firms", payload);
+//       alert("Firm created successfully.");
+//     } else {
+//       await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
+//       alert("Firm updated successfully.");
+//     }
 
-  //   try {
-  //     setSubmittingFirm(true);
+//     closeFirmModal();
+//     fetchFirms();
+//   } catch (err) {
+//     // Try to understand backend error shapes
+//     const status = err?.response?.status;
+//     const msg = err?.response?.data?.message ?? err?.message ?? "Unknown error";
+//     const code = err?.response?.data?.code;
 
-  //     if (firmModalMode === "add") {
-  //       await axios.post("https://taskbe.sharda.co.in/firms", payload);
-  //       alert("Firm created successfully.");
-  //     } else {
-  //       await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
-  //       alert("Firm updated successfully.");
-  //     }
+//     const isDupPrefix =
+//       status === 409 ||                              // common for conflicts
+//       code === 11000 ||                              // Mongo duplicate key
+//       err?.response?.data?.keyPattern?.prefix ||    // Mongo key pattern
+//       /duplicate/i.test(String(msg)) && /prefix/i.test(String(msg));
 
-  //     closeFirmModal();
-  //     fetchFirms();
-  //   } catch (err) {
-  //     // Try to understand backend error shapes
-  //     const status = err?.response?.status;
-  //     const msg = err?.response?.data?.message ?? err?.message ?? "Unknown error";
-  //     const code = err?.response?.data?.code;
+//     if (isDupPrefix) {
+//       alert("This firm prefix already exists. Please choose a different prefix.");
+//     } else {
+//       alert(`Failed to ${firmModalMode === "add" ? "create" : "update"} firm: ${msg}`);
+//     }
+//   } finally {
+//     setSubmittingFirm(false);
+//   }
+// };
 
-  //     const isDupPrefix =
-  //       status === 409 ||                              // common for conflicts
-  //       code === 11000 ||                              // Mongo duplicate key
-  //       err?.response?.data?.keyPattern?.prefix ||    // Mongo key pattern
-  //       /duplicate/i.test(String(msg)) && /prefix/i.test(String(msg));
-
-  //     if (isDupPrefix) {
-  //       alert("This firm prefix already exists. Please choose a different prefix.");
-  //     } else {
-  //       alert(`Failed to ${firmModalMode === "add" ? "create" : "update"} firm: ${msg}`);
-  //     }
-  //   } finally {
-  //     setSubmittingFirm(false);
-  //   }
-  // };
-
-
- import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios"; // Using standard axios instead of secureAxios for self-containment
 // Removed Swal (SweetAlert2) and replaced it with a simple React UI for confirmation/toasts
-import { Plus, Building2, ChevronDown, ChevronUp, Banknote, Edit, Trash2 } from 'lucide-react'; // Using Lucide icons
+import {
+  Plus,
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  Banknote,
+  Edit,
+  Trash2,
+} from "lucide-react"; // Using Lucide icons
 
 // --- Helper Components ---
 
 // Reusable Loading Spinner Component
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center py-10 min-h-[300px] w-full bg-white rounded-xl shadow-lg">
-    <div
-      className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"
-    ></div>
+    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
     <span className="ml-3 text-lg text-gray-500">Loading firm data...</span>
   </div>
 );
@@ -484,86 +481,91 @@ const useToast = () => {
     setTimeout(() => setToast(null), 2000);
   }, []);
 
-  const ToastContainer = () => (
+  const ToastContainer = () =>
     toast && (
       <div className="fixed top-5 right-5 z-[100] bg-white border border-gray-200 p-3 rounded-lg shadow-xl animate-fade-in-down">
         <div className="flex items-center space-x-2">
-          <span className={`text-xl ${
-            toast.icon === 'success' ? 'text-green-500' : 'text-red-500'
-          }`}>
-            {toast.icon === 'success' ? '✅' : '❌'}
+          <span
+            className={`text-xl ${
+              toast.icon === "success" ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {toast.icon === "success" ? "✅" : "❌"}
           </span>
           <p className="text-sm font-medium text-gray-800">{toast.title}</p>
         </div>
       </div>
-    )
-  );
+    );
 
   return { showToast, ToastContainer };
 };
 
 // Reusable Confirmation Modal Component Logic (Replaces Swal.fire for confirmation)
 const useConfirmationModal = () => {
-    const [modalState, setModalState] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        onConfirm: () => {},
-        confirmButtonColor: '#dc2626',
-        confirmButtonText: 'Confirm',
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    confirmButtonColor: "#dc2626",
+    confirmButtonText: "Confirm",
+  });
+
+  const openConfirm = useCallback(({ title, message, onConfirm }) => {
+    setModalState({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      confirmButtonColor: "#dc2626",
+      confirmButtonText: "Yes, delete it!",
     });
+  }, []);
 
-    const openConfirm = useCallback(({ title, message, onConfirm }) => {
-        setModalState({
-            isOpen: true,
-            title,
-            message,
-            onConfirm,
-            confirmButtonColor: '#dc2626',
-            confirmButtonText: 'Yes, delete it!',
-        });
-    }, []);
+  const closeConfirm = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  };
 
-    const closeConfirm = () => {
-        setModalState(prev => ({ ...prev, isOpen: false }));
-    };
+  const ConfirmationModal = () => {
+    if (!modalState.isOpen) return null;
 
-    const ConfirmationModal = () => {
-        if (!modalState.isOpen) return null;
-
-        return (
-            <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
-                    <div className="p-6 text-center">
-                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                            <Trash2 className="h-6 w-6 text-red-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{modalState.title}</h3>
-                        <p className="text-sm text-gray-500 mb-6">{modalState.message}</p>
-                        <div className="flex justify-center gap-3">
-                            <button
-                                onClick={closeConfirm}
-                                className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 text-sm"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => { modalState.onConfirm(); closeConfirm(); }}
-                                className={`px-4 py-2 text-white rounded-md text-sm transition-colors`}
-                                style={{ backgroundColor: modalState.confirmButtonColor }}
-                            >
-                                {modalState.confirmButtonText}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+    return (
+      <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+          <div className="p-6 text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <Trash2 className="h-6 w-6 text-red-600" />
             </div>
-        );
-    };
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {modalState.title}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">{modalState.message}</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={closeConfirm}
+                className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  modalState.onConfirm();
+                  closeConfirm();
+                }}
+                className={`px-4 py-2 text-white rounded-md text-sm transition-colors`}
+                style={{ backgroundColor: modalState.confirmButtonColor }}
+              >
+                {modalState.confirmButtonText}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-    return { openConfirm, closeConfirm, ConfirmationModal };
+  return { openConfirm, closeConfirm, ConfirmationModal };
 };
-
 
 // --- Main Component ---
 const BankDetails = () => {
@@ -604,7 +606,12 @@ const BankDetails = () => {
   const openAddFirm = () => {
     setFirmModalMode("add");
     setFormFirm({
-      _id: "", name: "", address: "", gstin: "", phone: "", prefix: "",
+      _id: "",
+      name: "",
+      address: "",
+      gstin: "",
+      phone: "",
+      prefix: "",
     });
     setIsFirmModalOpen(true);
   };
@@ -631,12 +638,12 @@ const BankDetails = () => {
     setLoading(true);
     try {
       // Note: Replaced secureAxios with axios, assuming the endpoint is accessible.
-      const res = await axios.get("https://taskbe.sharda.co.in/firms"); 
+      const res = await axios.get("https://taskbe.sharda.co.in/firms");
       setFirms(res.data);
     } catch (error) {
-        console.error("Error fetching firms:", error);
+      console.error("Error fetching firms:", error);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   }, []);
 
@@ -655,7 +662,10 @@ const BankDetails = () => {
         await axios.post("https://taskbe.sharda.co.in/firms", payload);
         showToast("success", "Firm created successfully");
       } else {
-        await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
+        await axios.put(
+          `https://taskbe.sharda.co.in/firms/${formFirm._id}`,
+          payload
+        );
         showToast("success", "Firm updated successfully");
       }
       closeFirmModal();
@@ -665,7 +675,10 @@ const BankDetails = () => {
       const data = err?.response?.data;
       const msg = data?.message ?? err?.message ?? "Unknown error";
       console.error(msg);
-      showToast("error", `Failed to ${firmModalMode === "add" ? "create" : "update"} firm`);
+      showToast(
+        "error",
+        `Failed to ${firmModalMode === "add" ? "create" : "update"} firm`
+      );
     } finally {
       setSubmittingFirm(false);
     }
@@ -673,28 +686,35 @@ const BankDetails = () => {
 
   const handleDeleteFirm = (firmId) => {
     openConfirm({
-        title: "Confirm Deletion",
-        message: "Are you sure you want to delete this firm? This action cannot be undone.",
-        onConfirm: async () => {
-            try {
-                await axios.delete(`https://taskbe.sharda.co.in/firms/${firmId}`);
-                showToast("success", "Firm deleted successfully");
-                fetchFirms();
-            } catch (error) {
-                console.error("Error deleting firm:", error);
-                showToast("error", "Failed to delete firm");
-            }
+      title: "Confirm Deletion",
+      message:
+        "Are you sure you want to delete this firm? This action cannot be undone.",
+      onConfirm: async () => {
+        try {
+          await axios.delete(`https://taskbe.sharda.co.in/firms/${firmId}`);
+          showToast("success", "Firm deleted successfully");
+          fetchFirms();
+        } catch (error) {
+          console.error("Error deleting firm:", error);
+          showToast("error", "Failed to delete firm");
         }
+      },
     });
   };
-    
+
   // --- Bank Modal Handlers ---
   const openAddBank = (firmId) => {
     setActiveFirmId(firmId);
     setBankModalMode("add");
     setFormBank({
-      _id: "", bankName: "", accountName: "", accountNumber: "",
-      ifsc: "", upiIdName: "", upiMobile: "", upiId: "",
+      _id: "",
+      bankName: "",
+      accountName: "",
+      accountNumber: "",
+      ifsc: "",
+      upiIdName: "",
+      upiMobile: "",
+      upiId: "",
     });
     setIsBankModalOpen(true);
   };
@@ -721,40 +741,46 @@ const BankDetails = () => {
   const submitBank = async () => {
     if (!activeFirmId) return;
     try {
-        const url = `https://taskbe.sharda.co.in/firms/${activeFirmId}/banks${bankModalMode === "edit" ? `/${formBank._id}` : ''}`;
-        
-        if (bankModalMode === "add") {
-            await axios.post(url, formBank);
-            showToast("success", "Bank added successfully");
-        } else {
-            await axios.put(url, formBank);
-            showToast("success", "Bank updated successfully");
-        }
-        
+      const url = `https://taskbe.sharda.co.in/firms/${activeFirmId}/banks${
+        bankModalMode === "edit" ? `/${formBank._id}` : ""
+      }`;
+
+      if (bankModalMode === "add") {
+        await axios.post(url, formBank);
+        showToast("success", "Bank added successfully");
+      } else {
+        await axios.put(url, formBank);
+        showToast("success", "Bank updated successfully");
+      }
+
       closeBankModal();
       fetchFirms();
     } catch (err) {
       console.error(err);
-      showToast("error", `Failed to ${bankModalMode === "add" ? "add" : "update"} bank`);
+      showToast(
+        "error",
+        `Failed to ${bankModalMode === "add" ? "add" : "update"} bank`
+      );
     }
   };
 
   const handleDeleteBank = (firmId, bankId) => {
     openConfirm({
-        title: "Confirm Deletion",
-        message: "Are you sure you want to delete this bank account? This action cannot be undone.",
-        onConfirm: async () => {
-            try {
-                await axios.delete(
-                    `https://taskbe.sharda.co.in/firms/${firmId}/banks/${bankId}`
-                );
-                showToast("success", "Bank deleted successfully");
-                fetchFirms();
-            } catch (error) {
-                console.error("Error deleting bank:", error);
-                showToast("error", "Failed to delete bank");
-            }
+      title: "Confirm Deletion",
+      message:
+        "Are you sure you want to delete this bank account? This action cannot be undone.",
+      onConfirm: async () => {
+        try {
+          await axios.delete(
+            `https://taskbe.sharda.co.in/firms/${firmId}/banks/${bankId}`
+          );
+          showToast("success", "Bank deleted successfully");
+          fetchFirms();
+        } catch (error) {
+          console.error("Error deleting bank:", error);
+          showToast("error", "Failed to delete bank");
         }
+      },
     });
   };
 
@@ -765,14 +791,13 @@ const BankDetails = () => {
       [firmId]: !prev[firmId],
     }));
   };
-    
+
   // Removed confirmDelete since all confirmations now use useConfirmationModal hook
-  
+
   // --- Initial Fetch ---
   useEffect(() => {
     fetchFirms();
   }, [fetchFirms]);
-
 
   return (
     <div className="w-full mx-auto flex flex-col px-2 sm:px-4">
@@ -783,7 +808,14 @@ const BankDetails = () => {
               Firm & Bank Management
             </h1>
             <button
-              className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="w-full sm:w-auto px-4 py-2 text-white rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+              style={{ backgroundColor: "#4332d2" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#342599")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#4332d2")
+              }
               onClick={openAddFirm}
             >
               <Plus className="h-5 w-5" />
@@ -791,258 +823,292 @@ const BankDetails = () => {
             </button>
           </div>
         </div>
-        
+
         {/* Conditional rendering based on loading state */}
         {loading ? (
-            <LoadingSpinner />
+          <LoadingSpinner />
         ) : (
-            <div className="space-y-4 sm:space-y-6 pb-6">
+          <div className="space-y-4 sm:space-y-6 pb-6">
             {firms.length === 0 ? (
-                <div className="bg-white rounded-lg shadow p-6 sm:p-8 text-center">
-                    <Building2 
-                        className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-400" 
-                        strokeWidth={1.5}
-                    />
-                    <h3 className="mt-4 text-base sm:text-lg font-medium text-gray-900">
-                        No firms found
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Get started by adding your first firm
-                    </p>
-                    <button
-                        className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm sm:text-base"
-                        onClick={openAddFirm}
-                    >
-                        Add Firm
-                    </button>
-                </div>
+              <div className="bg-white rounded-lg shadow p-6 sm:p-8 text-center">
+                <Building2
+                  className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-400"
+                  strokeWidth={1.5}
+                />
+                <h3 className="mt-4 text-base sm:text-lg font-medium text-gray-900">
+                  No firms found
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by adding your first firm
+                </p>
+                <button
+                  className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm sm:text-base"
+                  onClick={openAddFirm}
+                >
+                  Add Firm
+                </button>
+              </div>
             ) : (
-                firms.map((firm) => (
-                    <div
-                        key={firm._id}
-                        className="bg-white rounded-xl shadow-md overflow-hidden"
-                    >
-                        <div
-                            className="p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors bg-gray-50" // Adjusted hover color
-                            onClick={() => toggleFirmExpansion(firm._id)}
-                        >
-                            <div className="flex flex-col gap-3">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-1 min-w-0">
-                                        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 break-words">
-                                            {firm.name}
-                                        </h2>
-                                        <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">
-                                            {firm.address}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2 ml-4">
-                                        {expandedFirms[firm._id] ? (
-                                            <ChevronUp className="h-5 w-5 text-gray-500 flex-shrink-0 transition-transform" />
-                                        ) : (
-                                            <ChevronDown className="h-5 w-5 text-gray-500 flex-shrink-0 transition-transform" />
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs sm:text-sm font-medium text-blue-700 px-2 py-1 bg-blue-100 rounded-full">
-                                        {firm.banks?.length || 0}{" "}
-                                        {firm.banks?.length === 1 ? "Bank" : "Banks"}
-                                    </span>
-                                    
-                                    {/* Action Buttons */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openAddBank(firm._id);
-                                        }}
-                                        className="flex-1 sm:flex-none px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm"
-                                    >
-                                        <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                        <span className="hidden sm:inline">Add Bank</span>
-                                        <span className="sm:hidden">Bank</span>
-                                    </button>
-
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openEditFirm(firm);
-                                        }}
-                                        className="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5"
-                                    >
-                                        <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                    </button>
-
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteFirm(firm._id); // Use new handler
-                                        }}
-                                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5"
-                                    >
-                                        <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                    </button>
-                                </div>
-                            </div>
+              firms.map((firm) => (
+                <div
+                  key={firm._id}
+                  className="bg-white rounded-xl shadow-md overflow-hidden"
+                >
+                  <div
+                    className="p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors bg-gray-50" // Adjusted hover color
+                    onClick={() => toggleFirmExpansion(firm._id)}
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 break-words">
+                            {firm.name}
+                          </h2>
+                          <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">
+                            {firm.address}
+                          </p>
                         </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          {expandedFirms[firm._id] ? (
+                            <ChevronUp className="h-5 w-5 text-gray-500 flex-shrink-0 transition-transform" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-gray-500 flex-shrink-0 transition-transform" />
+                          )}
+                        </div>
+                      </div>
 
-                        {expandedFirms[firm._id] && (
-                            <div className="border-t border-gray-200 p-3 sm:p-6 bg-white">
-                                <h3 className="text-lg font-semibold text-gray-700 mb-3">Bank Accounts</h3>
-                                
-                                {firm.banks && firm.banks.length > 0 ? (
-                                    <div className="overflow-x-auto">
-                                        {/* Mobile Card View */}
-                                        <div className="block md:hidden space-y-3">
-                                            {firm.banks.map((bank, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-200 shadow-sm"
-                                                >
-                                                    <div className="flex justify-between items-start">
-                                                        <h3 className="font-semibold text-gray-900 text-sm">
-                                                            {bank.bankName || "Unknown Bank"}
-                                                        </h3>
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => openEditBank(firm._id, bank)}
-                                                                className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center"
-                                                            >
-                                                                <Edit className="w-3.5 h-3.5 mr-1" /> Edit
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteBank(firm._id, bank._id)} // Use new handler
-                                                                className="text-red-600 hover:text-red-800 text-xs font-medium flex items-center"
-                                                            >
-                                                                <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-1 text-xs text-gray-600">
-                                                        <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-700">A/C Name:</span>{" "}
-                                                            <span>{bank.accountName}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-700">A/C Number:</span>{" "}
-                                                            <span>{bank.accountNumber}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-700">IFSC:</span>{" "}
-                                                            <span>{bank.ifsc}</span>
-                                                        </div>
-                                                        {(bank.upiIdName || bank.upiMobile || bank.upiId) && (
-                                                            <div className="pt-2 border-t border-gray-200 mt-2">
-                                                                <div className="font-medium text-gray-700 mb-1">UPI Details:</div>
-                                                                {bank.upiIdName && <div>Name: {bank.upiIdName}</div>}
-                                                                {bank.upiMobile && <div>Mobile: {bank.upiMobile}</div>}
-                                                                {bank.upiId && <div>ID: {bank.upiId}</div>}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs sm:text-sm font-medium text-blue-700 px-2 py-1 bg-blue-100 rounded-full">
+                          {firm.banks?.length || 0}{" "}
+                          {firm.banks?.length === 1 ? "Bank" : "Banks"}
+                        </span>
 
-                                        {/* Desktop Table View */}
-                                        <div className="hidden md:block">
-                                            <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
-                                                <thead className="bg-gray-100">
-                                                    <tr>
-                                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/5">
-                                                            Bank Name
-                                                        </th>
-                                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/6">
-                                                            A/C Name
-                                                        </th>
-                                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/6">
-                                                            A/C Number
-                                                        </th>
-                                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/12">
-                                                            IFSC
-                                                        </th>
-                                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/4">
-                                                            UPI Details
-                                                        </th>
-                                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/12">
-                                                            Actions
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="bg-white divide-y divide-gray-200">
-                                                    {firm.banks.map((bank, idx) => (
-                                                        <tr
-                                                            key={idx}
-                                                            className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                                                        >
-                                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                                {bank.bankName}
-                                                            </td>
-                                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                                                                {bank.accountName}
-                                                            </td>
-                                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                                                                {bank.accountNumber}
-                                                            </td>
-                                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                                                                {bank.ifsc}
-                                                            </td>
-                                                            <td className="px-4 py-3 text-sm text-gray-700">
-                                                                <div className="flex flex-col space-y-0.5">
-                                                                    <div className="text-xs">Name: {bank.upiIdName || "-"}</div>
-                                                                    <div className="text-xs">Mobile: {bank.upiMobile || "-"}</div>
-                                                                    <div className="text-xs">ID: {bank.upiId || "-"}</div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                                <button
-                                                                    onClick={() => openEditBank(firm._id, bank)}
-                                                                    className="mr-2 text-blue-600 hover:text-blue-800"
-                                                                >
-                                                                    Edit
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleDeleteBank(firm._id, bank._id)
-                                                                    }
-                                                                    className="text-red-600 hover:text-red-800"
-                                                                >
-                                                                    Delete
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-6 sm:py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                                        <Banknote 
-                                            className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-400"
-                                            strokeWidth={1.5}
-                                        />
-                                        <h3 className="mt-4 text-base sm:text-lg font-medium text-gray-900">
-                                            No bank accounts added
-                                        </h3>
-                                        <p className="mt-1 text-sm text-gray-500">
-                                            Add a bank account to this firm
-                                        </p>
-                                        <button
-                                            className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors text-sm"
-                                            onClick={() => openAddBank(firm._id)}
-                                        >
-                                            <Plus className="h-4 w-4 mr-1 inline-block" /> Add Bank Account
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        {/* Action Buttons */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAddBank(firm._id);
+                          }}
+                          className="flex-1 sm:flex-none px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm"
+                        >
+                          <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Add Bank</span>
+                          <span className="sm:hidden">Bank</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditFirm(firm);
+                          }}
+                          className="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteFirm(firm._id); // Use new handler
+                          }}
+                          className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        </button>
+                      </div>
                     </div>
-                ))
+                  </div>
+
+                  {expandedFirms[firm._id] && (
+                    <div className="border-t border-gray-200 p-3 sm:p-6 bg-white">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                        Bank Accounts
+                      </h3>
+
+                      {firm.banks && firm.banks.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          {/* Mobile Card View */}
+                          <div className="block md:hidden space-y-3">
+                            {firm.banks.map((bank, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-200 shadow-sm"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <h3 className="font-semibold text-gray-900 text-sm">
+                                    {bank.bankName || "Unknown Bank"}
+                                  </h3>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() =>
+                                        openEditBank(firm._id, bank)
+                                      }
+                                      className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center"
+                                    >
+                                      <Edit className="w-3.5 h-3.5 mr-1" /> Edit
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        handleDeleteBank(firm._id, bank._id)
+                                      } // Use new handler
+                                      className="text-red-600 hover:text-red-800 text-xs font-medium flex items-center"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 mr-1" />{" "}
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="space-y-1 text-xs text-gray-600">
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">
+                                      A/C Name:
+                                    </span>{" "}
+                                    <span>{bank.accountName}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">
+                                      A/C Number:
+                                    </span>{" "}
+                                    <span>{bank.accountNumber}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">
+                                      IFSC:
+                                    </span>{" "}
+                                    <span>{bank.ifsc}</span>
+                                  </div>
+                                  {(bank.upiIdName ||
+                                    bank.upiMobile ||
+                                    bank.upiId) && (
+                                    <div className="pt-2 border-t border-gray-200 mt-2">
+                                      <div className="font-medium text-gray-700 mb-1">
+                                        UPI Details:
+                                      </div>
+                                      {bank.upiIdName && (
+                                        <div>Name: {bank.upiIdName}</div>
+                                      )}
+                                      {bank.upiMobile && (
+                                        <div>Mobile: {bank.upiMobile}</div>
+                                      )}
+                                      {bank.upiId && (
+                                        <div>ID: {bank.upiId}</div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Desktop Table View */}
+                          <div className="hidden md:block">
+                            <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+                              <thead className="bg-gray-100">
+                                <tr>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/5">
+                                    Bank Name
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/6">
+                                    A/C Name
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/6">
+                                    A/C Number
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/12">
+                                    IFSC
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/4">
+                                    UPI Details
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/12">
+                                    Actions
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {firm.banks.map((bank, idx) => (
+                                  <tr
+                                    key={idx}
+                                    className={
+                                      idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                    }
+                                  >
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                      {bank.bankName}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                                      {bank.accountName}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                                      {bank.accountNumber}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                                      {bank.ifsc}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                      <div className="flex flex-col space-y-0.5">
+                                        <div className="text-xs">
+                                          Name: {bank.upiIdName || "-"}
+                                        </div>
+                                        <div className="text-xs">
+                                          Mobile: {bank.upiMobile || "-"}
+                                        </div>
+                                        <div className="text-xs">
+                                          ID: {bank.upiId || "-"}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                      <button
+                                        onClick={() =>
+                                          openEditBank(firm._id, bank)
+                                        }
+                                        className="mr-2 text-blue-600 hover:text-blue-800"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteBank(firm._id, bank._id)
+                                        }
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        Delete
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 sm:py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                          <Banknote
+                            className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-400"
+                            strokeWidth={1.5}
+                          />
+                          <h3 className="mt-4 text-base sm:text-lg font-medium text-gray-900">
+                            No bank accounts added
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            Add a bank account to this firm
+                          </p>
+                          <button
+                            className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors text-sm"
+                            onClick={() => openAddBank(firm._id)}
+                          >
+                            <Plus className="h-4 w-4 mr-1 inline-block" /> Add
+                            Bank Account
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
             )}
-        </div>
+          </div>
         )}
       </div>
 
@@ -1171,7 +1237,9 @@ const BankDetails = () => {
             <div className="p-4 sm:p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
-                  {bankModalMode === "add" ? "Add Bank Account" : "Edit Bank Account"}
+                  {bankModalMode === "add"
+                    ? "Add Bank Account"
+                    : "Edit Bank Account"}
                 </h2>
                 <button
                   onClick={closeBankModal}
@@ -1197,18 +1265,18 @@ const BankDetails = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Bank Name Field (Added for completeness) */}
                 <div className="sm:col-span-2 md:col-span-1">
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                        Bank Name
-                    </label>
-                    <input
-                        type="text"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={formBank.bankName}
-                        onChange={(e) =>
-                            setFormBank({ ...formBank, bankName: e.target.value })
-                        }
-                        placeholder="Enter bank name"
-                    />
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Bank Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formBank.bankName}
+                    onChange={(e) =>
+                      setFormBank({ ...formBank, bankName: e.target.value })
+                    }
+                    placeholder="Enter bank name"
+                  />
                 </div>
                 {/* Account Name Field */}
                 <div className="sm:col-span-2 md:col-span-1">
@@ -1327,7 +1395,9 @@ const BankDetails = () => {
                   onClick={submitBank}
                   className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
                 >
-                  {bankModalMode === "add" ? "Add Bank Account" : "Update Bank Account"}
+                  {bankModalMode === "add"
+                    ? "Add Bank Account"
+                    : "Update Bank Account"}
                 </button>
               </div>
             </div>
