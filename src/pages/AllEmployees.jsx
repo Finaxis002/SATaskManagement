@@ -13,6 +13,8 @@ import {
   FaUsers,
   FaUserShield,
   FaBuilding,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import { showAlert } from "../utils/alert";
 import Swal from "sweetalert2";
@@ -536,6 +538,45 @@ const AllEmployees = () => {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination inside table panel */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <p className="text-sm text-gray-600">
+                Showing <span className="font-medium">{indexOfFirstEmployee + 1}</span> to{" "}
+                <span className="font-medium">{Math.min(indexOfLastEmployee, users.length)}</span> of{" "}
+                <span className="font-medium">{users.length}</span> employees
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === 1 
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                  }`}
+                >
+                  <FaChevronLeft className="h-3 w-3" />
+                  Previous
+                </button>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === totalPages 
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
+                >
+                  Next
+                  <FaChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Mobile Cards */}
@@ -555,66 +596,46 @@ const AllEmployees = () => {
               />
             ))
           )}
+          
+          {/* Pagination for mobile */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-4 bg-white rounded-2xl shadow-sm border border-slate-200">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">{indexOfFirstEmployee + 1}</span>-
+                <span className="font-medium">{Math.min(indexOfLastEmployee, users.length)}</span> of{" "}
+                <span className="font-medium">{users.length}</span>
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === 1 
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                  }`}
+                >
+                  <FaChevronLeft className="h-3 w-3" />
+                  Prev
+                </button>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === totalPages 
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
+                >
+                  Next
+                  <FaChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-2xl shadow-lg border border-slate-200">
-            <button
-              onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-                currentPage === 1
-                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600 shadow-md transform hover:scale-[1.02]"
-              }`}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 19l-7-7 7-7"
-                ></path>
-              </svg>
-              Previous
-            </button>
-
-            <span className="text-sm font-medium text-slate-700">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-                currentPage === totalPages
-                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600 shadow-md transform hover:scale-[1.02]"
-              }`}
-            >
-              Next
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                ></path>
-              </svg>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Edit Modal with Lazy Loading */}
@@ -648,4 +669,4 @@ const AllEmployees = () => {
   );
 };
 
-export default AllEmployees;  
+export default AllEmployees;

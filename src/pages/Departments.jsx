@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -765,6 +764,45 @@ const Departments = () => {
             />
             <div className="flex justify-end gap-2">
               <button
+                onClick={() => setShowDeptModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitDepartment}
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Code Creation Modal */}
+      {showCodeModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Create New Code</h3>
+              <button
+                onClick={() => setShowCodeModal(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={newCodeName}
+              onChange={(e) => setNewCodeName(e.target.value)}
+              placeholder="Enter code name"
+              className="w-full p-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
                 onClick={() => setShowCodeModal(false)}
                 className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
@@ -781,6 +819,7 @@ const Departments = () => {
         </div>
       )}
 
+      {/* Client Creation Modal */}
       {showClientModal && (
         <CreateClientModal
           onClose={() => setShowClientModal(false)}

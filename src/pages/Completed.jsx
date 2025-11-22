@@ -231,7 +231,7 @@ const Completed = () => {
   }
 
   return (
-    <div className="px-2 sm:px-4 h-[90vh] overflow-auto">
+    <div className="px-2 sm:px-4 h-[90vh] overflow-auto ">
       <div className="sticky top-0 z-20 bg-white py-4 px-2 sm:px-4 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shadow-md border-b border-gray-100">
         <div className="flex gap-1 md:gap-2">
           {TABS.map((tab) => (
@@ -324,56 +324,39 @@ const Completed = () => {
       </div>
 
       {filteredTasks.length > 0 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6 mt-4">
-          <div className="flex-1 flex justify-between sm:hidden">
+        <div className="flex items-center justify-between px-4 py-4 bg-white mt-4">
+          <p className="text-sm text-gray-600">
+            Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
+            <span className="font-medium">{Math.min(indexOfLastItem, filteredTasks.length)}</span> of{" "}
+            <span className="font-medium">{filteredTasks.length}</span> tasks
+          </p>
+
+          <div className="flex items-center gap-2">
             <button
               onClick={handlePrevPage}
               disabled={currentPage === 1}
-              className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                currentPage === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-gray-700 hover:bg-gray-50"
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                currentPage === 1 
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
               }`}
             >
+              <FaChevronLeft className="h-3 w-3" />
               Previous
             </button>
+
             <button
               onClick={handleNextPage}
               disabled={currentPage === totalPages}
-              className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                currentPage === totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-gray-700 hover:bg-gray-50"
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                currentPage === totalPages 
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                  : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
               Next
+              <FaChevronRight className="h-3 w-3" />
             </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{filteredTasks.length === 0 ? 0 : indexOfFirstItem + 1}</span> to{" "}
-              <span className="font-medium">{Math.min(indexOfLastItem, filteredTasks.length)}</span> of{" "}
-              <span className="font-medium">{filteredTasks.length}</span> results
-            </p>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-              <button
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 text-sm font-medium ${
-                  currentPage === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-gray-500 hover:bg-gray-50"
-                }`}
-              >
-                <FaChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                Page {totalPages === 0 ? 0 : currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 text-sm font-medium ${
-                  currentPage === totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-gray-500 hover:bg-gray-50"
-                }`}
-              >
-                <FaChevronRight className="h-4 w-4" />
-              </button>
-            </nav>
           </div>
         </div>
       )}

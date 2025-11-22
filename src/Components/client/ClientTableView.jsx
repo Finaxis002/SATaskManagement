@@ -1,8 +1,30 @@
-import React from "react";
-import { FaEdit, FaTrash, FaHistory } from "react-icons/fa";
+import React, { useState } from "react";
+import { FaEdit, FaTrash, FaHistory, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const ClientTableView = ({ clients, onEdit, onDelete }) => {
-  const role = localStorage.getItem("role");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  // Calculate pagination
+  const totalItems = clients.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+  const currentClients = clients.slice(startIndex, endIndex);
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const role = typeof window !== 'undefined' ? localStorage.getItem("role") : null;
 
   const handleAddService = (clientId) => {
     window.location.href = `/add-service/${clientId}`;
@@ -37,7 +59,7 @@ const ClientTableView = ({ clients, onEdit, onDelete }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {clients.map((client, idx) => (
+            {currentClients.map((client, idx) => (
               <tr
                 key={client.id}
                 className={`transition-all duration-200 hover:bg-purple-50 ${
@@ -45,7 +67,7 @@ const ClientTableView = ({ clients, onEdit, onDelete }) => {
                 }`}
               >
                 <td className="px-2 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {idx + 1}
+                  {startIndex + idx + 1}
                 </td>
                 <td className="px-2 py-3">
                   <div className="text-sm font-semibold text-gray-900 max-w-xs truncate">
@@ -108,7 +130,7 @@ const ClientTableView = ({ clients, onEdit, onDelete }) => {
 
       {/* Mobile Card View */}
       <div className="lg:hidden p-4 space-y-4">
-        {clients.map((client, idx) => (
+        {currentClients.map((client, idx) => (
           <div
             key={client.id}
             className="bg-white border border-gray-200 rounded-lg p-4 shadow hover:shadow-md transition-all"
@@ -116,7 +138,7 @@ const ClientTableView = ({ clients, onEdit, onDelete }) => {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <div className="text-xs text-gray-500 mb-1">
-                  Client #{idx + 1}
+                  Client #{startIndex + idx + 1}
                 </div>
                 <h3 className="text-lg font-bold text-gray-900">
                   {client.name}
@@ -179,7 +201,47 @@ const ClientTableView = ({ clients, onEdit, onDelete }) => {
         ))}
       </div>
 
-      {clients.length === 0 && (
+      {/* Pagination Footer */}
+      {totalItems > 0 && (
+        <div className="bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="flex-1 flex justify-start">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+              <span className="font-medium">{endIndex}</span> of{" "}
+              <span className="font-medium">{totalItems}</span> clients
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                currentPage === 1
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+              }`}
+            >
+              <FaChevronLeft className="mr-2" size={12} />
+              Previous
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                currentPage === totalPages
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              Next
+              <FaChevronRight className="ml-2" size={12} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {totalItems === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-5xl mb-4">📋</div>
           <p className="text-gray-500 text-lg font-medium">No clients found</p>
