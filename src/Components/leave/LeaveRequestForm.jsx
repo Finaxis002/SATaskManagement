@@ -110,7 +110,10 @@ export default function LeaveRequestForm() {
     }
 
     if (leaveDuration === "Half Day" && (!fromTime || !toTime)) {
-      showToast("Please select both start and end time for Half Day leave.", "error");
+      showToast(
+        "Please select both start and end time for Half Day leave.",
+        "error"
+      );
       return;
     }
 
@@ -166,13 +169,22 @@ export default function LeaveRequestForm() {
         console.log("✅ Email sent:", mailResponse.data);
 
         if (mailResponse.data && mailResponse.data.success) {
-          showToast("Leave submitted successfully! 🎉\nAdmin has been notified via email.", "success");
+          showToast(
+            "Leave submitted successfully! 🎉\nAdmin has been notified via email.",
+            "success"
+          );
         } else {
-          showToast("Leave submitted successfully! ✅\nBut email notification failed. Admin will be notified through the system.", "warning");
+          showToast(
+            "Leave submitted successfully! ✅\nBut email notification failed. Admin will be notified through the system.",
+            "warning"
+          );
         }
       } catch (emailError) {
         console.error("⚠️ Email notification failed:", emailError);
-        showToast("Leave submitted successfully! ✅\nEmail notification failed, but admin can see your request in the system.", "warning");
+        showToast(
+          "Leave submitted successfully! ✅\nEmail notification failed, but admin can see your request in the system.",
+          "warning"
+        );
       }
 
       // Trigger change for other tabs
@@ -190,7 +202,6 @@ export default function LeaveRequestForm() {
           key: "selection",
         },
       ]);
-
     } catch (error) {
       console.error("❌ Error submitting leave:", error);
       showToast("Error submitting leave request. Please try again.", "error");
@@ -281,10 +292,14 @@ export default function LeaveRequestForm() {
         </div>
       )}
 
-      <h2 className="text-xl sm:text-2xl font-semibold mb-3 text-gray-900 text-center">Request Leave</h2>
+      <h2 className="text-xl sm:text-2xl font-semibold mb-3 text-gray-900 text-center">
+        Request Leave
+      </h2>
       <div className="border-b border-gray-300 mb-4"></div>
 
-      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Leave Duration</label>
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+        Leave Duration
+      </label>
       <select
         value={leaveDuration}
         onChange={(e) => {
@@ -304,7 +319,9 @@ export default function LeaveRequestForm() {
 
       {leaveDuration === "Full Day" && (
         <>
-          <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Leave Type</label>
+          <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+            Leave Type
+          </label>
           <select
             value={leaveType}
             onChange={(e) => setLeaveType(e.target.value)}
@@ -318,7 +335,9 @@ export default function LeaveRequestForm() {
         </>
       )}
 
-      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Leave Date{leaveDuration === "Full Day" ? "s" : ""}</label>
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+        Leave Date{leaveDuration === "Full Day" ? "s" : ""}
+      </label>
       <input
         ref={inputRef}
         type="text"
@@ -326,7 +345,9 @@ export default function LeaveRequestForm() {
         onClick={() => !isSubmitting && setShowCalendar(!showCalendar)}
         value={
           leaveDuration === "Full Day"
-            ? `${formatDate(range[0].startDate)} - ${formatDate(range[0].endDate)}`
+            ? `${formatDate(range[0].startDate)} - ${formatDate(
+                range[0].endDate
+              )}`
             : formatDate(range[0].startDate)
         }
         className="w-full bg-gray-100 rounded-md p-2 mb-2 text-sm text-gray-900 cursor-pointer border border-gray-300 hover:border-blue-400 transition"
@@ -373,7 +394,10 @@ export default function LeaveRequestForm() {
 
       {leaveDuration === "Half Day" && (
         <div className="mb-3">
-          <label className="block text-xs sm:text-sm mb-2 font-medium text-gray-700">Leave Timing <span className="text-red-500 text-xs">(Required)</span></label>
+          <label className="block text-xs sm:text-sm mb-2 font-medium text-gray-700">
+            Leave Timing{" "}
+            <span className="text-red-500 text-xs">(Required)</span>
+          </label>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="time"
@@ -393,7 +417,12 @@ export default function LeaveRequestForm() {
         </div>
       )}
 
-      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">Comments <span className="text-red-500 text-xs">(min {MIN_COMMENT_WORDS} words)</span></label>
+      <label className="block text-xs sm:text-sm mb-1 text-gray-700 font-medium">
+        Comments{" "}
+        <span className="text-red-500 text-xs">
+          (min {MIN_COMMENT_WORDS} words)
+        </span>
+      </label>
       <textarea
         value={comments}
         onChange={(e) => setComments(e.target.value)}
@@ -409,8 +438,9 @@ export default function LeaveRequestForm() {
         className={`w-full font-semibold py-2.5 rounded-md transition-all duration-200 text-sm shadow-md hover:shadow-lg ${
           isSubmitting
             ? "bg-gray-400 cursor-not-allowed"
-            : "bg-blue-500 hover:bg-blue-600 text-white"
+            : "text-white hover:opacity-90"
         }`}
+        style={!isSubmitting ? { backgroundColor: "#4332d2" } : {}}
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">
@@ -420,8 +450,19 @@ export default function LeaveRequestForm() {
               fill="none"
               viewBox="0 0 24 24"
             >
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
             </svg>
             Submitting...
           </span>
@@ -432,10 +473,30 @@ export default function LeaveRequestForm() {
 
       {/* Animations */}
       <style jsx global>{`
-        @keyframes fade-in { from {opacity: 0;} to {opacity: 1;} }
-        @keyframes scale-in { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
-        .animate-fade-in { animation: fade-in 0.2s ease-out; }
-        .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes scale-in {
+          from {
+            transform: scale(0.8);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out;
+        }
+        .animate-scale-in {
+          animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
       `}</style>
     </div>
   );

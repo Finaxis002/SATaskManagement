@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, lazy, Suspense, memo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchUsers,
@@ -6,14 +6,241 @@ import {
   resetPassword,
   updateUser,
 } from "../redux/userSlice";
-import { FaTrash, FaSyncAlt, FaEdit } from "react-icons/fa";
-import bgImage from "../assets/bg.png";
-import axios from "axios";
-import DepartmentSelector from "../Components/Tasks/DepartmentSelector";
-import { showAlert } from "../utils/alert"; // Import the showAlert function
+import {
+  FaTrash,
+  FaSyncAlt,
+  FaEdit,
+  FaUsers,
+  FaUserShield,
+  FaBuilding,
+} from "react-icons/fa";
+import { showAlert } from "../utils/alert";
 import Swal from "sweetalert2";
-import AddEmployee from "./AddEmployee";
 
+// Lazy load the AddEmployee modal component
+const AddEmployee = lazy(() => import("./AddEmployee"));
+
+// Memoized Stats Card Component
+const StatsCard = memo(({ title, value, icon: Icon, gradient, shadowColor }) => (
+  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow duration-200">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-slate-600 mb-1">{title}</p>
+        <p className="text-3xl font-bold text-slate-800">{value}</p>
+      </div>
+      <div className={`w-14 h-14 bg-gradient-to-br ${gradient} rounded-xl flex items-center justify-center shadow-lg ${shadowColor}`}>
+        <Icon className="text-white text-2xl" />
+      </div>
+    </div>
+  </div>
+));
+
+// Memoized User Row Component for Desktop
+const UserRow = memo(({ user, onEdit, onResetPassword, onDelete }) => {
+  const handleEdit = useCallback(() => onEdit(user), [user, onEdit]);
+  const handleReset = useCallback(() => onResetPassword(user._id, user.name), [user._id, user.name, onResetPassword]);
+  const handleDeleteClick = useCallback(() => onDelete(user._id), [user._id, onDelete]);
+
+  return (
+    <tr className="hover:bg-slate-50 transition-colors duration-150">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="text-sm font-medium text-slate-600">{user.userId}</span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="text-sm font-semibold text-slate-800">{user.name}</span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="text-sm text-slate-600">{user.email}</span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="text-sm text-slate-600">{user.position}</span>
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex flex-wrap gap-1">
+          {Array.isArray(user.department) ? (
+            user.department.map((dept, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+              >
+                {dept}
+              </span>
+            ))
+          ) : (
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+              {user.department}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span
+          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+            user.role.toLowerCase() === "admin"
+              ? "bg-violet-100 text-violet-700 border border-violet-200"
+              : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+          }`}
+        >
+          {user.role}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={handleEdit}
+            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-150"
+            title="Edit"
+          >
+            <FaEdit className="text-sm" />
+          </button>
+          <button
+            onClick={handleReset}
+            className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors duration-150"
+            title="Reset Password"
+          >
+            <FaSyncAlt className="text-sm" />
+          </button>
+          <button
+            onClick={handleDeleteClick}
+            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-150"
+            title="Delete"
+          >
+            <FaTrash className="text-sm" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+});
+
+// Memoized Mobile Card Component
+const MobileUserCard = memo(({ user, onEdit, onResetPassword, onDelete }) => {
+  const handleEdit = useCallback(() => onEdit(user), [user, onEdit]);
+  const handleReset = useCallback(() => onResetPassword(user._id, user.name), [user._id, user.name, onResetPassword]);
+  const handleDeleteClick = useCallback(() => onDelete(user._id), [user._id, onDelete]);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-bold text-slate-800 mb-1">{user.name}</h3>
+          <p className="text-sm text-slate-600">{user.position}</p>
+        </div>
+        <span
+          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+            user.role.toLowerCase() === "admin"
+              ? "bg-violet-100 text-violet-700 border border-violet-200"
+              : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+          }`}
+        >
+          {user.role}
+        </span>
+      </div>
+
+      <div className="space-y-3 mb-4">
+        <div className="flex items-center text-sm">
+          <span className="font-medium text-slate-700 w-24">Emp ID:</span>
+          <span className="text-slate-600">{user.userId}</span>
+        </div>
+        <div className="flex items-center text-sm">
+          <span className="font-medium text-slate-700 w-24">Email:</span>
+          <span className="text-slate-600 truncate">{user.email}</span>
+        </div>
+        <div className="flex items-start text-sm">
+          <span className="font-medium text-slate-700 w-24">Departments:</span>
+          <div className="flex flex-wrap gap-1">
+            {Array.isArray(user.department) ? (
+              user.department.map((dept, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                >
+                  {dept}
+                </span>
+              ))
+            ) : (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                {user.department}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-4 border-t border-slate-100">
+        <button
+          onClick={handleEdit}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium text-sm transition-colors duration-150"
+        >
+          <FaEdit />
+          Edit
+        </button>
+        <button
+          onClick={handleReset}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 font-medium text-sm transition-colors duration-150"
+        >
+          <FaSyncAlt />
+          Reset
+        </button>
+        <button
+          onClick={handleDeleteClick}
+          className="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-150"
+        >
+          <FaTrash />
+        </button>
+      </div>
+    </div>
+  );
+});
+
+// Loading Spinner Component
+const LoadingSpinner = memo(() => (
+  <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="text-center">
+      <svg
+        className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v8z"
+        ></path>
+      </svg>
+      <p className="text-lg text-slate-600 font-medium">Loading Users...</p>
+    </div>
+  </div>
+));
+
+// Empty State Component
+const EmptyState = memo(() => (
+  <div className="flex flex-col items-center justify-center py-12">
+    <svg
+      className="w-16 h-16 text-slate-300 mb-4"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+      />
+    </svg>
+    <p className="text-slate-500 font-medium">No employees found on this page.</p>
+  </div>
+));
+
+// Main Component
 const AllEmployees = () => {
   const dispatch = useDispatch();
   const { list: users, error } = useSelector((state) => state.users);
@@ -21,6 +248,8 @@ const AllEmployees = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [department, setDepartment] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [employeesPerPage] = useState(10);
   const [updatedUserData, setUpdatedUserData] = useState({
     name: "",
     email: "",
@@ -28,98 +257,53 @@ const AllEmployees = () => {
     department: "",
     role: "",
     userId: "",
-  }); // Stores the form data to be updated
-
+  });
   const [showAddModal, setShowAddModal] = useState(false);
-
   const [loading, setLoading] = useState(true);
 
-  // Calculate total users, admins, and departments
-  const totalUsers = users.length;  // Total users count
-  const totalAdmins = users.filter(user => user.role === 'admin').length;  // Count of admins
-  const departments = [...new Set(users.flatMap(user => user.department))];  // Unique departments
-  const totalDepartments = departments.length;  // Count of unique departments
+  // Memoized calculations
+  const indexOfLastEmployee = useMemo(
+    () => currentPage * employeesPerPage,
+    [currentPage, employeesPerPage]
+  );
 
+  const indexOfFirstEmployee = useMemo(
+    () => indexOfLastEmployee - employeesPerPage,
+    [indexOfLastEmployee, employeesPerPage]
+  );
+
+  const currentEmployees = useMemo(
+    () => users.slice(indexOfFirstEmployee, indexOfLastEmployee),
+    [users, indexOfFirstEmployee, indexOfLastEmployee]
+  );
+
+  const totalPages = useMemo(
+    () => Math.ceil(users.length / employeesPerPage),
+    [users.length, employeesPerPage]
+  );
+
+  const stats = useMemo(() => {
+    const totalAdmins = users.filter((user) => user.role === "admin").length;
+    const departments = [...new Set(users.flatMap((user) => user.department))];
+    return {
+      totalUsers: users.length,
+      totalAdmins,
+      totalDepartments: departments.length,
+    };
+  }, [users]);
+
+  // Fetch users on component mount
   useEffect(() => {
-    setLoading(true); // Start loader as soon as we fetch
+    setLoading(true);
     dispatch(fetchUsers()).finally(() => setLoading(false));
   }, [dispatch]);
 
-  // const handleDelete = (id) => {
-  //   if (window.confirm("Are you sure you want to delete this user?")) {
-  //     dispatch(deleteUser(id));
-  //   }
-  // };
-  const handleDelete = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "This user will be permanently deleted!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete!",
-      cancelButtonText: "Cancel",
-      customClass: {
-        popup: "custom-alert-popup",
-        confirmButton: "custom-alert-button",
-      },
-    });
+  // Reset to page 1 if the user list changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [users.length]);
 
-    if (result.isConfirmed) {
-      dispatch(deleteUser(id));
-
-      Swal.fire({
-        title: "Deleted!",
-        text: "User has been deleted.",
-        icon: "success",
-        confirmButtonText: "OK",
-        customClass: {
-          popup: "custom-alert-popup",
-          confirmButton: "custom-alert-button",
-        },
-      });
-    }
-  };
-
-  const handleResetPassword = async (id, name) => {
-    const newPassword = window.prompt(`Enter new password for ${name}:`);
-
-    if (!newPassword || newPassword.trim().length < 4) {
-      showAlert("Password must be at least 4 characters.");
-      return;
-    }
-
-    try {
-      const result = await resetPassword(id, newPassword); // Directly call the function
-      showAlert("Password reset successfully.");
-    } catch (error) {
-      showAlert(
-        `Failed to reset password: ${error.message || "Unknown error"}`
-      );
-    }
-  };
-
-  // Handle update employee
-  const handleUpdate = async () => {
-    console.log("Data being sent:", {
-      ...updatedUserData,
-      department: department, // Explicitly show the department data
-    });
-    try {
-      const updatedEmployee = await updateUser(
-        selectedUser._id,
-        updatedUserData
-      ); // Directly call the update function
-
-      showAlert("Employee updated successfully!");
-      dispatch(fetchUsers()); // Refetch the list of users after update
-      handleCloseModal(); // Close the modal after update
-    } catch (error) {
-      showAlert("Error updating employee. Please try again.");
-    }
-  };
-
+  // Update department in user data
   useEffect(() => {
     setUpdatedUserData((prev) => ({
       ...prev,
@@ -127,214 +311,226 @@ const AllEmployees = () => {
     }));
   }, [department]);
 
-  const handleEdit = (user) => {
+  // Memoized handlers
+  const handleNextPage = useCallback(() => {
+    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
+  }, [totalPages]);
+
+  const handlePreviousPage = useCallback(() => {
+    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
+  }, []);
+
+  const handleDelete = useCallback(
+    async (id) => {
+      const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "This user will be permanently deleted!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc2626",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, delete!",
+        cancelButtonText: "Cancel",
+        customClass: {
+          popup: "custom-alert-popup",
+          confirmButton: "custom-alert-button",
+        },
+      });
+
+      if (result.isConfirmed) {
+        dispatch(deleteUser(id));
+        Swal.fire({
+          title: "Deleted!",
+          text: "User has been deleted.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: {
+            popup: "custom-alert-popup",
+            confirmButton: "custom-alert-button",
+          },
+        });
+      }
+    },
+    [dispatch]
+  );
+
+  const handleResetPassword = useCallback(
+    async (id, name) => {
+      const newPassword = window.prompt(`Enter new password for ${name}:`);
+
+      if (!newPassword || newPassword.trim().length < 4) {
+        showAlert("Password must be at least 4 characters.");
+        return;
+      }
+
+      try {
+        await dispatch(resetPassword({ id, newPassword })).unwrap();
+        showAlert("Password reset successfully.");
+      } catch (error) {
+        showAlert(
+          `Failed to reset password: ${error.message || "Unknown error"}`
+        );
+      }
+    },
+    [dispatch]
+  );
+
+  const handleEdit = useCallback((user) => {
     setSelectedUser(user);
     setUpdatedUserData({
       name: user.name,
       email: user.email,
       position: user.position,
-      department: user.department, // This should be an array
+      department: user.department,
       role: user.role,
       userId: user.userId,
     });
     setDepartment(
       Array.isArray(user.department) ? user.department : [user.department]
-    ); // Initialize department state
+    );
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setShowEditModal(false);
     setSelectedUser(null);
-  };
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
+  const handleCloseAddModal = useCallback(() => {
+    setShowAddModal(false);
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
+  const handleOpenAddModal = useCallback(() => {
+    setShowAddModal(true);
+  }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[250px]">
-        <svg
-          className="animate-spin h-8 w-8 text-indigo-500"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8z"
-          ></path>
-        </svg>
-        <span className="ml-3 text-indigo-600 font-semibold">
-          Loading Users...
-        </span>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="relative w-full h-[90vh] overflow-y-auto">
-
-      <div className="relative z-10 bg-white max-w-7xl mx-auto rounded-xl shadow-xl p-8">
-        <h2
-          className="text-3xl font-semibold  text-gray-800 mb-8 "
-          style={{ fontFamily: "Poppins, sans-serif" }}
-        >
-          Users Directory
-        </h2>
-<div className="border-b-2 border-gray-300 mb-6"></div>
-        <div className="overflow-x-auto">
-          <div className="flex justify-end mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-800">
+                User Directory
+              </h1>
+              <p className="text-slate-600">
+                Manage your team members and their information
+              </p>
+            </div>
             <button
-              onClick={() => setShowAddModal(true)}
-              className="w-auto px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 shadow-lg font-semibold transition sm:px-4 sm:py-1 "
+              onClick={handleOpenAddModal}
+              className="inline-flex items-center justify-center px-6 py-3 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5"
+              style={{
+                backgroundColor: "#4332d2",
+                boxShadow:
+                  "0 10px 15px -3px rgba(67, 50, 210, 0.3), 0 4px 6px -2px rgba(67, 50, 210, 0.05)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#342599";
+                e.currentTarget.style.boxShadow =
+                  "0 20px 25px -5px rgba(67, 50, 210, 0.4), 0 10px 10px -5px rgba(67, 50, 210, 0.04)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#4332d2";
+                e.currentTarget.style.boxShadow =
+                  "0 10px 15px -3px rgba(67, 50, 210, 0.3), 0 4px 6px -2px rgba(67, 50, 210, 0.05)";
+              }}
             >
-              <span className="hidden sm:inline">+ Add User</span>
-              <span className="sm:hidden font-light">+ Add User </span>
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add User
             </button>
           </div>
-          {/* Displaying Total Users, Admins, Departments in a Smaller Box */}
-          <div className="flex justify-between mb-8 gap-4">
-            <div className="w-full sm:w-[30%] bg-gray-100 py-3 px-4 rounded-lg shadow-xl text-center">
-              <div className="text-sm font-semibold text-gray-700 leading-tight">Total Users</div>
-              <div className="text-2xl font-bold text-indigo-600 leading-none">{totalUsers}</div>
-            </div>
+        </div>
 
-            <div className="w-full sm:w-[30%] bg-gray-100 py-3 px-4 rounded-lg shadow-xl text-center">
-              <div className="text-sm font-semibold text-gray-700 leading-tight">Admins</div>
-              <div className="text-2xl font-bold text-indigo-600 leading-none">{totalAdmins}</div>
-            </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          <StatsCard
+            title="Total User"
+            value={stats.totalUsers}
+            icon={FaUsers}
+            gradient="from-blue-500 to-blue-600"
+            shadowColor="shadow-blue-500/30"
+          />
+          <StatsCard
+            title="Administrators"
+            value={stats.totalAdmins}
+            icon={FaUserShield}
+            gradient="from-violet-500 to-violet-600"
+            shadowColor="shadow-violet-500/30"
+          />
+          <StatsCard
+            title="Departments"
+            value={stats.totalDepartments}
+            icon={FaBuilding}
+            gradient="from-emerald-500 to-emerald-600"
+            shadowColor="shadow-emerald-500/30"
+          />
+        </div>
 
-            <div className="w-full sm:w-[30%] bg-gray-100 py-3 px-4 rounded-lg shadow-xl text-center">
-              <div className="text-sm font-semibold text-gray-700 leading-tight">Departments</div>
-              <div className="text-2xl font-bold text-indigo-600 leading-none">{totalDepartments}</div>
-            </div>
-          </div>
-
-          <div className="hidden sm:block">
-
-            <table className="min-w-full border-collapse  bg-white text-sm shadow-sm rounded-md">
+        {/* Desktop Table */}
+        <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
               <thead>
-                <tr className="bg-gray-300 text-black text-left font-semibold  text-transform: uppercase">
-                  <th className="px-5 py-3 border-b font-medium">Emp ID</th>
-                  <th className="px-5 py-3 border-b font-medium">Name</th>
-                  <th className="px-5 py-3 border-b font-medium">Email</th>
-                  <th className="px-5 py-3 border-b font-medium">Position</th>
-                  <th className="px-5 py-3 border-b font-medium">Department</th>
-                  <th className="px-5 py-3 border-b font-medium">Role</th>
-                  <th className="px-5 py-3 border-b font-medium text-center">
+                <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Emp ID
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Position
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Department
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody>
-                {loading ? (
+              <tbody className="divide-y divide-slate-100">
+                {currentEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-5 py-4 text-center">
-                      <div className="flex items-center justify-center">
-                        <svg
-                          className="animate-spin h-6 w-6 text-indigo-500 mr-3"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8v8z"
-                          ></path>
-                        </svg>
-                        <span className="text-indigo-600 font-medium">
-                          Loading Users...
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : users.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan="7"
-                      className="px-5 py-4 text-center text-gray-500"
-                    >
-                      No users found.
+                    <td colSpan="7" className="px-6 py-12 text-center">
+                      <EmptyState />
                     </td>
                   </tr>
                 ) : (
-                  users.map((user, index) => (
-                    <tr
+                  currentEmployees.map((user) => (
+                    <UserRow
                       key={user._id}
-                      className="bg-white hover:bg-gray-200 transition duration-100"
-                      style={{ fontFamily: "Roboto, sans-serif" }}
-                    >
-                      <td className="px-5 py-3 border-b text-gray-700">
-                        {user.userId}
-                      </td>
-                      <td className="px-5 py-3 border-b font-semibold">
-                        {user.name}
-                      </td>
-                      <td className="px-5 py-3 border-b text-gray-600">
-                        {user.email}
-                      </td>
-                      <td className="px-5 py-3 border-b">{user.position}</td>
-                      <td className="px-5 py-3 border-b">
-                        {Array.isArray(user.department) ? (
-                          user.department.map((dept, index) => (
-                            <span
-                              key={index}
-                              className="inline-block px-3 mr-2 mb-2 text-sm font-medium text-black bg-gray-200 rounded-full"
-                            >
-                              {dept}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="inline-block px-3 mr-2 mb-2 text-sm font-semibold text-white bg-green-600 rounded-full">
-                            {user.department}
-                          </span>
-                        )}
-                      </td>
-
-                      <td
-                        className={`px-5 py-3 border-b transition-transform duration-200 hover:scale-105 ${user.role.toLowerCase() === "admin" ? "text-violet-600" : "text-green-600"
-                          }`}
-                      >
-                        {user.role}
-                      </td>
-                      <td className="px-5 py-3 border-b text-center">
-                        <div className="flex justify-center gap-3">
-                          <button
-                            onClick={() => handleEdit(user)}
-                            className="  flex items-center gap-2 px-4 py-2  hover:bg-[#d2d5f1]  text-xs rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105"
-                            title="Edit"
-                          >
-                            <FaEdit className="text-xs text-blue-500" />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleResetPassword(user._id, user.name)
-                            }
-                            className="flex items-center gap-2 px-4 py-2  hover:bg-[#f7f7a2]  text-xs rounded-md shadow-md transition ease-in-out transform hover:scale-105"
-                            title="Reset password">
-                            <FaSyncAlt className="text-xs text-yellow-500" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user._id)}
-                            className="flex items-center gap-2 px-3 py-1.5  hover:bg-[#f5a8a8] rounded-md shadow-sm transition ease-in-out transform hover:scale-105"
-                            title="Delete" >
-                            <FaTrash className="text-xs text-red-500" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                      user={user}
+                      onEdit={handleEdit}
+                      onResetPassword={handleResetPassword}
+                      onDelete={handleDelete}
+                    />
                   ))
                 )}
               </tbody>
@@ -342,127 +538,114 @@ const AllEmployees = () => {
           </div>
         </div>
 
+        {/* Mobile Cards */}
+        <div className="block lg:hidden space-y-4">
+          {currentEmployees.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+              <EmptyState />
+            </div>
+          ) : (
+            currentEmployees.map((user) => (
+              <MobileUserCard
+                key={user._id}
+                user={user}
+                onEdit={handleEdit}
+                onResetPassword={handleResetPassword}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
+        </div>
 
-        {/* Edit Modal */}
-        {showEditModal && (
-          <div className="fixed inset-0 flex justify-center items-center bg-opacity-30 z-30">
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-2xl shadow-lg border border-slate-200">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                currentPage === 1
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  : "bg-blue-500 text-white hover:bg-blue-600 shadow-md transform hover:scale-[1.02]"
+              }`}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 19l-7-7 7-7"
+                ></path>
+              </svg>
+              Previous
+            </button>
+
+            <span className="text-sm font-medium text-slate-700">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                currentPage === totalPages
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  : "bg-blue-500 text-white hover:bg-blue-600 shadow-md transform hover:scale-[1.02]"
+              }`}
+            >
+              Next
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Edit Modal with Lazy Loading */}
+      {showEditModal && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-sm z-50 p-4">
+          <Suspense fallback={<LoadingSpinner />}>
             <AddEmployee
               showEditModal={true}
               setShowEditModal={setShowEditModal}
               employeeToEdit={selectedUser}
-              handleCloseModal={() => {
-                setShowEditModal(false);
-                setSelectedUser(null);
-                dispatch(fetchUsers());
-              }}
+              handleCloseModal={handleCloseModal}
             />
-          </div>
-        )}
+          </Suspense>
+        </div>
+      )}
 
-        {/* Add Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 flex justify-center items-center bg-opacity-30 z-30">
+      {/* Add Modal with Lazy Loading */}
+      {showAddModal && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-sm z-50 p-4">
+          <Suspense fallback={<LoadingSpinner />}>
             <AddEmployee
               showEditModal={false}
               setShowEditModal={setShowAddModal}
               employeeToEdit={null}
-              handleCloseModal={() => setShowAddModal(false)}
+              handleCloseModal={handleCloseAddModal}
             />
-          </div>
-        )}
-        {/* Mobile View (Stacked Data for Small Screens) */}
-        <div className="block sm:hidden">
-          {loading ? (
-            <div className="flex items-center justify-center h-[250px]">
-              <svg className="animate-spin h-8 w-8 text-indigo-500" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-              </svg>
-              <span className="ml-3 text-indigo-600 font-semibold">Loading Users...</span>
-            </div>
-          ) : users.length === 0 ? (
-            <p className="text-center text-gray-500">No users found.</p>
-          ) : (
-            users.map((user, index) => (
-              <div key={user._id} className="bg-white hover:bg-gray-200 transition duration-300 p-4 mb-4 rounded-lg shadow-lg">
-                <div className="bg-gray-200 p-4 rounded-lg w-full">
-                  {/* Employee Details Flex Container */}
-                  <div className="flex flex-col items-start">
-                    {/* Employee's Name */}
-                    <div className="flex justify-center items-center w-full text-xl font-semibold text-yellow-800 mb-2">{user.name}</div>
-
-                    {/* Employee's ID and Position */}
-                    <div className="mb-2">
-                      <span className="font-medium text-gray-700">Emp ID:</span> {user.userId}
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-medium text-gray-700">Position:</span> {user.position}
-                    </div>
-
-                    {/* Employee's Email */}
-                    <div className="mb-2">
-                      <span className="font-medium text-gray-700">Email:</span> {user.email}
-                    </div>
-
-                    {/* Departments */}
-                    <div className="mb-2">
-                      <span className="font-medium text-gray-700">Departments:</span>
-                      {Array.isArray(user.department) ? (
-                        user.department.map((dept, index) => (
-                          <span key={index} className="inline-block px-3 py-1 mr-2 mb-2 text-sm font-medium text-black-50 bg-gray-50 rounded-full">
-                            {dept}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="inline-block px-3 py-1 mr-2 mb-2 text-sm font-medium text-black bg-gray-100 rounded-full">
-                          {user.department}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Role */}
-                    <div className="mb-4">
-                      <span className="font-medium text-gray-700">Role:</span>
-                      <span
-                        className={`ml-2 = transition-transform duration-200 hover:scale-105 ${user.role.toLowerCase() === "admin" ? "text-violet-600" : "text-green-600"
-                          }`}
-                      >
-                        {user.role}
-                      </span>
-                    </div>
-                    {/* Action Buttons with Icons */}
-                    <div className="flex justify-between mt-4 gap-0.5 w-full p-4">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="flex items-center gap-2 px-4 py-2 hover:bg-[#d2d5f1] text-sm rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition ease-in-out transform hover:scale-105 ml-2"
-                      >
-                        <FaEdit className="text-lg text-blue-500" />
-                      </button>
-
-                      <button
-                        onClick={() => handleResetPassword(user._id, user.name)}
-                        className="flex items-center gap-2 px-4 py-2 hover:bg-[#f7f7a2] text-sm rounded-md shadow-md transition ease-in-out transform hover:scale-105 ml-2"
-                      >
-                        <FaSyncAlt className="text-lg text-yellow-500" />
-                      </button>
-
-                      <button
-                        onClick={() => handleDelete(user._id)}
-                        className="flex items-center gap-2 px-4 py-2 hover:bg-[#f5a8a8] rounded-md shadow-sm transition ease-in-out transform hover:scale-105 ml-2"
-                      >
-                        <FaTrash className="text-lg text-red-500" />
-                      </button>
-                    </div>
-                  </div> {/* End of flex container */}
-                </div> {/* End of inner white box */}
-              </div>
-            ))
-          )}
-
+          </Suspense>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default AllEmployees;
+export default AllEmployees;  

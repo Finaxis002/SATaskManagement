@@ -43,31 +43,31 @@ const LeaveDashboardCards = () => {
       title: "Pending Requests",
       value: stats.pending,
       color: "bg-yellow-100 text-yellow-600",
-      icon: <ClockIcon className="w-6 h-6" />,
+      icon: <ClockIcon className="w-5 h-5 sm:w-6 sm:h-6" />,
     },
     {
       title: "Total Approved",
       value: stats.approved,
       color: "bg-green-100 text-green-600",
-      icon: <CheckCircleIcon className="w-6 h-6" />,
+      icon: <CheckCircleIcon className="w-5 h-5 sm:w-6 sm:h-6" />,
     },
     {
       title: "Active Users",
       value: stats.users,
       color: "bg-blue-100 text-blue-600",
-      icon: <UsersIcon className="w-6 h-6" />,
+      icon: <UsersIcon className="w-5 h-5 sm:w-6 sm:h-6" />,
     },
     {
       title: "All Requests",
       value: stats.total,
       color: "bg-purple-100 text-purple-600",
-      icon: <ClipboardDocumentListIcon className="w-6 h-6" />,
+      icon: <ClipboardDocumentListIcon className="w-5 h-5 sm:w-6 sm:h-6" />,
     },
   ];
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-40 text-gray-500 text-lg">
+      <div className="flex justify-center items-center h-40 text-gray-500 text-sm sm:text-base md:text-lg px-4">
         Loading dashboard...
       </div>
     );
@@ -75,33 +75,37 @@ const LeaveDashboardCards = () => {
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-40 text-red-500 text-lg">
+      <div className="flex justify-center items-center h-40 text-red-500 text-sm sm:text-base md:text-lg px-4 text-center">
         {error}
       </div>
     );
   }
 
   return (
-    <section className="py-10 px-4">
+    <section className="py-6 sm:py-8 md:py-10 px-3 sm:px-4 md:px-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-700 mb-8 text-center">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-700 mb-6 sm:mb-8 text-center">
           Leave Dashboard
         </h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
           {cardData.map(({ title, value, icon, color }) => (
             <div
               key={title}
-              className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow flex items-center gap-4"
+              className="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-md sm:shadow-lg hover:shadow-xl transition-shadow flex flex-col sm:flex-row items-center sm:gap-3 md:gap-4 gap-2"
             >
               <div
-                className={`w-12 h-12 rounded-lg flex items-center justify-center ${color} shadow-md`}
+                className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center ${color} shadow-md flex-shrink-0`}
               >
                 {icon}
               </div>
-              <div>
-                <p className="text-sm text-gray-500">{title}</p>
-                <p className="text-2xl font-bold text-gray-900">{value}</p>
+              <div className="text-center sm:text-left">
+                <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                  {title}
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                  {value}
+                </p>
               </div>
             </div>
           ))}
@@ -112,7 +116,6 @@ const LeaveDashboardCards = () => {
 };
 
 export default LeaveDashboardCards;
-
 
 
 

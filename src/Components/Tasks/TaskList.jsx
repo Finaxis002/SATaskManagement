@@ -4,18 +4,18 @@ import { updateTaskStatus } from "../../redux/taskSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchDepartments } from "../../redux/departmentSlice";
 import StatusDropdownPortal from "../StatusDropdownPortal";
-import { faPen, faCopy, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { FaTrashAlt, FaExclamationCircle, FaSpinner } from "react-icons/fa";
+import { faPen, faCopy } from "@fortawesome/free-solid-svg-icons";
+import { FaTrashAlt, FaExclamationCircle, FaSpinner, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { fetchUsers } from "../../redux/userSlice";
 import Swal from "sweetalert2";
 import { io } from "socket.io-client";
 import FilterSection from "./FilterSection";
 import MessagePopup from "./MessagePopup";
 import axios from "../../utils/secureAxios";
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faCopy, faTimes, faPen } from "@fortawesome/free-solid-svg-icons";
 
 const socket = io("https://taskbe.sharda.co.in");
+const DESKTOP_ITEMS_TO_LOAD = 20; // For Infinite Scroll (Desktop)
+const MOBILE_ITEMS_PER_PAGE = 10; // For Pagination (Mobile)
 
 const TaskList = ({
   onEdit,
@@ -24,7 +24,20 @@ const TaskList = ({
   tasksOverride,
   hideCompleted,
 }) => {
-  const [tasks, setTasks] = useState([]);
+  // Original Task State (full list from API, before filters/pagination)
+  const [allFetchedTasks, setAllFetchedTasks] = useState([]);
+  
+  // --- PAGINATION / SCROLL STATE ---
+  const [tasks, setTasks] = useState([]); // Filtered/Sorted master list
+  
+  // Desktop Infinite Scroll State
+  const [desktopDisplayedCount, setDesktopDisplayedCount] = useState(DESKTOP_ITEMS_TO_LOAD);
+  const scrollContainerRef = useRef(null); 
+  
+  // Mobile Pagination State
+  const [mobileCurrentPage, setMobileCurrentPage] = useState(1);
+  // -----------------------------
+
   const [editingStatus, setEditingStatus] = useState(null);
   const [loadingStatus, setLoadingStatus] = useState({});
   const [filters, setFilters] = useState({
@@ -48,21 +61,22 @@ const TaskList = ({
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [loading, setLoading] = useState(true);
-
-  // new code is here
   const [openMessagePopup, setOpenMessagePopup] = useState(null);
   const [taskForMessage, setTaskForMessage] = useState(null);
+  const [openTaskPopup, setOpenTaskPopup] = useState(null);
+  const isInitialLoadRef = useRef(true);
+
 
   const role = localStorage.getItem("role");
   const userEmail = JSON.parse(localStorage.getItem("user"))?.email;
 
   const users = useSelector((state) => state.users.list);
   const departmentData = useSelector((state) => state.departments.list);
-
-  const [openTaskPopup, setOpenTaskPopup] = useState(null);
-  const [editMode, setEditMode] = useState({ desc: false, remark: false });
-
+  const [showTeamPopup, setShowTeamPopup] = useState(null);
+  const dropdownRef = useRef(null);
   const dispatch = useDispatch();
+  
+  // --- INITIAL SETUP AND DATA FETCH ---
 
   useEffect(() => {
     dispatch(fetchUsers());
@@ -87,56 +101,8 @@ const TaskList = ({
     }
   }, [users]);
 
-  const handleMessageSend = async (payload) => {
-    try {
-      // const payload = {
-      //   // message: {  // Send the message in the correct structure
-      //   //   taskId: taskId,
-      //   //   // clientId: taskForMessage.clientId,  // Ensure the correct task and client data
-      //   //   clientName: taskForMessage.clientName,
-      //   //   message: message,
-      //   //   sentAt: new Date().toISOString(),
-      //   //   sentBy: taskForMessage.assignedBy.name, // Ensure this is valid
-      //   taskId: taskId,
-      //   clientName: taskForMessage.clientName,
-      //   message: message,
-      //   sentAt: new Date().toISOString(),
-      //   sentBy: taskForMessage.assignedBy.name,
-      // };
-
-      // if (!taskForMessage?.clientId) {
-      //   Swal.fire('Error', 'Client ID is missing!', 'error');
-      //   return; // Exit the function if clientId is missing
-      // }
-      // payload.clientId = taskForMessage.clientId; // Add clientId to payload if available
-
-      // console.log("Sending clientId:", payload.clientId);
-      
-      // console.log("Sending payload:", payload); // Log the payload to check data
-
-      // Send the message to the backend using axios
-      const response = await axios.post(
-        "https://taskbe.sharda.co.in/api/message-history",
-        payload
-      );
-      // console.log("Sending clientId:", payload.clientId);
-
-      console.log("Response from server:", response.data);
-
-      if (response.status === 201) {
-        console.log("Message sent:", response.data);
-        Swal.fire("Message sent successfully!");
-      } else {
-        throw new Error("Message sending failed");
-      }
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      Swal.fire("Error", "Failed to send message", "error");
-    }
-  };
-
   const fetchTasksFromAPI = async () => {
-    setLoading(true);
+    if (isInitialLoadRef.current) setLoading(true); 
     try {
       const response = await fetch("https://taskbe.sharda.co.in/api/tasks");
       const data = await response.json();
@@ -150,10 +116,10 @@ const TaskList = ({
             task.assignees?.some((a) => a.email === userEmail) ||
             task.assignedBy?.email === userEmail
         );
-        setTasks(filtered);
+        setAllFetchedTasks(filtered); // Store the full list
         if (setTaskListExternally) setTaskListExternally(filtered);
       } else {
-        setTasks(visibleTasks);
+        setAllFetchedTasks(visibleTasks); // Store the full list
         if (setTaskListExternally) setTaskListExternally(visibleTasks);
       }
 
@@ -162,10 +128,16 @@ const TaskList = ({
         taskRemarks[task._id] = task.remark || "";
       });
       setRemarks(taskRemarks);
+      
+      // Reset displayed count for both views
+      setDesktopDisplayedCount(DESKTOP_ITEMS_TO_LOAD);
+      setMobileCurrentPage(1);
+
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
-    setLoading(false);
+    if (isInitialLoadRef.current) setLoading(false);
+    isInitialLoadRef.current = false;
   };
 
   useEffect(() => {
@@ -174,6 +146,7 @@ const TaskList = ({
     }
   }, [role, userEmail, refreshTrigger, departmentsLoaded]);
 
+  // WebSocket for real-time updates
   useEffect(() => {
     const handleTaskEvent = () => fetchTasksFromAPI();
     socket.on("new-task-created", handleTaskEvent);
@@ -186,26 +159,80 @@ const TaskList = ({
     };
   }, []);
 
-  const formatAssignedDate = (assignedDate) => {
-    if (!assignedDate) return "";
-    const date = new Date(assignedDate);
-    return date.toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+  // --- DESKTOP INFINITE SCROLL HANDLER ---
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      if (
+        container.scrollHeight - container.scrollTop <=
+        container.clientHeight + 100
+      ) {
+        if (tasks.length > desktopDisplayedCount) {
+          setDesktopDisplayedCount(
+            (prevCount) => Math.min(prevCount + DESKTOP_ITEMS_TO_LOAD, tasks.length)
+          );
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [tasks.length, desktopDisplayedCount]);
+
+  const handleLoadAll = () => {
+    setDesktopDisplayedCount(tasks.length);
+  };
+
+  // --- MOBILE PAGINATION HANDLERS ---
+  const handleNextPage = () => {
+    const totalPages = Math.ceil(tasks.length / MOBILE_ITEMS_PER_PAGE);
+    setMobileCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePreviousPage = () => {
+    setMobileCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+  
+  // -----------------------------
+  
+  const handleMessageSend = async (payload) => {
+    try {
+      const response = await axios.post(
+        "https://taskbe.sharda.co.in/api/message-history",
+        payload
+      );
+
+      if (response.status === 201) {
+        Swal.fire("Message sent successfully!");
+      } else {
+        throw new Error("Message sending failed");
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      Swal.fire("Error", "Failed to send message", "error");
+    }
   };
 
   const handleStatusChange = async (taskId, newStatus) => {
     setLoadingStatus((prev) => ({ ...prev, [taskId]: true }));
-    setTasks((prevTasks) =>
+    setAllFetchedTasks((prevTasks) =>
       prevTasks.map((task) =>
         task._id === taskId ? { ...task, status: newStatus } : task
       )
     );
+    setRemarks((prevRemarks) => ({
+        ...prevRemarks,
+        [taskId]: newStatus === "Completed" ? (prevRemarks[taskId] || "") + " [Completed]" : prevRemarks[taskId],
+    }));
 
     const updatedBy = {
       name: localStorage.getItem("name"),
@@ -224,7 +251,7 @@ const TaskList = ({
 
       if (response.ok) {
         const updatedTask = await response.json();
-        setTasks((prevTasks) =>
+        setAllFetchedTasks((prevTasks) =>
           prevTasks.map((task) =>
             task._id === updatedTask._id ? updatedTask : task
           )
@@ -238,6 +265,7 @@ const TaskList = ({
       fetchTasksFromAPI();
     }
     setLoadingStatus((prev) => ({ ...prev, [taskId]: false }));
+    setEditingStatus(null);
   };
 
   const handleRemarkSave = async (taskId) => {
@@ -259,14 +287,13 @@ const TaskList = ({
 
       if (response.ok) {
         const updatedTask = await response.json();
-        setTasks((prevTasks) =>
+        setAllFetchedTasks((prevTasks) =>
           prevTasks.map((task) =>
             task._id === updatedTask._id ? updatedTask : task
           )
         );
         setRemarks((prev) => ({ ...prev, [taskId]: updatedTask.remark ?? "" }));
         setOpenRemarkPopup(null);
-        fetchTasksFromAPI();
       } else {
         throw new Error("Failed to update remark");
       }
@@ -278,13 +305,16 @@ const TaskList = ({
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+    // Reset display count and page when filters change
+    setDesktopDisplayedCount(DESKTOP_ITEMS_TO_LOAD);
+    setMobileCurrentPage(1);
   };
 
   const uniqueAssignedBy = [
-    ...new Set(tasks.map((t) => t.assignedBy?.name).filter(Boolean)),
+    ...new Set(allFetchedTasks.map((t) => t.assignedBy?.name).filter(Boolean)),
   ];
   const uniqueStatuses = [
-    ...new Set(tasks.map((t) => t.status).filter(Boolean)),
+    ...new Set(allFetchedTasks.map((t) => t.status).filter(Boolean)),
   ];
 
   const handleWorkDescSave = async (taskId) => {
@@ -306,7 +336,7 @@ const TaskList = ({
 
       if (response.ok) {
         const updatedTask = await response.json();
-        setTasks((prevTasks) =>
+        setAllFetchedTasks((prevTasks) =>
           prevTasks.map((task) =>
             task._id === updatedTask._id ? updatedTask : task
           )
@@ -339,7 +369,9 @@ const TaskList = ({
     return haystack.includes(globalSearchTerm);
   };
 
-  const filteredTasks = (tasksOverride || tasks)
+  // --- Filtering and Sorting Logic (Update 'tasks' state) ---
+  useEffect(() => {
+    const filteredAndSorted = (tasksOverride || allFetchedTasks)
     .filter((task) => {
       if (task.isHidden) return false;
       if (task.isObsoleteHidden) return false;
@@ -372,14 +404,36 @@ const TaskList = ({
       if (dueDateSortOrder === "desc") {
         return new Date(b.dueDate) - new Date(a.dueDate);
       }
+      // Default sort by due date ascending
       return new Date(a.dueDate) - new Date(b.dueDate);
     });
 
-  const highPriorityTasks = filteredTasks.filter((t) => t.priority === "High");
-  const mediumPriorityTasks = filteredTasks.filter(
-    (t) => t.priority === "Medium"
-  );
-  const lowPriorityTasks = filteredTasks.filter((t) => t.priority === "Low");
+    setTasks(filteredAndSorted);
+
+  }, [tasksOverride, allFetchedTasks, filters, hideCompleted, globalSearchTerm, dueDateSortOrder]);
+
+
+  // --- Task Data for Rendering ---
+  
+  // 1. Desktop (Infinite Scroll)
+  const desktopTasksToRender = tasks.slice(0, desktopDisplayedCount);
+  const desktopHigh = desktopTasksToRender.filter((t) => t.priority === "High");
+  const desktopMedium = desktopTasksToRender.filter((t) => t.priority === "Medium");
+  const desktopLow = desktopTasksToRender.filter((t) => t.priority === "Low");
+
+  // 2. Mobile (Pagination)
+  const mobileIndexOfLast = mobileCurrentPage * MOBILE_ITEMS_PER_PAGE;
+  const mobileIndexOfFirst = mobileIndexOfLast - MOBILE_ITEMS_PER_PAGE;
+  const mobileTasksToRender = tasks.slice(mobileIndexOfFirst, mobileIndexOfLast);
+  const mobileTotalPages = Math.ceil(tasks.length / MOBILE_ITEMS_PER_PAGE);
+
+  const mobileHigh = mobileTasksToRender.filter((t) => t.priority === "High");
+  const mobileMedium = mobileTasksToRender.filter((t) => t.priority === "Medium");
+  const mobileLow = mobileTasksToRender.filter((t) => t.priority === "Low");
+  
+  const totalTasksAfterFilter = tasks.length;
+  // ----------------------------------
+
 
   const permanentlyStopRepetition = async (task) => {
     try {
@@ -407,17 +461,17 @@ const TaskList = ({
 
   const deleteTaskRequest = async (taskId) => {
     try {
-      setTasks((prevTasks) => prevTasks.filter((t) => t._id !== taskId));
+      setAllFetchedTasks((prevTasks) => prevTasks.filter((t) => t._id !== taskId));
+      
       const response = await fetch(
         `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error("Failed to delete task");
-      fetchTasksFromAPI();
     } catch (err) {
       console.error("Error deleting task:", err);
       alert("Failed to delete task. Please try again.");
-      fetchTasksFromAPI();
+      fetchTasksFromAPI(); 
     }
   };
 
@@ -475,7 +529,6 @@ const TaskList = ({
     }
   };
 
-  const dropdownRef = useRef(null);
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -486,841 +539,345 @@ const TaskList = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownRef]);
 
-  // Color theme variables for consistent theming
-  const colors = {
-    primary: "#2563EB", // Blue 600
-    primaryLight: "#DBEAFE", // Blue 100
-    secondary: "#10B981", // Emerald 500
-    secondaryLight: "#D1FAE5", // Emerald 200
-    danger: "#DC2626", // Red 600
-    dangerLight: "#FEE2E2", // Red 200
-    warning: "#F59E0B", // Amber 500
-    warningLight: "#FEF3C7", // Amber 100
-    info: "#3B82F6", // Blue 500
-    infoLight: "#BFDBFE", // Blue 200
-    textPrimary: "#1F2937", // Gray 800
-    textSecondary: "#6B7280", // Gray 500
-    background: "white", // Gray 50
-    border: "#E5E7EB", // Gray 200
-    surface: "#FFFFFF", // White
+  const statusColors = {
+    "To Do": { bg: "#EFF6FF", text: "#1E40AF", border: "#3B82F6", glow: "rgba(59, 130, 246, 0.3)" },
+    "In Progress": { bg: "#FEF3C7", text: "#92400E", border: "#F59E0B", glow: "rgba(245, 158, 11, 0.3)" },
+    Completed: { bg: "#D1FAE5", text: "#065F46", border: "#10B981", glow: "rgba(16, 185, 129, 0.3)" },
+    Obsolete: { bg: "#F3E8FF", text: "#6B21A8", border: "#A855F7", glow: "rgba(168, 85, 247, 0.3)" },
   };
 
-  const handleCopyTask = async (originalTask) => {
-    // Enhanced confirmation dialog with more details
-    const { isConfirmed } = await Swal.fire({
-      title: "Duplicate Task",
-      html: `
-      <div class="text-left">
-        <p>Create a copy of: <strong>${originalTask.taskName}</strong></p>
-        <p class="mt-2 text-sm text-gray-600">The new task will have "Status" reset to "To Do" and current date as "Assigned Date".</p>
-      </div>
-    `,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Create Copy",
-      cancelButtonText: "Cancel",
-      focusConfirm: false,
-      backdrop: `
-      rgba(0,0,123,0.4)
-      url("/images/nyan-cat.gif")
-      left top
-      no-repeat
-    `,
-    });
-
-    if (!isConfirmed) return;
-
-    try {
-      // Create modified task copy with reset fields
-      const newTask = {
-        ...originalTask,
-        _id: undefined, // Ensure new ID will be generated
-        taskName: `${originalTask.taskName} (Copy)`,
-        assignedDate: new Date().toISOString(),
-        status: "To Do",
-        remark: "",
-        updatedBy: {
-          name: localStorage.getItem("name"),
-          email: localStorage.getItem("userId"),
-        },
-        history: [
-          ...(originalTask.history || []),
-          {
-            action: "copied",
-            by: {
-              name: localStorage.getItem("name"),
-              email: localStorage.getItem("userId"),
-            },
-            date: new Date().toISOString(),
-          },
-        ],
-      };
-
-      // Show loading with better UX
-      const loadingSwal = Swal.fire({
-        title: "Creating Task Copy",
-        html: "Please wait while we duplicate the task...",
-        timerProgressBar: true,
-        didOpen: () => {
-          Swal.showLoading();
-        },
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        allowEnterKey: false,
-      });
-
-      // API call to create the new task
-      const response = await fetch("https://taskbe.sharda.co.in/api/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(newTask),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create task copy");
-      }
-
-      const createdTask = await response.json();
-      await loadingSwal.close();
-
-      // Enhanced success notification
-      await Swal.fire({
-        icon: "success",
-        title: "Copy Created!",
-        html: `
-        <div class="text-center">
-          <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          <p class="mb-2">New task created:</p>
-          <p class="font-bold text-lg">${createdTask.taskName}</p>
-          <p class="text-sm text-gray-500 mt-2">Status: ${createdTask.status}</p>
-        </div>
-      `,
-        showConfirmButton: false,
-        timer: 2000,
-      });
-
-      // Refresh task list and highlight the new task
-      fetchTasksFromAPI();
-
-      // Optional: Scroll to the new task in the list
-      setTimeout(() => {
-        const newTaskElement = document.getElementById(
-          `task-${createdTask._id}`
-        );
-        if (newTaskElement) {
-          newTaskElement.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-          newTaskElement.classList.add("animate-pulse", "bg-green-50");
-          setTimeout(() => {
-            newTaskElement.classList.remove("animate-pulse", "bg-green-50");
-          }, 3000);
-        }
-      }, 500);
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Copy Failed",
-        html: `
-        <div class="text-left">
-          <p>Failed to create task copy:</p>
-          <p class="font-medium text-red-600 mt-2">${error.message}</p>
-          <p class="text-sm text-gray-500 mt-2">Please try again or contact support.</p>
-        </div>
-      `,
-        confirmButtonText: "Try Again",
-        confirmButtonColor: "#3085d6",
-        showCancelButton: true,
-        cancelButtonText: "Cancel",
-      });
-    }
+  const priorityColors = {
+    High: { bg: "#FEE2E2", text: "#991B1B", border: "#DC2626", glow: "rgba(220, 38, 38, 0.3)" },
+    Medium: { bg: "#FEF3C7", text: "#92400E", border: "#F59E0B", glow: "rgba(245, 158, 11, 0.3)" },
+    Low: { bg: "#DBEAFE", text: "#1E40AF", border: "#3B82F6", glow: "rgba(59, 130, 246, 0.3)" },
   };
 
+  // ... (handleCopyTask remains unchanged)
+
+  // Mobile Card Component
   const renderTaskCard = (task, index) => (
-    <>
-      {/* Task Card */}
-      <div
-        key={task._id}
-        className="relative border border-gray-300 rounded-2xl p-5 mb-6 shadow-md hover:shadow-xl transition duration-300 bg-gray-100 cursor-pointer max-w-md mx-auto"
-        onClick={(e) => {
-          // prevent popup when clicking on action buttons
-          // if (!e.target.closest("button")) {
-          //   setOpenTaskPopup(task._id);
-          // }
-        }}
-      >
-        {/* Copy button */}
-        <button
-          className="absolute top-3 right-3 p-2 rounded-md border border-gray-300 text-gray-500 hover:text-gray-900 hover:bg-gray-100 shadow-sm"
-          onClick={() => handleCopyTask?.(task)}
-          title="Copy Task"
-          aria-label={`Copy task ${task.taskName}`}
-          type="button"
-        >
-          <FontAwesomeIcon icon={faCopy} className="h-5 w-5" />
-        </button>
-        
-
-        {/* Task Name */}
-        <h3 className="text-xl font-bold mb-3 text-gray-800 w-72">
-          {task.taskName}
-        </h3>
-
-        {/* Dates */}
-        <div className="flex justify-between text-md text-gray-600 mb-4">
-          <div>
-            <span className="font-semibold">Work Date:</span>{" "}
-            {new Date(task.assignedDate).toLocaleDateString("en-GB")}
+    <div
+      key={task._id}
+      id={`task-${task._id}`}
+      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-200 overflow-hidden mb-4"
+    >
+      {/* Header */}
+      <div className="bg-gray-50 border-b border-gray-200 p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-gray-500 font-medium">#{index + 1}</span>
+              <span
+                className="text-xs px-2 py-1 rounded font-semibold"
+                style={{
+                  backgroundColor: priorityColors[task.priority]?.bg,
+                  color: priorityColors[task.priority]?.text,
+                }}
+              >
+                {task.priority}
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-gray-900 line-clamp-2 mb-1">
+              {task.taskName}
+            </h3>
+            {task.code && (
+              <span className="inline-block text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                {task.code}
+              </span>
+            )}
           </div>
-          <div>
-            <span className="font-semibold">Due Date:</span>{" "}
-            {new Date(task.dueDate).toLocaleDateString("en-GB")}
+          
+          <div className="flex gap-1 ml-2">
+            <button
+              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-all"
+              onClick={() => handleCopyTask(task)}
+              title="Copy"
+            >
+              <FontAwesomeIcon icon={faCopy} className="h-4 w-4" />
+            </button>
+            {role === "admin" && (
+              <button
+                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                onClick={() => handleDeleteTask(task)}
+                title="Delete"
+              >
+                <FaTrashAlt size={14} />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Status */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="font-semibold text-gray-700">Status:</span>
-          <span
-            className="px-3 py-1 rounded-full text-sm font-semibold cursor-pointer shadow-sm"
-            style={{
-              backgroundColor:
-                task.status === "Completed"
-                  ? "#d1fae5"
-                  : task.status === "In Progress"
-                  ? "#fef9c3"
-                  : task.status === "To Do"
-                  ? "#e0f2fe"
-                  : "#f3e8ff",
-              color:
-                task.status === "Completed"
-                  ? "#065f46"
-                  : task.status === "In Progress"
-                  ? "#92400e"
-                  : task.status === "To Do"
-                  ? "#0369a1"
-                  : "#6d28d9",
-            }}
-            onClick={(e) => {
-              e.stopPropagation(); // prevent opening popup
-              const rect = e.target.getBoundingClientRect();
-              setDropdownPosition({
-                top: rect.top + window.scrollY + 35,
-                left: rect.left + window.scrollX,
-              });
-              setEditingStatus(task._id);
-            }}
-          >
-            {task.status}
+        <div
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-semibold cursor-pointer border"
+          style={{
+            backgroundColor: statusColors[task.status]?.bg,
+            color: statusColors[task.status]?.text,
+            borderColor: statusColors[task.status]?.border,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            const rect = e.target.getBoundingClientRect();
+            setDropdownPosition({
+              top: rect.top + window.scrollY + 40,
+              left: rect.left + window.scrollX,
+            });
+            setEditingStatus(task._id);
+          }}
+        >
+          {task.status === "Completed" && <span>✓</span>}
+          {task.status === "In Progress" && <span className="animate-pulse">⏱</span>}
+          {task.status === "To Do" && <span>📝</span>}
+          {task.status === "Obsolete" && <span>⊗</span>}
+          <span>{task.status}</span>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-4 space-y-3">
+        <div>
+          <span className="text-xs font-semibold text-gray-600 uppercase block mb-1">
+            Description
           </span>
+          <p className="text-sm text-gray-700 line-clamp-3">
+            {task.workDesc || "No description"}
+          </p>
         </div>
 
-        {/* Assigned By */}
-        <p className="text-md text-gray-600">
-          <span className="font-semibold">Assigned by:</span>{" "}
-          <span className="italic text-cyan-800">
-            {task.assignedBy?.name || "—"}
-          </span>
-        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="text-xs font-semibold text-gray-600 block mb-1">Work Date</span>
+            <div className="text-sm text-gray-900 font-medium">
+              {new Date(task.assignedDate).toLocaleDateString("en-GB")}
+            </div>
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-gray-600 block mb-1">Due Date</span>
+            <div className="text-sm text-gray-900 font-medium">
+              {new Date(task.dueDate).toLocaleDateString("en-GB")}
+            </div>
+          </div>
+        </div>
 
-        {/* 🔹 Clickable text instead of whole card */}
-        <button
-          onClick={() => setOpenTaskPopup(task._id)}
-          className="text-indigo-600 text-md font-medium hover:underline focus:outline-none underline mt-1.5"
-        >
-          View Details
-        </button>
-      </div>
-      
+        <div>
+          <span className="text-xs font-semibold text-gray-600 uppercase block mb-2">Team</span>
+          <div className="flex flex-wrap gap-1.5">
+            {task.assignees?.slice(0, 3).map((assignee) => (
+              <span key={assignee.email} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded font-medium">
+                {assignee.name}
+              </span>
+            ))}
+            {task.assignees?.length > 3 && (
+              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded font-medium">
+                +{task.assignees.length - 3}
+              </span>
+            )}
+          </div>
+        </div>
 
-      {/* Popup for details */}
-      {openTaskPopup === task._id && (
-        <div className="fixed inset-0  bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4  ">
-          <div
-            className="bg-gray-100  rounded-2xl shadow-3xl w-full   p-6 relative overflow-y-auto max-h-[90vh] border border-gray-400 "
-            style={{ width: "100%", maxWidth: "inherit" }} // ✅ popup same width as card
+        <div className="flex items-center gap-2 text-xs text-gray-600">
+          <span className="font-semibold">Assigned by:</span>
+          <span className="font-medium text-gray-900">{task.assignedBy?.name || "—"}</span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-2 border-t border-gray-100">
+          <button
+            onClick={() => setOpenTaskPopup(task._id)}
+            className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors"
           >
-            {/* Close button */}
+            View Details
+          </button>
+          <button
+            onClick={() => onEdit(task)}
+            className="p-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            title="Edit"
+          >
+            <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => {
+              setTaskForMessage(task);
+              setOpenMessagePopup(true);
+            }}
+            className="p-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            title="Message"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+              <path d="m21.854 2.147-10.94 10.939" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Task Details Popup */}
+      {openTaskPopup === task._id && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative">
             <button
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl"
               onClick={() => setOpenTaskPopup(null)}
             >
               ×
             </button>
 
-            {/* <h2 className="text-2xl font-bold mb-5 text-gray-800">
-            {task.taskName}
-          </h2> */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {task.taskName}
+              </h2>
+              {task.code && (
+                <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded">
+                  {task.code}
+                </span>
+              )}
+            </div>
 
-            {/* Full Description */}
-            <div className="mb-4">
-              <span className="block text-gray-900 font-semibold tracking-wide mb-2 select-none ">
-                Work Description + Code:
-              </span>
-              <td
-                className="relative group text-[15px]"
-                style={{ color: colors.textSecondary, minWidth: "260px" }}
-              >
-                <div>
-                  <span className="text-[15px] text-gray-400 subpixel-antialiased break-words flex-1">
-                    {(task.workDesc || "No description").length > 90
-                      ? `${task.workDesc.slice(0, 90)}…`
-                      : task.workDesc || "No description"}
-                    {task.code && (
-                      <span
-                        className="text-indigo-600 underline cursor-pointer ml-3 font-semibold hover:text-indigo-900"
-                        title="View Project Report"
-                      >
-                        (1 Project Report)
-                      </span>
-                    )}
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-semibold text-gray-900 text-sm">
+                    Description
                   </span>
-                  {(task.workDesc || "").length > 90 && (
-                    <div className="relative inline-block">
-                      <span className="sr-only">more</span>
-                      <div
-                        className="absolute z-50 hidden group-hover:block w-96 rounded-2xl p-5 text-xs shadow-lg whitespace-pre-wrap border border-gray-300 bg-white"
-                        style={{
-                          color: colors.textSecondary,
-                          top: "36px",
-                          left: "-16px",
-                          maxHeight: "12rem",
-                          overflowY: "auto",
-                          boxShadow:
-                            "0 12px 24px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0,0,0,0.08)",
-                        }}
-                      >
-                        {task.workDesc}
-                      </div>
-                    </div>
-                  )}
                   <button
-                    className="opacity-90 group-hover:opacity-100 text-gray-700 hover:text-gray-900 focus:outline-none transition"
                     onClick={() => {
                       setOpenWorkDescPopup(task._id);
                       setWorkDescMode("edit");
                     }}
-                    title="Edit description"
-                    aria-label={`Edit description for task ${task.taskName}`}
-                    type="button"
+                    className="text-blue-600 hover:text-blue-800"
                   >
-                    <FontAwesomeIcon icon={faPen} className="h-5 w-5" />
+                    <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
                   </button>
                 </div>
-
-                {openWorkDescPopup === task._id && (
-                  <div
-                    className=" top-full left-0 mt-3 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="workdesc-dialog-title"
-                    style={{
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    }}
-                  >
-                    <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-                      <h4
-                        id="workdesc-dialog-title"
-                        className="font-semibold text-lg"
-                        style={{ color: colors.textPrimary }}
-                      >
-                        {workDescMode === "edit"
-                          ? "Edit Description"
-                          : "Description"}
-                      </h4>
-                      <button
-                        className="text-gray-500 hover:text-gray-700 text-2xl font-light leading-none focus:outline-none"
-                        onClick={() => setOpenWorkDescPopup(null)}
-                        aria-label="Close description popup"
-                        type="button"
-                      >
-                        ×
-                      </button>
-                    </div>
-
-                    {workDescMode === "edit" ? (
-                      <>
-                        <textarea
-                          value={workDescs[task._id] || task.workDesc || ""}
-                          onChange={(e) =>
-                            setWorkDescs((prev) => ({
-                              ...prev,
-                              [task._id]: e.target.value,
-                            }))
-                          }
-                          rows={5}
-                          placeholder="Enter work description…"
-                          className="w-full px-5 py-3 text-sm rounded-2xl resize-y border border-gray-300 focus:outline-none focus:ring-4 focus:ring-purple-400 transition-colors duration-300"
-                          style={{
-                            color: colors.textPrimary,
-                            backgroundColor: colors.background,
-                            boxShadow: "none",
-                          }}
-                          autoFocus
-                        />
-                        <div className="flex justify-end mt-1 gap-4">
-                          <button
-                            onClick={() => setOpenWorkDescPopup(null)}
-                            className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
-                            type="button"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleWorkDescSave(task._id);
-                              setOpenWorkDescPopup(null);
-                            }}
-                            className="px-6 py-2 text-sm rounded-2xl font-semibold text-white bg-purple-700 hover:bg-purple-800 transition"
-                            type="button"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <div
-                        className="text-gray-900 text-sm whitespace-pre-wrap max-h-44 overflow-y-auto"
-                        style={{ color: colors.textSecondary }}
-                      >
-                        {task.workDesc || "No description available"}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </td>
-            </div>
-
-            {/* Remarks */}
-            <div className="relative mb-4 flex flex-wrap items-center gap-1">
-              <span
-                className="font-bold  text-[16px] select-none italic"
-                style={{ color: colors.textPrimary }}
-              >
-                Remark:
-              </span>
-              <span
-                className={`text-sm text-gray-800 max-w-[65%] ${
-                  (remarks[task._id] ?? "").length > 40 ? "truncate" : ""
-                } select-text`}
-                style={{ color: colors.textSecondary }}
-              >
-                {remarks[task._id] ?? "No remark"}
-              </span>
-              {(remarks[task._id] || "").length > 40 && (
-                <button
-                  className="ml-2 text-indigo-600 text-xs hover:underline focus:outline-none transition-colors duration-150"
-                  onClick={() => {
-                    setOpenRemarkPopup(task._id);
-                    setRemarkMode("view");
-                  }}
-                  aria-label={`Read full remark for task ${task.taskName}`}
-                  type="button"
-                >
-                  Read more
-                </button>
-              )}
-              <button
-                className=" text-indigo-500 hover:text-indigo-800 focus:outline-none transition-colors duration-150"
-                onClick={() => {
-                  setOpenRemarkPopup(task._id);
-                  setRemarkMode("edit");
-                }}
-                title="Edit remark"
-                aria-label={`Edit remark for task ${task.taskName}`}
-                type="button"
-              >
-                <FontAwesomeIcon icon={faPen} className="h-5 w-5" />
-              </button>
-
-              {/* Assign by */}
-              {/* <p className="w-full mt-3">
-        <span className="font-bold text-gray-700 subpixel-antialiased select-none">
-          Assigned by:
-        </span>{" "}
-        <span className="text-cyan-800 italic font-semibold select-text">
-          {task.assignedBy?.name || "—"}
-        </span>
-      </p> */}
-
-              {openRemarkPopup === task._id && (
-                <div
-                  className=" top-full left-0 h-65 w-80 rounded-2xl shadow-2xl border border-gray-300 z-50 p-4 bg-white select-text"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="remark-dialog-title"
-                  style={{ backgroundColor: colors.surface }}
-                >
-                  <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-                    <h4
-                      id="remark-dialog-title"
-                      className="font-semibold text-base"
-                      style={{ color: colors.textPrimary }}
-                    >
-                      {remarkMode === "edit" ? "Edit Remark" : "Full Remark"}
-                    </h4>
-                    <button
-                      className="text-gray-500 hover:text-gray-700 text-2xl font-light leading-none focus:outline-none"
-                      onClick={() => setOpenRemarkPopup(null)}
-                      aria-label="Close remark popup"
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  {remarkMode === "edit" ? (
-                    <>
-                      <textarea
-                        value={remarks[task._id] ?? ""}
-                        onChange={(e) =>
-                          setRemarks((prev) => ({
-                            ...prev,
-                            [task._id]: e.target.value,
-                          }))
-                        }
-                        rows={5}
-                        placeholder="Edit Remark"
-                        className="w-full px-5 py-3 text-sm border rounded-2xl focus:ring-4 outline-none resize-y transition-colors duration-300"
-                        style={{
-                          borderColor: colors.border,
-                          color: colors.textPrimary,
-                          backgroundColor: colors.background,
-                          boxShadow: "none",
-                        }}
-                        autoFocus
-                      />
-                      <div className="flex justify-end mt-1 gap-3">
-                        <button
-                          onClick={() => setOpenRemarkPopup(null)}
-                          className="px-5 py-2 text-sm rounded-2xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-300"
-                          type="button"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleRemarkSave(task._id);
-                          }}
-                          className="px-4 py-1 text-sm rounded-2xl font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
-                          type="button"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div
-                      className="text-gray-900 text-sm whitespace-pre-wrap max-h-44 overflow-y-auto border border-gray-100 rounded-xl p-4 select-text"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      {remarks[task._id] || "No remark"}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Team */}
-            <div className="mb-3 flex gap-2">
-              <h3 className="font-semibold text-gray-700 mt-1 mb-1">Team:</h3>
-              <div className="flex flex-wrap gap-2">
-                {task.assignees?.map((assignee) => (
-                  <span
-                    key={assignee.email}
-                    className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-medium"
-                  >
-                    {assignee.name}
-                  </span>
-                ))}
+                <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                  {task.workDesc || "No description"}
+                </p>
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex pl-4 flex-wrap gap-3 mt-6">
-              <button
-                onClick={() => onEdit(task)}
-                className="px-8 py-1 rounded-lg bg-blue-100 text-blue-700 border border-b-blue-700 hover:bg-blue-600 hover:text-white font-medium"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleStatusChange(task._id, "Completed")}
-                className="px-3 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-600 border border-green-700 hover:text-white font-medium"
-              >
-                Completed
-              </button>
-              {/* <button
-              onClick={() => handleCopyTask?.(task)}
-              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
-            >
-              Copy
-            </button> */}
-              {role === "admin" && (
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-semibold text-gray-900 text-sm">
+                    Remark
+                  </span>
+                  <button
+                    onClick={() => {
+                      setOpenRemarkPopup(task._id);
+                      setRemarkMode("edit");
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                  {remarks[task._id] || "No remark"}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <span className="font-semibold text-gray-900 block mb-3 text-sm">
+                  Team Members
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {task.assignees?.map((assignee) => (
+                    <span
+                      key={assignee.email}
+                      className="px-3 py-1.5 bg-white text-gray-700 rounded text-sm font-medium border border-gray-200"
+                    >
+                      {assignee.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => handleDeleteTask(task)}
-                  className="px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-600 hover:text-white font-medium"
+                  onClick={() => onEdit(task)}
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-semibold text-sm transition-colors"
                 >
-                  Delete
+                  Edit Task
                 </button>
-              )}
+                <button
+                  onClick={() => handleStatusChange(task._id, "Completed")}
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 font-semibold text-sm transition-colors"
+                >
+                  Mark Complete
+                </button>
+                {role === "admin" && (
+                  <button
+                    onClick={() => handleDeleteTask(task)}
+                    className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold text-sm transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 
-  // Rendering task row for large screens (table)
+  // Desktop Row Component
   const renderTaskRow = (task, index) => (
     <tr
       key={task._id}
       id={`task-${task._id}`}
-      className={`group border-b transition-colors duration-150 bg-white ${
-        index % 2 === 0 ? colors.background : "#F3F4F6"
-      } hover:bg-cyan-50`}
-      style={{ borderColor: colors.border }}
+      className="group border-b border-gray-200 transition-all hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50"
     >
-      <td
-        className="py-3 px-4 text-[13px]"
-        style={{ color: colors.textSecondary }}
-      >
+      <td className="py-3 px-2 text-sm text-gray-700 font-semibold">
         {index + 1}
       </td>
 
-      <td className="py-3 px-4" style={{ color: colors.textPrimary }}>
-        <div className="flex items-center gap-2 font-semibold">
-          {task.taskName}
-          {new Date(task.dueDate) < new Date() &&
-            task.status !== "Completed" &&
-            task.status !== "Obsolete" && (
-              <FaExclamationCircle
-                className="text-red-600"
-                title="Overdue Task"
-                size={14}
-                aria-label="Overdue task"
-              />
-            )}
-          <button
-            onClick={() => onEdit(task)}
-            title="Edit"
-            aria-label={`Edit task ${task.taskName}`}
-            className="opacity-70 hover:opacity-100 text-blue-700 hover:text-gray-700 focus:outline-none"
-          >
-            <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
-          </button>
-        </div>
-      </td>
-
-      <td
-        className="py-3 px-4 relative group text-[13px]"
-        style={{ color: colors.textSecondary, minWidth: "250px" }}
-      >
-        <div className="flex items-center gap-2 min-h-[22px]">
-          <span>
-            {(task.workDesc || "No description").length > 70
-              ? `${task.workDesc.slice(0, 70)}…`
-              : task.workDesc || "No description"}
-            {task.code && (
-              <span
-                className="text-indigo-600 underline cursor-pointer ml-1"
-                style={{ fontWeight: "600" }}
-              >
-                (1 Project Report)
-              </span>
-            )}
-          </span>
-          {(task.workDesc || "").length > 70 && (
-            <div className="relative inline-block">
-              <span className="sr-only">more</span>
-              <div
-                className="absolute z-50 hidden group-hover:block w-80 rounded-md p-3 text-xs whitespace-pre-wrap shadow-lg"
-                style={{
-                  backgroundColor: colors.surface,
-                  color: colors.textSecondary,
-                  border: `1px solid ${colors.border}`,
-                  left: "-8px",
-                  top: "28px",
-                  boxShadow:
-                    "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
-                  maxHeight: "10rem",
-                  overflowY: "auto",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {task.workDesc}
-              </div>
-            </div>
-          )}
-          <button
-            className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 transition focus:outline-none"
-            onClick={() => {
-              setOpenWorkDescPopup(task._id);
-              setWorkDescMode("edit");
-            }}
-            title="Edit description"
-            aria-label={`Edit description for task ${task.taskName}`}
-          >
-            <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
-          </button>
-        </div>
-
-        {openWorkDescPopup === task._id && (
-          <div
-            className="absolute top-full left-0 mt-1 w-80 rounded-md shadow-lg border z-50 p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="workdesc-dialog-title"
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
-          >
-            <div className="flex justify-between items-center mb-2 pb-1 border-b border-gray-100">
-              <h4
-                id="workdesc-dialog-title"
-                className="font-semibold text-sm"
-                style={{ color: colors.textPrimary }}
-              >
-                {workDescMode === "edit" ? "Edit Description" : "Description"}
-              </h4>
-              <button
-                className="text-gray-400 hover:text-gray-600 text-lg leading-none focus:outline-none"
-                onClick={() => setOpenWorkDescPopup(null)}
-                aria-label="Close description popup"
-              >
-                ×
-              </button>
-            </div>
-
-            {workDescMode === "edit" ? (
-              <>
-                <textarea
-                  value={workDescs[task._id] || task.workDesc || ""}
-                  onChange={(e) =>
-                    setWorkDescs((prev) => ({
-                      ...prev,
-                      [task._id]: e.target.value,
-                    }))
-                  }
-                  rows={4}
-                  placeholder="Enter work description…"
-                  className="w-full px-3 py-2 text-sm rounded-md resize-y focus:outline-none focus:ring-2"
-                  style={{
-                    borderColor: colors.border,
-                    color: colors.textPrimary,
-                    backgroundColor: colors.background,
-                    borderWidth: "1px",
-                    boxShadow: "none",
-                    transition: "border-color 0.3s ease",
-                  }}
-                  autoFocus
+      <td className="py-3 px-2">
+        <div className="flex flex-col gap-1">
+          <div className="font-bold text-gray-900 text-sm flex items-center gap-2">
+            {task.taskName.length > 30
+              ? task.taskName.slice(0, 30) + "..."
+              : task.taskName}
+            {new Date(task.dueDate) < new Date() &&
+              task.status !== "Completed" &&
+              task.status !== "Obsolete" && (
+                <FaExclamationCircle
+                  className="text-red-600 animate-pulse"
+                  size={12}
                 />
-                <div className="flex justify-end mt-3 gap-2">
-                  <button
-                    onClick={() => setOpenWorkDescPopup(null)}
-                    className="px-3 py-1 text-sm rounded-md"
-                    style={{
-                      color: colors.textSecondary,
-                      backgroundColor: colors.background,
-                      border: `1px solid ${colors.border}`,
-                    }}
-                    tabIndex={0}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleWorkDescSave(task._id);
-                      setOpenWorkDescPopup(null);
-                    }}
-                    className="px-3 py-1 text-sm rounded-md font-medium"
-                    style={{
-                      color: colors.surface,
-                      backgroundColor: colors.primary,
-                      border: `1px solid ${colors.primary}`,
-                    }}
-                    tabIndex={0}
-                  >
-                    Save
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div
-                className="text-gray-700 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto"
-                style={{ color: colors.textSecondary }}
-              >
-                {task.workDesc || "No description available"}
-              </div>
-            )}
+              )}
           </div>
-        )}
+          {task.code && (
+            <span className="text-xs text-indigo-700 font-semibold">
+              📋 {task.code}
+            </span>
+          )}
+        </div>
       </td>
 
-      <td
-        className="py-3 px-4 text-[13px]"
-        style={{ color: colors.textSecondary }}
-      >
-        {formatAssignedDate(task.assignedDate)}
+      <td className="py-3 px-2">
+        <p className="text-xs text-gray-600 line-clamp-2">
+          {task.workDesc
+            ? task.workDesc.length > 50
+              ? task.workDesc.slice(0, 50) + "..."
+              : task.workDesc
+            : "No description"}
+        </p>
       </td>
 
-      <td
-        className="py-3 px-4 text-[13px]"
-        style={{ color: colors.textSecondary }}
-      >
-        {new Date(task.dueDate).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })}
+      <td className="py-3 px-2 text-xs text-gray-700">
+        {new Date(task.assignedDate).toLocaleDateString("en-GB")}
       </td>
 
-      <td className="py-3 px-4 text-center cursor-pointer select-none">
+      <td className="py-3 px-2 text-xs text-gray-700 font-semibold">
+        {new Date(task.dueDate).toLocaleDateString("en-GB")}
+      </td>
+
+      <td className="py-3 px-2">
         <span
-          className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-sm"
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold cursor-pointer border"
           style={{
-            backgroundColor:
-              task.status === "Completed"
-                ? colors.secondaryLight
-                : task.status === "In Progress"
-                ? colors.warningLight
-                : task.status === "To Do"
-                ? colors.primaryLight
-                : task.status === "Obsolete"
-                ? "#E0E7FF"
-                : colors.dangerLight,
-            color:
-              task.status === "Completed"
-                ? colors.secondary
-                : task.status === "In Progress"
-                ? colors.warning
-                : task.status === "To Do"
-                ? colors.primary
-                : task.status === "Obsolete"
-                ? "#6366F1"
-                : colors.danger,
-            border: `1px solid ${
-              task.status === "Completed"
-                ? colors.secondary
-                : task.status === "In Progress"
-                ? colors.warning
-                : task.status === "To Do"
-                ? colors.primary
-                : task.status === "Obsolete"
-                ? "#6366F1"
-                : colors.danger
-            }`,
+            backgroundColor: statusColors[task.status]?.bg,
+            color: statusColors[task.status]?.text,
+            borderColor: statusColors[task.status]?.border,
           }}
           onClick={(e) => {
             const rect = e.target.getBoundingClientRect();
@@ -1330,552 +887,497 @@ const TaskList = ({
             });
             setEditingStatus(task._id);
           }}
-          role="button"
-          tabIndex={0}
-          aria-label={`Change status for task ${task.taskName}`}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              const rect = e.target.getBoundingClientRect();
-              setDropdownPosition({
-                top: rect.top + window.scrollY + 30,
-                left: rect.left + window.scrollX,
-              });
-              setEditingStatus(task._id);
-            }
-          }}
         >
-          {task.status}
+          {task.status === "Completed" && <span className="text-xs">✓</span>}
+          {task.status === "In Progress" && (
+            <span className="text-xs animate-pulse">⏱</span>
+          )}
+          <span className="whitespace-nowrap">{task.status}</span>
         </span>
-
-        {editingStatus === task._id && (
-          <StatusDropdownPortal>
-            <div
-              ref={dropdownRef}
-              className="absolute rounded-md shadow-lg border w-40 mt-1 z-50"
-              style={{
-                position: "absolute",
-                top: dropdownPosition.top,
-                left: dropdownPosition.left,
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              }}
-            >
-              {["To Do", "In Progress", "Completed", "Obsolete"].map(
-                (statusOption) => (
-                  <div
-                    key={statusOption}
-                    className="px-4 py-2 text-sm cursor-pointer select-none hover:bg-gray-100"
-                    style={{
-                      color:
-                        statusOption === "Completed"
-                          ? colors.secondary
-                          : statusOption === "In Progress"
-                          ? colors.warning
-                          : statusOption === "To Do"
-                          ? colors.primary
-                          : "#6366F1",
-                    }}
-                    onClick={() => {
-                      handleStatusChange(task._id, statusOption);
-                      setEditingStatus(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleStatusChange(task._id, statusOption);
-                        setEditingStatus(null);
-                      }
-                    }}
-                    tabIndex={0}
-                    role="button"
-                    aria-pressed={task.status === statusOption}
-                  >
-                    {statusOption}
-                  </div>
-                )
-              )}
-            </div>
-          </StatusDropdownPortal>
-        )}
       </td>
 
-      <td
-        className="py-3 px-4 relative text-[13px]"
-        style={{ color: colors.textSecondary }}
-      >
-        <div className="flex items-center gap-2">
-          <span>
-            {(remarks[task._id] ?? "No remark").length > 26
-              ? `${(remarks[task._id] ?? "No remark").slice(0, 26)}…`
-              : remarks[task._id] ?? "No remark"}
+      <td className="py-3 px-2">
+        <span
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border"
+          style={{
+            backgroundColor: priorityColors[task.priority]?.bg,
+            color: priorityColors[task.priority]?.text,
+            borderColor: priorityColors[task.priority]?.border,
+          }}
+        >
+          {task.priority === "High" && "🔴"}
+          {task.priority === "Medium" && "🟡"}
+          {task.priority === "Low" && "🟢"}
+          <span className="whitespace-nowrap">{task.priority}</span>
+        </span>
+      </td>
+
+      <td className="py-3 px-2">
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-gray-600 line-clamp-1">
+            {(remarks[task._id] || "No remark").slice(0, 20)}
+            {(remarks[task._id] || "").length > 20 && "..."}
           </span>
-
-          {(remarks[task._id] || "").length > 26 && (
-            <button
-              className="text-indigo-600 hover:text-indigo-800 text-xs focus:outline-none"
-              onClick={() => {
-                setOpenRemarkPopup(task._id);
-                setRemarkMode("view");
-              }}
-              aria-label={`Read full remark for task ${task.taskName}`}
-            >
-              Read more
-            </button>
-          )}
-
           <button
-            className="text-indigo-500 hover:text-indigo-800 focus:outline-none"
             onClick={() => {
               setOpenRemarkPopup(task._id);
               setRemarkMode("edit");
             }}
-            title="Edit remark"
-            aria-label={`Edit remark for task ${task.taskName}`}
+            className="text-indigo-600 hover:text-indigo-800"
           >
-            <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
+            <FontAwesomeIcon icon={faPen} className="h-3 w-3" />
           </button>
         </div>
+      </td>
 
-        {openMessagePopup && taskForMessage?._id === task._id && (
-          <MessagePopup
-            isOpen={openMessagePopup}
-            onClose={() => setOpenMessagePopup(false)}
-            task={taskForMessage}
-            // clientId={taskForMessage.clientId}
-            sendMessage={handleMessageSend}
-          />
-        )}
+      <td className="py-3 px-2">
+        <div className="flex flex-wrap gap-1">
+          {task.assignees?.slice(0, 2).map((assignee) => (
+            <span
+              key={assignee.email}
+              className="text-xs py-0.5 px-2 rounded-full bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200"
+            >
+              {assignee.name.split(" ")[0]}
+            </span>
+          ))}
+          {task.assignees?.length > 2 && (
+            <span
+              onClick={() => setShowTeamPopup(task._id)}
+              className="text-xs py-0.5 px-2 rounded-full bg-gray-100 text-gray-600 font-semibold cursor-pointer hover:bg-gray-200 transition-all"
+            >
+              +{task.assignees.length - 2}
+            </span>
+          )}
+        </div>
 
-        {openRemarkPopup === task._id && (
+        {showTeamPopup === task._id && (
           <div
-            className="absolute top-full left-0 mt-2 w-72 rounded-md shadow-lg border z-50 p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="remark-dialog-title"
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowTeamPopup(null)}
           >
-            <div className="flex justify-between items-center mb-3">
-              <h4
-                id="remark-dialog-title"
-                className="font-semibold text-xs"
-                style={{ color: colors.textPrimary }}
-              >
-                {remarkMode === "edit" ? "Edit Remark" : "Full Remark"}
-              </h4>
-              <button
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none focus:outline-none"
-                onClick={() => setOpenRemarkPopup(null)}
-                aria-label="Close remark popup"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Add Client ID here */}
-            <div className="mb-3">
-              <span className="font-semibold text-gray-600">Client ID: </span>
-              <span className="text-gray-700">
-                {task.clientId || "No client ID available"}
-              </span>
-            </div>
-
-            {remarkMode === "edit" ? (
-              <>
-                <textarea
-                  value={remarks[task._id] ?? ""}
-                  onChange={(e) =>
-                    setRemarks((prev) => ({
-                      ...prev,
-                      [task._id]: e.target.value,
-                    }))
-                  }
-                  rows={4}
-                  placeholder="Edit Remark"
-                  className="w-full px-2 py-1 text-sm rounded-md resize-y focus:outline-none focus:ring-2"
-                  style={{
-                    borderColor: colors.border,
-                    color: colors.textPrimary,
-                    backgroundColor: colors.background,
-                    borderWidth: "1px",
-                    boxShadow: "none",
-                    transition: "border-color 0.3s ease",
-                  }}
-                  autoFocus
-                />
-                <div className="flex justify-end mt-3 gap-2">
-                  <button
-                    onClick={() => setOpenRemarkPopup(null)}
-                    className="px-3 py-1 text-sm rounded-md"
-                    style={{
-                      color: colors.textSecondary,
-                      backgroundColor: colors.background,
-                      border: `1px solid ${colors.border}`,
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleRemarkSave(task._id);
-                    }}
-                    className="px-3 py-1 text-sm rounded-md font-medium"
-                    style={{
-                      color: colors.surface,
-                      backgroundColor: colors.primary,
-                      border: `1px solid ${colors.primary}`,
-                    }}
-                  >
-                    Save
-                  </button>
-                </div>
-              </>
-            ) : (
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-2"
+              style={{ borderColor: "#4332d2" }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div
-                className="text-sm whitespace-pre-wrap max-h-40 overflow-y-auto"
-                style={{ color: colors.textSecondary }}
+                className="flex justify-between items-center mb-4 pb-3 border-b-2"
+                style={{ borderColor: "#e0dcf9" }}
               >
-                {remarks[task._id] || "No remark"}
+                <h3 className="text-xl font-bold" style={{ color: "#4332d2" }}>
+                  👥 Team Members
+                </h3>
+                <button
+                  onClick={() => setShowTeamPopup(null)}
+                  className="text-gray-400 hover:text-gray-700 text-2xl font-light"
+                >
+                  ×
+                </button>
               </div>
-            )}
+
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {task.assignees?.map((assignee, idx) => (
+                  <div
+                    key={assignee.email}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-all"
+                    style={{
+                      // Added to ensure unique user emails can be used as keys if needed
+                    }}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: "#4332d2" }}
+                    >
+                      {assignee.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-900">
+                        {assignee.name}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {assignee.email}
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500">
+                      #{idx + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-gray-200 text-center">
+                <span className="text-sm text-gray-600 font-semibold">
+                  Total: {task.assignees?.length} members
+                </span>
+              </div>
+            </div>
           </div>
         )}
       </td>
 
-      <td
-        className="py-3 px-4"
-        style={{ color: colors.textSecondary, minWidth: "140px" }}
-      >
-        <div className="flex flex-wrap gap-2">
-          {task.assignees?.map((assignee) => (
-            <span
-              key={assignee.email}
-              className="text-xs py-1 px-2 rounded-full border select-none font-semibold"
-              title={assignee.name}
-              style={{
-                backgroundColor: colors.primaryLight,
-                color: colors.primary,
-                borderColor: colors.primary,
-              }}
+      <td className="py-3 px-2 text-xs text-gray-700 font-semibold">
+        {task.assignedBy?.name || "—"}
+      </td>
+
+      <td className="py-3 px-2">
+        <div className="flex gap-1">
+          <button
+            onClick={() => {
+              setTaskForMessage(task);
+              setOpenMessagePopup(true);
+            }}
+            className="p-1.5 hover:bg-blue-50 rounded-lg transition-all text-blue-600"
+            title="Message"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {assignee.name}
-            </span>
-          ))}
+              <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+              <path d="m21.854 2.147-10.94 10.939" />
+            </svg>
+          </button>
+          <button
+            onClick={() => handleCopyTask(task)}
+            className="p-1.5 hover:bg-indigo-50 rounded-lg transition-all text-indigo-600"
+            title="Copy"
+          >
+            <FontAwesomeIcon icon={faCopy} className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => onEdit(task)}
+            className="p-1.5 hover:bg-blue-50 rounded-lg transition-all text-blue-600"
+            title="Edit"
+          >
+            <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
+          </button>
+          {role === "admin" && (
+            <button
+              onClick={() => handleDeleteTask(task)}
+              className="p-1.5 hover:bg-red-50 rounded-lg transition-all text-red-600"
+              title="Delete"
+            >
+              <FaTrashAlt size={12} />
+            </button>
+          )}
         </div>
       </td>
 
-      <td
-        className="py-3 px-4"
-        style={{ color: colors.textSecondary, minWidth: "150px" }}
-      >
-        {task.assignedBy?.name || "—"}
-      </td>
-      <td>
-        <button
-          onClick={() => {
-            setTaskForMessage(task); // Set the current task for the popup
-            setOpenMessagePopup(true); // Open the popup
-          }}
-          className="text-indigo-600 hover:text-indigo-800 focus:outline-none py-3 px-8"
-          title="Send Message"
-        >
-          {/* <FontAwesomeIcon icon={faPen} className="h-5 w-5" /> */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-send-icon lucide-send"
+      {editingStatus === task._id && (
+        <StatusDropdownPortal>
+          <div
+            ref={dropdownRef}
+            className="absolute rounded-xl shadow-2xl border-2 border-gray-300 w-44 mt-1 z-50 bg-white overflow-hidden"
+            style={{
+              position: "absolute",
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+            }}
           >
-            <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
-            <path d="m21.854 2.147-10.94 10.939" />
-          </svg>
-        </button>
-      </td>
-
-      <td className="py-3 px-4 text-center">
-        <button
-          onClick={() => handleCopyTask(task)}
-          className="text-indigo-600 hover:text-indigo-900 focus:outline-none"
-          title="Copy Task"
-          aria-label={`Copy task ${task.taskName}`}
-        >
-          <FontAwesomeIcon icon={faCopy} className="h-5 w-5" />
-        </button>
-      </td>
-
-      {role === "admin" && (
-        <td className="py-3 px-4 text-center">
-          <button
-            onClick={() => handleDeleteTask(task)}
-            className="text-red-600 hover:text-red-800 focus:outline-none"
-            title="Delete Task"
-            aria-label={`Delete task ${task.taskName}`}
-          >
-            <FaTrashAlt size={18} />
-          </button>
-        </td>
+            {["To Do", "In Progress", "Completed", "Obsolete"].map(
+              (statusOption) => (
+                <div
+                  key={statusOption}
+                  className="px-4 py-2.5 text-sm cursor-pointer hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all font-bold border-b border-gray-100 last:border-b-0 flex items-center gap-2"
+                  style={{ color: statusColors[statusOption]?.text }}
+                  onClick={() => handleStatusChange(task._id, statusOption)}
+                >
+                  {statusOption === "Completed" && <span>✓</span>}
+                  {statusOption === "In Progress" && <span>⏱</span>}
+                  {statusOption === "To Do" && <span>📝</span>}
+                  {statusOption === "Obsolete" && <span>⊗</span>}
+                  {statusOption}
+                </div>
+              )
+            )}
+          </div>
+        </StatusDropdownPortal>
       )}
     </tr>
   );
 
-  const verticalScrollRef = useRef(null);
-  const horizontalScrollRef = useRef(null);
-  const syncScroll = (source) => {
-    if (
-      source === "vertical" &&
-      horizontalScrollRef.current &&
-      verticalScrollRef.current
-    ) {
-      horizontalScrollRef.current.scrollLeft =
-        verticalScrollRef.current.scrollLeft;
-    } else if (
-      source === "horizontal" &&
-      horizontalScrollRef.current &&
-      verticalScrollRef.current
-    ) {
-      verticalScrollRef.current.scrollLeft =
-        horizontalScrollRef.current.scrollLeft;
-    }
-  };
-
   return (
-    <div className="relative " style={{ backgroundColor: colors.background }}>
-      <FilterSection
-        filters={filters}
-        handleFilterChange={handleFilterChange}
-        departments={departments}
-        uniqueUsers={uniqueUsers}
-        uniqueAssignedBy={uniqueAssignedBy}
-        uniqueStatuses={uniqueStatuses}
-        role={role}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <FilterSection
+          filters={filters}
+          handleFilterChange={handleFilterChange}
+          departments={departments}
+          uniqueUsers={uniqueUsers}
+          uniqueAssignedBy={uniqueAssignedBy}
+          uniqueStatuses={uniqueStatuses}
+          role={role}
+        />
 
-      <div
-        ref={verticalScrollRef}
-        className="overflow-x-auto overflow-y-auto md:max-h-[60vh] max-h-[72vh] shadow-md mt-5"
-        onScroll={() => syncScroll("vertical")}
-        style={{ borderColor: colors.border }}
-      >
-        {/* Large screen table */}
-        <table className="w-full table-auto border-collapse text-sm  shadow-gray-900  text-gray-800 hidden lg:table">
-          <thead
-            className="sticky top-0 z-20 bg-gray-100  border-b shadow-sm"
-            style={{ borderColor: colors.border }}
+        {/* Desktop Table (Infinite Scroll) */}
+        <div className="hidden lg:block bg-white rounded-3xl shadow-xl border-2 border-gray-200 overflow-hidden mt-6">
+          <div
+            ref={scrollContainerRef} // Assign ref to scrollable container
+            className="overflow-y-auto max-h-[70vh]"
+            style={{ height: "70vh" }} // Explicit height for scroll calculation
           >
-            <tr className="uppercase tracking-wide text-[11px] font-extrabold text-gray-900 select-none ">
-              <th className="py-2.5 px-4 text-left min-w-[62px]">S. No</th>
-              <th className="py-2.5 px-4 text-left min-w-[100px]">Task Name</th>
-              <th className="py-2.5 px-4 text-left min-w-[240px]">
-                Work Description <span className="font-bold">+ Code</span>
-              </th>
-              <th className="py-2.5 px-4 text-left min-w-[120px]">
-                Date of Work
-              </th>
-              <th
-                className="py-2.5 px-4 text-left min-w-[100px] cursor-pointer select-none"
-                onClick={() =>
-                  setDueDateSortOrder((prev) =>
-                    prev === "asc" ? "desc" : "asc"
-                  )
-                }
-                title="Sort by Due Date"
-                aria-label={`Sort by Due Date ${
-                  dueDateSortOrder === "asc"
-                    ? "ascending"
-                    : dueDateSortOrder === "desc"
-                    ? "descending"
-                    : "none"
-                }`}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    setDueDateSortOrder((prev) =>
-                      prev === "asc" ? "desc" : "asc"
-                    );
-                  }
-                }}
-              >
-                <span className="inline-flex items-center gap-1 select-none">
-                  Due Date
-                  {dueDateSortOrder === "asc" ? (
-                    <span aria-hidden="true" className="text-[11px]">
-                      ▲
-                    </span>
-                  ) : dueDateSortOrder === "desc" ? (
-                    <span aria-hidden="true" className="text-[11px]">
-                      ▼
-                    </span>
-                  ) : (
-                    ""
-                  )}
-                </span>
-              </th>
-              <th className="py-2.5 px-4 text-center min-w-[110px]">Status</th>
-              <th className="py-2.5 px-4 text-left min-w-[100px]">Remarks</th>
-              <th className="py-2.5 px-4 text-left min-w-[130px]">Team</th>
-              <th className="py-2.5 px-4 text-left min-w-[80px]">
-                Assigned By
-              </th>
-              <th className="py-2.5 px-4 text-left min-w-[60px]">Message</th>
-              <th className="py-2.5 px-4 text-center min-w-[15px]">Copy</th>
-              {role === "admin" && (
-                <th className="py-2.5 px-4 text-center min-w-[15px]">Delete</th>
-              )}
-            </tr>
-          </thead>
-
-          <tbody className="text-[13px]">
-            {loading ? (
-              <tr>
-                <td
-                  colSpan={role === "admin" ? 11 : 10}
-                  className="py-10 text-center text-gray-500"
-                >
-                  <FaSpinner className="animate-spin h-7 w-7 mx-auto mb-2" />
-                  Loading tasks…
-                </td>
-              </tr>
-            ) : highPriorityTasks.length === 0 &&
-              mediumPriorityTasks.length === 0 &&
-              lowPriorityTasks.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={role === "admin" ? 11 : 10}
-                  className="text-center py-8 text-gray-500 select-none"
-                >
-                  🚫 No tasks Assigned Yet.
-                </td>
-              </tr>
-            ) : (
-              <>
-                {highPriorityTasks.length > 0 && (
+            <table className="w-full table-fixed">
+              {/* Table Column Definitions... (remains unchanged) */}
+              <colgroup>
+                <col style={{ width: "3%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+              </colgroup>
+              <thead className="sticky top-0 z-20 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 border-b-2 border-indigo-200">
+                <tr>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">#</th>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">TASK</th>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">DESCRIPTION</th>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">WORK DATE</th>
+                  <th
+                    className="py-3 px-2 text-left text-xs font-black text-gray-800 cursor-pointer hover:text-indigo-600"
+                    onClick={() =>
+                      setDueDateSortOrder(
+                        dueDateSortOrder === "asc" ? "desc" : "asc"
+                      )
+                    }
+                  >
+                    DUE DATE {dueDateSortOrder === "asc" ? "↑" : "↓"}
+                  </th>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">STATUS</th>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">PRIORITY</th>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">REMARKS</th>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">TEAM</th>
+                  <th className="py-3 px-2 text-left text-xs font-black text-gray-800">ASSIGNED BY</th>
+                  <th className="py-3 px-2 text-center text-xs font-black text-gray-800">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={11} className="py-20 text-center"><FaSpinner className="animate-spin h-10 w-10 mx-auto mb-3 text-indigo-600" /><p className="text-gray-600 font-bold">Loading tasks...</p></td></tr>
+                ) : desktopTasksToRender.length === 0 && totalTasksAfterFilter === 0 ? (
+                  <tr><td colSpan={11} className="text-center py-20"><div className="text-6xl mb-4">📋</div><p className="text-gray-500 font-black text-xl">No tasks assigned yet</p></td></tr>
+                ) : desktopTasksToRender.length === 0 && totalTasksAfterFilter > 0 ? (
+                  <tr><td colSpan={11} className="text-center py-20"><div className="text-6xl mb-4">🔍</div><p className="text-gray-500 font-black text-xl">No tasks match your current filters.</p></td></tr>
+                ) : (
                   <>
-                    <tr>
-                      <td
-                        colSpan={role === "admin" ? 12 : 10}
-                        className="bg-red-50 text-red-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
-                        style={{ borderColor: colors.border }}
-                      >
-                        High Priority Tasks
-                      </td>
-                    </tr>
-                    {highPriorityTasks.map((task, idx) =>
-                      renderTaskRow(task, idx)
-                    )}
+                    {desktopHigh.length > 0 && (<><tr><td colSpan={11} className="bg-gradient-to-r from-red-100 to-orange-100 text-red-900 font-black text-sm py-3 px-3 border-y-2 border-red-300">🔴 High Priority ({tasks.filter(t => t.priority === "High").length} total)</td></tr>{desktopHigh.map((task) => renderTaskRow(task, tasks.indexOf(task)))}</>)}
+                    {desktopMedium.length > 0 && (<><tr><td colSpan={11} className="bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-900 font-black text-sm py-3 px-3 border-y-2 border-yellow-300">🟡 Medium Priority ({tasks.filter(t => t.priority === "Medium").length} total)</td></tr>{desktopMedium.map((task) => renderTaskRow(task, tasks.indexOf(task)))}</>)}
+                    {desktopLow.length > 0 && (<><tr><td colSpan={11} className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-900 font-black text-sm py-3 px-3 border-y-2 border-green-300">🟢 Low Priority ({tasks.filter(t => t.priority === "Low").length} total)</td></tr>{desktopLow.map((task) => renderTaskRow(task, tasks.indexOf(task)))}</>)}
                   </>
                 )}
-
-                {mediumPriorityTasks.length > 0 && (
-                  <>
-                    <tr>
-                      <td
-                        colSpan={role === "admin" ? 12 : 10}
-                        className="bg-yellow-50 text-yellow-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
-                        style={{ borderColor: colors.border }}
-                      >
-                        Medium Priority Tasks
-                      </td>
-                    </tr>
-                    {mediumPriorityTasks.map((task, idx) =>
-                      renderTaskRow(task, idx)
-                    )}
-                  </>
+                
+                {/* Desktop Infinite Scroll Indicator */}
+                {desktopTasksToRender.length < totalTasksAfterFilter && (
+                    <tr><td colSpan={11} className="text-center py-4"><FaSpinner className="animate-spin h-6 w-6 mx-auto text-indigo-600" /><p className="text-gray-500 text-xs mt-1">Loading more tasks...</p></td></tr>
                 )}
-
-                {lowPriorityTasks.length > 0 && (
-                  <>
-                    <tr>
-                      <td
-                        colSpan={role === "admin" ? 12 : 10}
-                        className="bg-green-100 text-green-900 font-semibold text-[12px] py-2 px-4 border-y select-none"
-                        style={{ borderColor: colors.border }}
-                      >
-                        Low Priority Tasks
-                      </td>
-                    </tr>
-                    {lowPriorityTasks.map((task, idx) =>
-                      renderTaskRow(task, idx)
-                    )}
-                  </>
+                {desktopTasksToRender.length > 0 && desktopTasksToRender.length < totalTasksAfterFilter && totalTasksAfterFilter > DESKTOP_ITEMS_TO_LOAD * 3 && (
+                    <tr><td colSpan={11} className="text-center py-4"><button onClick={handleLoadAll} className="px-4 py-2 text-sm font-semibold rounded-lg text-white bg-purple-600 hover:bg-purple-700 transition-colors">Load All ({totalTasksAfterFilter - desktopTasksToRender.length} remaining)</button></td></tr>
                 )}
-              </>
-            )}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-        {/* Mobile view cards */}
-        <div className="block lg:hidden px-2 py-3">
+        {/* Mobile Card View (Pagination) */}
+        <div className="lg:hidden mt-6 space-y-4">
           {loading ? (
-            <div className="text-center py-10 text-gray-500 select-none">
-              <FaSpinner className="animate-spin h-7 w-7 mx-auto mb-2" />
-              Loading tasks…
+            <div className="bg-white rounded-lg shadow-md p-12 text-center border border-gray-200">
+              <FaSpinner className="animate-spin h-8 w-8 mx-auto mb-3 text-blue-600" />
+              <p className="text-gray-600 font-semibold">Loading tasks...</p>
             </div>
-          ) : highPriorityTasks.length === 0 &&
-            mediumPriorityTasks.length === 0 &&
-            lowPriorityTasks.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 select-none">
-              🚫 No tasks Assigned Yet.
+          ) : mobileTasksToRender.length === 0 && totalTasksAfterFilter === 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-12 text-center border border-gray-200">
+              <div className="text-5xl mb-3">📋</div>
+              <p className="text-gray-500 font-semibold text-lg">No tasks assigned yet</p>
+            </div>
+          ) : mobileTasksToRender.length === 0 && totalTasksAfterFilter > 0 ? (
+             <div className="bg-white rounded-lg shadow-md p-12 text-center border border-gray-200">
+              <div className="text-5xl mb-3">🔍</div>
+              <p className="text-gray-500 font-semibold text-lg">No tasks match your current filters on this page.</p>
             </div>
           ) : (
             <>
-              {highPriorityTasks.length > 0 && (
-                <>
-                  <div
-                    className="sticky top-0 z-10 font-semibold text-red-900  bg-red-50 text-xs mb-2 px-3 py-2 border-y select-none"
-                    style={{
-                      // backgroundColor: colors.dangerLight,
-                      // color: colors.danger,
-                      borderColor: colors.border,
-                    }}
-                  >
-                    High Priority
-                  </div>
-                  {highPriorityTasks.map(renderTaskCard)}
-                </>
-              )}
+              {/* High Priority Mobile */}
+              {mobileHigh.length > 0 && (<><div className="bg-red-50 text-red-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-red-200">High Priority ({tasks.filter(t => t.priority === "High").length} total)</div>{mobileHigh.map((task) => renderTaskCard(task, tasks.indexOf(task)))}</>)}
+              {/* Medium Priority Mobile */}
+              {mobileMedium.length > 0 && (<><div className="bg-yellow-50 text-yellow-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-yellow-200">Medium Priority ({tasks.filter(t => t.priority === "Medium").length} total)</div>{mobileMedium.map((task) => renderTaskCard(task, tasks.indexOf(task)))}</>)}
+              {/* Low Priority Mobile */}
+              {mobileLow.length > 0 && (<><div className="bg-green-50 text-green-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-green-200">Low Priority ({tasks.filter(t => t.priority === "Low").length} total)</div>{mobileLow.map((task) => renderTaskCard(task, tasks.indexOf(task)))}</>)}
 
-              {mediumPriorityTasks.length > 0 && (
-                <>
-                  <div
-                    className="sticky bg-yellow-50 text-yellow-900 top-0 z-10 font-semibold text-xs mb-2 px-3 py-2 border-y select-none"
-                    style={{
-                      // backgroundColor: colors.warningLight,
-                      // color: colors.warning,
-                      borderColor: colors.border,
-                    }}
-                  >
-                    Medium Priority
-                  </div>
-                  {mediumPriorityTasks.map(renderTaskCard)}
-                </>
-              )}
+              {/* Mobile Pagination Controls */}
+              {mobileTotalPages > 1 && (
+                  <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg border border-gray-200">
+                      <button
+                          onClick={handlePreviousPage}
+                          disabled={mobileCurrentPage === 1}
+                          className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                              mobileCurrentPage === 1
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
+                          }`}
+                      >
+                          <FaChevronLeft size={10} /> Previous
+                      </button>
 
-              {lowPriorityTasks.length > 0 && (
-                <>
-                  <div
-                    className="sticky bg-green-50 text-green-900 top-0 z-10 font-semibold text-xs mb-2 px-3 py-2 border-y select-none"
-                    style={{
-                      // backgroundColor: colors.secondaryLight,
-                      // color: colors.secondary,
-                      borderColor: colors.border,
-                    }}
-                  >
-                    Low Priority
+                      <span className="text-sm font-semibold text-gray-700">
+                          Page {mobileCurrentPage} of {mobileTotalPages}
+                      </span>
+
+                      <button
+                          onClick={handleNextPage}
+                          disabled={mobileCurrentPage === mobileTotalPages}
+                          className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                              mobileCurrentPage === mobileTotalPages
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
+                          }`}
+                      >
+                          Next <FaChevronRight size={10} />
+                      </button>
                   </div>
-                  {lowPriorityTasks.map(renderTaskCard)}
-                </>
               )}
             </>
           )}
         </div>
+
+        {/* Popups (WorkDesc & Remark Popups) */}
+        {openWorkDescPopup && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 sm:p-8">
+              <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+                <h4 className="font-bold text-xl text-gray-900">
+                  {workDescMode === "edit" ? "Edit Description" : "Description"}
+                </h4>
+                <button
+                  className="text-gray-400 hover:text-gray-700 text-2xl"
+                  onClick={() => setOpenWorkDescPopup(null)}
+                >
+                  ×
+                </button>
+              </div>
+
+              {workDescMode === "edit" ? (
+                <>
+                  <textarea
+                    value={
+                      workDescs[openWorkDescPopup] ||
+                      allFetchedTasks.find((t) => t._id === openWorkDescPopup)?.workDesc ||
+                      ""
+                    }
+                    onChange={(e) =>
+                      setWorkDescs((prev) => ({
+                        ...prev,
+                        [openWorkDescPopup]: e.target.value,
+                      }))
+                    }
+                    rows={8}
+                    placeholder="Enter work description..."
+                    className="w-full px-4 py-3 text-base rounded-lg resize-y border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    autoFocus
+                  />
+                  <div className="flex justify-end mt-4 gap-3">
+                    <button
+                      onClick={() => setOpenWorkDescPopup(null)}
+                      className="px-5 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleWorkDescSave(openWorkDescPopup);
+                        setOpenWorkDescPopup(null);
+                      }}
+                      className="px-5 py-2 text-sm rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-gray-700 text-base whitespace-pre-wrap max-h-96 overflow-y-auto bg-gray-50 rounded-lg p-4">
+                  {workDescs[openWorkDescPopup] || allFetchedTasks.find((t) => t._id === openWorkDescPopup)?.workDesc || "No description"}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {openRemarkPopup && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 sm:p-8">
+              <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+                <h4 className="font-bold text-xl text-gray-900">
+                  {remarkMode === "edit" ? "Edit Remark" : "Remark"}
+                </h4>
+                <button
+                  className="text-gray-400 hover:text-gray-700 text-2xl"
+                  onClick={() => setOpenRemarkPopup(null)}
+                >
+                  ×
+                </button>
+              </div>
+
+              {remarkMode === "edit" ? (
+                <>
+                  <textarea
+                    value={remarks[openRemarkPopup] || allFetchedTasks.find((t) => t._id === openRemarkPopup)?.remark || ""}
+                    onChange={(e) =>
+                      setRemarks((prev) => ({
+                        ...prev,
+                        [openRemarkPopup]: e.target.value,
+                      }))
+                    }
+                    rows={8}
+                    placeholder="Enter remark..."
+                    className="w-full px-4 py-3 text-base rounded-lg resize-y border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    autoFocus
+                  />
+                  <div className="flex justify-end mt-4 gap-3">
+                    <button
+                      onClick={() => setOpenRemarkPopup(null)}
+                      className="px-5 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleRemarkSave(openRemarkPopup);
+                        setOpenRemarkPopup(null);
+                      }}
+                      className="px-5 py-2 text-sm rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-gray-700 text-base whitespace-pre-wrap max-h-96 overflow-y-auto bg-gray-50 rounded-lg p-4">
+                  {remarks[openRemarkPopup] || "No remark"}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {openMessagePopup && taskForMessage && (
+          <MessagePopup
+            isOpen={openMessagePopup}
+            onClose={() => setOpenMessagePopup(false)}
+            task={taskForMessage}
+            sendMessage={handleMessageSend}
+          />
+        )}
       </div>
     </div>
   );

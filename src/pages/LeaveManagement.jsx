@@ -101,54 +101,54 @@ const LeaveManagement = () => {
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-[85vh] overflow-y-auto">
+      
+      {/* Header */}
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">
+        Leave Management (Admin)
+      </h1>
 
-  {/* Header */}
-  <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">
-    Leave Management (Admin)
-  </h1>
+      {/* Leave Alert Notification */}
+      {leaveAlert && (
+        <div className="flex items-center justify-between bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg mb-4 sm:mb-6 shadow">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="text-xs sm:text-base font-medium truncate">You have a new leave request!</span>
+          </div>
+          <button onClick={resetLeaveAlert} className="flex-shrink-0 ml-2">
+            <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 hover:text-yellow-800" />
+          </button>
+        </div>
+      )}
 
-  {/* Leave Alert Notification */}
-  {leaveAlert && (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-yellow-100 text-yellow-800 px-4 py-3 rounded-lg mb-4 sm:mb-6 shadow">
-      <div className="flex items-center gap-2 mb-2 sm:mb-0">
-        <Bell className="w-5 h-5" />
-        <span className="text-sm sm:text-base">You have a new leave request!</span>
+      {/* Tabs - Enhanced Responsiveness */}
+      <div className="flex gap-2 mb-3 sm:mb-6  pb-1 ">
+        {[ 
+          { key: "dashboard", label: "Dashboard" },
+          { key: "requests", label: "Manage Requests" },
+          { key: "overview", label: "Leave Overview" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex-shrink-0 px-3 sm:px-5 py-1.5 rounded-lg font-medium transition-all text-xs sm:text-base ${
+              activeTab === tab.key
+                ? "text-white shadow"
+                : "bg-white text-gray-700 border hover:bg-gray-100"
+            }`}
+            style={activeTab === tab.key ? { backgroundColor: '#4332d2' } : {}}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
-      <button onClick={resetLeaveAlert} className="self-end sm:self-auto">
-        <XCircle className="w-5 h-5 text-yellow-600 hover:text-yellow-800" />
-      </button>
+
+      {/* Content Section */}
+      <div className="bg-white rounded-xl shadow p-4 sm:p-6">
+        {activeTab === "dashboard" && <LeaveDashboardCards />}
+        {activeTab === "requests" && <ManageRequests />}
+        {activeTab === "overview" && <LeaveOverview />}
+      </div>
     </div>
-  )}
-
-  {/* Tabs */}
-  <div className="flex gap-2 sm:gap-3 mb-3 sm:mb-6 overflow-x-auto">
-    {[ 
-      { key: "dashboard", label: "Dashboard" },
-      { key: "requests", label: "Manage Requests" },
-      { key: "overview", label: "Leave Overview" },
-    ].map((tab) => (
-      <button
-        key={tab.key}
-        onClick={() => setActiveTab(tab.key)}
-        className={`flex-shrink-0 px-2.5 sm:px-5 py-2 ml-0.5 rounded-lg font-medium transition-all text-sm sm:text-base ${
-          activeTab === tab.key
-            ? "bg-blue-600 text-white shadow"
-            : "bg-white text-gray-700 border hover:bg-gray-100"
-        }`}
-      >
-        {tab.label}
-      </button>
-    ))}
-  </div>
-
-  {/* Content Section */}
-  <div className="bg-white rounded-xl shadow p-4 sm:p-6">
-    {activeTab === "dashboard" && <LeaveDashboardCards />}
-    {activeTab === "requests" && <ManageRequests />}
-    {activeTab === "overview" && <LeaveOverview />}
-  </div>
-</div>
-
   );
 };
 
