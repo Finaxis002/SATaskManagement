@@ -1217,7 +1217,7 @@ const TaskList = ({
 
               {/* Mobile Pagination Controls */}
               {mobileTotalPages > 1 && (
-                  <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg border border-gray-200">
+                  <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg border border-gray-200  mb-6">
                       <button
                           onClick={handlePreviousPage}
                           disabled={mobileCurrentPage === 1}

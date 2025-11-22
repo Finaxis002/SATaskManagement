@@ -1,17 +1,15 @@
 import React from "react";
-import { FaTrashAlt, FaEdit, FaHistory, FaUser, FaBuilding } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { FaTrashAlt, FaEdit, FaHistory } from "react-icons/fa";
 
 const ClientList = ({ clients, onDelete, onEdit }) => {
-  const navigate = useNavigate();
   const role = localStorage.getItem("role");
 
   const handleAddService = (clientId) => {
-    navigate(`/add-service/${clientId}`);
+    window.location.href = `/add-service/${clientId}`;
   };
 
   const handleShowHistory = (clientId) => {
-    navigate(`/message-history/${clientId}`);
+    window.location.href = `/message-history/${clientId}`;
   };
 
   if (!clients || clients.length === 0) {
@@ -31,79 +29,69 @@ const ClientList = ({ clients, onDelete, onEdit }) => {
       {clients.map((client, index) => (
         <div
           key={index}
-          className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-200 overflow-hidden transform hover:-translate-y-1 group"
+          className="bg-white border border-gray-200 rounded-lg p-4 shadow hover:shadow-md transition-all"
         >
-          {/* Card Header with Purple */}
-          <div style={{backgroundColor: '#4332d2'}} className="h-2"></div>
-          
-          <div className="p-5">
-            {/* Client Name with Icon */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <div style={{backgroundColor: '#e0dcf9', color: '#4332d2'}} className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center">
-                    <FaUser size={18} />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 truncate transition-colors" style={{'--hover-color': '#4332d2'}} onMouseEnter={(e) => e.currentTarget.style.color = '#4332d2'} onMouseLeave={(e) => e.currentTarget.style.color = ''}>
-                    {client.name}
-                  </h3>
-                </div>
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">
+                Client #{index + 1}
               </div>
+              <h3 className="text-lg font-bold text-gray-900">
+                {client.name}
+              </h3>
             </div>
+          </div>
 
-            {/* Client Details */}
-            <div className="space-y-2 mb-4">
-              {client.contactPerson && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <FaUser size={12} className="text-gray-400 flex-shrink-0" />
-                  <span className="truncate">{client.contactPerson}</span>
-                </div>
-              )}
-              {client.businessName && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <FaBuilding size={12} className="text-gray-400 flex-shrink-0" />
-                  <span className="truncate">{client.businessName}</span>
-                </div>
-              )}
+          <div className="space-y-2 mb-4 text-sm">
+            <div>
+              <span className="text-gray-500">Business:</span>
+              <span className="ml-2 text-gray-900">
+                {client.businessName}
+              </span>
             </div>
+            <div>
+              <span className="text-gray-500">Contact:</span>
+              <span className="ml-2 text-gray-900">
+                {client.contactPerson}
+              </span>
+            </div>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-              {role === "admin" && (
-                <button
-                  onClick={() => onEdit(client)}
-                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5"
-                  title="Edit Client"
-                >
-                  <FaEdit size={16} />
-                </button>
-              )}
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-200">
+            {role === "admin" && (
               <button
-                onClick={() => onDelete(client.name)}
-                className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5"
-                title="Delete Client"
+                onClick={() => onEdit(client)}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200"
+                title="Edit"
               >
-                <FaTrashAlt size={16} />
+                <FaEdit size={16} />
               </button>
-              <button
-                onClick={() => handleAddService(client.id)}
-                className="flex items-center justify-center w-9 h-9 rounded-lg bg-cyan-50 hover:bg-cyan-100 transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5 overflow-hidden"
-                title="Add Service"
-              >
-                <img
-                  src="../service2.png"
-                  alt="Add Service"
-                  className="w-5 h-5 object-contain"
-                />
-              </button>
-              <button
-                onClick={() => handleShowHistory(client.id)}
-                className="flex items-center justify-center w-9 h-9 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5"
-                title="Show Message History"
-              >
-                <FaHistory size={16} />
-              </button>
-            </div>
+            )}
+            <button
+              onClick={() => onDelete(client.name)}
+              className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200"
+              title="Delete"
+            >
+              <FaTrashAlt size={16} />
+            </button>
+            <button
+              onClick={() => handleAddService(client.id)}
+              className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-cyan-50 hover:bg-cyan-100 transition-all duration-200"
+              title="Add Service"
+            >
+              <img
+                src="../service2.png"
+                alt="Add Service"
+                className="w-6 h-6 object-contain"
+              />
+            </button>
+            <button
+              onClick={() => handleShowHistory(client.id)}
+              className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 transition-all duration-200"
+              title="Show History"
+            >
+              <FaHistory size={16} />
+            </button>
           </div>
         </div>
       ))}
