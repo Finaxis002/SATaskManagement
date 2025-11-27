@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import {
   ClockIcon,
@@ -19,26 +19,53 @@ const LeaveDashboardCards = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      const controller = new AbortController();
+      
       try {
         setLoading(true);
-        const { data } = await axios.get("https://taskbe.sharda.co.in/api/leave");
+        
+        // Optimized API call with timeout and abort signal
+        const { data } = await axios.get("https://taskbe.sharda.co.in/api/leave", {
+          signal: controller.signal,
+          timeout: 10000, // 10 second timeout
+          headers: {
+            'Cache-Control': 'no-cache',
+          }
+        });
+        
+        // Single loop calculation for better performance
+        const userSet = new Set();
+        let pendingCount = 0;
+        let approvedCount = 0;
+        
+        data.forEach(leave => {
+          userSet.add(leave.userId);
+          if (leave.status === "Pending") pendingCount++;
+          if (leave.status === "Approved") approvedCount++;
+        });
+        
         setStats({
           total: data.length,
-          pending: data.filter((l) => l.status === "Pending").length,
-          approved: data.filter((l) => l.status === "Approved").length,
-          users: new Set(data.map((l) => l.userId)).size,
+          pending: pendingCount,
+          approved: approvedCount,
+          users: userSet.size,
         });
         setError(null);
       } catch (err) {
+        if (err.name === 'CanceledError') return;
         setError("Failed to load data. Please try again.");
+        console.error("API Error:", err);
       } finally {
         setLoading(false);
       }
+      
+      return () => controller.abort();
     };
+    
     fetchData();
   }, []);
 
-  const cardData = [
+  const cardData = useMemo(() => [
     {
       title: "Pending Requests",
       value: stats.pending,
@@ -63,20 +90,29 @@ const LeaveDashboardCards = () => {
       color: "bg-purple-100 text-purple-600",
       icon: <ClipboardDocumentListIcon className="w-5 h-5 sm:w-6 sm:h-6" />,
     },
-  ];
+  ], [stats]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-40 text-gray-500 text-sm sm:text-base md:text-lg px-4">
-        Loading dashboard...
+      <div className="flex justify-center items-center h-40 px-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-40 text-red-500 text-sm sm:text-base md:text-lg px-4 text-center">
-        {error}
+      <div className="flex flex-col justify-center items-center h-40 px-4 text-center gap-3">
+        <p className="text-red-500 text-sm sm:text-base md:text-lg">{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+        >
+          Retry
+        </button>
       </div>
     );
   }

@@ -481,9 +481,9 @@ const useToast = () => {
     setTimeout(() => setToast(null), 2000);
   }, []);
 
-  const ToastContainer = () =>
+ const ToastContainer = () =>
     toast && (
-      <div className="fixed top-5 right-5 z-[100] bg-white border border-gray-200 p-3 rounded-lg shadow-xl animate-fade-in-down">
+      <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] bg-white border border-gray-200 p-3 rounded-lg shadow-xl animate-fade-in-down mt-12">
         <div className="flex items-center space-x-2">
           <span
             className={`text-xl ${

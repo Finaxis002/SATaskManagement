@@ -19,10 +19,17 @@ import {
 import { showAlert } from "../utils/alert";
 import Swal from "sweetalert2";
 
-// Lazy load the AddEmployee modal component
+// Lazy load with preload capability
 const AddEmployee = lazy(() => import("./AddEmployee"));
 
-// Memoized Stats Card Component
+// Preload modal on hover/interaction
+const preloadAddEmployee = () => {
+  const component = import("./AddEmployee");
+  return component;
+};
+
+// --- Memoized Components ---
+
 const StatsCard = memo(({ title, value, icon: Icon, gradient, shadowColor }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow duration-200">
     <div className="flex items-center justify-between">
@@ -37,7 +44,6 @@ const StatsCard = memo(({ title, value, icon: Icon, gradient, shadowColor }) => 
   </div>
 ));
 
-// Memoized User Row Component for Desktop
 const UserRow = memo(({ user, onEdit, onResetPassword, onDelete }) => {
   const handleEdit = useCallback(() => onEdit(user), [user, onEdit]);
   const handleReset = useCallback(() => onResetPassword(user._id, user.name), [user._id, user.name, onResetPassword]);
@@ -78,7 +84,7 @@ const UserRow = memo(({ user, onEdit, onResetPassword, onDelete }) => {
       <td className="px-6 py-4 whitespace-nowrap">
         <span
           className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-            user.role.toLowerCase() === "admin"
+            user.role?.toLowerCase() === "admin"
               ? "bg-violet-100 text-violet-700 border border-violet-200"
               : "bg-emerald-100 text-emerald-700 border border-emerald-200"
           }`}
@@ -115,7 +121,6 @@ const UserRow = memo(({ user, onEdit, onResetPassword, onDelete }) => {
   );
 });
 
-// Memoized Mobile Card Component
 const MobileUserCard = memo(({ user, onEdit, onResetPassword, onDelete }) => {
   const handleEdit = useCallback(() => onEdit(user), [user, onEdit]);
   const handleReset = useCallback(() => onResetPassword(user._id, user.name), [user._id, user.name, onResetPassword]);
@@ -130,7 +135,7 @@ const MobileUserCard = memo(({ user, onEdit, onResetPassword, onDelete }) => {
         </div>
         <span
           className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-            user.role.toLowerCase() === "admin"
+            user.role?.toLowerCase() === "admin"
               ? "bg-violet-100 text-violet-700 border border-violet-200"
               : "bg-emerald-100 text-emerald-700 border border-emerald-200"
           }`}
@@ -195,7 +200,6 @@ const MobileUserCard = memo(({ user, onEdit, onResetPassword, onDelete }) => {
   );
 });
 
-// Loading Spinner Component
 const LoadingSpinner = memo(() => (
   <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
     <div className="text-center">
@@ -222,7 +226,36 @@ const LoadingSpinner = memo(() => (
   </div>
 ));
 
-// Empty State Component
+// Skeleton loader for faster perceived loading
+const SkeletonLoader = memo(() => (
+  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 py-8 px-4 sm:px-6 lg:px-8 mb-8">
+    <div className="max-w-7xl mx-auto">
+      {/* Header Skeleton */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 animate-pulse">
+        <div className="h-8 bg-slate-200 rounded w-1/3 mb-2"></div>
+        <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+      </div>
+
+      {/* Stats Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-pulse">
+            <div className="h-4 bg-slate-200 rounded w-1/2 mb-2"></div>
+            <div className="h-8 bg-slate-200 rounded w-1/3"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-pulse">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-12 bg-slate-200 rounded mb-4"></div>
+        ))}
+      </div>
+    </div>
+  </div>
+));
+
 const EmptyState = memo(() => (
   <div className="flex flex-col items-center justify-center py-12">
     <svg
@@ -242,38 +275,23 @@ const EmptyState = memo(() => (
   </div>
 ));
 
-// Main Component
+// --- Main Component ---
 const AllEmployees = () => {
   const dispatch = useDispatch();
-  const { list: users, error } = useSelector((state) => state.users);
+  const { list: users, loading: reduxLoading } = useSelector((state) => state.users);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [department, setDepartment] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [employeesPerPage] = useState(10);
-  const [updatedUserData, setUpdatedUserData] = useState({
-    name: "",
-    email: "",
-    position: "",
-    department: "",
-    role: "",
-    userId: "",
-  });
   const [showAddModal, setShowAddModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Memoized calculations
-  const indexOfLastEmployee = useMemo(
-    () => currentPage * employeesPerPage,
-    [currentPage, employeesPerPage]
-  );
-
-  const indexOfFirstEmployee = useMemo(
-    () => indexOfLastEmployee - employeesPerPage,
-    [indexOfLastEmployee, employeesPerPage]
-  );
-
+  // --- Memoized Calculations ---
+  const indexOfLastEmployee = currentPage * employeesPerPage;
+  const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
+  
   const currentEmployees = useMemo(
     () => users.slice(indexOfFirstEmployee, indexOfLastEmployee),
     [users, indexOfFirstEmployee, indexOfLastEmployee]
@@ -285,8 +303,8 @@ const AllEmployees = () => {
   );
 
   const stats = useMemo(() => {
-    const totalAdmins = users.filter((user) => user.role === "admin").length;
-    const departments = [...new Set(users.flatMap((user) => user.department))];
+    const totalAdmins = users.filter((user) => user.role?.toLowerCase() === "admin").length;
+    const departments = [...new Set(users.flatMap((user) => Array.isArray(user.department) ? user.department : (user.department ? [user.department] : [])))];
     return {
       totalUsers: users.length,
       totalAdmins,
@@ -294,26 +312,37 @@ const AllEmployees = () => {
     };
   }, [users]);
 
-  // Fetch users on component mount
+  // --- Effects ---
   useEffect(() => {
-    setLoading(true);
-    dispatch(fetchUsers()).finally(() => setLoading(false));
+    // Preload modal component after initial render
+    const timer = setTimeout(() => {
+      preloadAddEmployee();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await dispatch(fetchUsers()).unwrap();
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        setIsInitialLoad(false);
+      }
+    };
+    
+    fetchData();
   }, [dispatch]);
 
-  // Reset to page 1 if the user list changes
   useEffect(() => {
-    setCurrentPage(1);
-  }, [users.length]);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
-  // Update department in user data
-  useEffect(() => {
-    setUpdatedUserData((prev) => ({
-      ...prev,
-      department: department,
-    }));
-  }, [department]);
-
-  // Memoized handlers
+  // --- Memoized Handlers ---
   const handleNextPage = useCallback(() => {
     setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
   }, [totalPages]);
@@ -333,24 +362,25 @@ const AllEmployees = () => {
         cancelButtonColor: "#6b7280",
         confirmButtonText: "Yes, delete!",
         cancelButtonText: "Cancel",
-        customClass: {
-          popup: "custom-alert-popup",
-          confirmButton: "custom-alert-button",
-        },
       });
 
       if (result.isConfirmed) {
-        dispatch(deleteUser(id));
-        Swal.fire({
-          title: "Deleted!",
-          text: "User has been deleted.",
-          icon: "success",
-          confirmButtonText: "OK",
-          customClass: {
-            popup: "custom-alert-popup",
-            confirmButton: "custom-alert-button",
-          },
-        });
+        try {
+          await dispatch(deleteUser(id)).unwrap();
+          Swal.fire({
+            title: "Deleted!",
+            text: "User has been deleted.",
+            icon: "success",
+            confirmButtonText: "OK",
+          });
+        } catch (error) {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to delete user.",
+            icon: "error",
+            confirmButtonText: "OK",
+          });
+        }
       }
     },
     [dispatch]
@@ -358,20 +388,33 @@ const AllEmployees = () => {
 
   const handleResetPassword = useCallback(
     async (id, name) => {
-      const newPassword = window.prompt(`Enter new password for ${name}:`);
-
-      if (!newPassword || newPassword.trim().length < 4) {
-        showAlert("Password must be at least 4 characters.");
-        return;
-      }
-
-      try {
-        await dispatch(resetPassword({ id, newPassword })).unwrap();
-        showAlert("Password reset successfully.");
-      } catch (error) {
-        showAlert(
-          `Failed to reset password: ${error.message || "Unknown error"}`
-        );
+      const { value: newPassword } = await Swal.fire({
+        title: `Enter new password for ${name}:`,
+        input: "password",
+        inputPlaceholder: "Enter new password",
+        inputAttributes: {
+          maxlength: "50",
+          autocapitalize: "off",
+          autocorrect: "off"
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Reset',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#4332d2',
+        inputValidator: (value) => {
+          if (!value || value.trim().length < 4) {
+            return 'Password must be at least 4 characters.'
+          }
+        }
+      });
+      
+      if (newPassword) {
+        try {
+          await dispatch(resetPassword({ id, newPassword })).unwrap();
+          showAlert("Password reset successfully.");
+        } catch (error) {
+          showAlert(`Failed to reset password: ${error.message || "Unknown error"}`);
+        }
       }
     },
     [dispatch]
@@ -379,16 +422,8 @@ const AllEmployees = () => {
 
   const handleEdit = useCallback((user) => {
     setSelectedUser(user);
-    setUpdatedUserData({
-      name: user.name,
-      email: user.email,
-      position: user.position,
-      department: user.department,
-      role: user.role,
-      userId: user.userId,
-    });
     setDepartment(
-      Array.isArray(user.department) ? user.department : [user.department]
+      Array.isArray(user.department) ? user.department : (user.department ? [user.department] : [])
     );
     setShowEditModal(true);
   }, []);
@@ -396,24 +431,23 @@ const AllEmployees = () => {
   const handleCloseModal = useCallback(() => {
     setShowEditModal(false);
     setSelectedUser(null);
-    dispatch(fetchUsers());
-  }, [dispatch]);
+  }, []);
 
   const handleCloseAddModal = useCallback(() => {
     setShowAddModal(false);
-    dispatch(fetchUsers());
-  }, [dispatch]);
+  }, []);
 
   const handleOpenAddModal = useCallback(() => {
     setShowAddModal(true);
   }, []);
 
-  if (loading) {
-    return <LoadingSpinner />;
+  // Show skeleton loader only on initial load
+  if (isInitialLoad && reduxLoading) {
+    return <SkeletonLoader />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 py-8 px-4 sm:px-6 lg:px-8 mb-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6">
@@ -428,21 +462,15 @@ const AllEmployees = () => {
             </div>
             <button
               onClick={handleOpenAddModal}
+              onMouseEnter={preloadAddEmployee}
               className="inline-flex items-center justify-center px-6 py-3 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5"
               style={{
                 backgroundColor: "#4332d2",
-                boxShadow:
-                  "0 10px 15px -3px rgba(67, 50, 210, 0.3), 0 4px 6px -2px rgba(67, 50, 210, 0.05)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#342599";
-                e.currentTarget.style.boxShadow =
-                  "0 20px 25px -5px rgba(67, 50, 210, 0.4), 0 10px 10px -5px rgba(67, 50, 210, 0.04)";
+                boxShadow: "0 10px 15px -3px rgba(67, 50, 210, 0.3), 0 4px 6px -2px rgba(67, 50, 210, 0.05)",
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "#4332d2";
-                e.currentTarget.style.boxShadow =
-                  "0 10px 15px -3px rgba(67, 50, 210, 0.3), 0 4px 6px -2px rgba(67, 50, 210, 0.05)";
+                e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(67, 50, 210, 0.3), 0 4px 6px -2px rgba(67, 50, 210, 0.05)";
               }}
             >
               <svg
@@ -539,7 +567,6 @@ const AllEmployees = () => {
             </table>
           </div>
           
-          {/* Pagination inside table panel */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
               <p className="text-sm text-gray-600">
@@ -597,7 +624,6 @@ const AllEmployees = () => {
             ))
           )}
           
-          {/* Pagination for mobile */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-4 bg-white rounded-2xl shadow-sm border border-slate-200">
               <p className="text-sm text-gray-600">
@@ -638,8 +664,8 @@ const AllEmployees = () => {
         </div>
       </div>
 
-      {/* Edit Modal with Lazy Loading */}
-      {showEditModal && (
+      {/* Edit Modal */}
+      {showEditModal && selectedUser && (
         <div className="fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-sm z-50 p-4">
           <Suspense fallback={<LoadingSpinner />}>
             <AddEmployee
@@ -652,7 +678,7 @@ const AllEmployees = () => {
         </div>
       )}
 
-      {/* Add Modal with Lazy Loading */}
+      {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-sm z-50 p-4">
           <Suspense fallback={<LoadingSpinner />}>
