@@ -1,11 +1,11 @@
 // src/pages/Agent/AgentList.jsx (UPDATED for Navigation)
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; // 👈 useNavigate इंपोर्ट करें
+import { useNavigate } from 'react-router-dom'; 
 import { Trash2, Edit, User } from 'lucide-react'; 
 
 const AgentList = ({ agents, onDelete, onUpdate }) => {
-  const navigate = useNavigate(); // 👈 useNavigate हुक का उपयोग करें
+  const navigate = useNavigate(); 
 
   if (agents.length === 0) {
     return (
@@ -19,11 +19,11 @@ const AgentList = ({ agents, onDelete, onUpdate }) => {
     onUpdate(agentId, { status: newStatus });
   };
   
-  // 🌟 FIX: Profile View Handler अब नेविगेट करेगा 🌟
+
   const handleViewProfile = (agentId) => {
-    navigate(`/agent/profile/${agentId}`); // 👈 इस राउट पर नेविगेट करें
+    navigate(`/agent/profile/${agentId}`); 
   };
-  // ------------------------------------------------
+
 
   const displayId = (id) => `${id.substring(0, 4)}...${id.substring(id.length - 4)}`;
 
