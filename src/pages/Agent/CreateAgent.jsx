@@ -1,4 +1,4 @@
-// src/pages/Agent/CreateAgent.jsx (UPDATED with Bank Details)
+// src/pages/Agent/CreateAgent.jsx (FINAL - With Bank Details)
 
 import React, { useState } from 'react';
 
@@ -8,7 +8,6 @@ const CreateAgent = ({ onSubmit }) => {
     email: '',
     phone: '',
     city: '',
-    // 🌟 NEW: Bank Details Fields 🌟
     bankDetails: {
       bankName: '',
       accountNumber: '',
@@ -16,12 +15,10 @@ const CreateAgent = ({ onSubmit }) => {
     },
   });
 
-  // Common handler for basic fields (name, email, phone, city)
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handler for nested bankDetails fields
   const handleBankDetailChange = (e) => {
     setFormData(prev => ({
       ...prev,
@@ -35,22 +32,18 @@ const CreateAgent = ({ onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // केवल अनिवार्य फ़ील्ड्स की जाँच करें
     if (formData.name && formData.email && formData.phone) {
       
-      // सुनिश्चित करें कि डेटा का स्ट्रक्चर API के अनुरूप हो
       const finalData = {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
           city: formData.city,
-          // अगर बैंक डीटेल्स खाली हैं, तो भी उन्हें भेजें
           bankDetails: formData.bankDetails,
       };
 
-      onSubmit(finalData); // Parent component (AgentPage) handles API call
+      onSubmit(finalData); 
       
-      // फॉर्म रीसेट करें
       setFormData({ 
         name: '', 
         email: '', 
@@ -123,7 +116,7 @@ const CreateAgent = ({ onSubmit }) => {
               placeholder="New Delhi"
             />
           </div>
-        </div> {/* End Basic Details */}
+        </div> 
 
         {/* ********** Bank Details Section ********** */}
         <div className="space-y-4">
@@ -136,7 +129,7 @@ const CreateAgent = ({ onSubmit }) => {
               name="bankName"
               id="bankName"
               value={formData.bankDetails.bankName}
-              onChange={handleBankDetailChange} // 👈 Use separate handler
+              onChange={handleBankDetailChange} 
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
               placeholder="State Bank of India"
             />
@@ -148,7 +141,7 @@ const CreateAgent = ({ onSubmit }) => {
               name="accountNumber"
               id="accountNumber"
               value={formData.bankDetails.accountNumber}
-              onChange={handleBankDetailChange} // 👈 Use separate handler
+              onChange={handleBankDetailChange} 
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
               placeholder="1234567890"
             />
@@ -160,12 +153,12 @@ const CreateAgent = ({ onSubmit }) => {
               name="ifsc"
               id="ifsc"
               value={formData.bankDetails.ifsc}
-              onChange={handleBankDetailChange} // 👈 Use separate handler
+              onChange={handleBankDetailChange} 
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
               placeholder="SBIN0001234"
             />
           </div>
-        </div> {/* End Bank Details */}
+        </div> 
 
         <button
           type="submit"

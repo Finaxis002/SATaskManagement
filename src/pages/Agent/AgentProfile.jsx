@@ -1,9 +1,9 @@
-// src/pages/Agent/AgentProfile.jsx (UPDATED for Paid Till Date and Referred Clients)
+// src/pages/Agent/AgentProfile.jsx (FINAL - Metrics Included)
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, User, Mail, Phone, MapPin, DollarSign, Banknote, Users, TrendingUp } from 'lucide-react'; // TrendingUp इंपोर्ट किया गया
+import { ArrowLeft, User, Mail, Phone, MapPin, DollarSign, Banknote, Users, TrendingUp } from 'lucide-react'; 
 
 const API_URL = 'https://taskbe.sharda.co.in/api/agents'; 
 
@@ -40,7 +40,7 @@ const AgentProfile = () => {
     const bankDetails = agent.bankDetails || {};
     const hasBankDetails = bankDetails.bankName || bankDetails.accountNumber;
 
-    // Helper function to format currency
+    // Helper function to format currency (INR)
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -72,7 +72,7 @@ const AgentProfile = () => {
                     </div>
                 </div>
 
-                {/* 🌟 NEW: Financial and Performance Metrics 🌟 */}
+                {/* Financial and Performance Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     
                     {/* Paid Till Date Card */}
@@ -93,7 +93,7 @@ const AgentProfile = () => {
                         iconColor="text-blue-600"
                     />
                 </div>
-                {/* 🌟 END: Metrics 🌟 */}
+                {/* END: Metrics */}
 
                 {/* Main Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -125,7 +125,7 @@ const AgentProfile = () => {
     );
 };
 
-// Helper component for detail items (Unchanged)
+// Helper component for detail items
 const DetailItem = ({ icon: Icon, label, value, statusColor }) => (
     <div className="flex items-start">
         {Icon && <Icon size={20} className={`mt-1 mr-3 ${statusColor || 'text-indigo-500'}`} />}
@@ -136,7 +136,7 @@ const DetailItem = ({ icon: Icon, label, value, statusColor }) => (
     </div>
 );
 
-// 🌟 NEW: Metric Card Component for Highlights 🌟
+// Helper component for highlight cards
 const MetricCard = ({ icon: Icon, label, value, color, iconColor }) => (
     <div className={`p-5 rounded-lg shadow-md flex items-center justify-between ${color} border border-gray-200`}>
         <div>
