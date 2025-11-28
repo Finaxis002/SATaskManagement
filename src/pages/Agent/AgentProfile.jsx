@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, User, Mail, Phone, MapPin, DollarSign, Banknote, Users, TrendingUp } from 'lucide-react'; // TrendingUp इंपोर्ट किया गया
 
-const API_URL = 'http://localhost:1100/api/agents'; 
+const API_URL = 'https://taskbe.sharda.co.in/api/agents'; 
 
 const AgentProfile = () => {
     const { agentId } = useParams();
