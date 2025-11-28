@@ -1,105 +1,161 @@
-// src/pages/Agent/AgentList.jsx (UPDATED - ID Column Removed)
+// src/pages/Agent/AgentPage.jsx - FINAL VERSION (Fixed Tabs Order & Modal)
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom'; 
-import { Trash2, Edit, User } from 'lucide-react'; 
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { User, Plus, Gift, Users, X } from 'lucide-react'; 
+import CreateAgent from './CreateAgent';
+import Referrals from './Referrals';
+import AgentList from './AgentList';
 
-const AgentList = ({ agents, onDelete, onUpdate }) => {
-  const navigate = useNavigate();
+const API_URL = 'https://taskbe.sharda.co.in/api/agents'; 
 
-  if (agents.length === 0) {
+const AgentPage = () => {
+    const [activeTab, setActiveTab] = useState('list'); 
+    const [agents, setAgents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false); 
+
+    const fetchAgents = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await axios.get(API_URL);
+            setAgents(response.data);
+        } catch (err) {
+            setError('Failed to fetch agents.');
+            console.error('Fetch error:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAgents();
+    }, []);
+
+    const handleCreateAgent = async (newAgentData) => {
+        try {
+            const response = await axios.post(API_URL, newAgentData);
+            setAgents([...agents, response.data]);
+            alert(`Agent ${response.data.name} created successfully!`);
+            setIsModalOpen(false); 
+            setActiveTab('list');
+        } catch (err) {
+            alert('Error creating agent: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleDeleteAgent = async (id) => {
+        if (window.confirm('Are you sure you want to delete this agent?')) {
+            try {
+                await axios.delete(`${API_URL}/${id}`);
+                setAgents(agents.filter(agent => agent._id !== id));
+                alert('Agent deleted successfully.');
+            } catch (err) {
+                alert('Error deleting agent: ' + (err.response?.data?.message || err.message));
+            }
+        }
+    };
+
+    const handleUpdateAgent = async (id, updatedData) => {
+        try {
+            const response = await axios.put(`${API_URL}/${id}`, updatedData);
+            setAgents(agents.map(agent => 
+                agent._id === id ? response.data : agent
+            ));
+            return true; 
+        } catch (err) {
+            alert('Error updating agent: ' + (err.response?.data?.message || err.message));
+            return false; 
+        }
+    };
+    
+    if (loading) return <div className="text-center p-10 text-indigo-600 font-bold">Loading Agents...</div>;
+    if (error) return <div className="text-center p-10 text-red-600 font-bold">Error: {error}</div>;
+
+
     return (
-      <div className="text-center p-10 border-dashed border-2 border-gray-300 rounded-lg">
-        <p className="text-xl text-gray-500">No agents registered yet. Go to 'Create New Agent' tab to add one.</p>
-      </div>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+            <div className="max-w-7xl mx-auto">
+                
+                {/* 1. Header with Create Button on the Right */}
+                <div className="bg-white rounded-lg shadow-lg p-6 mb-6 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                            <User className="text-indigo-600" size={36} />
+                            Agent Management System
+                        </h1>
+                        <p className="text-gray-600 mt-2">Manage agents, bank details, and referrals</p>
+                    </div>
+                    
+                    {/* Create Button */}
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-150"
+                    >
+                        <Plus size={20} />
+                        Create New Agent
+                    </button>
+                </div>
+
+                {/* 2. Tabs (List and Referrals) */}
+                <div className="bg-white rounded-lg shadow-lg mb-6">
+                    <div className="flex border-b">
+                        
+                        {/* List Button (First) */}
+                        <button
+                            onClick={() => setActiveTab('list')}
+                            className={`flex-1 py-4 px-6 font-semibold transition-all flex items-center justify-center gap-2 ${
+                                activeTab === 'list'
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            <Users size={20} />
+                            List of Agents
+                        </button>
+                        
+                        {/* Referral Button (Second) */}
+                        <button
+                            onClick={() => setActiveTab('referral')}
+                            className={`flex-1 py-4 px-6 font-semibold transition-all flex items-center justify-center gap-2 ${
+                                activeTab === 'referral'
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            <Gift size={20} />
+                            Referrals
+                        </button>
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="p-6">
+                        {activeTab === 'referral' && <Referrals agents={agents} />}
+                        {activeTab === 'list' && <AgentList agents={agents} onDelete={handleDeleteAgent} onUpdate={handleUpdateAgent} />}
+                    </div>
+                </div>
+            </div>
+            
+            {/* 3. Modal Component */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+                        <div className="p-6 border-b flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-indigo-700">Create New Agent</h2>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-800">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-6 max-h-[80vh] overflow-y-auto">
+                            <CreateAgent onSubmit={handleCreateAgent} /> 
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
-  }
-
-  const handleStatusChange = (agentId, newStatus) => {
-    onUpdate(agentId, { status: newStatus });
-  };
-  
-  const handleViewProfile = (agentId) => {
-    navigate(`/agent/profile/${agentId}`);
-  };
-
-  // displayId function is no longer needed but kept for cleanliness if ID is ever used elsewhere.
-  // const displayId = (id) => `${id.substring(0, 4)}...${id.substring(id.length - 4)}`; 
-
-  return (
-    <div className="bg-white p-6 rounded-lg border border-indigo-200 overflow-x-auto">
-      <h3 className="text-2xl font-semibold mb-4 text-indigo-700">👥 All Registered Agents ({agents.length})</h3>
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            {/* ❌ ID Header Removed ❌ */}
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrals</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {agents.map((agent) => (
-            <tr key={agent._id}>
-              {/* ❌ ID Data Cell Removed ❌ 
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" title={agent._id}>{displayId(agent._id)}</td>
-              */}
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{agent.name}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {agent.email}
-                <br />
-                {agent.phone}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">{agent.referrals}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                <select
-                  value={agent.status}
-                  onChange={(e) => handleStatusChange(agent._id, e.target.value)}
-                  className={`p-1 rounded-full text-xs font-semibold ${
-                    agent.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                
-                {/* 1. View Profile Button */}
-                <button
-                  onClick={() => handleViewProfile(agent._id)}
-                  className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                  title="View Profile"
-                >
-                  <User size={18} />
-                </button>
-                
-                {/* 2. Edit Button */}
-                <button
-                  onClick={() => alert(`Editing Agent ID: ${agent._id}`)}
-                  className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
-                  title="Edit Details"
-                >
-                  <Edit size={18} />
-                </button>
-                
-                {/* 3. Delete Button */}
-                <button
-                  onClick={() => onDelete(agent._id)}
-                  className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                  title="Delete Agent"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 };
 
-export default AgentList;
+export default AgentPage;
