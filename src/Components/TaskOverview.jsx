@@ -27,7 +27,7 @@ const parseISO = (dateString) => {
   if (DATE_CACHE.has(dateString)) return DATE_CACHE.get(dateString);
   const date = new Date(dateString);
   DATE_CACHE.set(dateString, date);
-  if (DATE_CACHE.size > 100) DATE_CACHE.clear(); // Prevent memory leak
+  if (DATE_CACHE.size > 100) DATE_CACHE.clear();
   return date;
 };
 
@@ -41,7 +41,7 @@ const isToday = (date) => date.toDateString() === TODAY_KEY;
 const isTomorrow = (date) => date.toDateString() === TOMORROW_KEY;
 const isBefore = (date, compareDate) => date < compareDate;
 
-// Static configurations - move outside component
+// Static configurations
 const TABS = [
   { key: "today", label: "Today", icon: Calendar, color: "blue" },
   { key: "tomorrow", label: "Tomorrow", icon: Clock, color: "yellow" },
@@ -58,7 +58,7 @@ const COLOR_CLASSES = {
   green: { active: "bg-green-500 text-white", inactive: "bg-green-50 text-green-700 hover:bg-green-100", mobile: "bg-green-500 text-white" }
 };
 
-// Virtualized task item - renders only visible content
+// Virtualized task item
 const TaskItem = React.memo(({ task, justCompleted, onToggleCompleted, isMobile }) => {
   const isCompleted = task.status === "Completed" || justCompleted.has(task._id);
   const parsedDate = useMemo(() => parseISO(task.dueDate), [task.dueDate]);
@@ -91,11 +91,11 @@ const TaskItem = React.memo(({ task, justCompleted, onToggleCompleted, isMobile 
             
             {task.assignees?.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
-                {task.assignees.slice(0, 3).map((assignee) => (
-                  <div key={assignee.email} className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                {task.assignees.slice(0, 3).map((assignee, idx) => (
+                  <div key={assignee.email || idx} className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
                     <Users className="w-2.5 h-2.5" />
                     <span className="text-xs font-medium">
-                      {assignee.name.split(' ')[0]}
+                      {assignee.name?.split(' ')[0] || 'User'}
                     </span>
                   </div>
                 ))}
@@ -143,11 +143,11 @@ const TaskItem = React.memo(({ task, justCompleted, onToggleCompleted, isMobile 
           
           {task.assignees?.length > 0 && (
             <div className="flex flex-wrap gap-1 max-w-24 sm:max-w-48">
-              {task.assignees.slice(0, 2).map((assignee) => (
-                <div key={assignee.email} className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+              {task.assignees.slice(0, 2).map((assignee, idx) => (
+                <div key={assignee.email || idx} className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                   <Users className="w-2 h-2 sm:w-3 sm:h-3" />
                   <span className="text-xs font-medium truncate max-w-12 sm:max-w-20">
-                    {assignee.name.split(' ')[0]}
+                    {assignee.name?.split(' ')[0] || 'User'}
                   </span>
                 </div>
               ))}
@@ -163,7 +163,6 @@ const TaskItem = React.memo(({ task, justCompleted, onToggleCompleted, isMobile 
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison for better performance
   return (
     prevProps.task._id === nextProps.task._id &&
     prevProps.task.status === nextProps.task.status &&
@@ -178,38 +177,65 @@ const TaskOverview = () => {
   const [activeTab, setActiveTab] = useState("today");
   const [justCompleted, setJustCompleted] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isPending, startTransitionHook] = useTransition();
 
-  // Cache user data - read once
+  // Cache user data
   const userData = useMemo(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    return {
-      role: localStorage.getItem("role"),
-      userEmail: user?.email?.toLowerCase(),
-      userName: localStorage.getItem("name"),
-      userId: localStorage.getItem("userId")
-    };
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      return {
+        role: localStorage.getItem("role"),
+        userEmail: user?.email?.toLowerCase(),
+        userName: localStorage.getItem("name"),
+        userId: localStorage.getItem("userId")
+      };
+    } catch (e) {
+      console.error("Error parsing user data:", e);
+      return { role: null, userEmail: null, userName: null, userId: null };
+    }
   }, []);
 
-  // Fetch with abort controller for cleanup
+  // Fetch tasks
   useEffect(() => {
     const controller = new AbortController();
     
     const fetchTasks = async () => {
       try {
-        const response = await fetch("https://taskbe.sharda.co.in/api/tasks", {
-          signal: controller.signal
-        });
-        const data = await response.json();
+        setLoading(true);
+        setError(null);
         
-        // Use startTransition for non-urgent updates
+        console.log("🔍 Fetching tasks from API...");
+        
+        const response = await fetch("https://taskbe.sharda.co.in/api/tasks?limit=1000", {
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("📦 API Response:", data);
+        
+        // ✅ CRITICAL FIX: Handle your backend's response structure
+        // Your backend returns: { tasks: [...], currentPage, totalPages, totalCount, hasMore }
+        const taskArray = Array.isArray(data.tasks) ? data.tasks : (Array.isArray(data) ? data : []);
+        
+        console.log(`✅ Loaded ${taskArray.length} tasks from API`);
+        console.log("First task sample:", taskArray[0]);
+        
         startTransition(() => {
-          setTasks(data);
+          setTasks(taskArray);
           setLoading(false);
         });
       } catch (err) {
         if (err.name !== 'AbortError') {
-          console.error("Failed to fetch tasks", err);
+          console.error("❌ Failed to fetch tasks:", err);
+          setError(err.message);
           setLoading(false);
         }
       }
@@ -220,8 +246,11 @@ const TaskOverview = () => {
     return () => controller.abort();
   }, []);
 
-  // Optimized categorization with early exits
+  // Optimized categorization
   const categorizedTasks = useMemo(() => {
+    console.log(`📊 Categorizing ${tasks.length} tasks...`);
+    console.log("User data:", userData);
+    
     if (tasks.length === 0) {
       return {
         today: [], tomorrow: [], upcoming: [], overdue: [], completed: []
@@ -242,16 +271,27 @@ const TaskOverview = () => {
     for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i];
       
-      // Early filtering
-      if (task.status === "Completed" && task.isHidden) continue;
+      // Skip hidden completed tasks
+      if (task.status === "Completed" && task.isHidden) {
+        console.log(`⏭️ Skipping hidden completed task: ${task.taskName}`);
+        continue;
+      }
       
-      if (role !== "admin") {
-        if (!task.assignees?.some(a => a.email.toLowerCase() === userEmail)) {
+      // Filter by assignee for non-admin users
+      if (role !== "admin" && userEmail) {
+        const isAssigned = task.assignees?.some(a => 
+          a.email?.toLowerCase() === userEmail
+        );
+        if (!isAssigned) {
+          console.log(`⏭️ Skipping task not assigned to user: ${task.taskName}`);
           continue;
         }
       }
 
-      if (!task.dueDate) continue;
+      if (!task.dueDate) {
+        console.log(`⚠️ Task without due date: ${task.taskName}`);
+        continue;
+      }
 
       const parsedDate = parseISO(task.dueDate);
       const isActuallyCompleted = task.status === "Completed";
@@ -262,26 +302,40 @@ const TaskOverview = () => {
         continue;
       }
 
-      // Quick date categorization
+      // Categorize by date
       if (isToday(parsedDate)) {
+        console.log(`📅 Today: ${task.taskName}`);
         categories.today.push(task);
       } else if (isTomorrow(parsedDate)) {
+        console.log(`📅 Tomorrow: ${task.taskName}`);
         categories.tomorrow.push(task);
       } else if (isBefore(parsedDate, now)) {
+        console.log(`⚠️ Overdue: ${task.taskName}`);
         categories.overdue.push(task);
       } else {
+        console.log(`📅 Upcoming: ${task.taskName}`);
         categories.upcoming.push(task);
       }
     }
 
+    console.log("📊 Categorized tasks:", {
+      today: categories.today.length,
+      tomorrow: categories.tomorrow.length,
+      upcoming: categories.upcoming.length,
+      overdue: categories.overdue.length,
+      completed: categories.completed.length
+    });
+
     return categories;
   }, [tasks, userData, justCompleted]);
 
-  // Debounced toggle with optimistic update
+  // Toggle task completion
   const handleToggleCompleted = useCallback(async (taskId) => {
-    const updatedBy = { name: userData.userName, email: userData.userId };
+    const updatedBy = { 
+      name: userData.userName || "Unknown", 
+      email: userData.userId || "unknown@example.com" 
+    };
     
-    // Optimistic update
     setJustCompleted((prev) => new Set([...prev, taskId]));
     
     try {
@@ -294,9 +348,8 @@ const TaskOverview = () => {
         }
       );
       
-      if (!response.ok) throw new Error("Failed to update");
+      if (!response.ok) throw new Error("Failed to update task");
 
-      // Non-urgent UI update
       startTransition(() => {
         setTasks((prevTasks) =>
           prevTasks.map((task) =>
@@ -305,7 +358,7 @@ const TaskOverview = () => {
         );
       });
     } catch (error) {
-      console.error("Failed to update status", error);
+      console.error("Failed to update task status:", error);
       setJustCompleted((prev) => {
         const newSet = new Set(prev);
         newSet.delete(taskId);
@@ -314,14 +367,17 @@ const TaskOverview = () => {
     }
   }, [userData]);
 
-  // Reset on tab change
+  // Reset completed tasks on tab change
   useEffect(() => {
     setJustCompleted(new Set());
   }, [activeTab]);
 
-  // Batch stats update with RAF
+  // Update dashboard stats
   useEffect(() => {
-    if (typeof window.updateDashboardStats !== "function") return;
+    if (typeof window.updateDashboardStats !== "function") {
+      console.log("⚠️ window.updateDashboardStats not found");
+      return;
+    }
     
     const rafId = requestAnimationFrame(() => {
       const counts = {
@@ -338,6 +394,8 @@ const TaskOverview = () => {
           categorizedTasks.overdue.length +
           categorizedTasks.completed.length,
       };
+      
+      console.log("📊 Updating dashboard stats:", counts);
       window.updateDashboardStats(counts);
     });
     
@@ -377,6 +435,26 @@ const TaskOverview = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 mx-2 sm:mx-0">
+        <div className="flex items-center justify-center h-[300px] sm:h-[400px]">
+          <div className="flex flex-col items-center gap-3 sm:gap-4 text-red-500">
+            <AlertCircle className="w-8 h-8" />
+            <span className="text-sm font-medium">Failed to load tasks</span>
+            <span className="text-xs text-gray-500">{error}</span>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 mx-2 sm:mx-0">
       {/* Header */}
@@ -386,6 +464,9 @@ const TaskOverview = () => {
             <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-800">Task Overview</h2>
+          <span className="text-xs text-gray-500 ml-auto">
+            {tasks.length} total
+          </span>
         </div>
 
         {/* Desktop Tabs */}

@@ -102,7 +102,7 @@ const TaskCardMobile = memo(({ task }) => (
 ), (prevProps, nextProps) => prevProps.task._id === nextProps.task._id);
 
 const EmptyState = memo(() => (
-  <div className="text-center py-6 text-gray-500">🚫 No completed tasks available.</div>
+  <div className="text-center py-6 text-gray-500">🚫 No tasks available.</div>
 ));
 
 // Static select styles outside component
@@ -126,18 +126,33 @@ const Completed = () => {
 
   const dispatch = useDispatch();
 
-  // Fetch tasks once
+  // Fetch tasks using existing endpoint
   useEffect(() => {
     let isMounted = true;
     const fetchTasks = async () => {
       setLoading(true);
       try {
-        const response = await fetch("https://taskbe.sharda.co.in/api/tasks");
+        const response = await fetch("https://taskbe.sharda.co.in/api/tasks?status=Completed,Obsolete");
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
-        if (isMounted) setTasks(data);
+        
+        console.log("API Response:", data);
+        
+        // Handle both response formats
+        let tasksData = data.tasks || data;
+        
+        // Ensure tasksData is an array
+        if (!Array.isArray(tasksData)) {
+          console.error("Invalid data format received:", data);
+          tasksData = [];
+        }
+        
+        console.log("Tasks fetched:", tasksData.length, "tasks");
+        
+        if (isMounted) setTasks(tasksData);
       } catch (err) {
         console.error("Failed to fetch tasks:", err);
+        if (isMounted) setTasks([]);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -152,18 +167,46 @@ const Completed = () => {
     dispatch(fetchTaskCodes());
   }, [dispatch]);
 
-  // Optimized filtering with dependency array
+  // Filter to show completed/obsolete tasks (without isHidden check)
   const filteredTasks = useMemo(() => {
-    const statusCondition = activeTab === "completed" 
-      ? (task) => task.status === "Completed" && task.isHidden === true
-      : (task) => task.status === "Obsolete" && task.isObsoleteHidden === true;
+    if (!Array.isArray(tasks)) {
+      console.warn("Tasks is not an array:", tasks);
+      return [];
+    }
     
-    return tasks.filter((task) => {
-      if (!statusCondition(task)) return false;
+    // Debug: Check how many completed/obsolete tasks exist
+    const completedCount = tasks.filter(t => t.status === "Completed").length;
+    const obsoleteCount = tasks.filter(t => t.status === "Obsolete").length;
+    
+    console.log(`📊 Task Stats:
+      - Total Completed: ${completedCount}
+      - Total Obsolete: ${obsoleteCount}
+      - Active Tab: ${activeTab}
+    `);
+    
+    const filtered = tasks.filter((task) => {
+      // For completed tab: show ALL Completed tasks
+      if (activeTab === "completed") {
+        if (task.status !== "Completed") return false;
+      }
+      
+      // For obsolete tab: show ALL Obsolete tasks
+      if (activeTab === "obsolete") {
+        if (task.status !== "Obsolete") return false;
+      }
+      
+      // Filter by client
       if (selectedClient && task.clientName !== selectedClient) return false;
+      
+      // Filter by code
       if (selectedCode && task.code !== selectedCode) return false;
+      
       return true;
     });
+    
+    console.log(`✅ Filtered tasks for ${activeTab}:`, filtered.length);
+    
+    return filtered;
   }, [tasks, selectedClient, selectedCode, activeTab]);
 
   // Reset page when filters change
