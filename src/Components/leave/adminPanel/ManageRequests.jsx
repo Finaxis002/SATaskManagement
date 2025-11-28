@@ -71,7 +71,7 @@ const ManageRequests = () => {
   });
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 mb-6">
       {/* ----------------------------------- DESKTOP VIEW ----------------------------------- */}
       <div className="hidden md:block bg-white rounded-xl p-4 shadow">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">
@@ -100,7 +100,7 @@ const ManageRequests = () => {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto ">
           <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden table-fixed">
             <thead className="bg-gray-100 text-gray-700 text-sm sticky top-0 z-10">
               <tr>
