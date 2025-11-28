@@ -11,6 +11,7 @@ import {
   FaClock,
   FaMoneyBill,
   FaGolfBall,
+  FaUserTie, // Agent के लिए नया आइकन
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket";
@@ -132,6 +133,15 @@ const Sidebar = () => {
             to="/all-tasks"
             expanded={expanded}
           />
+          
+          {/* 🌟 New Agent Sidebar Item 🌟 */}
+          <SidebarItem
+            icon={<FaUserTie />}
+            label="Agent"
+            to="/agent" // आपको अपने राउट के हिसाब से to prop बदलना होगा
+            expanded={expanded}
+          />
+          {/* 🌟 End New Agent Sidebar Item 🌟 */}
 
           <SidebarItem
             icon={<FaBriefcase />}
@@ -208,7 +218,7 @@ const Sidebar = () => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-gray-200 shadow-lg pb-safe">
         <div
           className={`grid ${
-            role === "admin" ? "grid-cols-6" : "grid-cols-4"
+            role === "admin" ? "grid-cols-7" : "grid-cols-5" // ग्रिड को 7 या 5 में बदला
           } gap-0 px-1 py-2`}
         >
           {role === "admin" ? (
@@ -223,12 +233,14 @@ const Sidebar = () => {
                 label="Tasks"
                 to="/all-tasks"
               />
+              {/* 🌟 New Agent Mobile Nav Item (Admin) 🌟 */}
+              <MobileNavItem icon={<FaUserTie />} label="Agent" to="/agent" />
+              {/* 🌟 End New Agent Mobile Nav Item 🌟 */}
               <MobileNavItem
                 icon={<FaBriefcase />}
                 label="Clients"
                 to="/clients"
               />
-              <MobileNavItem icon={<FaGolfBall />} label="Leave" to="/leave" />
               <MobileNavItem
                 icon={<FaCog />}
                 label="Settings"
@@ -240,6 +252,7 @@ const Sidebar = () => {
                 label="Invoices"
                 to="/viewinvoicewithotp"
               />
+               <MobileNavItem icon={<FaHome />} label="Home" to="/" />
             </>
           ) : (
             <>
@@ -249,6 +262,9 @@ const Sidebar = () => {
                 label="Tasks"
                 to="/all-tasks"
               />
+              {/* 🌟 New Agent Mobile Nav Item (Non-Admin) 🌟 */}
+              <MobileNavItem icon={<FaUserTie />} label="Agent" to="/agent" />
+              {/* 🌟 End New Agent Mobile Nav Item 🌟 */}
               <MobileNavItem
                 icon={<FaBriefcase />}
                 label="Clients"
