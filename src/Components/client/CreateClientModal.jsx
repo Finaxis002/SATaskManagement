@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 
-const CreateClientModal = ({  client, onClose, onCreate }) => {
+const CreateClientModal = ({  client, onClose, onCreate, agents = [] }) => {
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
@@ -10,6 +10,7 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
     mobile: "",
     emailId: "",
     GSTIN: "",
+     referrer: "", 
   });
 
   // const isEdit = Boolean(client && client._id);
@@ -67,6 +68,7 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
     mobile: c.mobile || c.phone || c.contactNo || "",
     emailId: c.emailId || c.email || "",
     GSTIN: c.GSTIN || c.gstin || "",
+      referrer: c.referrer || c.agent || "",
   };
 
   setFormData(
@@ -81,6 +83,7 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
           mobile: "",
           emailId: "",
           GSTIN: "",
+           referrer: "",
         }
   );
 }, [isEdit, client?._id, client?.id, client?.name]);
@@ -127,7 +130,21 @@ const CreateClientModal = ({  client, onClose, onCreate }) => {
             className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
           />
         ))}
-
+             
+              {/* 🔥 Dropdown for "Refer by Agent" */}
+        <select
+          name="referrer"
+          value={formData.referrer}
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="">-- Refer by Agent --</option>
+          {agents.map((agent) => (
+            <option key={agent._id || agent.id} value={agent.name}>
+              {agent.name}
+            </option>
+          ))}
+        </select>
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 border rounded hover:bg-gray-50">
             Cancel
