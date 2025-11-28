@@ -79,7 +79,7 @@ const LeaveOverview = () => {
   }, [selectedUser, selectedMonth, leaves]);
 
   return (
-    <div className="sm:p-6 rounded-xl">
+    <div className="sm:p-6 rounded-xl mb-6">
       <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">
         Leave Overview
       </h2>

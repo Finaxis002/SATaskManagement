@@ -75,6 +75,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
     const role = localStorage.getItem("role");
     const userEmail = JSON.parse(localStorage.getItem("user"))?.email;
+    const currentUserName = JSON.parse(localStorage.getItem("user"))?.name; // ✅ Added to get current user name
 
     // Load users and departments
     useEffect(() => {
@@ -95,7 +96,6 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         }
     }, [users]);
 
-        // Detect if mobile view
     // Detect if mobile view
     const [isMobileView, setIsMobileView] = useState(window.innerWidth < 1024);
 
@@ -112,7 +112,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const fetchTasks = useCallback(async (pageNum = 1, append = false) => {
         if (!append) setLoading(true);
 
-       try {
+        try {
             // On mobile, load more tasks initially to support pagination
             const itemsPerPage = isMobileView ? MOBILE_INITIAL_LOAD : ITEMS_PER_PAGE;
             
@@ -123,9 +123,22 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 sortOrder: dueDateSortOrder,
             });
 
-            // Add filters
+            // ⚡️ USER FILTERING LOGIC ⚡️
+            // If the user is not an admin AND no explicit assignee filter is set, 
+            // filter tasks by the current logged-in user's name.
+            if (role !== "admin" && !filters.assignee && currentUserName) {
+                params.append("assignee", currentUserName); 
+            }
+
+            // Add other filters from state
             Object.entries(filters).forEach(([key, value]) => {
-                if (value) params.append(key, value);
+                // Prevent double adding assignee if already set by role logic above, but allow manual override
+                if (key === "assignee" && role !== "admin" && currentUserName) {
+                     // Skip if role logic already set it, otherwise add the manually selected filter
+                     if (value !== currentUserName) params.append(key, value);
+                } else if (value) {
+                    params.append(key, value);
+                }
             });
 
             if (searchTerm) params.append("search", searchTerm);
@@ -174,14 +187,25 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             setLoading(false);
             setInitialLoading(false);
         }
-    }, [filters, searchTerm, dueDateSortOrder, hideCompleted, setTaskListExternally, isMobileView]);
+    }, [filters, searchTerm, dueDateSortOrder, hideCompleted, setTaskListExternally, isMobileView, role, currentUserName]); // 💡 Added role and currentUserName to dependency array
 
     // Fetch statistics
     const fetchStats = useCallback(async () => {
         try {
             const params = new URLSearchParams();
+
+            // ⚡️ USER FILTERING LOGIC FOR STATS ⚡️
+            if (role !== "admin" && !filters.assignee && currentUserName) {
+                params.append("assignee", currentUserName); 
+            }
+
+            // Add other filters
             Object.entries(filters).forEach(([key, value]) => {
-                if (value) params.append(key, value);
+                if (key === "assignee" && role !== "admin" && currentUserName) {
+                     if (value !== currentUserName) params.append(key, value);
+                } else if (value) {
+                    params.append(key, value);
+                }
             });
 
             const response = await fetch(`https://taskbe.sharda.co.in/api/tasks/stats?${params}`);
@@ -190,7 +214,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         } catch (error) {
             console.error("Failed to fetch stats:", error);
         }
-    }, [filters]);
+    }, [filters, role, currentUserName]); // 💡 Added role and currentUserName to dependency array
 
     // Initial load
     useEffect(() => {
@@ -207,7 +231,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         }
         isInitialLoadRef.current = false;
     }, [filters, searchTerm, dueDateSortOrder]);
-
+    
     // Intersection Observer for Infinite Scroll (Desktop)
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -1087,63 +1111,63 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     // Team Members Popup
     const renderTeamPopup = (task) => (
          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowTeamPopup(null)}
-        >
-            <div
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-2"
-                style={{ borderColor: "#4332d2" }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div
-                    className="flex justify-between items-center mb-4 pb-3 border-b-2"
-                    style={{ borderColor: "#e0dcf9" }}
-                >
-                    <h3 className="text-xl font-bold" style={{ color: "#4332d2" }}>
-                        👥 Team Members
-                    </h3>
-                    <button
-                        onClick={() => setShowTeamPopup(null)}
-                        className="text-gray-400 hover:text-gray-700 text-2xl font-light"
-                    >
-                        ×
-                    </button>
-                </div>
+             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+             onClick={() => setShowTeamPopup(null)}
+         >
+             <div
+                 className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-2"
+                 style={{ borderColor: "#4332d2" }}
+                 onClick={(e) => e.stopPropagation()}
+             >
+                 <div
+                     className="flex justify-between items-center mb-4 pb-3 border-b-2"
+                     style={{ borderColor: "#e0dcf9" }}
+                 >
+                     <h3 className="text-xl font-bold" style={{ color: "#4332d2" }}>
+                         👥 Team Members
+                     </h3>
+                     <button
+                         onClick={() => setShowTeamPopup(null)}
+                         className="text-gray-400 hover:text-gray-700 text-2xl font-light"
+                     >
+                         ×
+                     </button>
+                 </div>
 
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {task.assignees?.map((assignee, idx) => (
-                        <div
-                            key={assignee.email}
-                            className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-all"
-                        >
-                            <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                                style={{ backgroundColor: "#4332d2" }}
-                            >
-                                {assignee.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex-1">
-                                <div className="font-bold text-gray-900">
-                                    {assignee.name}
-                                </div>
-                                <div className="text-sm text-gray-600">
-                                    {assignee.email}
-                                </div>
-                            </div>
-                            <span className="text-xs font-semibold text-gray-500">
-                                #{idx + 1}
-                            </span>
-                        </div>
-                    ))}
-                </div>
+                 <div className="space-y-2 max-h-96 overflow-y-auto">
+                     {task.assignees?.map((assignee, idx) => (
+                         <div
+                             key={assignee.email}
+                             className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-all"
+                         >
+                             <div
+                                 className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                                 style={{ backgroundColor: "#4332d2" }}
+                             >
+                                 {assignee.name.charAt(0).toUpperCase()}
+                             </div>
+                             <div className="flex-1">
+                                 <div className="font-bold text-gray-900">
+                                     {assignee.name}
+                                 </div>
+                                 <div className="text-sm text-gray-600">
+                                     {assignee.email}
+                                 </div>
+                             </div>
+                             <span className="text-xs font-semibold text-gray-500">
+                                 #{idx + 1}
+                             </span>
+                         </div>
+                     ))}
+                 </div>
 
-                <div className="mt-4 pt-3 border-t border-gray-200 text-center">
-                    <span className="text-sm text-gray-600 font-semibold">
-                        Total: {task.assignees?.length} members
-                    </span>
-                </div>
-            </div>
-        </div>
+                 <div className="mt-4 pt-3 border-t border-gray-200 text-center">
+                     <span className="text-sm text-gray-600 font-semibold">
+                         Total: {task.assignees?.length} members
+                     </span>
+                 </div>
+             </div>
+         </div>
     );
 
     // Initialize a counter for desktop/mobile index outside the return
@@ -1210,19 +1234,19 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                         </td>
                                     </tr>
                                 ) : tasks.length === 0 && totalCount === 0 ? (
-                                    <tr>
+                                     <tr>
                                          <td colSpan={11} className="text-center py-20">
-                                            <div className="text-6xl mb-4">📋</div>
-                                            <p className="text-gray-500 font-black text-xl">No tasks assigned yet</p>
-                                        </td>
-                                    </tr>
+                                             <div className="text-6xl mb-4">📋</div>
+                                             <p className="text-gray-500 font-black text-xl">No tasks assigned yet</p>
+                                         </td>
+                                     </tr>
                                 ) : tasks.length === 0 && totalCount > 0 ? (
                                      <tr>
                                          <td colSpan={11} className="text-center py-20">
-                                            <div className="text-6xl mb-4">🔍</div>
-                                            <p className="text-gray-500 font-black text-xl">No tasks match your current filters.</p>
-                                        </td>
-                                    </tr>
+                                             <div className="text-6xl mb-4">🔍</div>
+                                             <p className="text-gray-500 font-black text-xl">No tasks match your current filters.</p>
+                                         </td>
+                                     </tr>
                                 ) : (
                                     <>
                                         {/* High Priority Tasks */}
