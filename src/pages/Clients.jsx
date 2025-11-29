@@ -214,12 +214,13 @@ const Clients = () => {
             {showClientModal && (
                 <CreateClientModal
                     client={editingClient} // Pass the client being edited or null
+                    agents={agents}
                     onClose={() => {
                         setShowClientModal(false);
                         setEditingClient(null); // Clear edit state on close
                     }}
                     // 🌟 NEW 3: Pass agents list to the modal 🌟
-                    agents={agents} 
+                    // agents={agents} 
                     onCreate={async (clientData) => {
                         try {
                             if (editingClient) {
