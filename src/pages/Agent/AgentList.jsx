@@ -1,12 +1,26 @@
-// src/pages/Agent/AgentList.jsx (Professional UI Version)
+// src/pages/Agent/AgentList.jsx (FINAL - Professional UI with Payout Button & Copy Feature)
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import { Trash2, Edit, User, Mail, Phone } from 'lucide-react'; 
+import { Trash2, Edit, User, Mail, DollarSign, Copy, Check } from 'lucide-react'; 
 
-const AgentList = ({ agents = [], onDelete, onUpdate }) => { 
+// onPay prop added to trigger the Payout Modal from AgentPage
+const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => { 
   const navigate = useNavigate();
+  const [copiedCode, setCopiedCode] = useState(null);
 
+  // Copy referral code to clipboard
+  const handleCopyCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000); // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Handle case where agents array is empty (safety check: agents = [] handles undefined)
   if (agents.length === 0) {
     return (
       <div className="text-center p-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -17,6 +31,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate }) => {
     );
   }
   
+  // Helper to format currency (INR)
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -91,18 +106,32 @@ const AgentList = ({ agents = [], onDelete, onUpdate }) => {
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{agent.name}</div>
                           <div className="text-xs text-gray-500 flex items-center gap-1">
-                            <Mail size={12} />
-                            {agent.email}
+                            <Mail size={12} /> {agent.email}
                           </div>
                         </div>
                       </div>
                     </td>
                     
-                    {/* Referral Code */}
+                    {/* Referral Code with Copy Button */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-mono font-semibold bg-indigo-100 text-indigo-800">
-                        {agent.referralCode || 'N/A'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-mono font-semibold bg-indigo-100 text-indigo-800">
+                          {agent.referralCode || 'N/A'}
+                        </span>
+                        {agent.referralCode && (
+                          <button
+                            onClick={() => handleCopyCode(agent.referralCode)}
+                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                            title="Copy Referral Code"
+                          >
+                            {copiedCode === agent.referralCode ? (
+                              <Check size={16} className="text-green-600" />
+                            ) : (
+                              <Copy size={16} />
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </td>
                     
                     {/* Total Referrals */}
@@ -122,11 +151,21 @@ const AgentList = ({ agents = [], onDelete, onUpdate }) => {
                       {formatCurrency(paidTillDate)}
                     </td>
                     
-                    {/* Pending Amount */}
+                    {/* Pending Amount + Pay Button */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">
-                      <span className={pendingAmount > 0 ? 'text-red-600' : 'text-gray-400'}>
-                        {formatCurrency(pendingAmount)}
-                      </span>
+                      <div className="flex flex-col items-end">
+                        <span className={pendingAmount > 0 ? 'text-red-600 font-bold' : 'text-gray-400'}>
+                          {formatCurrency(pendingAmount)}
+                        </span>
+                        {pendingAmount > 0 && (
+                          <button
+                            onClick={() => onPay(agent)} // Calls handleOpenPayoutModal in AgentPage
+                            className="mt-1 px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors flex items-center gap-1"
+                          >
+                            <DollarSign size={14} /> Pay
+                          </button>
+                        )}
+                      </div>
                     </td>
                     
                     {/* Status */}
