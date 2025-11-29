@@ -44,7 +44,7 @@ import AgentList from "./pages/Agent/AgentList";
   
 import Referrals from "./pages/Agent/Referrals";
 import AgentProfile from "./pages/Agent/AgentProfile";
-
+import PayoutModal from "./pages/Agent/PayoutModal";
 const App = () => {
 
   function MailBoxEmbed() {

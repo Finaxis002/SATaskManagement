@@ -1,4 +1,4 @@
-// src/pages/Agent/CreateAgent.jsx (FINAL - With Bank Details)
+// src/pages/Agent/CreateAgent.jsx (MODIFIED - With Mandatory Bank Details)
 
 import React, { useState } from 'react';
 
@@ -32,18 +32,22 @@ const CreateAgent = ({ onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (formData.name && formData.email && formData.phone) {
+    const { name, email, phone, bankDetails } = formData;
+    
+    // Check for mandatory fields: Personal Info AND Bank Details
+    if (name && email && phone && bankDetails.bankName && bankDetails.accountNumber && bankDetails.ifsc) {
       
       const finalData = {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
+          name: name,
+          email: email,
+          phone: phone,
           city: formData.city,
-          bankDetails: formData.bankDetails,
+          bankDetails: bankDetails,
       };
 
       onSubmit(finalData); 
       
+      // Reset form data
       setFormData({ 
         name: '', 
         email: '', 
@@ -52,7 +56,7 @@ const CreateAgent = ({ onSubmit }) => {
         bankDetails: { bankName: '', accountNumber: '', ifsc: '' }
       });
     } else {
-      alert('Please fill in Name, Email, and Phone fields.');
+      alert('Please fill in all required fields: Name, Email, Phone, Bank Name, Account Number, and IFSC Code.');
     }
   };
 
@@ -120,7 +124,7 @@ const CreateAgent = ({ onSubmit }) => {
 
         {/* ********** Bank Details Section ********** */}
         <div className="space-y-4">
-          <h4 className="text-lg font-medium text-gray-800">Bank Details (Optional)</h4>
+          <h4 className="text-lg font-medium text-gray-800">Bank Details</h4>
           
           <div>
             <label htmlFor="bankName" className="block text-sm font-medium text-gray-700">Bank Name</label>
@@ -130,6 +134,7 @@ const CreateAgent = ({ onSubmit }) => {
               id="bankName"
               value={formData.bankDetails.bankName}
               onChange={handleBankDetailChange} 
+              required
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
               placeholder="State Bank of India"
             />
@@ -142,6 +147,7 @@ const CreateAgent = ({ onSubmit }) => {
               id="accountNumber"
               value={formData.bankDetails.accountNumber}
               onChange={handleBankDetailChange} 
+              required
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
               placeholder="1234567890"
             />
@@ -154,6 +160,7 @@ const CreateAgent = ({ onSubmit }) => {
               id="ifsc"
               value={formData.bankDetails.ifsc}
               onChange={handleBankDetailChange} 
+              required
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
               placeholder="SBIN0001234"
             />
