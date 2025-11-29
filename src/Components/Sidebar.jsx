@@ -218,7 +218,7 @@ const Sidebar = () => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-gray-200 shadow-lg pb-safe">
         <div
           className={`grid ${
-            role === "admin" ? "grid-cols-7" : "grid-cols-5" // ग्रिड को 7 या 5 में बदला
+            role === "admin" ? "grid-cols-6" : "grid-cols-5"
           } gap-0 px-1 py-2`}
         >
           {role === "admin" ? (
@@ -252,7 +252,7 @@ const Sidebar = () => {
                 label="Invoices"
                 to="/viewinvoicewithotp"
               />
-               <MobileNavItem icon={<FaHome />} label="Home" to="/" />
+               {/* <MobileNavItem icon={<FaHome />} label="Home" to="/" /> */}
             </>
           ) : (
             <>
