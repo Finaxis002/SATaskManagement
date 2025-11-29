@@ -1,4 +1,4 @@
-// src/pages/Agent/AgentPage.jsx - FINAL VERSION (Fixed Tabs Order & Modal)
+// src/pages/Agent/AgentPage.jsx - FINAL VERSION (API URL FIXED)
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -7,6 +7,7 @@ import CreateAgent from './CreateAgent';
 import Referrals from './Referrals';
 import AgentList from './AgentList';
 
+// ✅ FIXED API URL: Using localhost for development/testing 
 const API_URL = 'https://taskbe.sharda.co.in/api/agents'; 
 
 const AgentPage = () => {
@@ -23,7 +24,7 @@ const AgentPage = () => {
             const response = await axios.get(API_URL);
             setAgents(response.data);
         } catch (err) {
-            setError('Failed to fetch agents.');
+            setError('Failed to fetch agents. Ensure Node.js server is running on port 1100 and backend is not crashing.');
             console.error('Fetch error:', err);
         } finally {
             setLoading(false);
@@ -71,49 +72,75 @@ const AgentPage = () => {
         }
     };
     
-    if (loading) return <div className="text-center p-10 text-indigo-600 font-bold">Loading Agents...</div>;
-    if (error) return <div className="text-center p-10 text-red-600 font-bold">Error: {error}</div>;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                    <p className="text-indigo-600 font-semibold text-lg">Loading Agents...</p>
+                </div>
+            </div>
+        );
+    }
 
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+                <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+                    <AlertCircle className="text-red-600 mx-auto mb-4" size={48} />
+                    <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Connection Error</h2>
+                    <p className="text-red-600 text-center mb-4">{error}</p>
+                    <button 
+                        onClick={fetchAgents}
+                        className="w-full py-2 px-4  hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
             <div className="max-w-7xl mx-auto">
                 
-                {/* 1. Header with Create Button on the Right */}
+                {/* Header */}
                 <div className="bg-white rounded-lg shadow-lg p-6 mb-6 flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-                            <User className="text-indigo-600" size={36} />
-                            Agent Management System
+                            <div className="p-2 bg-indigo-100 rounded-lg">
+                                <User className="text-indigo-600" size={32} />
+                            </div>
+                            Agent Management
                         </h1>
-                        <p className="text-gray-600 mt-2">Manage agents, bank details, and referrals</p>
+                        <p className="text-gray-600 mt-2 ml-14">Manage agents, referrals, and commissions</p>
                     </div>
                     
-                    {/* Create Button */}
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-150"
+                        className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-150"
                     >
                         <Plus size={20} />
-                        Create New Agent
+                        Create Agent
                     </button>
                 </div>
 
-                {/* 2. Tabs (List and Referrals) */}
-                <div className="bg-white rounded-lg shadow-lg mb-6">
-                    <div className="flex border-b">
+                {/* Tabs */}
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+                    <div className="flex border-b border-gray-200">
                         
                         {/* List Button (First) */}
                         <button
                             onClick={() => setActiveTab('list')}
                             className={`flex-1 py-4 px-6 font-semibold transition-all flex items-center justify-center gap-2 ${
                                 activeTab === 'list'
-                                    ? 'bg-indigo-600 text-white'
+                                    ? 'bg-indigo-600 text-white shadow-sm'
                                     : 'text-gray-600 hover:bg-gray-50'
                             }`}
                         >
                             <Users size={20} />
-                            List of Agents
+                            Agents List
                         </button>
                         
                         {/* Referral Button (Second) */}
@@ -121,7 +148,7 @@ const AgentPage = () => {
                             onClick={() => setActiveTab('referral')}
                             className={`flex-1 py-4 px-6 font-semibold transition-all flex items-center justify-center gap-2 ${
                                 activeTab === 'referral'
-                                    ? 'bg-indigo-600 text-white'
+                                    ? 'bg-indigo-600 text-white shadow-sm'
                                     : 'text-gray-600 hover:bg-gray-50'
                             }`}
                         >
@@ -130,7 +157,6 @@ const AgentPage = () => {
                         </button>
                     </div>
 
-                    {/* Tab Content */}
                     <div className="p-6">
                         {activeTab === 'referral' && <Referrals agents={agents} />}
                         {activeTab === 'list' && <AgentList agents={agents} onDelete={handleDeleteAgent} onUpdate={handleUpdateAgent} />}
@@ -138,13 +164,19 @@ const AgentPage = () => {
                 </div>
             </div>
             
-            {/* 3. Modal Component */}
+            {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
-                        <div className="p-6 border-b flex justify-between items-center">
-                            <h2 className="text-2xl font-bold text-indigo-700">Create New Agent</h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-800">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4  bg-opacity-50 mt-8">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all animate-fadeIn">
+                        <div className="p-6 border-b flex justify-between items-center bg-gradient-to-r from-indigo-600 to-indigo-700">
+                            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                                <Plus size={24} />
+                                Create New Agent
+                            </h2>
+                            <button 
+                                onClick={() => setIsModalOpen(false)} 
+                                className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
+                            >
                                 <X size={24} />
                             </button>
                         </div>
