@@ -93,11 +93,17 @@ const CreateClientModal = ({  client, onClose, onCreate, agents = [] }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
-    if (!formData.name.trim()) return; // Required field
-    onCreate(formData); // 🔁 Pass full object to parent
-  };
-
+const handleSubmit = () => {
+  if (!formData.name.trim()) {
+    alert("Client name is required!");
+    return;
+  }
+  
+  // ✅ Log the data being sent
+  console.log("Submitting Client Data:", formData);
+  
+  onCreate(formData); // ✅ Pass the entire formData object
+};
   return (
     <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg w-96">
@@ -132,19 +138,22 @@ const CreateClientModal = ({  client, onClose, onCreate, agents = [] }) => {
         ))}
              
               {/* 🔥 Dropdown for "Refer by Agent" */}
-        <select
-          name="referrer"
-          value={formData.referrer}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">-- Refer by Agent --</option>
-          {agents.map((agent) => (
-            <option key={agent._id || agent.id} value={agent.name}>
-              {agent.name}
-            </option>
-          ))}
-        </select>
+<select
+  name="referrer"
+  value={formData.referrer}
+  onChange={handleChange}
+  className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
+>
+  <option value="">-- Refer by Agent --</option>
+  {agents.map((agent) => (
+    <option 
+      key={agent._id || agent.id} 
+      value={agent.name}  // ✅ Use agent.name (not referralCode)
+    >
+      {agent.name}
+    </option>
+  ))}
+</select>
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 border rounded hover:bg-gray-50">
             Cancel
