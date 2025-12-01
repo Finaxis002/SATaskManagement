@@ -18,7 +18,7 @@ const TaskItem = React.memo(({ task, onEdit, onStatusChange }) => {
               ? "bg-yellow-200 text-yellow-600"
               : task.status === "To Do"
               ? "bg-blue-200 text-blue-600"
-              : task.status === "Abbstulate"
+              : task.status === "Obsolete"
               ? "bg-purple-200 text-purple-600"
               : "bg-red-200 text-red-600" // For "Overdue" or fallback
           }`}

@@ -11,7 +11,7 @@ import {
   FaClock,
   FaMoneyBill,
   FaGolfBall,
-  FaUserTie, // Agent के लिए नया आइकन
+  FaUserTie, 
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket";
@@ -91,11 +91,9 @@ const Sidebar = () => {
                     className="font-bold text-lg leading-tight"
                     style={{ color: "#4332d2" }}
                   >
-                    Finaxis
+                  Task Management
                   </span>
-                  <span className="text-gray-500 text-xs font-medium">
-                    Task Manager
-                  </span>
+                  
                 </div>
               </div>
             ) : (
@@ -138,10 +136,10 @@ const Sidebar = () => {
           <SidebarItem
             icon={<FaUserTie />}
             label="Agent"
-            to="/agent" // आपको अपने राउट के हिसाब से to prop बदलना होगा
+            to="/agent"
             expanded={expanded}
           />
-          {/* 🌟 End New Agent Sidebar Item 🌟 */}
+          
 
           <SidebarItem
             icon={<FaBriefcase />}

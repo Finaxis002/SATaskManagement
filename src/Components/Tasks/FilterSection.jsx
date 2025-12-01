@@ -1,11 +1,11 @@
 import Select from "react-select";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react"; // useMemo को import किया गया है
 import { FaFilter, FaTimes } from "react-icons/fa";
 
 export const customSelectStyles = {
   control: (base, state) => ({
     ...base,
-    width: "100%",                    // make the control fill its grid cell
+    width: "100%", // make the control fill its grid cell
     minHeight: 40,
     fontSize: 14,
     borderRadius: 12,
@@ -73,6 +73,43 @@ export const customSelectStyles = {
   valueContainer: (base) => ({ ...base, padding: "2px 8px" }),
 };
 
+const priorityOptions = [
+  { label: "All Priorities", value: "" },
+  { label: "Low", value: "Low" },
+  { label: "Medium", value: "Medium" },
+  { label: "High", value: "High" },
+];
+
+const prioritySelectStyles = {
+    ...customSelectStyles,
+    option: (base, state) => ({
+        ...base,
+        background: state.isSelected ? "#2563eb" : state.isFocused ? "#bfdbfe" : "#fff",
+        color: state.isSelected ? "#ffffff" : "#1f2937",
+        fontWeight: state.isSelected ? 600 : 400,
+        padding: "10px 14px",
+        fontSize: 14,
+        cursor: "pointer",
+        transition: "background 0.18s, color 0.18s",
+        borderRadius: 0,
+        margin: "0",
+    }),
+    menu: (base) => ({
+      ...base,
+      borderRadius: 8,
+      marginTop: 6,
+      boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+      padding: "4px 0",
+      background: "#fff",
+      zIndex: 20,
+      width: "100%",
+      maxWidth: "100%",
+      whiteSpace: "normal",
+      wordBreak: "break-word",
+    }),
+};
+
+
 const FilterSection = ({
   filters,
   handleFilterChange,
@@ -89,6 +126,7 @@ const FilterSection = ({
     handleFilterChange("assignee", "");
     handleFilterChange("assignedBy", "");
     handleFilterChange("dueBefore", "");
+    handleFilterChange("priority", ""); 
   };
 
   const [options, setOptions] = useState([]);
@@ -111,38 +149,51 @@ const FilterSection = ({
       .catch(console.error);
   }, []);
 
+  
+  const isFilterActive = useMemo(() => {
+    
+    return Object.values(filters).some(value => value !== "");
+  }, [filters]);
+  // ------------------------------------------------------------------
+
   return (
     <div className="sticky top-0 z-20 bg-gray-50 rounded-3xl border-none shadow-md mb-4 px-3 py-2">
       {/* Header row — shows a collapse toggle on xs screens */}
-      <div className="flex items-center justify-between gap-2  sm:hidden lg:hidden">
+      <div className="flex items-center justify-between gap-2  sm:hidden lg:hidden">
         <div className="flex items-center gap-2">
           <FaFilter className="text-gray-500" />
           <span className="text-sm font-semibold text-gray-700">Filters</span>
         </div>
 
         {/* Clear button (inline on >=sm, icon-only on xs) */}
+        {/* Only show on >=sm if a filter is active */}
         <div className="hidden sm:block">
-          <button
-            onClick={clearFilters}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 h-10 text-xs font-semibold text-gray-800 shadow-sm hover:bg-gray-50"
-            title="Clear All Filters"
-          >
-            <FaFilter className="text-[13px]" />
-            Clear
-            <FaTimes className="text-[12px]" />
-          </button>
+          {isFilterActive && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 h-10 text-xs font-semibold text-gray-800 shadow-sm hover:bg-gray-50"
+              title="Clear All Filters"
+            >
+              <FaFilter className="text-[13px]" />
+              Clear
+              <FaTimes className="text-[12px]" />
+            </button>
+          )}
         </div>
 
         {/* Mobile toggle + clear icon */}
         <div className="flex sm:hidden items-center gap-2">
-          <button
-            onClick={clearFilters}
-            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white w-10 h-10 text-gray-700 shadow-sm hover:bg-gray-50"
-            title="Clear All"
-            aria-label="Clear filters"
-          >
-            <FaTimes />
-          </button>
+          {/* Only show on xs if a filter is active */}
+          {isFilterActive && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white w-10 h-10 text-gray-700 shadow-sm hover:bg-gray-50"
+              title="Clear All"
+              aria-label="Clear filters"
+            >
+              <FaTimes />
+            </button>
+          )}
           <button
             onClick={() => setMobileOpen((v) => !v)}
             className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-3 h-10 text-xs font-semibold text-gray-800 shadow-sm hover:bg-gray-50"
@@ -291,7 +342,31 @@ const FilterSection = ({
             />
           </div>
         )}
-
+        
+        {/* Priority */}
+        <div className="col-span-1">
+          <label className="mb-1 ml-1 block text-[12px] font-medium text-gray-600 tracking-wide">
+            <span className="inline-block w-1.5 h-1.5 mr-1 rounded-full bg-red-500 align-middle" />
+            Priority
+          </label>
+          <Select
+            className="w-full"
+            classNamePrefix="rs"
+            options={priorityOptions}
+            value={
+              filters.priority
+                ? { label: filters.priority, value: filters.priority }
+                : null
+            }
+            onChange={(val) => handleFilterChange("priority", val?.value || "")}
+            styles={prioritySelectStyles} 
+            menuPortalTarget={document.body}
+            placeholder="Select"
+            isClearable
+            isSearchable={false}
+          />
+        </div>
+        
         {/* Due Date */}
         <div className="col-span-1">
           <label
@@ -313,23 +388,26 @@ const FilterSection = ({
         </div>
 
         {/* Clear (grid item for >=sm; hidden on xs because header has one) */}
+        {/* Only show on >=sm if a filter is active */}
         <div className="hidden sm:flex col-span-1 items-end">
-          <button
-            onClick={clearFilters}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 h-10 text-xs font-semibold text-gray-800 shadow-sm hover:bg-gray-50"
-            title="Clear All Filters"
-          >
-            <FaFilter className="text-[13px]" />
-            Clear
-            <FaTimes className="text-[12px]" />
-          </button>
+          {isFilterActive && (
+            <button
+              onClick={clearFilters}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 h-10 text-xs font-semibold text-gray-800 shadow-sm hover:bg-gray-50"
+              title="Clear All Filters"
+            >
+              <FaFilter className="text-[13px]" />
+              Clear
+              <FaTimes className="text-[12px]" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Always-open grid on >=sm screens */}
       <div className="hidden sm:grid mt-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {/* This duplicate grid ensures filters are visible by default on >=sm.
-            To avoid duplication, you can remove this block and set mobileOpen=true by default. */}
+        	To avoid duplication, you can remove this block and set mobileOpen=true by default. */}
       </div>
     </div>
   );
