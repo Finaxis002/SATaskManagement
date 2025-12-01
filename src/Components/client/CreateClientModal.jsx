@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
+// NOTE: The self-referential import was removed to fix the "Identifier already declared" error.
+// import CreateClientModal from "../client/CreateClientModal"; // <--- REMOVED
 
-const CreateClientModal = ({  client, onClose, onCreate, agents = [] }) => {
+const CreateClientModal = ({ client, onClose, onCreate, agents = [] }) => {
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
@@ -10,105 +12,61 @@ const CreateClientModal = ({  client, onClose, onCreate, agents = [] }) => {
     mobile: "",
     emailId: "",
     GSTIN: "",
-     referrer: "", 
+    referrer: "", 
   });
 
-  // const isEdit = Boolean(client && client._id);
-    const isEdit = !!(client && (client._id || client.id));
-
-   
-
-  //  useEffect(() => {
-  //   if (isEdit) {
-  //     setFormData({
-  //       name: client.name || "",
-  //       contactPerson: client.contactPerson || "",
-  //       businessName: client.businessName || "",
-  //       address: client.address || "",
-  //       mobile: client.mobile || "",
-  //       emailId: client.emailId || "",
-  //       GSTIN: client.GSTIN || "",
-  //     });
-  //   } else {
-  //     setFormData({
-  //       name: client?.name || "", // prefill typed name from invoice search
-  //       contactPerson: "",
-  //       businessName: "",
-  //       address: "",
-  //       mobile: "",
-  //       emailId: "",
-  //       GSTIN: "",
-  //     });
-  //   }
-  // }, [client, isEdit]);
-
-  //  useEffect(() => {
-  //   // normalize incoming client fields (handles different backends)
-  //   const c = client || {};
-  //   setFormData({
-  //     name: c.name || "",
-  //     contactPerson: c.contactPerson || c.contact || "",
-  //     businessName: c.businessName || c.company || "",
-  //     address: c.address || "",
-  //     mobile: c.mobile || c.phone || c.contactNo || "",
-  //     emailId: c.emailId || c.email || "",
-  //     GSTIN: c.GSTIN || c.gstin || "",
-  //   });
-  // // re-run when the actual record changes
-  // }, [client && (client._id || client.id)]);
+  const isEdit = !!(client && (client._id || client.id));
 
   useEffect(() => {
-  const c = client || {};
-  // normalize possible field names from different backends
-  const normalized = {
-    name: c.name || "",
-    contactPerson: c.contactPerson || c.contact || "",
-    businessName: c.businessName || c.company || "",
-    address: c.address || "",
-    mobile: c.mobile || c.phone || c.contactNo || "",
-    emailId: c.emailId || c.email || "",
-    GSTIN: c.GSTIN || c.gstin || "",
+    const c = client || {};
+    // normalize possible field names from different backends
+    const normalized = {
+      name: c.name || "",
+      contactPerson: c.contactPerson || c.contact || "",
+      businessName: c.businessName || c.company || "",
+      address: c.address || "",
+      mobile: c.mobile || c.phone || c.contactNo || "",
+      emailId: c.emailId || c.email || "",
+      GSTIN: c.GSTIN || c.gstin || "",
       referrer: c.referrer || c.agent || "",
-  };
+    };
 
-  setFormData(
-    isEdit
-      ? normalized
-      : {
-          // for "create", keep only the name (e.g., typed from invoice search)
-          name: normalized.name,
-          contactPerson: "",
-          businessName: "",
-          address: "",
-          mobile: "",
-          emailId: "",
-          GSTIN: "",
-           referrer: "",
-        }
-  );
-}, [isEdit, client?._id, client?.id, client?.name]);
+    setFormData(
+      isEdit
+        ? normalized
+        : {
+            // for "create", keep only the name (e.g., typed from task form)
+            name: normalized.name, // 👈 Ensures typed name is pre-filled
+            contactPerson: "",
+            businessName: "",
+            address: "",
+            mobile: "",
+            emailId: "",
+            GSTIN: "",
+            referrer: "",
+          }
+    );
+  }, [isEdit, client?._id, client?.id, client?.name]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-const handleSubmit = () => {
-  if (!formData.name.trim()) {
-    alert("Client name is required!");
-    return;
-  }
-  
-  // ✅ Log the data being sent
-  console.log("Submitting Client Data:", formData);
-  
-  onCreate(formData); // ✅ Pass the entire formData object
-};
+  const handleSubmit = () => {
+    if (!formData.name.trim()) {
+      alert("Client name is required!");
+      return;
+    }
+    
+    // Pass the entire formData object back to the caller (TaskFormModal or Clients)
+    onCreate(formData); 
+  };
   return (
-    <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg w-96">
+    <div className="fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg w-full max-w-md"> 
         <div className="flex justify-between items-center mb-4">
-         <h3 className="text-xl font-semibold">
+          <h3 className="text-xl font-semibold">
             {isEdit ? "Update Client" : "Create New Client"}
           </h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -116,9 +74,9 @@ const handleSubmit = () => {
           </button>
         </div>
 
-        {/* 🔁 Render all 7 input fields dynamically */}
+        {/* Client Fields */}
         {[
-          { name: "name", label: "Client Name" },
+          { name: "name", label: "Client Name*" },
           { name: "contactPerson", label: "Contact Person" },
           { name: "businessName", label: "Business Name" },
           { name: "address", label: "Address" },
@@ -134,27 +92,31 @@ const handleSubmit = () => {
             onChange={handleChange}
             placeholder={field.label}
             className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
+            // Client name is required
+            required={field.name === "name"} 
+            readOnly={isEdit && field.name === "name"} // Optional: Prevent renaming client in edit mode
           />
         ))}
-             
-              {/* 🔥 Dropdown for "Refer by Agent" */}
-<select
-  name="referrer"
-  value={formData.referrer}
-  onChange={handleChange}
-  className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
->
-  <option value="">-- Refer by Agent --</option>
-  {agents.map((agent) => (
-    <option 
-      key={agent._id || agent.id} 
-      value={agent.name}  // ✅ Use agent.name (not referralCode)
-    >
-      {agent.name}
-    </option>
-  ))}
-</select>
-        <div className="flex justify-end gap-2">
+          
+        {/* Dropdown for "Refer by Agent" */}
+        <select
+          name="referrer"
+          value={formData.referrer}
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="">-- Refer by Agent --</option>
+          {agents.map((agent) => (
+            <option 
+              key={agent._id || agent.id} 
+              value={agent.name} 
+            >
+              {agent.name}
+            </option>
+          ))}
+        </select>
+        
+        <div className="flex justify-end gap-2 mt-4">
           <button onClick={onClose} className="px-4 py-2 border rounded hover:bg-gray-50">
             Cancel
           </button>

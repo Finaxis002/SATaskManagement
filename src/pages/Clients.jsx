@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "../utils/secureAxios";
+import axios from "../utils/secureAxios"; // Assuming this is your authenticated axios instance
 import { FaPlus, FaThLarge, FaTable } from "react-icons/fa";
 import Swal from "sweetalert2";
 import ClientList from "../Components/client/ClientList";
@@ -9,7 +9,6 @@ import ClientTableView from "../Components/client/ClientTableView";
 
 const Clients = () => {
     const [clients, setClients] = useState([]);
-    // 🌟 NEW 1: State to hold Agent data 🌟
     const [agents, setAgents] = useState([]); 
     
     const [loading, setLoading] = useState(true);
@@ -20,13 +19,12 @@ const Clients = () => {
     // ********** Agent Fetch Function **********
     const fetchAgents = async () => {
         try {
-            // Note: Assuming /agents is your correct API endpoint (adjust if needed)
+            // Assuming the endpoint for Agents is /agents via secureAxios
             const res = await axios.get("/agents"); 
             setAgents(res.data);
             console.log("Agents fetched for referrer dropdown:", res.data.length);
         } catch (err) {
             console.error("Failed to fetch agents for dropdown", err);
-            // Non-critical error, continue loading clients
         }
     };
     
@@ -47,7 +45,6 @@ const Clients = () => {
                     emailId: client.emailId || "",
                     GSTIN: client.GSTIN || "",
                     referrer: client.referrer || "",
-                    // referrer: client.referrer || "", // Ensure referrer is included if needed for editing
                   }))
                 : [];
 
@@ -65,9 +62,8 @@ const Clients = () => {
     };
 
     useEffect(() => {
-        // Fetch both Clients and Agents when the component mounts
         fetchClients();
-        fetchAgents(); // 🌟 NEW 2: Fetch Agents when component mounts 🌟
+        fetchAgents(); 
     }, []);
 
     const handleDeleteClient = async (clientName) => {
@@ -215,17 +211,14 @@ const Clients = () => {
             {/* Create/Edit Client Modal */}
             {showClientModal && (
                 <CreateClientModal
-                    client={editingClient} // Pass the client being edited or null
-                    agents={agents}
+                    client={editingClient} 
+                    agents={agents} // Passing agents list to the modal 
                     onClose={() => {
                         setShowClientModal(false);
-                        setEditingClient(null); // Clear edit state on close
+                        setEditingClient(null); 
                     }}
-                    // 🌟 NEW 3: Pass agents list to the modal 🌟
-                    // agents={agents} 
                     onCreate={async (clientData) => {
                         try {
-                                console.log("Client Data Being Sent to API:", clientData);
                             if (editingClient) {
                                 // Edit mode
                                 await axios.put("/clients", {
@@ -254,7 +247,6 @@ const Clients = () => {
                             setShowClientModal(false);
                             setEditingClient(null);
                         } catch (err) {
-                            // Error handling logic (duplicate, failed save, etc.)
                             if (err.response && err.response.status === 409) {
                                 Swal.fire({
                                     icon: "warning",

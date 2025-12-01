@@ -2,12 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAssignees } from "../../redux/taskSlice";
 import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import TaskCodeSelector from "./TaskCodeSelector";
 import DepartmentSelector from "./DepartmentSelector";
 import { io } from "socket.io-client";
 import { showAlert } from "../../utils/alert";
 import axios from "axios";
 import { FaTimes } from "react-icons/fa";
+// 🛠️ CORRECTED PATH based on your stated structure (Tasks is in Components, client is in src)
+import CreateClientModal from "../client/CreateClientModal";
 
 const socket = io("https://taskbe.sharda.co.in", { withCredentials: true });
 
@@ -64,7 +67,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [taskCategory, setTaskCategory] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("");
   const [clientName, setClientName] = useState("");
-  const [clientId, setClientId] = useState(""); // New state for client ID
+  const [clientId, setClientId] = useState(""); 
   const [code, setCode] = useState("");
   const [newCode, setNewCode] = useState("");
   const [department, setDepartment] = useState([]);
@@ -76,9 +79,56 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [repeatType, setRepeatType] = useState("Daily");
   const [customRepeat, setCustomRepeat] = useState({ day: "", month: "" });
   const [assignedByUser, setAssignedByUser] = useState(null);
+  
+  // 🌟 NEW/UPDATED STATE for client creation and agents 🌟
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const [tempNewClientName, setTempNewClientName] = useState("");
+  const [agents, setAgents] = useState([]); 
 
   useEffect(() => { dispatch(fetchAssignees()); }, [dispatch]);
 
+  // Fetch Clients and Agents data
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "x-app-client": "frontend-authenticated",
+      },
+    };
+
+    const fetchClientData = async () => {
+      try {
+        const { data } = await axios.get("https://taskbe.sharda.co.in/api/clients", config);
+        const formatted = Array.isArray(data)
+          ? data.map((c) => ({
+              label: c.name || c,
+              value: c.name || c,
+              clientId: c.id || c._id || c.clientId
+            }))
+          : [];
+        setClientOptions(formatted);
+      } catch (e) {
+        console.error("Failed to fetch clients", e);
+      }
+    };
+    
+    // 🌟 Agent Fetch Logic 🌟
+    const fetchAgentData = async () => {
+      try {
+        const { data } = await axios.get("https://taskbe.sharda.co.in/api/agents", config);
+        // Assuming the response data is an array of agents objects
+        setAgents(data);
+      } catch (e) {
+        console.error("Failed to fetch agents:", e);
+      }
+    };
+
+    fetchClientData();
+    fetchAgentData(); 
+  }, [dispatch]);
+
+  // Initialize form with initialData for editing
   useEffect(() => {
     if (initialData) {
       setTaskName(initialData.taskName || "");
@@ -88,7 +138,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       setStatus(initialData.status || "To Do");
       setAssignees(initialData.assignees || []);
       setClientName(initialData.clientName || "");
-      setClientId(initialData.clientId || ""); // Initialize client ID from initial data
+      setClientId(initialData.clientId || "");
       setTaskCategory(initialData.taskCategory || "");
       setTaskCode(initialData.code ? { label: initialData.code, value: initialData.code } : null);
       setDepartment(initialData.department || []);
@@ -105,49 +155,63 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     }
   }, [initialData]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const { data } = await axios.get("https://taskbe.sharda.co.in/api/clients", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-app-client": "frontend-authenticated",
-          },
-        }); 
-        console.log("Fetched clients data:", data); // Log fetched data
-        
-        const formatted = Array.isArray(data)
-          ? data.map((c) => ({ 
-              label: c.name || c, 
-              value: c.name || c,
-              clientId: c.id || c._id || c.clientId // Include client ID in options
-            }))
-          : [];
-        setClientOptions(formatted);
-      } catch (e) {
-        console.error("Failed to fetch clients", e);
-      }
-    })();
-  }, []);
-
   const inputClass =
     "w-full h-11 rounded-xl border border-slate-200 px-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 placeholder:text-slate-400";
 
   const labelClass = "block text-[12px] font-medium text-slate-600 mb-1 ml-0.5 tracking-wide";
 
-  // Handle client selection to auto-populate client ID
-  const handleClientChange = (selectedOption) => {
-    if (selectedOption) {
-      console.log("Selected client:", selectedOption);
-
-      setClientName(selectedOption.value);
-      setClientId(selectedOption.clientId || ""); // Set client ID when client is selected
-    } else {
+  // Handle client selection/creation 
+  const handleClientChange = (selectedOption, actionMeta) => {
+    if (!selectedOption) {
       setClientName("");
-      setClientId(""); // Clear client ID when no client is selected
+      setClientId("");
+      return;
+    }
+
+    if (actionMeta && actionMeta.action === "create-option") {
+      setTempNewClientName(selectedOption.value);
+      setShowCreateClientModal(true);
+    } else {
+      setClientName(selectedOption.value);
+      setClientId(selectedOption.clientId || "");
     }
   };
+
+  // Handler for successful client creation from modal 
+  const handleClientCreate = async (clientData) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await axios.post("https://taskbe.sharda.co.in/api/clients", clientData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-app-client": "frontend-authenticated",
+        },
+      });
+
+      const newClient = res.data.client || res.data; 
+      
+      showAlert(`Client "${newClient.name}" created successfully!`);
+      
+      const newOption = {
+          label: newClient.name,
+          value: newClient.name,
+          clientId: newClient._id || newClient.id || newClient.clientId, 
+      };
+      
+      // Update options and set the new client as selected
+      setClientOptions((prevOptions) => [...prevOptions, newOption]);
+      setClientName(newClient.name);
+      setClientId(newOption.clientId);
+
+    } catch (err) {
+      console.error("❌ Client creation failed:", err.response?.data?.message || err);
+      showAlert(`❌ Error: ${err.response?.data?.message || "Failed to create client."}`, "error");
+    } finally {
+        setShowCreateClientModal(false);
+        setTempNewClientName("");
+    }
+  };
+
 
   const handleSubmit = async () => {
     if (!taskName || !dueDate || assignees.length === 0) {
@@ -164,7 +228,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       status,
       taskCategory: taskCategory === "__new" ? newTaskCategory : taskCategory,
       clientName,
-      clientId, // Include client ID in the payload
+      clientId, 
       department: Array.isArray(department) ? department : [department],
       code: taskCode?.value || "",
       assignedBy: assignedByUser
@@ -190,8 +254,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       taskPayload.repeatDay = null;
       taskPayload.repeatMonth = null;
     }
-    console.log("Submitting task payload:", taskPayload);
-    
 
     try {
       setIsSubmitting(true);
@@ -208,7 +270,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         body: JSON.stringify(taskPayload),
       });
       const result = await res.json();
-      console.log("Server response:", result);
       
       if (!res.ok) throw new Error(result.message || "Failed to create task");
 
@@ -237,7 +298,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   return (
     <div className="fixed inset-0 z-[1000] bg-black/40 p-3 sm:p-4 md:p-6 flex items-center justify-center font-inter overflow-y-auto ">
       <div className="w-full max-w-4xl bg-white rounded-none sm:rounded-2xl border border-slate-200 shadow-2xl
-                      flex flex-col max-h-[80vh]">
+                       flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-2xl border-b border-slate-200 bg-white/90 backdrop-blur px-4 sm:px-6 py-2">
           <div>
@@ -302,25 +363,28 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               <p className="text-[11px] text-slate-400 mt-1">Select one or more departments.</p>
             </div>
 
-            {/* Client */}
+            {/* Client - CreatableSelect */}
             <div>
               <label className={labelClass}>Client Name</label>
-              <Select
+              <CreatableSelect 
                 isClearable
                 isSearchable
                 options={clientOptions}
-                onChange={handleClientChange}
+                onChange={handleClientChange} 
+                onCreateOption={(inputValue) => { 
+                    handleClientChange(
+                        { value: inputValue, label: `Create "${inputValue}"` }, 
+                        { action: "create-option" }
+                    );
+                }}
                 value={clientName ? clientOptions.find((o) => o.value === clientName) || null : null}
-                placeholder="Select client..."
+                placeholder="Select client or type to create..."
                 classNamePrefix="select"
                 menuPortalTarget={document.body}
                 styles={selectBaseStyles}
               />
             </div>
-            {console.log("Client Options:", clientOptions)  // Log client options to check the structure
 
-}
-            
             {/* Client ID - Only show when a client is selected */}
             
             {clientName && (
@@ -334,7 +398,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
                   className={`${inputClass} bg-slate-50`}
-                  readOnly={false} // Change to true if you want it to be read-only
+                  readOnly={false}
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
                   Auto-populated from selected client
@@ -602,6 +666,20 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           </div>
         </div>
       )}
+
+      {/* 🌟 Create Client Modal Integration 🌟 */}
+      {showCreateClientModal && (
+        <CreateClientModal
+            client={{ name: tempNewClientName }} 
+            agents={agents} // 👈 Passing fetched agents here
+            onClose={() => {
+                setShowCreateClientModal(false);
+                setTempNewClientName("");
+            }}
+            onCreate={handleClientCreate} 
+        />
+      )}
+
     </div>
   );
 };
