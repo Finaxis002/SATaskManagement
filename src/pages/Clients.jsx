@@ -6,6 +6,7 @@ import ClientList from "../Components/client/ClientList";
 import CreateClientModal from "../Components/client/CreateClientModal";
 import ClientTableView from "../Components/client/ClientTableView";
 
+
 const Clients = () => {
     const [clients, setClients] = useState([]);
     // 🌟 NEW 1: State to hold Agent data 🌟
@@ -45,6 +46,7 @@ const Clients = () => {
                     mobile: client.mobile || "",
                     emailId: client.emailId || "",
                     GSTIN: client.GSTIN || "",
+                    referrer: client.referrer || "",
                     // referrer: client.referrer || "", // Ensure referrer is included if needed for editing
                   }))
                 : [];
@@ -223,6 +225,7 @@ const Clients = () => {
                     // agents={agents} 
                     onCreate={async (clientData) => {
                         try {
+                                console.log("Client Data Being Sent to API:", clientData);
                             if (editingClient) {
                                 // Edit mode
                                 await axios.put("/clients", {
