@@ -13,9 +13,10 @@ import StatusDropdownPortal from "../StatusDropdownPortal";
 import axios from "../../utils/secureAxios";
 
 const socket = io("https://taskbe.sharda.co.in");
-const ITEMS_PER_PAGE = 20; // Load 20 tasks at a time for API/Desktop Infinite Scroll
-const MOBILE_ITEMS_PER_PAGE = 10; // For Mobile Pagination
-const MOBILE_INITIAL_LOAD = 20000; // Load 200 tasks initially on mobile
+const ITEMS_PER_PAGE = 20; // Default page size for virtual pagination
+const MAX_LOAD_FOR_HIGH_PRIORITY = 20000; // Large limit for initial load to ensure all High Priority tasks are fetched
+const MOBILE_ITEMS_PER_PAGE = 10; 
+const MOBILE_INITIAL_LOAD = 20000; 
 
 const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride, hideCompleted }) => {
     // Redux
@@ -24,15 +25,20 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const departmentData = useSelector((state) => state.departments.list);
 
     // State Management
-    const [tasks, setTasks] = useState([]); // Currently displayed tasks
+    const [tasks, setTasks] = useState([]); // All fetched tasks (up to 20k on page 1)
     const [page, setPage] = useState(1); // Current page for server-side API fetch
-    const [hasMore, setHasMore] = useState(true); // From API: indicates more tasks to load
+    const [hasMore, setHasMore] = useState(true); 
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
-    const [totalCount, setTotalCount] = useState(0); // Total count matching filters on server
+    const [totalCount, setTotalCount] = useState(0); 
     const [stats, setStats] = useState({ highCount: 0, mediumCount: 0, lowCount: 0 });
-    const [loadingStatus, setLoadingStatus] = useState({}); // For tracking status update loading
+    const [loadingStatus, setLoadingStatus] = useState({}); 
 
+    // ⭐ NEW STATE: Virtual pagination/scroll index for High tasks (requested change)
+    const [highScrollIndex, setHighScrollIndex] = useState(ITEMS_PER_PAGE);
+    // ⭐ MODIFIED STATE: Virtual pagination/scroll index for Medium and Low tasks (renamed for clarity)
+    const [otherScrollIndex, setOtherScrollIndex] = useState(ITEMS_PER_PAGE);
+    
     // Filter data state
     const [departments, setDepartments] = useState([]);
     const [uniqueUsers, setUniqueUsers] = useState([]);
@@ -49,7 +55,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         department: "",
         dueBefore: "",
     });
-    const [dueDateSortOrder, setDueDateSortOrder] = useState("asc");
+    const [dueDateSortOrder, setDueDateSortOrder] = useState("asc"); 
     const [searchTerm, setSearchTerm] = useState("");
 
     // UI State
@@ -69,13 +75,16 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
     // Refs
     const scrollContainerRef = useRef(null);
-    const observerTarget = useRef(null);
+    const highObserverTarget = useRef(null); // ⭐ NEW: Ref for High Priority scroll trigger
+    const otherObserverTarget = useRef(null); // ⭐ MODIFIED: Ref for Medium/Low scroll trigger
     const isInitialLoadRef = useRef(true);
     const dropdownRef = useRef(null);
 
-    const role = localStorage.getItem("role");
-    const userEmail = JSON.parse(localStorage.getItem("user"))?.email;
-    const currentUserName = JSON.parse(localStorage.getItem("user"))?.name; // ✅ Added to get current user name
+    // 💡 Get role and convert to lowercase for reliable admin check
+    const rawRole = localStorage.getItem("role");
+    const userRole = rawRole ? rawRole.toLowerCase() : null;
+    const isAdmin = userRole === "admin"; 
+    const currentUserName = JSON.parse(localStorage.getItem("user"))?.name;
 
     // Load users and departments
     useEffect(() => {
@@ -113,28 +122,38 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         if (!append) setLoading(true);
 
         try {
-            // On mobile, load more tasks initially to support pagination
-            const itemsPerPage = isMobileView ? MOBILE_INITIAL_LOAD : ITEMS_PER_PAGE;
+            // ⭐ FIX: Set a large limit for the initial load (Page 1) to get all high priority tasks.
+            let itemsPerPage;
+            if (isMobileView) {
+                itemsPerPage = MOBILE_INITIAL_LOAD; 
+            } else if (pageNum === 1) {
+                itemsPerPage = MAX_LOAD_FOR_HIGH_PRIORITY; // Desktop initial load to capture all High tasks
+            } else {
+                itemsPerPage = ITEMS_PER_PAGE; 
+            }
+
+            // ⭐ FIX: Reset ALL virtual scroll indices on new full fetch
+            if (pageNum === 1 && !isMobileView) {
+                setHighScrollIndex(ITEMS_PER_PAGE); 
+                setOtherScrollIndex(ITEMS_PER_PAGE); 
+            }
             
             const params = new URLSearchParams({
                 page: pageNum,
                 limit: itemsPerPage,
-                sortBy: "dueDate",
-                sortOrder: dueDateSortOrder,
+                // ✅ PRIMARY SORT: Sort by Priority first (descending: High, Medium, Low)
+                sortBy: "priority", 
+                sortOrder: "desc",
             });
 
             // ⚡️ USER FILTERING LOGIC ⚡️
-            // If the user is not an admin AND no explicit assignee filter is set, 
-            // filter tasks by the current logged-in user's name.
-            if (role !== "admin" && !filters.assignee && currentUserName) {
+            if (!isAdmin && !filters.assignee && currentUserName) {
                 params.append("assignee", currentUserName); 
             }
 
             // Add other filters from state
             Object.entries(filters).forEach(([key, value]) => {
-                // Prevent double adding assignee if already set by role logic above, but allow manual override
-                if (key === "assignee" && role !== "admin" && currentUserName) {
-                     // Skip if role logic already set it, otherwise add the manually selected filter
+                if (key === "assignee" && !isAdmin && currentUserName) {
                      if (value !== currentUserName) params.append(key, value);
                 } else if (value) {
                     params.append(key, value);
@@ -166,7 +185,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             setHasMore(data.hasMore);
             setTotalCount(data.totalCount);
             setPage(pageNum);
-            setMobileCurrentPage(1); // Reset mobile page on new data fetch
+            setMobileCurrentPage(1); 
 
             // Update unique values for filters
             if (!append && data.tasks.length > 0) {
@@ -187,7 +206,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             setLoading(false);
             setInitialLoading(false);
         }
-    }, [filters, searchTerm, dueDateSortOrder, hideCompleted, setTaskListExternally, isMobileView, role, currentUserName]); // 💡 Added role and currentUserName to dependency array
+    }, [filters, searchTerm, hideCompleted, setTaskListExternally, isMobileView, isAdmin, currentUserName]); 
 
     // Fetch statistics
     const fetchStats = useCallback(async () => {
@@ -195,13 +214,13 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             const params = new URLSearchParams();
 
             // ⚡️ USER FILTERING LOGIC FOR STATS ⚡️
-            if (role !== "admin" && !filters.assignee && currentUserName) {
+            if (!isAdmin && !filters.assignee && currentUserName) {
                 params.append("assignee", currentUserName); 
             }
 
             // Add other filters
             Object.entries(filters).forEach(([key, value]) => {
-                if (key === "assignee" && role !== "admin" && currentUserName) {
+                if (key === "assignee" && !isAdmin && currentUserName) {
                      if (value !== currentUserName) params.append(key, value);
                 } else if (value) {
                     params.append(key, value);
@@ -214,7 +233,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         } catch (error) {
             console.error("Failed to fetch stats:", error);
         }
-    }, [filters, role, currentUserName]); // 💡 Added role and currentUserName to dependency array
+    }, [filters, isAdmin, currentUserName]); 
 
     // Initial load
     useEffect(() => {
@@ -230,29 +249,63 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             fetchStats();
         }
         isInitialLoadRef.current = false;
-    }, [filters, searchTerm, dueDateSortOrder]);
+    }, [filters, searchTerm, dueDateSortOrder]); 
     
-    // Intersection Observer for Infinite Scroll (Desktop)
+    // ⭐ NEW Intersection Observer for High Priority Virtual Scroll (Desktop)
+    const allHighTasks = tasks.filter(t => t.priority === "High"); // Need this for dependency
+    
     useEffect(() => {
+        if (isMobileView) return; 
+
         const observer = new IntersectionObserver(
             entries => {
-                if (entries[0].isIntersecting && hasMore && !loading) {
-                    fetchTasks(page + 1, true);
+                if (entries[0].isIntersecting && highScrollIndex < allHighTasks.length && !loading) {
+                    // Load next batch of High tasks
+                    setHighScrollIndex(prevIndex => prevIndex + ITEMS_PER_PAGE);
                 }
             },
             { threshold: 0.1 }
         );
 
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
+        if (highObserverTarget.current) {
+            observer.observe(highObserverTarget.current);
         }
 
         return () => {
-            if (observerTarget.current) {
-                observer.unobserve(observerTarget.current);
+            if (highObserverTarget.current) {
+                observer.unobserve(highObserverTarget.current);
             }
         };
-    }, [hasMore, loading, page, fetchTasks]);
+    }, [highScrollIndex, loading, isMobileView, allHighTasks.length]); 
+
+    // ⭐ MODIFIED Intersection Observer for Medium/Low Virtual Scroll (Desktop)
+    const otherTasks = tasks.filter(t => t.priority !== "High"); // Need this for dependency
+    
+    useEffect(() => {
+        // Only run this observer for desktop (non-mobile) view
+        if (isMobileView) return; 
+
+        const observer = new IntersectionObserver(
+            entries => {
+                // If the observer target is intersecting, and we have more tasks in the tasks array to show
+                if (entries[0].isIntersecting && otherScrollIndex < otherTasks.length && !loading) {
+                    // Load next batch of Medium/Low tasks
+                    setOtherScrollIndex(prevIndex => prevIndex + ITEMS_PER_PAGE);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (otherObserverTarget.current) {
+            observer.observe(otherObserverTarget.current);
+        }
+
+        return () => {
+            if (otherObserverTarget.current) {
+                observer.unobserve(otherObserverTarget.current);
+            }
+        };
+    }, [otherScrollIndex, loading, isMobileView, otherTasks.length]); 
 
     // Handle closing dropdown on outside click
     useEffect(() => {
@@ -293,12 +346,16 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     // Handle filter changes
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
-        setMobileCurrentPage(1); // Reset mobile page on filter change
+        setMobileCurrentPage(1); 
+        // Reset ALL virtual scroll indices
+        setHighScrollIndex(ITEMS_PER_PAGE); 
+        setOtherScrollIndex(ITEMS_PER_PAGE); 
     };
 
     // Helper to find the task in the current visible list
     const getTaskById = (taskId) => tasks.find((t) => t._id === taskId);
 
+    // ... (Rest of the handler functions remain the same) ...
     // Handle message send from MessagePopup
     const handleMessageSend = async (payload) => {
         try {
@@ -318,7 +375,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         }
     };
 
-    // ✅ UPDATED: Handle Copy Task functionality
+    // Handle Copy Task functionality
     const handleCopyTask = async (task) => {
         const taskText = `Task: ${task.taskName}\nCode: ${task.code || 'N/A'}\nDue Date: ${new Date(task.dueDate).toLocaleDateString("en-GB")}\nPriority: ${task.priority}`;
         
@@ -584,11 +641,27 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         }
     };
 
+    // Helper for client-side sorting by Due Date (Secondary Sort)
+    const sortByDueDate = (a, b) => {
+        const dateA = new Date(a.dueDate).getTime();
+        const dateB = new Date(b.dueDate).getTime();
+        return dueDateSortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    };
+    
+    // Separate tasks by priority and apply client-side Due Date sorting
+    // allHighTasks and otherTasks are already defined outside to be used as useEffect dependencies
+    const allHighTasksSorted = allHighTasks.sort(sortByDueDate);
+    const otherTasksSorted = otherTasks.sort(sortByDueDate);
 
-    // Separate tasks by priority (for desktop)
-    const highTasks = tasks.filter(t => t.priority === "High");
-    const mediumTasks = tasks.filter(t => t.priority === "Medium");
-    const lowTasks = tasks.filter(t => t.priority === "Low");
+    // ⭐ FIX: High Priority tasks now use client-side pagination limit (highScrollIndex)
+    const virtualHighTasks = allHighTasksSorted.slice(0, highScrollIndex);
+
+    // Medium/Low Priority tasks use the otherScrollIndex
+    const virtualOtherTasks = otherTasksSorted.slice(0, otherScrollIndex);
+
+    const highTasks = virtualHighTasks;
+    const mediumTasks = virtualOtherTasks.filter(t => t.priority === "Medium");
+    const lowTasks = virtualOtherTasks.filter(t => t.priority === "Low");
 
     // Mobile Pagination Logic
     const mobileIndexOfLast = mobileCurrentPage * MOBILE_ITEMS_PER_PAGE;
@@ -597,9 +670,11 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const mobileTasksToRender = tasks.slice(mobileIndexOfFirst, mobileIndexOfLast);
     const mobileTotalPages = Math.ceil(tasks.length / MOBILE_ITEMS_PER_PAGE);
 
-    const mobileHigh = mobileTasksToRender.filter((t) => t.priority === "High");
-    const mobileMedium = mobileTasksToRender.filter((t) => t.priority === "Medium");
-    const mobileLow = mobileTasksToRender.filter((t) => t.priority === "Low");
+    // Apply sorting/grouping on the subset of tasks for the current mobile page
+    const mobileHigh = mobileTasksToRender.filter((t) => t.priority === "High").sort(sortByDueDate);
+    const mobileMedium = mobileTasksToRender.filter((t) => t.priority === "Medium").sort(sortByDueDate);
+    const mobileLow = mobileTasksToRender.filter((t) => t.priority === "Low").sort(sortByDueDate);
+
 
     const handleNextPage = () => {
         setMobileCurrentPage((prev) => Math.min(prev + 1, mobileTotalPages));
@@ -789,7 +864,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
                         </button>
                         {/* Delete Button */}
-                        {role === "admin" && (
+                        {isAdmin && (
                             <button onClick={() => handleDeleteTask(task)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-600" title="Delete">
                                 <FaTrashAlt size={12} />
                             </button>
@@ -861,7 +936,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             >
                                 <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
                             </button>
-                            {role === "admin" && (
+                            {isAdmin && (
                                 <button
                                     className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                                     onClick={() => handleDeleteTask(task)}
@@ -1091,7 +1166,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                     >
                                         Mark Complete
                                     </button>
-                                    {role === "admin" && (
+                                    {isAdmin && (
                                         <button
                                             onClick={() => handleDeleteTask(task)}
                                             className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold text-sm transition-colors"
@@ -1110,69 +1185,71 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
     // Team Members Popup
     const renderTeamPopup = (task) => (
-         <div
-             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-             onClick={() => setShowTeamPopup(null)}
-         >
-             <div
-                 className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-2"
-                 style={{ borderColor: "#4332d2" }}
-                 onClick={(e) => e.stopPropagation()}
-             >
-                 <div
-                     className="flex justify-between items-center mb-4 pb-3 border-b-2"
-                     style={{ borderColor: "#e0dcf9" }}
-                 >
-                     <h3 className="text-xl font-bold" style={{ color: "#4332d2" }}>
-                         👥 Team Members
-                     </h3>
-                     <button
-                         onClick={() => setShowTeamPopup(null)}
-                         className="text-gray-400 hover:text-gray-700 text-2xl font-light"
-                     >
-                         ×
-                     </button>
-                 </div>
+           <div
+               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+               onClick={() => setShowTeamPopup(null)}
+           >
+               <div
+                   className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-2"
+                   style={{ borderColor: "#4332d2" }}
+                   onClick={(e) => e.stopPropagation()}
+               >
+                   <div
+                       className="flex justify-between items-center mb-4 pb-3 border-b-2"
+                       style={{ borderColor: "#e0dcf9" }}
+                   >
+                       <h3 className="text-xl font-bold" style={{ color: "#4332d2" }}>
+                           👥 Team Members
+                       </h3>
+                       <button
+                           onClick={() => setShowTeamPopup(null)}
+                           className="text-gray-400 hover:text-gray-700 text-2xl font-light"
+                       >
+                           ×
+                       </button>
+                   </div>
 
-                 <div className="space-y-2 max-h-96 overflow-y-auto">
-                     {task.assignees?.map((assignee, idx) => (
-                         <div
-                             key={assignee.email}
-                             className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-all"
-                         >
-                             <div
-                                 className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                                 style={{ backgroundColor: "#4332d2" }}
-                             >
-                                 {assignee.name.charAt(0).toUpperCase()}
-                             </div>
-                             <div className="flex-1">
-                                 <div className="font-bold text-gray-900">
-                                     {assignee.name}
-                                 </div>
-                                 <div className="text-sm text-gray-600">
-                                     {assignee.email}
-                                 </div>
-                             </div>
-                             <span className="text-xs font-semibold text-gray-500">
-                                 #{idx + 1}
-                             </span>
-                         </div>
-                     ))}
-                 </div>
+                   <div className="space-y-2 max-h-96 overflow-y-auto">
+                       {task.assignees?.map((assignee, idx) => (
+                           <div
+                               key={assignee.email}
+                               className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-all"
+                           >
+                               <div
+                                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                                   style={{ backgroundColor: "#4332d2" }}
+                               >
+                                   {assignee.name.charAt(0).toUpperCase()}
+                               </div>
+                               <div className="flex-1">
+                                   <div className="font-bold text-gray-900">
+                                       {assignee.name}
+                                   </div>
+                                   <div className="text-sm text-gray-600">
+                                       {assignee.email}
+                                   </div>
+                               </div>
+                               <span className="text-xs font-semibold text-gray-500">
+                                   #{idx + 1}
+                               </span>
+                           </div>
+                       ))}
+                   </div>
 
-                 <div className="mt-4 pt-3 border-t border-gray-200 text-center">
-                     <span className="text-sm text-gray-600 font-semibold">
-                         Total: {task.assignees?.length} members
-                     </span>
-                 </div>
-             </div>
-         </div>
+                   <div className="mt-4 pt-3 border-t border-gray-200 text-center">
+                       <span className="text-sm text-gray-600 font-semibold">
+                           Total: {task.assignees?.length} members
+                       </span>
+                   </div>
+               </div>
+           </div>
     );
 
     // Initialize a counter for desktop/mobile index outside the return
     let cumulativeIndex = -1;
 
+    // --- RENDER START ---
+    
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
@@ -1183,10 +1260,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                     uniqueUsers={uniqueUsers}
                     uniqueAssignedBy={uniqueAssignedBy}
                     uniqueStatuses={uniqueStatuses}
-                    role={role}
+                    role={rawRole} // Passing the original role string
                 />
 
-                {/* Desktop Table (Infinite Scroll) */}
+                {/* Desktop Table (Virtual Scroll for Medium/Low) */}
                 <div className="hidden lg:block bg-white rounded-3xl shadow-xl border-2 border-gray-200 overflow-hidden mt-6">
                     <div ref={scrollContainerRef} className="overflow-y-auto max-h-[70vh]">
                         <table className="w-full table-fixed">
@@ -1234,75 +1311,86 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                         </td>
                                     </tr>
                                 ) : tasks.length === 0 && totalCount === 0 ? (
-                                     <tr>
-                                         <td colSpan={11} className="text-center py-20">
-                                             <div className="text-6xl mb-4">📋</div>
-                                             <p className="text-gray-500 font-black text-xl">No tasks assigned yet</p>
-                                         </td>
-                                     </tr>
+                                        <tr>
+                                            <td colSpan={11} className="text-center py-20">
+                                                <div className="text-6xl mb-4">📋</div>
+                                                <p className="text-gray-500 font-black text-xl">No tasks assigned yet</p>
+                                            </td>
+                                        </tr>
                                 ) : tasks.length === 0 && totalCount > 0 ? (
-                                     <tr>
-                                         <td colSpan={11} className="text-center py-20">
-                                             <div className="text-6xl mb-4">🔍</div>
-                                             <p className="text-gray-500 font-black text-xl">No tasks match your current filters.</p>
-                                         </td>
-                                     </tr>
+                                        <tr>
+                                            <td colSpan={11} className="text-center py-20">
+                                                <div className="text-6xl mb-4">🔍</div>
+                                                <p className="text-gray-500 font-black text-xl">No tasks match your current filters.</p>
+                                            </td>
+                                        </tr>
                                 ) : (
-                                    <>
-                                        {/* High Priority Tasks */}
-                                        {highTasks.length > 0 && (
-                                            <>
-                                                <tr>
-                                                    <td colSpan={11} className="bg-gradient-to-r from-red-100 to-orange-100 text-red-900 font-black text-sm py-3 px-3 border-y-2 border-red-300">
-                                                        🔴 High Priority ({stats.highCount} total)
+                                        <>
+                                            {/* ⭐ High Priority Tasks (WITH VIRTUAL SCROLL) */}
+                                            {highTasks.length > 0 && (
+                                                <>
+                                                    <tr>
+                                                        <td colSpan={11} className="bg-gradient-to-r from-red-100 to-orange-100 text-red-900 font-black text-sm py-3 px-3 border-y-2 border-red-300">
+                                                            🔴 High Priority ({allHighTasks.length} total)
+                                                        </td>
+                                                    </tr>
+                                                    {highTasks.map((task) => {
+                                                        cumulativeIndex++;
+                                                        return renderTaskRow(task, cumulativeIndex);
+                                                    })}
+                                                    
+                                                    {/* ⭐ HIGH PRIORITY SCROLL TRIGGER */}
+                                                    {highScrollIndex < allHighTasks.length && (
+                                                        <tr ref={highObserverTarget}>
+                                                            <td colSpan={11} className="text-center py-4 bg-red-50/50">
+                                                                <FaSpinner className="animate-spin h-6 w-6 mx-auto text-red-600" />
+                                                                <p className="text-xs text-red-700 mt-1">Loading more High Priority tasks...</p>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {/* Medium Priority Tasks (VIRTUAL SCROLL APPLIED) */}
+                                            {mediumTasks.length > 0 && (
+                                                <>
+                                                    <tr>
+                                                        <td colSpan={11} className="bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-900 font-black text-sm py-3 px-3 border-y-2 border-yellow-300">
+                                                            🟡 Medium Priority ({stats.mediumCount} total)
+                                                        </td>
+                                                    </tr>
+                                                    {mediumTasks.map((task) => {
+                                                        cumulativeIndex++;
+                                                        return renderTaskRow(task, cumulativeIndex);
+                                                    })}
+                                                </>
+                                            )}
+
+                                            {/* Low Priority Tasks (VIRTUAL SCROLL APPLIED) */}
+                                            {lowTasks.length > 0 && (
+                                                <>
+                                                    <tr>
+                                                        <td colSpan={11} className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-900 font-black text-sm py-3 px-3 border-y-2 border-green-300">
+                                                            🟢 Low Priority ({stats.lowCount} total)
+                                                        </td>
+                                                    </tr>
+                                                    {lowTasks.map((task) => {
+                                                        cumulativeIndex++;
+                                                        return renderTaskRow(task, cumulativeIndex);
+                                                    })}
+                                                </>
+                                            )}
+
+                                            {/* ⭐ MEDIUM/LOW SCROLL TRIGGER (Modified ref) */}
+                                            {otherScrollIndex < otherTasks.length && (
+                                                <tr ref={otherObserverTarget}>
+                                                    <td colSpan={11} className="text-center py-4">
+                                                        <FaSpinner className="animate-spin h-6 w-6 mx-auto text-indigo-600" />
+                                                        <p className="text-xs text-indigo-700 mt-1">Loading more Medium/Low Priority tasks...</p>
                                                     </td>
                                                 </tr>
-                                                {highTasks.map((task) => {
-                                                    cumulativeIndex++;
-                                                    return renderTaskRow(task, cumulativeIndex);
-                                                })}
-                                            </>
-                                        )}
-
-                                        {/* Medium Priority Tasks */}
-                                        {mediumTasks.length > 0 && (
-                                            <>
-                                                <tr>
-                                                    <td colSpan={11} className="bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-900 font-black text-sm py-3 px-3 border-y-2 border-yellow-300">
-                                                        🟡 Medium Priority ({stats.mediumCount} total)
-                                                    </td>
-                                                </tr>
-                                                {mediumTasks.map((task) => {
-                                                    cumulativeIndex++;
-                                                    return renderTaskRow(task, cumulativeIndex);
-                                                })}
-                                            </>
-                                        )}
-
-                                        {/* Low Priority Tasks */}
-                                        {lowTasks.length > 0 && (
-                                            <>
-                                                <tr>
-                                                    <td colSpan={11} className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-900 font-black text-sm py-3 px-3 border-y-2 border-green-300">
-                                                        🟢 Low Priority ({stats.lowCount} total)
-                                                    </td>
-                                                </tr>
-                                                {lowTasks.map((task) => {
-                                                    cumulativeIndex++;
-                                                    return renderTaskRow(task, cumulativeIndex);
-                                                })}
-                                            </>
-                                        )}
-
-                                        {/* Infinite Scroll Trigger */}
-                                        {hasMore && (
-                                            <tr ref={observerTarget}>
-                                                <td colSpan={11} className="text-center py-4">
-                                                    <FaSpinner className="animate-spin h-6 w-6 mx-auto text-indigo-600" />
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </>
+                                            )}
+                                        </>
                                 )}
                             </tbody>
                         </table>
@@ -1321,7 +1409,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                     </div>
                 </div>
 
-                {/* Mobile Card View (Pagination) */}
+                {/* --- MOBILE VIEW (Remains the same, uses MAX_LOAD) --- */}
                 <div className="lg:hidden mt-6 space-y-4">
                     {initialLoading ? (
                         <div className="bg-white rounded-lg shadow-md p-12 text-center border border-gray-200">
@@ -1505,9 +1593,9 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 )}
 
                 {/* Team Members Popup */}
-                 {showTeamPopup && getTaskById(showTeamPopup) && (
-                     renderTeamPopup(getTaskById(showTeamPopup))
-                 )}
+                   {showTeamPopup && getTaskById(showTeamPopup) && (
+                       renderTeamPopup(getTaskById(showTeamPopup))
+                   )}
 
                 {/* Status Dropdown */}
                 {editingStatus && (

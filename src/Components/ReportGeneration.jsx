@@ -25,12 +25,18 @@ import { io } from "socket.io-client";
 const socket = io("https://taskbe.sharda.co.in");
 
 const ReportGeneration = ({
-  onEdit = () => { console.warn("onEdit function not provided to ReportGeneration."); }, 
+  onEdit = () => {
+    console.warn("onEdit function not provided to ReportGeneration.");
+  },
   refreshTrigger,
   setTaskListExternally,
   tasksOverride,
   hideCompleted,
 }) => {
+  const role = localStorage.getItem("role");
+  const userEmail = localStorage.getItem("userId");
+  const userName = localStorage.getItem("name");
+
   const [tasks, setTasks] = useState([]);
   const [editingStatus, setEditingStatus] = useState(null);
   const [newStatus, setNewStatus] = useState("");
@@ -41,6 +47,8 @@ const ReportGeneration = ({
     status: "",
     code: "",
     department: "",
+    // Non-admin users see their own tasks by default.
+    user: role !== "admin" && userName ? userName : "",
   });
   const [dueDateSortOrder, setDueDateSortOrder] = useState(null);
   const [remarks, setRemarks] = useState({});
@@ -57,8 +65,6 @@ const ReportGeneration = ({
   const [toDate, setToDate] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
-  const role = localStorage.getItem("role");
-  const userEmail = localStorage.getItem("userId");
   const users = useSelector((state) => state.users.list);
   const reportRef = useRef();
   const dispatch = useDispatch();
@@ -68,8 +74,8 @@ const ReportGeneration = ({
       setIsMobile(window.innerWidth < 640);
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -115,11 +121,24 @@ const ReportGeneration = ({
       const response = await fetch("https://taskbe.sharda.co.in/api/tasks");
       const data = await response.json();
 
+      // FIX: Check if data is an object with a 'tasks' array, or if it's the array itself.
+      // API returned: {tasks: Array(100), ...} -> We need data.tasks
+      const rawTasks = data && Array.isArray(data.tasks) 
+        ? data.tasks 
+        : Array.isArray(data) 
+        ? data 
+        : [];
+        
+      if (rawTasks.length === 0 && data) {
+           console.warn("API data returned but tasks array is empty or missing:", data);
+      }
+      // END FIX
+
       const hiddenTaskIds = JSON.parse(
         localStorage.getItem("hiddenCompletedTasks") || "[]"
       );
 
-      const visibleTasks = data.filter(
+      const visibleTasks = rawTasks.filter( // Use the correctly extracted/safeguarded tasks array
         (task) => !hiddenTaskIds.includes(task._id)
       );
 
@@ -146,6 +165,7 @@ const ReportGeneration = ({
       setRemarks(taskRemarks);
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
+      setTasks([]); 
     }
   };
 
@@ -308,10 +328,11 @@ const ReportGeneration = ({
 
     if (to) to.setHours(23, 59, 59, 999);
 
+    // Filter condition: Match the selected user (filters.user)
     const matchesUser =
-      filters.user &&
-      (task.assignees?.some((a) => a.name === filters.user) ||
-        task.assignedBy?.name === filters.user);
+      !filters.user || // If no user is selected (e.g., admin default view), always match
+      task.assignees?.some((a) => a.name === filters.user) ||
+      task.assignedBy?.name === filters.user;
 
     const matchesDateRange =
       (!from || assignedDate >= from) && (!to || assignedDate <= to);
@@ -325,12 +346,9 @@ const ReportGeneration = ({
 
     const shouldHide = hideCompleted && task.status === "Completed";
 
-    const userSelected = filters.user; 
-    
-    const isFiltered = (
-        !userSelected || 
-        (userSelected && matchesUser) 
-    ) && matchesDateRange && matchesOtherFilters && !shouldHide;
+    // Combine all filters
+    const isFiltered =
+      matchesUser && matchesDateRange && matchesOtherFilters && !shouldHide;
 
     return isFiltered;
   });
@@ -361,18 +379,27 @@ const ReportGeneration = ({
   }, [dropdownRef]);
 
   const handleDownloadPDF = () => {
-    if (!filters.user) {
-      alert("Please select a user to generate the report.");
-      return;
+    // If Admin, check if a user is selected before generating a specific user report
+    if (!filters.user && role === "admin" && filteredTasks.length > 0) {
+      const confirmAll = window.confirm("You are about to generate a report for ALL tasks visible. Do you want to proceed?");
+      if (!confirmAll) return;
+    }
+    
+    if (filteredTasks.length === 0) {
+        alert("No tasks match the current filters to generate a report.");
+        return;
     }
 
+    // Fallback title for non-admin/unfiltered admin view
+    const reportUserName = filters.user || (role !== "admin" ? userName : "All Tasks");
+    
     const doc = new jsPDF({
       orientation: "landscape",
       unit: "pt",
       format: "A4",
     });
 
-    const title = `${filters.user}'s Task Report`;
+    const title = `${reportUserName}'s Task Report`;
     const subtitle =
       fromDate && toDate
         ? `From ${new Date(fromDate).toLocaleDateString("en-GB")} to ${new Date(
@@ -436,69 +463,91 @@ const ReportGeneration = ({
       },
     });
 
-    doc.save(`${filters.user.replace(/\s+/g, "_")}-Task-Report.pdf`);
+    doc.save(`${reportUserName.replace(/\s+/g, "_")}-Task-Report.pdf`);
   };
 
-const handleDownloadExcel = async () => {
-    if (!filters.user) {
-      alert("Please select a user to generate the report.");
-      return;
+  const handleDownloadExcel = async () => {
+    // If Admin, check if a user is selected before generating a specific user report
+    if (!filters.user && role === "admin" && filteredTasks.length > 0) {
+      const confirmAll = window.confirm("You are about to generate an Excel report for ALL tasks visible. Do you want to proceed?");
+      if (!confirmAll) return;
     }
+
+    if (filteredTasks.length === 0) {
+        alert("No tasks match the current filters to generate an Excel report.");
+        return;
+    }
+    
+    const reportUserName = filters.user || (role !== "admin" ? userName : "All Tasks");
 
     try {
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Task Report', {
-        pageSetup: { paperSize: 9, orientation: 'landscape' },
-        views: [{ state: 'frozen', xSplit: 0, ySplit: 3 }]
+      const worksheet = workbook.addWorksheet("Task Report", {
+        pageSetup: { paperSize: 9, orientation: "landscape" },
+        views: [{ state: "frozen", xSplit: 0, ySplit: 3 }],
       });
 
       // Set column widths
       worksheet.columns = [
-        { width: 10 },  // S. No
-        { width: 35 },  // Task Name
-        { width: 50 },  // Work Description
-        { width: 18 },  // Code
-        { width: 24 },  // Date of Work
-        { width: 16 },  // Due Date
-        { width: 16 },  // Status
-        { width: 14 },  // Priority
+        { width: 10 }, // S. No
+        { width: 35 }, // Task Name
+        { width: 50 }, // Work Description
+        { width: 18 }, // Code
+        { width: 24 }, // Date of Work
+        { width: 16 }, // Due Date
+        { width: 16 }, // Status
+        { width: 14 }, // Priority
       ];
 
       // Title Row with gradient effect
-      worksheet.mergeCells('A1:H1');
-      const titleCell = worksheet.getCell('A1');
-      titleCell.value = `📋 ${filters.user}'s Task Report`;
-      titleCell.font = { bold: true, size: 18, color: { argb: 'FFFFFFFF' }, name: 'Calibri' };
-      titleCell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF1E40AF' } // Deep blue
+      worksheet.mergeCells("A1:H1");
+      const titleCell = worksheet.getCell("A1");
+      titleCell.value = `📋 ${reportUserName}'s Task Report`;
+      titleCell.font = {
+        bold: true,
+        size: 18,
+        color: { argb: "FFFFFFFF" },
+        name: "Calibri",
       };
-      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1E40AF" }, // Deep blue
+      };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
       titleCell.border = {
-        top: { style: 'medium', color: { argb: 'FF1E3A8A' } },
-        left: { style: 'medium', color: { argb: 'FF1E3A8A' } },
-        bottom: { style: 'medium', color: { argb: 'FF1E3A8A' } },
-        right: { style: 'medium', color: { argb: 'FF1E3A8A' } }
+        top: { style: "medium", color: { argb: "FF1E3A8A" } },
+        left: { style: "medium", color: { argb: "FF1E3A8A" } },
+        bottom: { style: "medium", color: { argb: "FF1E3A8A" } },
+        right: { style: "medium", color: { argb: "FF1E3A8A" } },
       };
       worksheet.getRow(1).height = 35;
 
       // Date Range Row with better styling
       if (fromDate && toDate) {
-        worksheet.mergeCells('A2:H2');
-        const dateCell = worksheet.getCell('A2');
-        dateCell.value = `📅 Report Period: ${new Date(fromDate).toLocaleDateString("en-GB")} to ${new Date(toDate).toLocaleDateString("en-GB")}`;
-        dateCell.font = { italic: true, size: 12, color: { argb: 'FF475569' }, name: 'Calibri' };
-        dateCell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFE0E7FF' } // Light blue
+        worksheet.mergeCells("A2:H2");
+        const dateCell = worksheet.getCell("A2");
+        dateCell.value = `📅 Report Period: ${new Date(
+          fromDate
+        ).toLocaleDateString("en-GB")} to ${new Date(toDate).toLocaleDateString(
+          "en-GB"
+        )}`;
+        dateCell.font = {
+          italic: true,
+          size: 12,
+          color: { argb: "FF475569" },
+          name: "Calibri",
         };
-        dateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        dateCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFE0E7FF" }, // Light blue
+        };
+        dateCell.alignment = { horizontal: "center", vertical: "middle" };
         dateCell.border = {
-          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-          right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+          left: { style: "thin", color: { argb: "FFCBD5E1" } },
+          right: { style: "thin", color: { argb: "FFCBD5E1" } },
+          bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
         };
         worksheet.getRow(2).height = 24;
       }
@@ -512,50 +561,63 @@ const handleDownloadExcel = async () => {
         worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
         const priorityHeader = worksheet.getCell(`A${currentRow}`);
         priorityHeader.value = label;
-        priorityHeader.font = { 
-          bold: true, 
-          size: 14, 
-          color: { argb: 'FFFFFFFF' },
-          name: 'Calibri'
+        priorityHeader.font = {
+          bold: true,
+          size: 14,
+          color: { argb: "FFFFFFFF" },
+          name: "Calibri",
         };
         priorityHeader.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: headerColor }
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: headerColor },
         };
-        priorityHeader.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+        priorityHeader.alignment = {
+          horizontal: "left",
+          vertical: "middle",
+          indent: 1,
+        };
         priorityHeader.border = {
-          top: { style: 'medium', color: { argb: iconColor } },
-          left: { style: 'medium', color: { argb: iconColor } },
-          bottom: { style: 'medium', color: { argb: iconColor } },
-          right: { style: 'medium', color: { argb: iconColor } }
+          top: { style: "medium", color: { argb: iconColor } },
+          left: { style: "medium", color: { argb: iconColor } },
+          bottom: { style: "medium", color: { argb: iconColor } },
+          right: { style: "medium", color: { argb: iconColor } },
         };
         worksheet.getRow(currentRow).height = 28;
         currentRow++;
 
         // Column Headers with gradient
         const headerRow = worksheet.getRow(currentRow);
-        const headers = ['S. No', 'Task Name', 'Work Description', 'Code', 'Date of Work', 'Due Date', 'Status', 'Priority'];
+        const headers = [
+          "S. No",
+          "Task Name",
+          "Work Description",
+          "Code",
+          "Date of Work",
+          "Due Date",
+          "Status",
+          "Priority",
+        ];
         headers.forEach((header, idx) => {
           const cell = headerRow.getCell(idx + 1);
           cell.value = header;
-          cell.font = { 
-            bold: true, 
-            size: 11, 
-            color: { argb: 'FFFFFFFF' },
-            name: 'Calibri'
+          cell.font = {
+            bold: true,
+            size: 11,
+            color: { argb: "FFFFFFFF" },
+            name: "Calibri",
           };
           cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FF334155' } // Dark gray
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF334155" }, // Dark gray
           };
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.alignment = { horizontal: "center", vertical: "middle" };
           cell.border = {
-            top: { style: 'medium', color: { argb: 'FF1E293B' } },
-            left: { style: 'thin', color: { argb: 'FF475569' } },
-            bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
-            right: { style: 'thin', color: { argb: 'FF475569' } }
+            top: { style: "medium", color: { argb: "FF1E293B" } },
+            left: { style: "thin", color: { argb: "FF475569" } },
+            bottom: { style: "medium", color: { argb: "FF1E293B" } },
+            right: { style: "thin", color: { argb: "FF475569" } },
           };
         });
         headerRow.height = 22;
@@ -565,7 +627,7 @@ const handleDownloadExcel = async () => {
         tasks.forEach((task, index) => {
           const dataRow = worksheet.getRow(currentRow);
           const isEven = index % 2 === 0;
-          
+
           const rowData = [
             index + 1,
             task.taskName,
@@ -580,129 +642,153 @@ const handleDownloadExcel = async () => {
           rowData.forEach((value, idx) => {
             const cell = dataRow.getCell(idx + 1);
             cell.value = value;
-            cell.font = { 
-              size: 10, 
-              name: 'Calibri',
-              color: { argb: 'FF1F2937' }
+            cell.font = {
+              size: 10,
+              name: "Calibri",
+              color: { argb: "FF1F2937" },
             };
-            
+
             // Special styling for status column
-            if (idx === 6) { // Status column
-              let statusColor = 'FF3B82F6'; // Blue for To Do
-              if (value === 'Completed') statusColor = 'FF10B981';
-              else if (value === 'In Progress') statusColor = 'FFF59E0B';
-              else if (value === 'Overdue') statusColor = 'FFEF4444';
-              else if (value === 'Abbstulate') statusColor = 'FF8B5CF6';
-              
-              cell.font = { 
-                size: 10, 
+            if (idx === 6) {
+              // Status column
+              let statusColor = "FF3B82F6"; // Blue for To Do
+              if (value === "Completed") statusColor = "FF10B981";
+              else if (value === "In Progress") statusColor = "FFF59E0B";
+              else if (value === "Overdue") statusColor = "FFEF4444";
+              else if (value === "Abbstulate") statusColor = "FF8B5CF6";
+
+              cell.font = {
+                size: 10,
                 bold: true,
-                name: 'Calibri',
-                color: { argb: statusColor }
+                name: "Calibri",
+                color: { argb: statusColor },
               };
             }
-            
+
             // Special styling for priority column
-            if (idx === 7) { // Priority column
-              let priorityColor = 'FF10B981'; // Green for Low
-              if (value === 'High') priorityColor = 'FFEF4444';
-              else if (value === 'Medium') priorityColor = 'FFF59E0B';
-              
-              cell.font = { 
-                size: 10, 
+            if (idx === 7) {
+              // Priority column
+              let priorityColor = "FF10B981"; // Green for Low
+              if (value === "High") priorityColor = "FFEF4444";
+              else if (value === "Medium") priorityColor = "FFF59E0B";
+
+              cell.font = {
+                size: 10,
                 bold: true,
-                name: 'Calibri',
-                color: { argb: priorityColor }
+                name: "Calibri",
+                color: { argb: priorityColor },
               };
             }
 
             cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: isEven ? 'FFFAFAFA' : 'FFFFFFFF' }
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: isEven ? "FFFAFAFA" : "FFFFFFFF" },
             };
-            cell.alignment = { 
-              vertical: 'middle', 
+            cell.alignment = {
+              vertical: "middle",
               wrapText: true,
-              horizontal: idx === 0 ? 'center' : 'left',
-              indent: idx > 0 && idx !== 6 && idx !== 7 ? 1 : 0
+              horizontal: idx === 0 ? "center" : "left",
+              indent: idx > 0 && idx !== 6 && idx !== 7 ? 1 : 0,
             };
             cell.border = {
-              top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-              left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-              bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-              right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+              top: { style: "thin", color: { argb: "FFE5E7EB" } },
+              left: { style: "thin", color: { argb: "FFE5E7EB" } },
+              bottom: { style: "thin", color: { argb: "FFE5E7EB" } },
+              right: { style: "thin", color: { argb: "FFE5E7EB" } },
             };
           });
-          
+
           dataRow.height = 20;
           currentRow++;
         });
 
         // Add summary row
         const summaryRow = worksheet.getRow(currentRow);
-        summaryRow.getCell(1).value = `Total ${label.split(' ')[1]} Priority Tasks: ${tasks.length}`;
+        summaryRow.getCell(1).value = `Total ${
+          label.split(" ")[1]
+        } Priority Tasks: ${tasks.length}`;
         worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
-        summaryRow.getCell(1).font = { 
-          bold: true, 
-          size: 10, 
-          color: { argb: 'FF475569' },
+        summaryRow.getCell(1).font = {
+          bold: true,
+          size: 10,
+          color: { argb: "FF475569" },
           italic: true,
-          name: 'Calibri'
+          name: "Calibri",
         };
         summaryRow.getCell(1).fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFF1F5F9' }
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF1F5F9" },
         };
-        summaryRow.getCell(1).alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
+        summaryRow.getCell(1).alignment = {
+          horizontal: "right",
+          vertical: "middle",
+          indent: 1,
+        };
         summaryRow.getCell(1).border = {
-          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+          top: { style: "thin", color: { argb: "FFCBD5E1" } },
+          bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
         };
         summaryRow.height = 18;
         currentRow += 2; // Empty row separator
       };
 
       // Add sections by priority with enhanced colors
-      addPrioritySection(highPriorityTasks, '🔴 HIGH PRIORITY TASKS', 'FFDC2626', 'FFB91C1C');
-      addPrioritySection(mediumPriorityTasks, '🟡 MEDIUM PRIORITY TASKS', 'FFF59E0B', 'FFD97706');
-      addPrioritySection(lowPriorityTasks, '🟢 LOW PRIORITY TASKS', 'FF10B981', 'FF059669');
+      addPrioritySection(
+        highPriorityTasks,
+        "🔴 HIGH PRIORITY TASKS",
+        "FFDC2626",
+        "FFB91C1C"
+      );
+      addPrioritySection(
+        mediumPriorityTasks,
+        "🟡 MEDIUM PRIORITY TASKS",
+        "FFF59E0B",
+        "FFD97706"
+      );
+      addPrioritySection(
+        lowPriorityTasks,
+        "🟢 LOW PRIORITY TASKS",
+        "FF10B981",
+        "FF059669"
+      );
 
       // Add footer with total summary
       currentRow += 1;
       worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
       const footerCell = worksheet.getCell(`A${currentRow}`);
-      footerCell.value = `📊 Total Tasks: ${filteredTasks.length} | Generated on: ${new Date().toLocaleString('en-GB')}`;
-      footerCell.font = { 
-        italic: true, 
-        size: 10, 
-        color: { argb: 'FF64748B' },
-        name: 'Calibri'
+      footerCell.value = `📊 Total Tasks: ${
+        filteredTasks.length
+      } | Generated on: ${new Date().toLocaleString("en-GB")}`;
+      footerCell.font = {
+        italic: true,
+        size: 10,
+        color: { argb: "FF64748B" },
+        name: "Calibri",
       };
       footerCell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFF8FAFC' }
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF8FAFC" },
       };
-      footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      footerCell.alignment = { horizontal: "center", vertical: "middle" };
       footerCell.border = {
-        top: { style: 'medium', color: { argb: 'FFCBD5E1' } }
+        top: { style: "medium", color: { argb: "FFCBD5E1" } },
       };
       worksheet.getRow(currentRow).height = 20;
 
       // Generate and download
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
-      
-      const fileName = `${filters.user.replace(/\s+/g, "_")}-Task-Report.xlsx`;
-      saveAs(blob, fileName);
 
+      const fileName = `${reportUserName.replace(/\s+/g, "_")}-Task-Report.xlsx`;
+      saveAs(blob, fileName);
     } catch (error) {
-      console.error('Error generating Excel:', error);
-      alert('Error generating Excel file. Please try again.');
+      console.error("Error generating Excel:", error);
+      alert("Error generating Excel file. Please try again.");
     }
   };
   const renderTaskCardOrRow = (task, index) => {
@@ -710,7 +796,7 @@ const handleDownloadExcel = async () => {
       new Date(task.dueDate) < new Date() &&
       task.status !== "Completed" &&
       task.status !== "Obsolete";
-    
+
     const StatusBadge = ({ status, onClick }) => {
       let bgColor, textColor;
       switch (status) {
@@ -776,10 +862,17 @@ const handleDownloadExcel = async () => {
           <div className="text-xs text-gray-600 space-y-1">
             <p className="flex justify-between">
               <span className="font-medium">Priority:</span>
-              <span className={`font-semibold ${
-                  task.priority === "High" ? "text-red-500" :
-                  task.priority === "Medium" ? "text-yellow-600" : "text-green-600"
-              }`}>{task.priority}</span>
+              <span
+                className={`font-semibold ${
+                  task.priority === "High"
+                    ? "text-red-500"
+                    : task.priority === "Medium"
+                    ? "text-yellow-600"
+                    : "text-green-600"
+                }`}
+              >
+                {task.priority}
+              </span>
             </p>
             <p className="flex justify-between">
               <span className="font-medium">Date of Work:</span>
@@ -816,37 +909,43 @@ const handleDownloadExcel = async () => {
             </div>
 
             {editingStatus === task._id && (
-              <div 
-                className="absolute right-2 top-12 z-[9999] w-36 max-w-xs bg-white   rounded-lg shadow-2xl"
+              <div
+                className="absolute right-2 top-12 z-[9999] w-36 max-w-xs bg-white   rounded-lg shadow-2xl"
                 ref={dropdownRef}
-                style={{ position: 'absolute' }}
+                style={{ position: "absolute" }}
               >
-                  <div className="p-2 flex flex-col gap-1 w-full">
-                      <h4 className="text-xs font-semibold text-gray-700 mb-1 border-b pb-1">Change Status:</h4>
-                      
-                      {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
-                          (statusOption) => (
-                              <span
-                                  key={statusOption}
-                                  className={`py-1.5 px-2 text-center rounded-md text-xs font-semibold cursor-pointer transition-colors 
-                                      ${statusOption === "Completed" ? "bg-green-100 text-green-700 hover:bg-green-200" :
-                                        statusOption === "In Progress" ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" :
-                                        statusOption === "To Do" ? "bg-blue-100 text-blue-700 hover:bg-blue-200" :
-                                        statusOption === "Abbstulate" ? "bg-purple-100 text-purple-700 hover:bg-purple-200" :
-                                        "bg-red-100 text-red-700 hover:bg-red-200"
-                                      }`}
-                                  onClick={() => {
-                                      setNewStatus(statusOption);
-                                      handleStatusChange(task._id, statusOption);
-                                      setEditingStatus(null);
-                                  }}
-                              >
-                                  {statusOption}
-                              </span>
-                          )
-                      )}
-                     
-                  </div>
+                <div className="p-2 flex flex-col gap-1 w-full">
+                  <h4 className="text-xs font-semibold text-gray-700 mb-1 border-b pb-1">
+                    Change Status:
+                  </h4>
+
+                  {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
+                    (statusOption) => (
+                      <span
+                        key={statusOption}
+                        className={`py-1.5 px-2 text-center rounded-md text-xs font-semibold cursor-pointer transition-colors 
+                                      ${
+                          statusOption === "Completed"
+                            ? "bg-green-100 text-green-700 hover:bg-green-200"
+                            : statusOption === "In Progress"
+                            ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                            : statusOption === "To Do"
+                            ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            : statusOption === "Abbstulate"
+                            ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                            : "bg-red-100 text-red-700 hover:bg-red-200"
+                        }`}
+                        onClick={() => {
+                          setNewStatus(statusOption);
+                          handleStatusChange(task._id, statusOption);
+                          setEditingStatus(null);
+                        }}
+                      >
+                        {statusOption}
+                      </span>
+                    )
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -859,12 +958,8 @@ const handleDownloadExcel = async () => {
         key={task._id}
         id={`task-${task._id}`}
         className={`hover:bg-indigo-50 transition duration-300 ease-in-out cursor-pointer border-b border-gray-200 
-      ${
-        isOverdue
-          ? "bg-orange-100 hover:bg-orange-200"
-          : ""
-      }
-    `}
+      ${isOverdue ? "bg-orange-100 hover:bg-orange-200" : ""}
+    `}
       >
         <td className="py-3 px-2 sm:px-4 font-medium text-xs">{index + 1}</td>
 
@@ -986,49 +1081,56 @@ const handleDownloadExcel = async () => {
           })}
         </td>
 
-       <td className="py-3 px-2 sm:px-6 text-center relative">
-  {editingStatus === task._id ? (
-    <div
-      ref={dropdownRef}
-      className="flex flex-col w-32 sm:w-40 justify-between bg-white absolute shadow-lg rounded-lg z-50 right-0 sm:left-1/2 sm:-translate-x-[65%] top-10 p-2"
-    >
-      {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
-        (statusOption) => (
-          <span
-            key={statusOption}
-            className={`py-2 px-2 sm:px-4 text-center rounded-md text-xs font-semibold cursor-pointer mb-1 ${
-              statusOption === "Completed"
-                ? "bg-green-200 text-green-600 hover:bg-green-300"
-                : statusOption === "In Progress"
-                ? "bg-yellow-200 text-yellow-600 hover:bg-yellow-300"
-                : statusOption === "To Do"
-                ? "bg-blue-200 text-blue-600 hover:bg-blue-300"
-                : statusOption === "Abbstulate"
-                ? "bg-purple-200 text-purple-600 hover:bg-purple-300"
-                : "bg-red-200 text-red-600 hover:bg-red-300"
-            }`}
-            onClick={() => {
-              setNewStatus(statusOption);
-              handleStatusChange(task._id, statusOption);
-              setEditingStatus(null);
-            }}
-          >
-            {statusOption}
-          </span>
-        )
-      )}
-    </div>
-  ) : (
-    <StatusBadge status={task.status} onClick={() => setEditingStatus(task._id)} />
-  )}
-</td>
-
+        <td className="py-3 px-2 sm:px-6 text-center relative">
+          {editingStatus === task._id ? (
+            <div
+              ref={dropdownRef}
+              className="flex flex-col w-32 sm:w-40 justify-between bg-white absolute shadow-lg rounded-lg z-50 right-0 sm:left-1/2 sm:-translate-x-[65%] top-10 p-2"
+            >
+              {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
+                (statusOption) => (
+                  <span
+                    key={statusOption}
+                    className={`py-2 px-2 sm:px-4 text-center rounded-md text-xs font-semibold cursor-pointer mb-1 ${
+                      statusOption === "Completed"
+                        ? "bg-green-200 text-green-600 hover:bg-green-300"
+                        : statusOption === "In Progress"
+                        ? "bg-yellow-200 text-yellow-600 hover:bg-yellow-300"
+                        : statusOption === "To Do"
+                        ? "bg-blue-200 text-blue-600 hover:bg-blue-300"
+                        : statusOption === "Abbstulate"
+                        ? "bg-purple-200 text-purple-600 hover:bg-purple-300"
+                        : "bg-red-200 text-red-600 hover:bg-red-300"
+                    }`}
+                    onClick={() => {
+                      setNewStatus(statusOption);
+                      handleStatusChange(task._id, statusOption);
+                      setEditingStatus(null);
+                    }}
+                  >
+                    {statusOption}
+                  </span>
+                )
+              )}
+            </div>
+          ) : (
+            <StatusBadge
+              status={task.status}
+              onClick={() => setEditingStatus(task._id)}
+            />
+          )}
+        </td>
       </tr>
     );
   };
 
+  // Determine which title to display
+  const isUserFilterSet = !!filters.user || role !== 'admin';
+  const displayUserTitle = filters.user || (role === 'admin' ? "All Tasks" : userName);
+
+
   return (
-    <div className="p-2 sm:p-4 bg-gray-100 min-h-screen"> 
+    <div className="p-2 sm:p-4 bg-gray-100 min-h-screen">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6 w-full sm:w-auto">
           {role === "admin" && (
@@ -1045,7 +1147,7 @@ const handleDownloadExcel = async () => {
                 onChange={(e) => handleFilterChange("user", e.target.value)}
                 className="appearance-none w-full sm:w-56 pl-4 pr-10 py-2 text-xs border border-gray-300 rounded-md shadow-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="">Select a user</option>
+                <option value="">Select a user (Admin View All)</option>
                 {[...new Set([...uniqueUsers, ...uniqueAssignedBy])].map(
                   (user) => (
                     <option key={user} value={user}>
@@ -1059,7 +1161,9 @@ const handleDownloadExcel = async () => {
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
             <div className="flex items-center space-x-2 w-full sm:w-auto">
-              <label className="text-xs font-medium text-gray-700 whitespace-nowrap">From:</label>
+              <label className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                From:
+              </label>
               <input
                 type="date"
                 value={fromDate}
@@ -1069,7 +1173,9 @@ const handleDownloadExcel = async () => {
             </div>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto">
-              <label className="text-xs font-medium text-gray-700 whitespace-nowrap">To:</label>
+              <label className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                To:
+              </label>
               <input
                 type="date"
                 value={toDate}
@@ -1096,48 +1202,41 @@ const handleDownloadExcel = async () => {
         </div>
       </div>
 
-      {!filters.user ? (
+      {/* Conditional rendering based on whether a user is selected OR if it's a non-admin user */}
+      {!isUserFilterSet && role === "admin" ? (
         <div className="text-center text-gray-500 mt-10">
-          🔍 Please select a user to view tasks.
+          🔍 **Please select a user to view a specific report.** (Admin currently sees all tasks filtered below)
         </div>
       ) : (
         <>
           <div ref={reportRef} className="w-full p-2 sm:p-4">
             <h2 className="text-sm sm:text-base font-semibold mb-4">
-              {filters.user ? (
-                <>
-                  <span className="capitalize block sm:inline">
-                    {filters.user}'s Task Report
+              <span className="capitalize block sm:inline">
+                {displayUserTitle}'s Task Report
+              </span>
+              {fromDate && toDate && (
+                <span className="block sm:inline sm:ml-2 text-xs sm:text-sm font-medium text-gray-700 mt-2 sm:mt-0">
+                  (from{" "}
+                  <span className="font-semibold text-gray-800">
+                    {new Date(fromDate).toLocaleDateString("en-GB")}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-semibold text-gray-800">
+                    {new Date(toDate).toLocaleDateString("en-GB")}
                   </span>
-                  {fromDate && toDate && (
-                    <span className="block sm:inline sm:ml-2 text-xs sm:text-sm font-medium text-gray-700 mt-2 sm:mt-0">
-                      (from{" "}
-                      <span className="font-semibold text-gray-800">
-                        {new Date(fromDate).toLocaleDateString("en-GB")}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-semibold text-gray-800">
-                        {new Date(toDate).toLocaleDateString("en-GB")}
-                      </span>
-                      )
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="text-gray-500">
-                  Please select a user to view report
+                  )
                 </span>
               )}
             </h2>
 
             <div className="overflow-x-auto h-auto max-h-screen relative">
-            {isMobile ? (
+              {isMobile ? (
                 <div className="space-y-3 pb-20 relative">
                   {highPriorityTasks.length === 0 &&
                   mediumPriorityTasks.length === 0 &&
                   lowPriorityTasks.length === 0 ? (
                     <div className="text-center py-6 text-gray-500">
-                      🚫 No tasks Assigned Yet.
+                      🚫 **No tasks Assigned Yet matching filters.**
                     </div>
                   ) : (
                     <>
@@ -1221,7 +1320,7 @@ const handleDownloadExcel = async () => {
                             colSpan="13"
                             className="text-center py-6 text-gray-500"
                           >
-                            🚫 No tasks Assigned Yet.
+                            🚫 **No tasks Assigned Yet matching filters.**
                           </td>
                         </tr>
                       ) : (
