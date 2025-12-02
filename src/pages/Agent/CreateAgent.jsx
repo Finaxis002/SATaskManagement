@@ -1,131 +1,202 @@
-import React, { useState, useEffect } from "react";
-import { FaTimes } from "react-icons/fa";
+// src/pages/Agent/CreateAgent.jsx
 
-const CreateClientModal = ({ client, onClose, onCreate, agents = [] }) => {
+import React, { useState } from "react";
+import { X } from "lucide-react";
+
+const CreateAgent = ({ onSubmit }) => {
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
-    businessName: "",
-    address: "",
     mobile: "",
     emailId: "",
-    GSTIN: "",
-    referrer: "", 
+    address: "",
+    bankName: "",
+    accountNumber: "",
+    ifscCode: "",
+    commissionRate: 0,
   });
-
-  const isEdit = !!(client && (client._id || client.id));
-
-  useEffect(() => {
-    const c = client || {};
-    // normalize possible field names from different backends
-    const normalized = {
-      name: c.name || "",
-      contactPerson: c.contactPerson || c.contact || "",
-      businessName: c.businessName || c.company || "",
-      address: c.address || "",
-      mobile: c.mobile || c.phone || c.contactNo || "",
-      emailId: c.emailId || c.email || "",
-      GSTIN: c.GSTIN || c.gstin || "",
-      referrer: c.referrer || c.agent || "",
-    };
-
-    setFormData(
-      isEdit
-        ? normalized
-        : {
-            // for "create", keep only the name (e.g., typed from task form)
-            name: normalized.name, 
-            contactPerson: "",
-            businessName: "",
-            address: "",
-            mobile: "",
-            emailId: "",
-            GSTIN: "",
-            referrer: "", // Default empty referrer on create
-          }
-    );
-  }, [isEdit, client?._id, client?.id, client?.name]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
     if (!formData.name.trim()) {
-      alert("Client name is required!");
+      alert("Agent name is required!");
       return;
     }
     
-    onCreate(formData); 
+    if (!formData.mobile.trim()) {
+      alert("Mobile number is required!");
+      return;
+    }
+
+    onSubmit(formData);
   };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-md"> 
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">
-            {isEdit ? "Update Client" : "Create New Client"}
-          </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <FaTimes />
-          </button>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Basic Information */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Agent Name*
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="Enter agent name"
+            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            required
+          />
         </div>
 
-        {/* Client Fields */}
-        {[
-          { name: "name", label: "Client Name*" },
-          { name: "contactPerson", label: "Contact Person" },
-          { name: "businessName", label: "Business Name" },
-          { name: "address", label: "Address" },
-          { name: "mobile", label: "Mobile Number" },
-          { name: "emailId", label: "Email ID" },
-          { name: "GSTIN", label: "GSTIN" },
-        ].map((field) => (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Contact Person
+          </label>
           <input
-            key={field.name}
             type="text"
-            name={field.name}
-            value={formData[field.name]}
+            name="contactPerson"
+            value={formData.contactPerson}
             onChange={handleChange}
-            placeholder={field.label}
-            className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
-            required={field.name === "name"} 
-            readOnly={isEdit && field.name === "name"}
+            placeholder="Enter contact person"
+            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
-        ))}
-          
-        {/* 🔥 Dropdown for "Refer by Agent" (Now populated by 'agents' prop) */}
-        <select
-          name="referrer"
-          value={formData.referrer}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded mb-3 focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">-- Refer by Agent --</option>
-          {agents.map((agent) => (
-            <option 
-              key={agent._id || agent.id} 
-              value={agent.name} 
-            >
-              {agent.name}
-            </option>
-          ))}
-        </select>
-        
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-4 py-2 border rounded hover:bg-gray-50">
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            {isEdit ? "Update" : "Create"}
-          </button>
         </div>
       </div>
-    </div>
+
+      {/* Contact Information */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Mobile Number*
+          </label>
+          <input
+            type="tel"
+            name="mobile"
+            value={formData.mobile}
+            onChange={handleChange}
+            placeholder="Enter mobile number"
+            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Email ID
+          </label>
+          <input
+            type="email"
+            name="emailId"
+            value={formData.emailId}
+            onChange={handleChange}
+            placeholder="Enter email address"
+            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      {/* Address */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Address
+        </label>
+        <textarea
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          placeholder="Enter full address"
+          rows="3"
+          className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+        />
+      </div>
+
+      {/* Bank Details */}
+      <div className="pt-4 border-t">
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">Bank Details</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bank Name
+            </label>
+            <input
+              type="text"
+              name="bankName"
+              value={formData.bankName}
+              onChange={handleChange}
+              placeholder="Enter bank name"
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Account Number
+            </label>
+            <input
+              type="text"
+              name="accountNumber"
+              value={formData.accountNumber}
+              onChange={handleChange}
+              placeholder="Enter account number"
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              IFSC Code
+            </label>
+            <input
+              type="text"
+              name="ifscCode"
+              value={formData.ifscCode}
+              onChange={handleChange}
+              placeholder="Enter IFSC code"
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Commission Rate (%)
+            </label>
+            <input
+              type="number"
+              name="commissionRate"
+              value={formData.commissionRate}
+              onChange={handleChange}
+              placeholder="Enter commission rate"
+              min="0"
+              max="100"
+              step="0.1"
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <div className="flex justify-end gap-3 pt-4">
+        <button
+          type="submit"
+          className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg"
+        >
+          Create Agent
+        </button>
+      </div>
+    </form>
   );
 };
 
-export default CreateClientModal;
+export default CreateAgent;
