@@ -14,9 +14,10 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
     referralCode: initialData?.referralCode || '',
     phone: initialData?.phone || '', 
     bankDetails: {
+        bankName: initialData?.bankDetails?.bankName || '',   
       accountNumber: initialData?.bankDetails?.accountNumber || '',
       ifsc: initialData?.bankDetails?.ifsc || '',
-      holderName: initialData?.bankDetails?.holderName || '',
+
     },
     // Add other fields you want to edit here
   });
@@ -38,10 +39,12 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(initialData?._id, formData);
-  };
+const handleSubmit = (e) => {
+  e.preventDefault();
+  console.log('Submitting form data:', formData);
+  console.log('Bank Details:', formData.bankDetails); 
+  onSave(initialData?._id, formData);
+};
   
   return (
        <div className="p-4 sm:p-6 bg-white shadow rounded-lg mt-8"> 
@@ -108,35 +111,44 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
         </div>
 
         {/* Bank Details Section */}
-       <div className="space-y-4">
+<div className="space-y-4">
     <h4 className="text-lg font-semibold text-indigo-700">Bank Details</h4>
     
-    {/* ✅ UPDATED: Bank Name (formerly Account Holder Name) */}
+    {/* Bank Name Field */}
     <div>
         <label htmlFor="bankName" className="block text-sm font-medium text-gray-700">Bank Name</label>
         <input
-            id="bankName" name="bankDetails.bankName" type="text"
-            value={formData.bankDetails.bankName} onChange={handleChange}
+            id="bankName"
+            name="bankDetails.bankName"
+            type="text"
+            value={formData.bankDetails?.bankName || ''}
+            onChange={handleChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
         />
     </div>
     
-    {/* 🔔 Account Number */}
+    {/* Account Number */}
     <div>
         <label htmlFor="accountNumber" className="block text-sm font-medium text-gray-700">Account Number</label>
         <input
-            id="accountNumber" name="bankDetails.accountNumber" type="text"
-            value={formData.bankDetails.accountNumber} onChange={handleChange}
+            id="accountNumber"
+            name="bankDetails.accountNumber"
+            type="text"
+            value={formData.bankDetails?.accountNumber || ''}
+            onChange={handleChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
         />
     </div>
     
-    {/* 🔔 IFSC Code */}
+    {/* IFSC Code */}
     <div>
         <label htmlFor="ifsc" className="block text-sm font-medium text-gray-700">IFSC Code</label>
         <input
-            id="ifsc" name="bankDetails.ifsc" type="text"
-            value={formData.bankDetails.ifsc} onChange={handleChange}
+            id="ifsc"
+            name="bankDetails.ifsc"
+            type="text"
+            value={formData.bankDetails?.ifsc || ''}
+            onChange={handleChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
         />
     </div>
