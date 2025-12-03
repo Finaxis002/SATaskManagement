@@ -22,6 +22,11 @@ import react from '@vitejs/plugin-react'
 // import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path';
 
+const packageJson = require('./package.json');
+const version = packageJson.version || '1.0.0';
+const timestamp = Date.now();
+const buildId = `${version}-${timestamp}`;
+
 export default defineConfig({
   plugins: [
     react(),
@@ -55,16 +60,64 @@ export default defineConfig({
     //     ],
     //   },
     // }),
+     {
+      name: 'html-transform',
+      transformIndexHtml(html) {
+        return html
+          .replace(/APP_VERSION_PLACEHOLDER/g, buildId)
+          .replace(/BUILD_TIMESTAMP_PLACEHOLDER/g, timestamp);
+      }
+    }
   ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-  build: {
+  // build: {
+  //   commonjsOptions: {
+  //     transformMixedEsModules: true
+  //   },
+    
+  // }
+   build: {
+    // ✅ Keep your existing commonjsOptions (for mixed ES/CommonJS modules)
     commonjsOptions: {
       transformMixedEsModules: true
     },
+    
+    // ✅ Add these for cache busting:
+    // Generate hashed filenames for cache busting
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name]-[hash].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `assets/[name]-[hash].[ext]`
+      }
+    },
+    
+    // Clean output directory
+    emptyOutDir: true,
+    
+    // Optional optimizations (add if needed):
+    // minify: 'terser', // Already minifies by default
+    // sourcemap: false // Disable sourcemaps in production
+  },
+  
+  // Environment variables for React components
+  define: {
+    // For backward compatibility with React
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(buildId),
+    'import.meta.env.VITE_BUILD_TIMESTAMP': JSON.stringify(timestamp)
+  },
+  
+  server: {
+    port: process.env.PORT || 5173,
+    host: '0.0.0.0',
+    // Add headers for development
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    }
   }
 })
 

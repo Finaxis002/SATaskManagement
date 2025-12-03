@@ -205,7 +205,7 @@ const TaskOverview = () => {
         setLoading(true);
         setError(null);
         
-        console.log("🔍 Fetching tasks from API...");
+       
         
         const response = await fetch("https://taskbe.sharda.co.in/api/tasks?limit=1000", {
           signal: controller.signal,
@@ -219,15 +219,13 @@ const TaskOverview = () => {
         }
         
         const data = await response.json();
-        console.log("📦 API Response:", data);
+       
         
         // ✅ CRITICAL FIX: Handle your backend's response structure
         // Your backend returns: { tasks: [...], currentPage, totalPages, totalCount, hasMore }
         const taskArray = Array.isArray(data.tasks) ? data.tasks : (Array.isArray(data) ? data : []);
         
-        console.log(`✅ Loaded ${taskArray.length} tasks from API`);
-        console.log("First task sample:", taskArray[0]);
-        
+     
         startTransition(() => {
           setTasks(taskArray);
           setLoading(false);
@@ -248,9 +246,7 @@ const TaskOverview = () => {
 
   // Optimized categorization
   const categorizedTasks = useMemo(() => {
-    console.log(`📊 Categorizing ${tasks.length} tasks...`);
-    console.log("User data:", userData);
-    
+   
     if (tasks.length === 0) {
       return {
         today: [], tomorrow: [], upcoming: [], overdue: [], completed: []
@@ -273,7 +269,7 @@ const TaskOverview = () => {
       
       // Skip hidden completed tasks
       if (task.status === "Completed" && task.isHidden) {
-        console.log(`⏭️ Skipping hidden completed task: ${task.taskName}`);
+     
         continue;
       }
       
@@ -283,13 +279,13 @@ const TaskOverview = () => {
           a.email?.toLowerCase() === userEmail
         );
         if (!isAssigned) {
-          console.log(`⏭️ Skipping task not assigned to user: ${task.taskName}`);
+         
           continue;
         }
       }
 
       if (!task.dueDate) {
-        console.log(`⚠️ Task without due date: ${task.taskName}`);
+     
         continue;
       }
 
@@ -304,28 +300,21 @@ const TaskOverview = () => {
 
       // Categorize by date
       if (isToday(parsedDate)) {
-        console.log(`📅 Today: ${task.taskName}`);
+       
         categories.today.push(task);
       } else if (isTomorrow(parsedDate)) {
-        console.log(`📅 Tomorrow: ${task.taskName}`);
+       
         categories.tomorrow.push(task);
       } else if (isBefore(parsedDate, now)) {
-        console.log(`⚠️ Overdue: ${task.taskName}`);
+       
         categories.overdue.push(task);
       } else {
-        console.log(`📅 Upcoming: ${task.taskName}`);
+        
         categories.upcoming.push(task);
       }
     }
 
-    console.log("📊 Categorized tasks:", {
-      today: categories.today.length,
-      tomorrow: categories.tomorrow.length,
-      upcoming: categories.upcoming.length,
-      overdue: categories.overdue.length,
-      completed: categories.completed.length
-    });
-
+   
     return categories;
   }, [tasks, userData, justCompleted]);
 
@@ -395,7 +384,7 @@ const TaskOverview = () => {
           categorizedTasks.completed.length,
       };
       
-      console.log("📊 Updating dashboard stats:", counts);
+
       window.updateDashboardStats(counts);
     });
     

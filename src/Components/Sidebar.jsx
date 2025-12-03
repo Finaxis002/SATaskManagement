@@ -274,7 +274,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style data-jsx="true">{`
         .sidebar-scroll::-webkit-scrollbar {
           width: 4px;
         }

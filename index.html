@@ -1,31 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-   <link rel="icon" type="image/png" href="/favicon.ico" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap"
-      rel="stylesheet"
-    />
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<head>
+  <meta charset="UTF-8" />
+  <!-- ======================================== -->
+  <!-- 🔥 CACHE CONTROL META TAGS (CRITICAL) -->
+  <!-- ======================================== -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <link rel="icon" type="image/png" href="/favicon.ico?cb=__CACHE_BUSTER__" />
+   <!-- External resources with cache busting -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap&cb=BUILD_TIMESTAMP" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap&cb=BUILD_TIMESTAMP" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap&cb=BUILD_TIMESTAMP" rel="stylesheet">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css?v=1.3.6&cb=BUILD_TIMESTAMP" rel="stylesheet">
 
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Task Management</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <div id="dropdown-root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-    <!-- Add Quill CDN in your HTML -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Management</title>
+  <!-- ======================================== -->
+  <!-- CACHE BUSTING SCRIPT (Runs immediately) -->
+  <!-- ======================================== -->
+ <script>
+    // Version info (will be replaced by Vite)
+    const APP_VERSION = 'APP_VERSION_PLACEHOLDER';
+    const BUILD_TIMESTAMP = 'BUILD_TIMESTAMP_PLACEHOLDER';
+    
+    // Store in window for React
+    window.APP_VERSION = APP_VERSION;
+    window.BUILD_TIMESTAMP = BUILD_TIMESTAMP;
+    
+    console.log('🏷️ App Version:', APP_VERSION);
+  </script>
 
-<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 
-  </body>
+</head>
+
+<body>
+  <div id="root"></div>
+  <div id="dropdown-root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+  <!-- Add Quill CDN in your HTML -->
+
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js?v=1.3.6&cb=__CACHE_BUSTER__"></script>
+
+  <noscript>
+    <div
+      style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px;">
+      <div>
+        <h2 style="color: #dc2626;">JavaScript Required</h2>
+        <p>This application requires JavaScript to function properly.</p>
+        <p>Please enable JavaScript in your browser settings and refresh the page.</p>
+      </div>
+    </div>
+  </noscript>
+</body>
+
 </html>
