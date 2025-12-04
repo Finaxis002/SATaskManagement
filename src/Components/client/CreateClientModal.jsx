@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 
-// Email Validation Helper Function
+// Email Validation Helper Function (Unchanged)
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -47,13 +47,13 @@ const CreateClientModal = ({ client, onClose, onCreate, agents = [] }) => {
     mobile: "",
     emailId: "",
     GSTIN: "",
-    referrer: "", 
+    referrer: "",
   });
 
   const [errors, setErrors] = useState({});
   const isEdit = !!(client && (client._id || client.id));
 
-  // --- Data Loading Effect ---
+  // --- Data Loading Effect (Unchanged) ---
   useEffect(() => {
     const c = client || {};
     const normalized = {
@@ -64,8 +64,7 @@ const CreateClientModal = ({ client, onClose, onCreate, agents = [] }) => {
       mobile: c.mobile || c.phone || c.contactNo || "",
       emailId: c.emailId || c.email || "",
       GSTIN: c.GSTIN || c.gstin || "",
-      // Handle both old format (string) and new format (object)
-      referrer: c.referrer || c.referredByAgent?.name || "",
+      referrer: c.referrer || c.agent || "",
     };
 
     setFormData(
@@ -85,7 +84,7 @@ const CreateClientModal = ({ client, onClose, onCreate, agents = [] }) => {
     setErrors({});
   }, [isEdit, client]);
 
-  // --- Validation Logic ---
+  // --- Validation Logic (Unchanged) ---
   const validateForm = () => {
     let formErrors = {};
     let isValid = true;
@@ -104,10 +103,9 @@ const CreateClientModal = ({ client, onClose, onCreate, agents = [] }) => {
     return isValid;
   };
 
-  // --- Handlers ---
+  // --- Handlers (Unchanged) ---
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (errors[name]) {
@@ -117,24 +115,7 @@ const CreateClientModal = ({ client, onClose, onCreate, agents = [] }) => {
 
   const handleSubmit = () => {
     if (validateForm()) {
-      // Transform the data before sending
-      const dataToSend = { ...formData };
-      
-      // Convert referrer string to referredByAgent object
-      if (dataToSend.referrer) {
-        // Find the selected agent to get their code
-        const selectedAgent = agents.find(agent => agent.name === dataToSend.referrer);
-        
-        dataToSend.referredByAgent = {
-          name: dataToSend.referrer,
-          code: selectedAgent?.code || selectedAgent?.agentCode || "", // Use agent code if available
-        };
-        
-        // Remove the old referrer field
-        delete dataToSend.referrer;
-      }
-      
-      onCreate(dataToSend); 
+      onCreate(formData);
     } 
   };
     
@@ -166,7 +147,7 @@ const CreateClientModal = ({ client, onClose, onCreate, agents = [] }) => {
 
   // --- Render ---
   return (
-    <div className="fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
+    <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
         
         <div className="flex justify-between items-center mb-4 border-b pb-2">
