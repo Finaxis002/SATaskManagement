@@ -25,6 +25,7 @@ import {
   Calendar,
   Plus,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import {
   FaCalendarAlt,
@@ -686,7 +687,7 @@ const TodaysList = memo(forwardRef(function TodaysList({ rows = [], setEvents, u
 }));
 
 /* ------------------ Stat Card ------------------ */
-const StatCard = memo(({ pillLabel, variant = "gray", label, value, icon }) => {
+const StatCard = memo(({ pillLabel, variant = "gray", label, value, icon, loading }) => {
   const config = STAT_VARIANTS[variant] || STAT_VARIANTS.blue;
 
   return (
@@ -699,7 +700,9 @@ const StatCard = memo(({ pillLabel, variant = "gray", label, value, icon }) => {
           {icon}
         </div>
       </div>
-      <div className="text-3xl font-black text-gray-900 mb-2 tracking-tight">{value}</div>
+      <div className="text-3xl font-black text-gray-900 mb-2 tracking-tight">
+        {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : value}
+      </div>
       <p className="text-sm font-semibold text-gray-600">{label}</p>
     </div>
   );
@@ -724,6 +727,7 @@ const Dashboard = () => {
     Completed: 0,
     Progress: 0,
     Overdue: 0,
+    loading: true,
   });
 
   const location = useLocation();
@@ -737,6 +741,7 @@ const Dashboard = () => {
           Completed: counts.completed,
           Progress: counts.progress,
           Overdue: counts.overdue,
+          loading: counts.loading,
         });
       });
     };
@@ -936,20 +941,20 @@ const Dashboard = () => {
 
         <div className="mb-6 lg:hidden">
           <div className="grid grid-cols-2 gap-4">
-            <StatCard pillLabel="Total" variant="blue" label="All Tasks" value={stats.TotalTask} icon={<ClipboardList className="h-5 w-5" />} />
-            <StatCard pillLabel="Done" variant="green" label="Completed" value={stats.Completed} icon={<CheckCircle className="h-5 w-5" />} />
-            <StatCard pillLabel="Active" variant="orange" label="In Progress" value={stats.Progress} icon={<Clock className="h-5 w-5" />} />
-            <StatCard pillLabel="Late" variant="red" label="Overdue" value={stats.Overdue} icon={<AlertCircle className="h-5 w-5" />} />
+            <StatCard pillLabel="Total" variant="blue" label="All Tasks" value={stats.TotalTask} icon={<ClipboardList className="h-5 w-5" />} loading={stats.loading} />
+            <StatCard pillLabel="Done" variant="green" label="Completed" value={stats.Completed} icon={<CheckCircle className="h-5 w-5" />} loading={stats.loading} />
+            <StatCard pillLabel="Active" variant="orange" label="In Progress" value={stats.Progress} icon={<Clock className="h-5 w-5" />} loading={stats.loading} />
+            <StatCard pillLabel="Late" variant="red" label="Overdue" value={stats.Overdue} icon={<AlertCircle className="h-5 w-5" />} loading={stats.loading} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
           <div className="space-y-6">
             <div className="hidden lg:grid lg:grid-cols-4 gap-4">
-              <StatCard pillLabel="Total" variant="blue" label="All Tasks" value={stats.TotalTask} icon={<ClipboardList className="h-4 w-4" />} />
-              <StatCard pillLabel="Done" variant="green" label="Completed" value={stats.Completed} icon={<CheckCircle className="h-4 w-4" />} />
-              <StatCard pillLabel="Active" variant="orange" label="In Progress" value={stats.Progress} icon={<Clock className="h-4 w-4" />} />
-              <StatCard pillLabel="Late" variant="red" label="Overdue" value={stats.Overdue} icon={<AlertCircle className="h-4 w-4" />} />
+              <StatCard pillLabel="Total" variant="blue" label="All Tasks" value={stats.TotalTask} icon={<ClipboardList className="h-4 w-4" />} loading={stats.loading} />
+              <StatCard pillLabel="Done" variant="green" label="Completed" value={stats.Completed} icon={<CheckCircle className="h-4 w-4" />} loading={stats.loading} />
+              <StatCard pillLabel="Active" variant="orange" label="In Progress" value={stats.Progress} icon={<Clock className="h-4 w-4" />} loading={stats.loading} />
+              <StatCard pillLabel="Late" variant="red" label="Overdue" value={stats.Overdue} icon={<AlertCircle className="h-4 w-4" />} loading={stats.loading} />
             </div>
 
             <TodaysList ref={todaysListRef} rows={todaysRows} setEvents={setEvents} userId={userId} />

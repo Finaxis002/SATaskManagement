@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useMemo, useCallback, useTransition, startTransition } from "react";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Users, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Users,
   Loader2,
   Filter,
   TrendingUp
@@ -32,7 +32,7 @@ const parseISO = (dateString) => {
 };
 
 const format = (date, formatStr) => {
-  return formatStr === "MMM d" 
+  return formatStr === "MMM d"
     ? `${MONTHS[date.getMonth()]} ${date.getDate()}`
     : date.toLocaleDateString();
 };
@@ -62,9 +62,9 @@ const COLOR_CLASSES = {
 const TaskItem = React.memo(({ task, justCompleted, onToggleCompleted, isMobile }) => {
   const isCompleted = task.status === "Completed" || justCompleted.has(task._id);
   const parsedDate = useMemo(() => parseISO(task.dueDate), [task.dueDate]);
-  const dueDate = useMemo(() => 
+  const dueDate = useMemo(() =>
     task.dueDate && !isNaN(parsedDate.getTime()) ? format(parsedDate, "MMM d") : "Invalid"
-  , [task.dueDate, parsedDate]);
+    , [task.dueDate, parsedDate]);
 
   const handleChange = useCallback(() => {
     onToggleCompleted(task._id);
@@ -81,14 +81,13 @@ const TaskItem = React.memo(({ task, justCompleted, onToggleCompleted, isMobile 
             disabled={task.status === "Completed"}
             className="w-4 h-4 accent-indigo-600 cursor-pointer mt-0.5 flex-shrink-0"
           />
-          
+
           <div className="flex-1 min-w-0">
-            <span className={`text-sm font-medium block mb-2 leading-5 ${
-              isCompleted ? "line-through text-gray-400" : "text-gray-800"
-            }`}>
+            <span className={`text-sm font-medium block mb-2 leading-5 ${isCompleted ? "line-through text-gray-400" : "text-gray-800"
+              }`}>
               {task.taskName}
             </span>
-            
+
             {task.assignees?.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
                 {task.assignees.slice(0, 3).map((assignee, idx) => (
@@ -106,7 +105,7 @@ const TaskItem = React.memo(({ task, justCompleted, onToggleCompleted, isMobile 
                 )}
               </div>
             )}
-            
+
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <Calendar className="w-3 h-3" />
               <span>{dueDate}</span>
@@ -127,20 +126,19 @@ const TaskItem = React.memo(({ task, justCompleted, onToggleCompleted, isMobile 
           disabled={task.status === "Completed"}
           className="w-4 h-4 sm:w-5 sm:h-5 accent-indigo-600 cursor-pointer flex-shrink-0"
         />
-        <span className={`text-xs sm:text-sm font-medium truncate ${
-          isCompleted ? "line-through text-gray-400" : "text-gray-800"
-        }`}>
+        <span className={`text-xs sm:text-sm font-medium truncate ${isCompleted ? "line-through text-gray-400" : "text-gray-800"
+          }`}>
           {task.taskName}
         </span>
       </div>
-      
+
       <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
         <div className="flex flex-col items-end gap-1 sm:gap-2">
           <div className="flex items-center gap-1 text-xs text-gray-500">
             <Calendar className="w-3 h-3" />
             <span className="text-xs">{dueDate}</span>
           </div>
-          
+
           {task.assignees?.length > 0 && (
             <div className="flex flex-wrap gap-1 max-w-24 sm:max-w-48">
               {task.assignees.slice(0, 2).map((assignee, idx) => (
@@ -199,33 +197,33 @@ const TaskOverview = () => {
   // Fetch tasks
   useEffect(() => {
     const controller = new AbortController();
-    
+
     const fetchTasks = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-       
-        
+
+
+
         const response = await fetch("https://taskbe.sharda.co.in/api/tasks?limit=1000", {
           signal: controller.signal,
           headers: {
             'Content-Type': 'application/json',
           }
         });
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-       
-        
+
+
         // ✅ CRITICAL FIX: Handle your backend's response structure
         // Your backend returns: { tasks: [...], currentPage, totalPages, totalCount, hasMore }
         const taskArray = Array.isArray(data.tasks) ? data.tasks : (Array.isArray(data) ? data : []);
-        
-     
+
+
         startTransition(() => {
           setTasks(taskArray);
           setLoading(false);
@@ -238,15 +236,15 @@ const TaskOverview = () => {
         }
       }
     };
-    
+
     fetchTasks();
-    
+
     return () => controller.abort();
   }, []);
 
   // Optimized categorization
   const categorizedTasks = useMemo(() => {
-   
+
     if (tasks.length === 0) {
       return {
         today: [], tomorrow: [], upcoming: [], overdue: [], completed: []
@@ -255,7 +253,7 @@ const TaskOverview = () => {
 
     const now = new Date();
     const { role, userEmail } = userData;
-    
+
     const categories = {
       today: [],
       tomorrow: [],
@@ -266,26 +264,26 @@ const TaskOverview = () => {
 
     for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i];
-      
+
       // Skip hidden completed tasks
       if (task.status === "Completed" && task.isHidden) {
-     
+
         continue;
       }
-      
+
       // Filter by assignee for non-admin users
       if (role !== "admin" && userEmail) {
-        const isAssigned = task.assignees?.some(a => 
+        const isAssigned = task.assignees?.some(a =>
           a.email?.toLowerCase() === userEmail
         );
         if (!isAssigned) {
-         
+
           continue;
         }
       }
 
       if (!task.dueDate) {
-     
+
         continue;
       }
 
@@ -300,33 +298,33 @@ const TaskOverview = () => {
 
       // Categorize by date
       if (isToday(parsedDate)) {
-       
+
         categories.today.push(task);
       } else if (isTomorrow(parsedDate)) {
-       
+
         categories.tomorrow.push(task);
       } else if (isBefore(parsedDate, now)) {
-       
+
         categories.overdue.push(task);
       } else {
-        
+
         categories.upcoming.push(task);
       }
     }
 
-   
+
     return categories;
   }, [tasks, userData, justCompleted]);
 
   // Toggle task completion
   const handleToggleCompleted = useCallback(async (taskId) => {
-    const updatedBy = { 
-      name: userData.userName || "Unknown", 
-      email: userData.userId || "unknown@example.com" 
+    const updatedBy = {
+      name: userData.userName || "Unknown",
+      email: userData.userId || "unknown@example.com"
     };
-    
+
     setJustCompleted((prev) => new Set([...prev, taskId]));
-    
+
     try {
       const response = await fetch(
         `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
@@ -336,7 +334,7 @@ const TaskOverview = () => {
           body: JSON.stringify({ status: "Completed", updatedBy }),
         }
       );
-      
+
       if (!response.ok) throw new Error("Failed to update task");
 
       startTransition(() => {
@@ -367,7 +365,7 @@ const TaskOverview = () => {
       console.log("⚠️ window.updateDashboardStats not found");
       return;
     }
-    
+
     const rafId = requestAnimationFrame(() => {
       const counts = {
         completed: categorizedTasks.completed.length,
@@ -382,22 +380,34 @@ const TaskOverview = () => {
           categorizedTasks.upcoming.length +
           categorizedTasks.overdue.length +
           categorizedTasks.completed.length,
+        loading,
       };
-      
+
 
       window.updateDashboardStats(counts);
     });
-    
+
     return () => cancelAnimationFrame(rafId);
   }, [categorizedTasks]);
 
   const currentTabIndex = TABS.findIndex(tab => tab.key === activeTab);
   const currentTasks = categorizedTasks[activeTab] || [];
-  
-  const visibleTasks = useMemo(() => 
+
+  const visibleTasks = useMemo(() =>
     currentTasks.filter((task) => !(task.status === "Completed" && task.isHidden)),
     [currentTasks]
   );
+
+  // Memoize visible counts for all tabs to avoid recalculating in render
+  const visibleCounts = useMemo(() => {
+    const counts = {};
+    TABS.forEach(tab => {
+      counts[tab.key] = categorizedTasks[tab.key]?.filter(
+        (task) => !(task.status === "Completed" && task.isHidden)
+      ).length || 0;
+    });
+    return counts;
+  }, [categorizedTasks]);
 
   const handlePrevTab = useCallback(() => {
     startTransitionHook(() => {
@@ -432,8 +442,8 @@ const TaskOverview = () => {
             <AlertCircle className="w-8 h-8" />
             <span className="text-sm font-medium">Failed to load tasks</span>
             <span className="text-xs text-gray-500">{error}</span>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
             >
               Retry
@@ -454,16 +464,14 @@ const TaskOverview = () => {
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-800">Task Overview</h2>
           <span className="text-xs text-gray-500 ml-auto">
-            {tasks.length} total
+            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : `${tasks.length} total`}
           </span>
         </div>
 
         {/* Desktop Tabs */}
         <div className="hidden lg:flex gap-2 bg-gray-100 rounded-xl p-1.5">
           {TABS.map((tab) => {
-            const visibleCount = categorizedTasks[tab.key]?.filter(
-              (task) => !(task.status === "Completed" && task.isHidden)
-            ).length || 0;
+            const visibleCount = visibleCounts[tab.key];
             const isActive = activeTab === tab.key;
             const Icon = tab.icon;
             const colorClass = COLOR_CLASSES[tab.color][isActive ? 'active' : 'inactive'];
@@ -476,9 +484,9 @@ const TaskOverview = () => {
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
-                {visibleCount > 0 && (
+                {(visibleCount > 0 || loading) && (
                   <span className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-xs font-bold min-w-[20px] text-center">
-                    {visibleCount}
+                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : visibleCount}
                   </span>
                 )}
               </button>
@@ -489,9 +497,7 @@ const TaskOverview = () => {
         {/* Tablet Tabs */}
         <div className="hidden sm:flex lg:hidden gap-1 bg-gray-100 rounded-lg p-1">
           {TABS.map((tab) => {
-            const visibleCount = categorizedTasks[tab.key]?.filter(
-              (task) => !(task.status === "Completed" && task.isHidden)
-            ).length || 0;
+            const visibleCount = visibleCounts[tab.key];
             const isActive = activeTab === tab.key;
             const Icon = tab.icon;
             const colorClass = COLOR_CLASSES[tab.color][isActive ? 'active' : 'inactive'];
@@ -504,9 +510,9 @@ const TaskOverview = () => {
               >
                 <Icon className="w-3 h-3" />
                 <span className="hidden md:inline">{tab.label}</span>
-                {visibleCount > 0 && (
+                {(visibleCount > 0 || loading) && (
                   <span className="bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-xs font-bold min-w-[16px] text-center">
-                    {visibleCount}
+                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : visibleCount}
                   </span>
                 )}
               </button>
@@ -532,7 +538,7 @@ const TaskOverview = () => {
               {TABS[currentTabIndex].label}
             </span>
             <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-bold min-w-[20px] text-center">
-              {visibleTasks.length}
+              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : visibleTasks.length}
             </span>
           </div>
 
