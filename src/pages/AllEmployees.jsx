@@ -386,39 +386,75 @@ const AllEmployees = () => {
     [dispatch]
   );
 
-  const handleResetPassword = useCallback(
-    async (id, name) => {
-      const { value: newPassword } = await Swal.fire({
-        title: `Enter new password for ${name}:`,
-        input: "password",
-        inputPlaceholder: "Enter new password",
-        inputAttributes: {
-          maxlength: "50",
-          autocapitalize: "off",
-          autocorrect: "off"
-        },
-        showCancelButton: true,
-        confirmButtonText: 'Reset',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#4332d2',
-        inputValidator: (value) => {
-          if (!value || value.trim().length < 4) {
-            return 'Password must be at least 4 characters.'
-          }
-        }
-      });
+  // const handleResetPassword = useCallback(
+  //   async (id, name) => {
+  //     const { value: newPassword } = await Swal.fire({
+  //       title: `Enter new password for ${name}:`,
+  //       input: "password",
+  //       inputPlaceholder: "Enter new password",
+  //       inputAttributes: {
+  //         maxlength: "50",
+  //         autocapitalize: "off",
+  //         autocorrect: "off"
+  //       },
+  //       showCancelButton: true,
+  //       confirmButtonText: 'Reset',
+  //       cancelButtonText: 'Cancel',
+  //       confirmButtonColor: '#4332d2',
+  //       inputValidator: (value) => {
+  //         if (!value || value.trim().length < 4) {
+  //           return 'Password must be at least 4 characters.'
+  //         }
+  //       }
+  //     });
       
-      if (newPassword) {
-        try {
-          await dispatch(resetPassword({ id, newPassword })).unwrap();
-          showAlert("Password reset successfully.");
-        } catch (error) {
-          showAlert(`Failed to reset password: ${error.message || "Unknown error"}`);
+  //     if (newPassword) {
+  //       try {
+  //         await resetPassword(id, newPassword);
+  //         showAlert("Password reset successfully.");
+  //       } catch (error) {
+  //         showAlert(`Failed to reset password: ${error.message || "Unknown error"}`);
+  //       }
+  //     }
+  //   },
+  //   [dispatch]
+  // );
+
+const handleResetPassword = useCallback(
+  async (id, name) => {
+    const { value: newPassword } = await Swal.fire({
+      title: `Enter new password for ${name}:`,
+      input: "password",
+      inputPlaceholder: "Enter new password",
+      inputAttributes: {
+        maxlength: "50",
+        autocapitalize: "off",
+        autocorrect: "off"
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Reset',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#4332d2',
+      inputValidator: (value) => {
+        if (!value || value.trim().length < 4) {
+          return 'Password must be at least 4 characters.'
         }
       }
-    },
-    [dispatch]
-  );
+    });
+    
+    if (newPassword) {
+      try {
+        // Dispatch the resetPassword action
+        await dispatch(resetPassword({ id, newPassword })).unwrap();
+        showAlert("Password reset successfully.");
+      } catch (error) {
+        showAlert(`Failed to reset password: ${error.message || "Unknown error"}`);
+      }
+    }
+  },
+  [dispatch]
+);
+
 
   const handleEdit = useCallback((user) => {
     setSelectedUser(user);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, useTransition, startTransition } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useTransition, startTransition, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -177,6 +177,9 @@ const TaskOverview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPending, startTransitionHook] = useTransition();
+  const [fetchProgress, setFetchProgress] = useState({ current: 0, total: 0 });
+const fetchController = useRef(null);
+
 
   // Cache user data
   const userData = useMemo(() => {
@@ -194,53 +197,216 @@ const TaskOverview = () => {
     }
   }, []);
 
-  // Fetch tasks
-  useEffect(() => {
-    const controller = new AbortController();
+  // // Fetch tasks
+  // useEffect(() => {
+  //   const controller = new AbortController();
 
-    const fetchTasks = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-
-
-        const response = await fetch("https://taskbe.sharda.co.in/api/tasks?limit=1000", {
-          signal: controller.signal,
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
+  //   const fetchTasks = async () => {
+  //     try {
+  //       setLoading(true);
+  //       setError(null);
 
 
-        // ✅ CRITICAL FIX: Handle your backend's response structure
-        // Your backend returns: { tasks: [...], currentPage, totalPages, totalCount, hasMore }
-        const taskArray = Array.isArray(data.tasks) ? data.tasks : (Array.isArray(data) ? data : []);
+
+  //       const response = await fetch("https://taskbe.sharda.co.in/api/tasks?limit=1000", {
+  //         signal: controller.signal,
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         }
+  //       });
+
+  //       if (!response.ok) {
+  //         throw new Error(`HTTP error! status: ${response.status}`);
+  //       }
+
+  //       const data = await response.json();
 
 
+  //       // ✅ CRITICAL FIX: Handle your backend's response structure
+  //       // Your backend returns: { tasks: [...], currentPage, totalPages, totalCount, hasMore }
+  //       const taskArray = Array.isArray(data.tasks) ? data.tasks : (Array.isArray(data) ? data : []);
+
+
+  //       startTransition(() => {
+  //         setTasks(taskArray);
+  //         setLoading(false);
+  //       });
+  //     } catch (err) {
+  //       if (err.name !== 'AbortError') {
+  //         console.error("❌ Failed to fetch tasks:", err);
+  //         setError(err.message);
+  //         setLoading(false);
+  //       }
+  //     }
+  //   };
+
+  //   fetchTasks();
+
+  //   return () => controller.abort();
+  // }, []);
+
+  // Fetch tasks - FAST PARALLEL APPROACH
+useEffect(() => {
+  fetchController.current = new AbortController();
+  const signal = fetchController.current.signal;
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setFetchProgress({ current: 0, total: 0 });
+
+      console.log("🚀 Starting parallel fetch of all tasks...");
+      
+      // First, get total task count
+      const countResponse = await fetch(
+        "https://taskbe.sharda.co.in/api/tasks?page=1&limit=1",
+        { signal, headers: { 'Content-Type': 'application/json' } }
+      );
+      
+      if (!countResponse.ok) {
+        throw new Error(`HTTP error! status: ${countResponse.status}`);
+      }
+      
+      const countData = await countResponse.json();
+      const totalCount = countData.totalCount || 0;
+      
+      console.log(`📊 Total tasks in database: ${totalCount}`);
+      
+      if (totalCount === 0) {
         startTransition(() => {
-          setTasks(taskArray);
+          setTasks([]);
           setLoading(false);
         });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error("❌ Failed to fetch tasks:", err);
-          setError(err.message);
+        return;
+      }
+      
+      // Set maximum batch size (larger = fewer requests but more data per request)
+      const BATCH_SIZE = 500;
+      const totalPages = Math.ceil(totalCount / BATCH_SIZE);
+      
+      console.log(`🔄 Fetching ${totalPages} pages (${BATCH_SIZE} tasks per page)`);
+      setFetchProgress({ current: 0, total: totalCount });
+      
+      // Fetch all pages in parallel for maximum speed
+      const pagePromises = [];
+      
+      for (let page = 1; page <= totalPages; page++) {
+        const pagePromise = fetch(
+          `https://taskbe.sharda.co.in/api/tasks?page=${page}&limit=${BATCH_SIZE}`,
+          { signal, headers: { 'Content-Type': 'application/json' } }
+        )
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+          })
+          .then(data => {
+            // Update progress
+            const newTasks = data.tasks || [];
+            setFetchProgress(prev => ({
+              ...prev,
+              current: prev.current + newTasks.length
+            }));
+            return newTasks;
+          });
+        
+        pagePromises.push(pagePromise);
+      }
+      
+      // Wait for ALL pages to complete
+      const allPageResults = await Promise.all(pagePromises);
+      
+      // Combine all tasks and remove duplicates
+      let allTasks = [];
+      allPageResults.forEach(tasks => {
+        allTasks = [...allTasks, ...tasks];
+      });
+      
+      // Remove duplicates by _id (just in case)
+      const uniqueTasks = Array.from(
+        new Map(allTasks.map(task => [task._id, task])).values()
+      );
+      
+      console.log(`✅ Successfully loaded ${uniqueTasks.length} unique tasks`);
+      
+      startTransition(() => {
+        setTasks(uniqueTasks);
+        setLoading(false);
+      });
+      
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error("❌ Failed to fetch tasks:", err);
+        
+        // Fallback: Try sequential fetch
+        console.log("🔄 Trying sequential fallback...");
+        try {
+          await fetchTasksSequentially(signal);
+        } catch (fallbackError) {
+          setError(fallbackError.message);
           setLoading(false);
         }
       }
-    };
+    }
+  };
 
-    fetchTasks();
+  // Sequential fallback function
+  const fetchTasksSequentially = async (signal) => {
+    let allTasks = [];
+    let page = 1;
+    const BATCH_SIZE = 200;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const response = await fetch(
+        `https://taskbe.sharda.co.in/api/tasks?page=${page}&limit=${BATCH_SIZE}`,
+        { signal, headers: { 'Content-Type': 'application/json' } }
+      );
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const data = await response.json();
+      const tasks = data.tasks || [];
+      
+      if (tasks.length === 0) break;
+      
+      allTasks = [...allTasks, ...tasks];
+      setFetchProgress({ current: allTasks.length, total: data.totalCount || allTasks.length });
+      
+      // Check if we have all tasks
+      const totalFetched = allTasks.length;
+      const totalInDB = data.totalCount || 0;
+      
+      if (totalInDB > 0 && totalFetched >= totalInDB) {
+        break; // Got all tasks
+      }
+      
+      if (data.hasMore === false) {
+        break;
+      }
+      
+      page++;
+      
+      // Small delay to prevent overwhelming server
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    console.log(`✅ Sequentially loaded ${allTasks.length} tasks`);
+    
+    startTransition(() => {
+      setTasks(allTasks);
+      setLoading(false);
+    });
+  };
 
-    return () => controller.abort();
-  }, []);
+  fetchTasks();
+
+  return () => {
+    if (fetchController.current) {
+      fetchController.current.abort();
+    }
+  };
+}, []);
 
   // Optimized categorization
   const categorizedTasks = useMemo(() => {
@@ -360,35 +526,78 @@ const TaskOverview = () => {
   }, [activeTab]);
 
   // Update dashboard stats
-  useEffect(() => {
-    if (typeof window.updateDashboardStats !== "function") {
-      console.log("⚠️ window.updateDashboardStats not found");
+  // useEffect(() => {
+  //   if (typeof window.updateDashboardStats !== "function") {
+  //     console.log("⚠️ window.updateDashboardStats not found");
+  //     return;
+  //   }
+
+  //   const rafId = requestAnimationFrame(() => {
+  //     const counts = {
+  //       completed: categorizedTasks.completed.length,
+  //       overdue: categorizedTasks.overdue.length,
+  //       progress:
+  //         categorizedTasks.today.length +
+  //         categorizedTasks.tomorrow.length +
+  //         categorizedTasks.upcoming.length,
+  //       total:
+  //         categorizedTasks.today.length +
+  //         categorizedTasks.tomorrow.length +
+  //         categorizedTasks.upcoming.length +
+  //         categorizedTasks.overdue.length +
+  //         categorizedTasks.completed.length,
+  //       loading,
+  //     };
+
+
+  //     window.updateDashboardStats(counts);
+  //   });
+
+  //   return () => cancelAnimationFrame(rafId);
+  // }, [categorizedTasks]);
+
+  // Update dashboard stats
+useEffect(() => {
+  if (typeof window.updateDashboardStats !== "function") {
+    console.log("⚠️ window.updateDashboardStats not found");
+    return;
+  }
+
+  const rafId = requestAnimationFrame(() => {
+    // If loading, pass loading state
+    if (loading) {
+      window.updateDashboardStats({
+        loading: true,
+        total: null,
+        completed: null,
+        progress: null,
+        overdue: null
+      });
       return;
     }
 
-    const rafId = requestAnimationFrame(() => {
-      const counts = {
-        completed: categorizedTasks.completed.length,
-        overdue: categorizedTasks.overdue.length,
-        progress:
-          categorizedTasks.today.length +
-          categorizedTasks.tomorrow.length +
-          categorizedTasks.upcoming.length,
-        total:
-          categorizedTasks.today.length +
-          categorizedTasks.tomorrow.length +
-          categorizedTasks.upcoming.length +
-          categorizedTasks.overdue.length +
-          categorizedTasks.completed.length,
-        loading,
-      };
+    const counts = {
+      loading: false,
+      completed: categorizedTasks.completed.length,
+      overdue: categorizedTasks.overdue.length,
+      progress:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length,
+      total:
+        categorizedTasks.today.length +
+        categorizedTasks.tomorrow.length +
+        categorizedTasks.upcoming.length +
+        categorizedTasks.overdue.length +
+        categorizedTasks.completed.length,
+    };
 
+    window.updateDashboardStats(counts);
+  });
 
-      window.updateDashboardStats(counts);
-    });
+  return () => cancelAnimationFrame(rafId);
+}, [categorizedTasks, loading]);
 
-    return () => cancelAnimationFrame(rafId);
-  }, [categorizedTasks]);
 
   const currentTabIndex = TABS.findIndex(tab => tab.key === activeTab);
   const currentTasks = categorizedTasks[activeTab] || [];
@@ -421,18 +630,50 @@ const TaskOverview = () => {
     });
   }, [currentTabIndex, startTransitionHook]);
 
+  // if (loading) {
+  //   return (
+  //     <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 mx-2 sm:mx-0">
+  //       <div className="flex items-center justify-center h-[300px] sm:h-[400px]">
+  //         <div className="flex flex-col items-center gap-3 sm:gap-4">
+  //           <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-500 animate-spin" />
+  //           <span className="text-gray-600 font-medium text-sm sm:text-base">Loading tasks...</span>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
   if (loading) {
-    return (
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 mx-2 sm:mx-0">
-        <div className="flex items-center justify-center h-[300px] sm:h-[400px]">
-          <div className="flex flex-col items-center gap-3 sm:gap-4">
-            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-500 animate-spin" />
-            <span className="text-gray-600 font-medium text-sm sm:text-base">Loading tasks...</span>
+  return (
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 mx-2 sm:mx-0">
+      <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] p-4">
+        <div className="flex flex-col items-center gap-3 sm:gap-4">
+          <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-500 animate-spin" />
+          <div className="text-center">
+            <span className="text-gray-600 font-medium text-sm sm:text-base block mb-1">
+              Loading tasks...
+            </span>
+            {fetchProgress.total > 0 && (
+              <span className="text-xs text-gray-500">
+                {fetchProgress.current} of {fetchProgress.total} tasks loaded
+              </span>
+            )}
           </div>
+          {fetchProgress.total > 0 && (
+            <div className="w-48 sm:w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-indigo-500 transition-all duration-300"
+                style={{ 
+                  width: `${(fetchProgress.current / fetchProgress.total) * 100}%` 
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   if (error) {
     return (
@@ -463,9 +704,19 @@ const TaskOverview = () => {
             <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-800">Task Overview</h2>
-          <span className="text-xs text-gray-500 ml-auto">
+          {/* <span className="text-xs text-gray-500 ml-auto">
             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : `${tasks.length} total`}
-          </span>
+          </span> */}
+          <span className="text-xs text-gray-500 ml-auto">
+  {loading ? (
+    <div className="flex items-center gap-1">
+      <Loader2 className="w-3 h-3 animate-spin" />
+      <span>{fetchProgress.current}/{fetchProgress.total}</span>
+    </div>
+  ) : (
+    `${tasks.length} total`
+  )}
+</span>
         </div>
 
         {/* Desktop Tabs */}
