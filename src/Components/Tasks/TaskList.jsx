@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 import { io } from "socket.io-client";
 // NOTE: These must be imported from your project structure.
 // We are assuming the Redux logic is properly set up in the background.
-import { fetchUsers } from "../../redux/userSlice"; 
+import { fetchUsers } from "../../redux/userSlice";
 import { fetchDepartments } from "../../redux/departmentSlice";
 // NOTE: These external UI components must be provided for a complete app.
 // We will use mock data or inline logic for demonstration.
@@ -17,10 +17,123 @@ import StatusDropdownPortal from "../StatusDropdownPortal";
 import axios from "../../utils/secureAxios";
 
 const socket = io("https://taskbe.sharda.co.in");
-const ITEMS_PER_PAGE = 20;
-const MAX_LOAD_FOR_HIGH_PRIORITY = 20000; 
-const MOBILE_ITEMS_PER_PAGE = 10;
-const MOBILE_INITIAL_LOAD = 20000;
+// const ITEMS_PER_PAGE = 20;
+// const MAX_LOAD_FOR_HIGH_PRIORITY = 20000; 
+// const MOBILE_ITEMS_PER_PAGE = 10;
+// const MOBILE_INITIAL_LOAD = 20000;
+const ITEMS_PER_PAGE = 50; // Increased for better virtual scroll
+const MOBILE_ITEMS_PER_PAGE = 20;
+const BATCH_SIZE = 500; // For fetching in batches
+const CONCURRENT_BATCHES = 1; // Number of parallel requests
+const DEBOUNCE_DELAY = 300; // Delay for filter changes
+const BASE_URL = "https://taskbe.sharda.co.in/api/tasks";
+
+// Add these helper functions ABOVE the TaskList component
+const fetchAllTasksParallel = async (signal, baseUrl, userFilter = {}) => {
+    try {
+        console.log("🚀 Starting parallel fetch of ALL tasks...");
+
+        // First, get total count
+        const countResponse = await fetch(
+            `${baseUrl}/count?${new URLSearchParams(userFilter)}`,
+            { signal, headers: { 'Content-Type': 'application/json' } }
+        );
+
+        if (!countResponse.ok) throw new Error(`HTTP error! status: ${countResponse.status}`);
+
+        const countData = await countResponse.json();
+        const totalCount = countData.total || 0;
+
+        console.log(`📊 Total tasks in database: ${totalCount}`);
+
+        if (totalCount === 0) return [];
+
+        // Calculate batches needed
+        const totalBatches = Math.ceil(totalCount / BATCH_SIZE);
+        console.log(`🔄 Fetching ${totalBatches} batches (${BATCH_SIZE} tasks each)`);
+
+        // Create promises for all batches
+        const batchPromises = [];
+
+        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            const skip = batchIndex * BATCH_SIZE;
+            const params = new URLSearchParams({
+                ...userFilter,
+                limit: BATCH_SIZE.toString(),
+                skip: skip.toString()
+            });
+
+            const batchPromise = fetch(
+                `${baseUrl}/bulk?${params}`,
+                { signal, headers: { 'Content-Type': 'application/json' } }
+            )
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    console.log(`✅ Batch ${batchIndex + 1}/${totalBatches}: ${data.tasks?.length || 0} tasks`);
+                    return data.tasks || [];
+                });
+
+            batchPromises.push(batchPromise);
+
+            // Limit concurrent requests
+            if (batchIndex % CONCURRENT_BATCHES === 0 && batchIndex > 0) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+
+        // Wait for all batches
+        const batchResults = await Promise.all(batchPromises);
+
+        // Combine all tasks
+        let allTasks = [];
+        batchResults.forEach(batch => {
+            if (Array.isArray(batch)) {
+                allTasks = [...allTasks, ...batch];
+            }
+        });
+
+        console.log(`🎉 Successfully loaded ${allTasks.length} tasks`);
+        return allTasks;
+
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error("❌ Parallel fetch failed:", err);
+            throw err;
+        }
+        return [];
+    }
+};
+
+const fetchAllTasksSingle = async (signal, baseUrl, userFilter = {}) => {
+    try {
+        console.log("🔄 Trying single request fetch...");
+
+        const params = new URLSearchParams(userFilter);
+        const response = await fetch(
+            `${baseUrl}/all?${params}`,
+            { signal, headers: { 'Content-Type': 'application/json' } }
+        );
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const data = await response.json();
+        const tasks = data.tasks || [];
+
+        console.log(`✅ Single request loaded ${tasks.length} tasks`);
+        return tasks;
+
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error("❌ Single request fetch failed:", err);
+            throw err;
+        }
+        return [];
+    }
+};
+
 
 const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride, hideCompleted }) => {
     // Redux
@@ -29,18 +142,28 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const departmentData = useSelector((state) => state.departments.list);
 
     // State Management
-    const [tasks, setTasks] = useState([]);
-    const [page, setPage] = useState(1);
+    // const [tasks, setTasks] = useState([]);
+    // const [page, setPage] = useState(1);
+    // const [loading, setLoading] = useState(false);
+    // const [initialLoading, setInitialLoading] = useState(true);
+    // const [totalCount, setTotalCount] = useState(0);
+    // const [stats, setStats] = useState({ highCount: 0, mediumCount: 0, lowCount: 0 });
+    // const [loadingStatus, setLoadingStatus] = useState({});
+
+    const [allTasks, setAllTasks] = useState([]); // ALL tasks from database
+    const [filteredTasks, setFilteredTasks] = useState([]); // Tasks after filtering
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
+    const [fetchProgress, setFetchProgress] = useState({ current: 0, total: 0, status: '' });
     const [totalCount, setTotalCount] = useState(0);
-    const [stats, setStats] = useState({ highCount: 0, mediumCount: 0, lowCount: 0 });
+    const [stats, setStats] = useState({ highCount: 0, mediumCount: 0, lowCount: 0, totalCount: 0 });
     const [loadingStatus, setLoadingStatus] = useState({});
+
 
     // Virtual pagination/scroll index
     const [highScrollIndex, setHighScrollIndex] = useState(ITEMS_PER_PAGE);
     const [otherScrollIndex, setOtherScrollIndex] = useState(ITEMS_PER_PAGE);
-    
+
     // Filter data state
     const [departments, setDepartments] = useState([]);
     const [uniqueUsers, setUniqueUsers] = useState([]);
@@ -81,6 +204,11 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const otherObserverTarget = useRef(null);
     const dropdownRef = useRef(null);
 
+    // Add these refs near your existing refs:
+    const fetchControllerRef = useRef(null);
+    const filterTimeoutRef = useRef(null);
+    const isInitialMount = useRef(true);
+
     // User Role
     const rawRole = localStorage.getItem("role");
     const userRole = rawRole ? rawRole.toLowerCase() : null;
@@ -114,187 +242,628 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     }, [users]);
 
     // Fetch tasks with pagination (Main API Call)
-    const fetchTasks = useCallback(async (pageNum = 1, append = false) => {
-        if (!append) setLoading(true);
+    // const fetchTasks = useCallback(async (pageNum = 1, append = false) => {
+    //     if (!append) setLoading(true);
 
-        try {
-            let itemsPerPage;
-            if (isMobileView) {
-                itemsPerPage = MOBILE_INITIAL_LOAD;
-            } else if (pageNum === 1) {
-                itemsPerPage = MAX_LOAD_FOR_HIGH_PRIORITY; // Desktop initial load to capture all High tasks
-            } else {
-                itemsPerPage = ITEMS_PER_PAGE;
-            }
+    //     try {
+    //         let itemsPerPage;
+    //         if (isMobileView) {
+    //             itemsPerPage = MOBILE_INITIAL_LOAD;
+    //         } else if (pageNum === 1) {
+    //             itemsPerPage = MAX_LOAD_FOR_HIGH_PRIORITY; // Desktop initial load to capture all High tasks
+    //         } else {
+    //             itemsPerPage = ITEMS_PER_PAGE;
+    //         }
 
-            if (pageNum === 1 && !isMobileView) {
-                setHighScrollIndex(ITEMS_PER_PAGE);
-                setOtherScrollIndex(ITEMS_PER_PAGE);
-            }
-            
-            const params = new URLSearchParams({
-                page: pageNum,
-                limit: itemsPerPage,
-                // Server-side sort by Priority (desc)
-                sortBy: "priority",
-                sortOrder: "desc",
-            });
+    //         if (pageNum === 1 && !isMobileView) {
+    //             setHighScrollIndex(ITEMS_PER_PAGE);
+    //             setOtherScrollIndex(ITEMS_PER_PAGE);
+    //         }
 
-            // ⚡️ USER FILTERING LOGIC ⚡️
-            // Apply currentUserName filter ONLY if user is NOT admin and no assignee filter is manually set
-            if (!isAdmin && !filters.assignee && currentUserName) {
-                params.append("assignee", currentUserName);
-            }
+    //         const params = new URLSearchParams({
+    //             page: pageNum,
+    //             limit: itemsPerPage,
+    //             // Server-side sort by Priority (desc)
+    //             sortBy: "priority",
+    //             sortOrder: "desc",
+    //         });
 
-            // Add other filters from state
-            Object.entries(filters).forEach(([key, value]) => {
-                if (key === "assignee" && !isAdmin && currentUserName && value === currentUserName) {
-                     // If user is not admin and explicitly filters for their own name, allow it.
-                     params.append(key, value);
-                } else if (key === "assignee" && !isAdmin && currentUserName && !filters.assignee) {
-                     // Skip appending if the automatic filter was already applied above
-                } else if (value) {
-                    params.append(key, value);
-                }
-            });
+    //         // ⚡️ USER FILTERING LOGIC ⚡️
+    //         // Apply currentUserName filter ONLY if user is NOT admin and no assignee filter is manually set
+    //         if (!isAdmin && !filters.assignee && currentUserName) {
+    //             params.append("assignee", currentUserName);
+    //         }
 
-            if (searchTerm) params.append("search", searchTerm);
-            if (hideCompleted) params.append("status", "!Completed");
-            
-            const response = await fetch(`https://taskbe.sharda.co.in/api/tasks?${params}`);
-            if (!response.ok) throw new Error("Failed to fetch tasks from API");
-            const data = await response.json();
+    //         // Add other filters from state
+    //         Object.entries(filters).forEach(([key, value]) => {
+    //             if (key === "assignee" && !isAdmin && currentUserName && value === currentUserName) {
+    //                  // If user is not admin and explicitly filters for their own name, allow it.
+    //                  params.append(key, value);
+    //             } else if (key === "assignee" && !isAdmin && currentUserName && !filters.assignee) {
+    //                  // Skip appending if the automatic filter was already applied above
+    //             } else if (value) {
+    //                 params.append(key, value);
+    //             }
+    //         });
 
-            setTasks(data.tasks); // Replace tasks on filter/refresh
-            if (!append && setTaskListExternally) setTaskListExternally(data.tasks);
+    //         if (searchTerm) params.append("search", searchTerm);
+    //         if (hideCompleted) params.append("status", "!Completed");
 
-            // Initialize/Update remarks and workDescs for all fetched tasks
-            const newRemarks = {};
-            const newWorkDescs = {};
-            data.tasks.forEach(task => {
-                newRemarks[task._id] = task.remark || "";
-                newWorkDescs[task._id] = task.workDesc || "";
-            });
+    //         const response = await fetch(`https://taskbe.sharda.co.in/api/tasks?${params}`);
+    //         if (!response.ok) throw new Error("Failed to fetch tasks from API");
+    //         const data = await response.json();
 
-            setRemarks(prev => ({ ...prev, ...newRemarks }));
-            setWorkDescs(prev => ({ ...prev, ...newWorkDescs }));
+    //         setTasks(data.tasks); // Replace tasks on filter/refresh
+    //         if (!append && setTaskListExternally) setTaskListExternally(data.tasks);
+
+    //         // Initialize/Update remarks and workDescs for all fetched tasks
+    //         const newRemarks = {};
+    //         const newWorkDescs = {};
+    //         data.tasks.forEach(task => {
+    //             newRemarks[task._id] = task.remark || "";
+    //             newWorkDescs[task._id] = task.workDesc || "";
+    //         });
+
+    //         setRemarks(prev => ({ ...prev, ...newRemarks }));
+    //         setWorkDescs(prev => ({ ...prev, ...newWorkDescs }));
 
 
-            setTotalCount(data.totalCount);
-            setPage(pageNum);
-            setMobileCurrentPage(1); // Reset mobile page on new data fetch
+    //         setTotalCount(data.totalCount);
+    //         setPage(pageNum);
+    //         setMobileCurrentPage(1); // Reset mobile page on new data fetch
 
-            // Update unique values for filters
-            if (!append && data.tasks.length > 0) {
-                const assignedBySet = new Set();
-                const statusSet = new Set();
-                data.tasks.forEach(task => {
-                    if (task.assignedBy?.name) assignedBySet.add(task.assignedBy.name);
-                    if (task.status) statusSet.add(task.status);
-                });
-                setUniqueAssignedBy([...assignedBySet]);
-                setUniqueStatuses([...statusSet]);
-            }
+    //         // Update unique values for filters
+    //         if (!append && data.tasks.length > 0) {
+    //             const assignedBySet = new Set();
+    //             const statusSet = new Set();
+    //             data.tasks.forEach(task => {
+    //                 if (task.assignedBy?.name) assignedBySet.add(task.assignedBy.name);
+    //                 if (task.status) statusSet.add(task.status);
+    //             });
+    //             setUniqueAssignedBy([...assignedBySet]);
+    //             setUniqueStatuses([...statusSet]);
+    //         }
 
-        } catch (error) {
-            console.error("Failed to fetch tasks:", error);
-            Swal.fire("Error", "Failed to load tasks", "error");
-        } finally {
-            setLoading(false);
-            setInitialLoading(false);
+    //     } catch (error) {
+    //         console.error("Failed to fetch tasks:", error);
+    //         Swal.fire("Error", "Failed to load tasks", "error");
+    //     } finally {
+    //         setLoading(false);
+    //         setInitialLoading(false);
+    //     }
+    // }, [filters, searchTerm, hideCompleted, setTaskListExternally, isMobileView, isAdmin, currentUserName]);
+
+    // Helper function to apply filters
+    const applyFiltersToTasks = useCallback((tasks) => {
+        let filtered = [...tasks];
+
+        // Apply assignee filter for non-admin (if not already filtered by backend)
+        if (!isAdmin && currentUserName && !filters.assignee) {
+            filtered = filtered.filter(task =>
+                task.assignees?.some(a => a.name === currentUserName)
+            );
         }
-    }, [filters, searchTerm, hideCompleted, setTaskListExternally, isMobileView, isAdmin, currentUserName]);
 
-    // Fetch statistics
+        // Apply other filters
+        Object.entries(filters).forEach(([key, value]) => {
+            if (!value) return;
+
+            switch (key) {
+                case 'priority':
+                    filtered = filtered.filter(task => task.priority === value);
+                    break;
+                case 'assignee':
+                    filtered = filtered.filter(task =>
+                        task.assignees?.some(a => a.name === value)
+                    );
+                    break;
+                case 'assignedBy':
+                    filtered = filtered.filter(task => task.assignedBy?.name === value);
+                    break;
+                case 'status':
+                    if (value === "!Completed") {
+                        filtered = filtered.filter(task => task.status !== "Completed");
+                    } else {
+                        filtered = filtered.filter(task => task.status === value);
+                    }
+                    break;
+                case 'department':
+                    filtered = filtered.filter(task => task.department === value);
+                    break;
+                case 'code':
+                    filtered = filtered.filter(task =>
+                        task.code?.toLowerCase().includes(value.toLowerCase())
+                    );
+                    break;
+                case 'dueBefore':
+                    const dueBeforeDate = new Date(value);
+                    filtered = filtered.filter(task => new Date(task.dueDate) <= dueBeforeDate);
+                    break;
+            }
+        });
+
+        // Apply search term
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            filtered = filtered.filter(task =>
+                task.taskName?.toLowerCase().includes(searchLower) ||
+                task.workDesc?.toLowerCase().includes(searchLower) ||
+                task.code?.toLowerCase().includes(searchLower) ||
+                task.assignedBy?.name?.toLowerCase().includes(searchLower) ||
+                task.assignees?.some(a => a.name?.toLowerCase().includes(searchLower))
+            );
+        }
+
+        // Apply hide completed
+        if (hideCompleted) {
+            filtered = filtered.filter(task => task.status !== "Completed");
+        }
+
+        // Apply due date sorting
+        filtered.sort((a, b) => {
+            const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+            const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+            return dueDateSortOrder === "asc" ? dateA - dateB : dateB - dateA;
+        });
+
+        return filtered;
+    }, [filters, searchTerm, hideCompleted, dueDateSortOrder, isAdmin, currentUserName]);
+
+    // Update unique values for filters
+    const updateUniqueValues = useCallback((tasks) => {
+        const assignedBySet = new Set();
+        const statusSet = new Set();
+
+        tasks.forEach(task => {
+            if (task.assignedBy?.name) assignedBySet.add(task.assignedBy.name);
+            if (task.status) statusSet.add(task.status);
+        });
+
+        setUniqueAssignedBy([...assignedBySet]);
+        setUniqueStatuses([...statusSet]);
+    }, []);
+
+     // Fetch stats
     const fetchStats = useCallback(async () => {
-        // Stats logic omitted for brevity as it closely mirrors fetchTasks filtering.
-        // Assume API call to /api/tasks/stats completes successfully
         try {
-             const params = new URLSearchParams();
-             if (!isAdmin && !filters.assignee && currentUserName) {
-                 params.append("assignee", currentUserName);
-             }
-             Object.entries(filters).forEach(([key, value]) => {
-                 if (value) params.append(key, value);
-             });
-            const response = await fetch(`https://taskbe.sharda.co.in/api/tasks/stats?${params}`);
-            const data = await response.json();
-            setStats(data);
+            // Calculate stats from filteredTasks
+            const highCount = filteredTasks.filter(t => t.priority === "High").length;
+            const mediumCount = filteredTasks.filter(t => t.priority === "Medium").length;
+            const lowCount = filteredTasks.filter(t => t.priority === "Low").length;
+
+            setStats({
+                highCount,
+                mediumCount,
+                lowCount,
+                totalCount: allTasks.length
+            });
+
         } catch (error) {
             console.error("Failed to fetch stats:", error);
         }
-    }, [filters, isAdmin, currentUserName]);
+    }, [filteredTasks, allTasks]);
+
+    
+    // Fetch all tasks - FIXED DEPENDENCIES
+    const fetchAllTasks = useCallback(async () => {
+        if (fetchControllerRef.current) {
+            fetchControllerRef.current.abort();
+        }
+
+        fetchControllerRef.current = new AbortController();
+        const signal = fetchControllerRef.current.signal;
+
+        try {
+            setLoading(true);
+            setInitialLoading(true);
+            setFetchProgress({ current: 0, total: 0, status: 'Starting...' });
+
+            // If we have tasksOverride, use them
+            if (tasksOverride && tasksOverride.length > 0) {
+                console.log("Using tasks override");
+                setAllTasks(tasksOverride);
+                // Apply filters directly
+                const filtered = applyFiltersToTasks(tasksOverride);
+                setFilteredTasks(filtered);
+                setLoading(false);
+                setInitialLoading(false);
+                return;
+            }
+
+            // Build user filter for non-admin
+            const userFilter = {};
+            if (!isAdmin && currentUserName) {
+                userFilter.assignee = currentUserName;
+            }
+
+            let allTasksData = [];
+
+            // Strategy 1: Try single request first
+            try {
+                setFetchProgress({ current: 0, total: 0, status: 'Fetching all at once...' });
+                allTasksData = await fetchAllTasksSingle(signal, BASE_URL, userFilter);
+            } catch (singleError) {
+                console.log("Single request failed:", singleError.message);
+
+                // Strategy 2: Fallback to original paginated API
+                try {
+                    setFetchProgress({ current: 0, total: 0, status: 'Using fallback...' });
+                    allTasksData = await fetchWithPaginationFallback(signal, userFilter);
+                } catch (fallbackError) {
+                    console.log("All fetch methods failed:", fallbackError.message);
+                    throw new Error("All fetch methods failed");
+                }
+            }
+
+            if (signal.aborted) return;
+
+            console.log(`🎯 Final loaded: ${allTasksData.length} tasks`);
+
+            // CRITICAL: Ensure no duplicates
+            const uniqueTasksMap = new Map();
+            allTasksData.forEach(task => {
+                if (task._id && !uniqueTasksMap.has(task._id)) {
+                    uniqueTasksMap.set(task._id, task);
+                }
+            });
+
+            const uniqueTasks = Array.from(uniqueTasksMap.values());
+            console.log(`🔄 After deduplication: ${uniqueTasks.length} unique tasks`);
+
+            // Store all tasks
+            setAllTasks(uniqueTasks);
+            setTotalCount(uniqueTasks.length);
+
+            // Apply initial filters
+            const filtered = applyFiltersToTasks(uniqueTasks);
+            setFilteredTasks(filtered);
+
+            // Update unique values
+            updateUniqueValues(uniqueTasks);
+
+            // Update external if needed
+            if (setTaskListExternally) {
+                setTaskListExternally(uniqueTasks);
+            }
+
+            // Fetch stats
+            await fetchStats();
+
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error("Failed to fetch tasks:", error);
+                Swal.fire("Error", "Failed to load tasks", "error");
+            }
+        } finally {
+            if (!signal.aborted) {
+                setLoading(false);
+                setInitialLoading(false);
+                setFetchProgress({ current: 0, total: 0, status: '' });
+            }
+        }
+    }, [isAdmin, currentUserName, tasksOverride, setTaskListExternally, applyFiltersToTasks, updateUniqueValues, fetchStats]);
+
+    // Add this fallback function inside the component
+    const fetchWithPaginationFallback = async (signal, userFilter = {}) => {
+        let allTasks = [];
+        let page = 1;
+        const LIMIT = 500;
+        let hasMore = true;
+
+        while (hasMore && !signal.aborted) {
+            const params = new URLSearchParams({
+                ...userFilter,
+                page: page.toString(),
+                limit: LIMIT.toString(),
+                sortBy: "priority",
+                sortOrder: "desc"
+            });
+
+            const response = await fetch(
+                `${BASE_URL}?${params}`,
+                { signal, headers: { 'Content-Type': 'application/json' } }
+            );
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+            const tasks = data.tasks || [];
+
+            if (tasks.length === 0) break;
+
+            allTasks = [...allTasks, ...tasks];
+            setFetchProgress({
+                current: allTasks.length,
+                total: data.totalCount || allTasks.length,
+                status: `Fetching page ${page}...`
+            });
+
+            hasMore = data.hasMore === true;
+            page++;
+
+            // Small delay
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        return allTasks;
+    };
+
+
+    // Fetch statistics
+    // const fetchStats = useCallback(async () => {
+    //     // Stats logic omitted for brevity as it closely mirrors fetchTasks filtering.
+    //     // Assume API call to /api/tasks/stats completes successfully
+    //     try {
+    //          const params = new URLSearchParams();
+    //          if (!isAdmin && !filters.assignee && currentUserName) {
+    //              params.append("assignee", currentUserName);
+    //          }
+    //          Object.entries(filters).forEach(([key, value]) => {
+    //              if (value) params.append(key, value);
+    //          });
+    //         const response = await fetch(`https://taskbe.sharda.co.in/api/tasks/stats?${params}`);
+    //         const data = await response.json();
+    //         setStats(data);
+    //     } catch (error) {
+    //         console.error("Failed to fetch stats:", error);
+    //     }
+    // }, [filters, isAdmin, currentUserName]);
+
+   
+
+    // Initial load and refresh
+    useEffect(() => {
+        if (isInitialMount.current) {
+            fetchAllTasks();
+            isInitialMount.current = false;
+        }
+    }, [fetchAllTasks]);
+
+    useEffect(() => {
+        fetchAllTasks();
+    }, [refreshTrigger]);
+
+    // Apply filters when they change (debounced)
+    // useEffect(() => {
+    //     if (filterTimeoutRef.current) {
+    //         clearTimeout(filterTimeoutRef.current);
+    //     }
+
+    //     filterTimeoutRef.current = setTimeout(() => {
+    //         if (allTasks.length > 0) {
+    //             const filtered = applyFiltersToTasks(allTasks);
+    //             setFilteredTasks(filtered);
+    //             setMobileCurrentPage(1);
+    //             setHighScrollIndex(ITEMS_PER_PAGE);
+    //             setOtherScrollIndex(ITEMS_PER_PAGE);
+    //             fetchStats();
+    //         }
+    //     }, DEBOUNCE_DELAY);
+
+    //     return () => {
+    //         if (filterTimeoutRef.current) {
+    //             clearTimeout(filterTimeoutRef.current);
+    //         }
+    //     };
+    // }, [filters, searchTerm, hideCompleted, dueDateSortOrder, allTasks, applyFiltersToTasks, fetchStats]);
+
+    // Apply filters when they change (debounced) - STABILIZED
+    useEffect(() => {
+        if (filterTimeoutRef.current) {
+            clearTimeout(filterTimeoutRef.current);
+        }
+
+        // Don't apply filters if still loading or no tasks
+        if (loading || allTasks.length === 0) return;
+
+        filterTimeoutRef.current = setTimeout(() => {
+            console.log("🔄 Applying filters...");
+            const filtered = applyFiltersToTasks(allTasks);
+            console.log(`📊 Filtered from ${allTasks.length} to ${filtered.length} tasks`);
+
+            // Only update if actually different
+            setFilteredTasks(prev => {
+                if (JSON.stringify(prev) === JSON.stringify(filtered)) {
+                    return prev;
+                }
+                return filtered;
+            });
+
+            // Reset states
+            setMobileCurrentPage(1);
+            setHighScrollIndex(ITEMS_PER_PAGE);
+            setOtherScrollIndex(ITEMS_PER_PAGE);
+
+            // Update stats
+            fetchStats();
+        }, DEBOUNCE_DELAY);
+
+        return () => {
+            if (filterTimeoutRef.current) {
+                clearTimeout(filterTimeoutRef.current);
+            }
+        };
+    }, [filters, searchTerm, hideCompleted, dueDateSortOrder, allTasks, applyFiltersToTasks, fetchStats, loading]);
+
 
     // Initial load and filter change trigger
-    useEffect(() => {
-        fetchTasks(1, false);
-        fetchStats();
-    }, [fetchTasks, fetchStats, refreshTrigger, filters, searchTerm, dueDateSortOrder]);
-    
+    // useEffect(() => {
+    //     fetchTasks(1, false);
+    //     fetchStats();
+    // }, [fetchTasks, fetchStats, refreshTrigger, filters, searchTerm, dueDateSortOrder]);
+
     // Helper for client-side sorting by Due Date (Secondary Sort)
-    const sortByDueDate = (a, b) => {
+    // const sortByDueDate = (a, b) => {
+    //     const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+    //     const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+    //     return dueDateSortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    // };
+    // Helper for client-side sorting by Due Date (Secondary Sort) - FIXED
+    const sortByDueDate = useCallback((a, b) => {
         const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
         const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
         return dueDateSortOrder === "asc" ? dateA - dateB : dateB - dateA;
-    };
+    }, [dueDateSortOrder]);
 
     // ⭐️ PERFORMANCE IMPROVEMENT: useMemo to cache sorting/filtering ⭐️
-    const { allHighTasks, otherTasks, highTasks, mediumTasks, lowTasks } = useMemo(() => {
-        // 1. Separate by priority
-        const allHigh = tasks.filter(t => t.priority === "High");
-        const other = tasks.filter(t => t.priority !== "High");
+    // const { allHighTasks, otherTasks, highTasks, mediumTasks, lowTasks } = useMemo(() => {
+    //     // 1. Separate by priority
+    //     const allHigh = tasks.filter(t => t.priority === "High");
+    //     const other = tasks.filter(t => t.priority !== "High");
 
-        // 2. Apply secondary sort (Due Date)
-        const allHighSorted = allHigh.sort(sortByDueDate);
-        const otherSorted = other.sort(sortByDueDate);
+    //     // 2. Apply secondary sort (Due Date)
+    //     const allHighSorted = allHigh.sort(sortByDueDate);
+    //     const otherSorted = other.sort(sortByDueDate);
 
-        // 3. Apply virtual scroll limits (Desktop only logic)
-        // If in mobile view, don't slice for virtual scroll, let mobile pagination handle it
-        if (isMobileView) {
-             const medium = otherSorted.filter(t => t.priority === "Medium");
-             const low = otherSorted.filter(t => t.priority === "Low");
-             return { allHighTasks: allHighSorted, otherTasks: otherSorted, highTasks: allHighSorted, mediumTasks: medium, lowTasks: low };
+    //     // 3. Apply virtual scroll limits (Desktop only logic)
+    //     // If in mobile view, don't slice for virtual scroll, let mobile pagination handle it
+    //     if (isMobileView) {
+    //          const medium = otherSorted.filter(t => t.priority === "Medium");
+    //          const low = otherSorted.filter(t => t.priority === "Low");
+    //          return { allHighTasks: allHighSorted, otherTasks: otherSorted, highTasks: allHighSorted, mediumTasks: medium, lowTasks: low };
+    //     }
+
+    //     const virtualHigh = allHighSorted.slice(0, highScrollIndex);
+    //     const virtualOther = otherSorted.slice(0, otherScrollIndex);
+
+    //     // 4. Split virtual other tasks
+    //     const medium = virtualOther.filter(t => t.priority === "Medium");
+    //     const low = virtualOther.filter(t => t.priority === "Low");
+
+    //     return {
+    //         allHighTasks: allHighSorted, // Used for observer logic (full array)
+    //         otherTasks: otherSorted,     // Used for observer logic (full array)
+    //         highTasks: virtualHigh,      // Rendered subset
+    //         mediumTasks: medium,         // Rendered subset
+    //         lowTasks: low                // Rendered subset
+    //     };
+    // }, [tasks, dueDateSortOrder, highScrollIndex, otherScrollIndex, isMobileView]);
+
+    // Task categorization with memoization - COMPLETELY REWRITTEN
+    const taskCategories = useMemo(() => {
+        if (filteredTasks.length === 0) {
+            return {
+                allHighTasks: [],
+                otherTasks: [],
+                highTasks: [],
+                mediumTasks: [],
+                lowTasks: []
+            };
         }
 
-        const virtualHigh = allHighSorted.slice(0, highScrollIndex);
-        const virtualOther = otherSorted.slice(0, otherScrollIndex);
+        // Sort by due date first
+        const sortedTasks = [...filteredTasks].sort(sortByDueDate);
 
-        // 4. Split virtual other tasks
-        const medium = virtualOther.filter(t => t.priority === "Medium");
-        const low = virtualOther.filter(t => t.priority === "Low");
+        // Separate by priority
+        const allHigh = sortedTasks.filter(t => t.priority === "High");
+        const other = sortedTasks.filter(t => t.priority !== "High");
+
+        if (isMobileView) {
+            const medium = other.filter(t => t.priority === "Medium");
+            const low = other.filter(t => t.priority === "Low");
+            return {
+                allHighTasks: allHigh,
+                otherTasks: other,
+                highTasks: allHigh,
+                mediumTasks: medium,
+                lowTasks: low
+            };
+        }
+
+        // For desktop, apply virtual scroll
+        const virtualHigh = allHigh.slice(0, highScrollIndex);
+
+        // IMPORTANT: Medium and Low should be calculated from ALL other tasks,
+        // then sliced separately
+        const medium = other.filter(t => t.priority === "Medium");
+        const low = other.filter(t => t.priority === "Low");
+
+        const virtualMedium = medium.slice(0, otherScrollIndex);
+        const virtualLow = low.slice(0, otherScrollIndex);
 
         return {
-            allHighTasks: allHighSorted, // Used for observer logic (full array)
-            otherTasks: otherSorted,     // Used for observer logic (full array)
-            highTasks: virtualHigh,      // Rendered subset
-            mediumTasks: medium,         // Rendered subset
-            lowTasks: low                // Rendered subset
+            allHighTasks: allHigh,
+            otherTasks: other,
+            highTasks: virtualHigh,
+            mediumTasks: virtualMedium,
+            lowTasks: virtualLow
         };
-    }, [tasks, dueDateSortOrder, highScrollIndex, otherScrollIndex, isMobileView]);
-    // -------------------------------------------------------------
+    }, [filteredTasks, isMobileView, highScrollIndex, otherScrollIndex, sortByDueDate]);
+
+    // Destructure after useMemo
+    const { allHighTasks, otherTasks, highTasks, mediumTasks, lowTasks } = taskCategories;
+    // ⭐️ Intersection Observer for High Priority Virtual Scroll (Desktop)
+    // useEffect(() => {
+    //     if (isMobileView || loading) return;
+
+    //     const observer = new IntersectionObserver(
+    //         entries => {
+    //             if (entries[0].isIntersecting && highScrollIndex < allHighTasks.length && !loading) {
+    //                 setHighScrollIndex(prevIndex => prevIndex + ITEMS_PER_PAGE);
+    //             }
+    //         },
+    //         { threshold: 0.1 }
+    //     );
+
+    //     if (highObserverTarget.current) {
+    //         observer.observe(highObserverTarget.current);
+    //     }
+
+    //     return () => {
+    //         // Cleanup logic improved for observer targets
+    //         if (highObserverTarget.current) observer.unobserve(highObserverTarget.current);
+    //     };
+    // }, [highScrollIndex, loading, isMobileView, allHighTasks.length]);
 
     // ⭐️ Intersection Observer for High Priority Virtual Scroll (Desktop)
     useEffect(() => {
-        if (isMobileView || loading) return;
+        if (isMobileView || loading || !highObserverTarget.current) return;
 
         const observer = new IntersectionObserver(
             entries => {
-                if (entries[0].isIntersecting && highScrollIndex < allHighTasks.length && !loading) {
-                    setHighScrollIndex(prevIndex => prevIndex + ITEMS_PER_PAGE);
+                if (entries[0].isIntersecting && highScrollIndex < allHighTasks.length) {
+                    console.log("📜 Loading more High tasks...");
+                    setHighScrollIndex(prev => Math.min(prev + ITEMS_PER_PAGE, allHighTasks.length));
                 }
             },
-            { threshold: 0.1 }
+            { threshold: 0.1, rootMargin: "100px" }
         );
 
-        if (highObserverTarget.current) {
-            observer.observe(highObserverTarget.current);
-        }
+        const currentTarget = highObserverTarget.current;
+        observer.observe(currentTarget);
 
         return () => {
-             // Cleanup logic improved for observer targets
-             if (highObserverTarget.current) observer.unobserve(highObserverTarget.current);
+            if (currentTarget) observer.unobserve(currentTarget);
         };
     }, [highScrollIndex, loading, isMobileView, allHighTasks.length]);
+
+    // ⭐️ Intersection Observer for Medium/Low Virtual Scroll (Desktop)
+    useEffect(() => {
+        if (isMobileView || loading || !otherObserverTarget.current) return;
+
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting) {
+                    // Calculate total remaining Medium + Low tasks
+                    const totalMediumLow = mediumTasks.length + lowTasks.length;
+                    const totalAllMediumLow = otherTasks.length;
+
+                    if (otherScrollIndex < totalAllMediumLow) {
+                        console.log("📜 Loading more Medium/Low tasks...");
+                        setOtherScrollIndex(prev => Math.min(prev + ITEMS_PER_PAGE, totalAllMediumLow));
+                    }
+                }
+            },
+            { threshold: 0.1, rootMargin: "100px" }
+        );
+
+        const currentTarget = otherObserverTarget.current;
+        observer.observe(currentTarget);
+
+        return () => {
+            if (currentTarget) observer.unobserve(currentTarget);
+        };
+    }, [otherScrollIndex, loading, isMobileView, mediumTasks.length, lowTasks.length, otherTasks.length]);
 
     // ⭐️ Intersection Observer for Medium/Low Virtual Scroll (Desktop)
     useEffect(() => {
@@ -314,8 +883,8 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         }
 
         return () => {
-             // Cleanup logic improved for observer targets
-             if (otherObserverTarget.current) observer.unobserve(otherObserverTarget.current);
+            // Cleanup logic improved for observer targets
+            if (otherObserverTarget.current) observer.unobserve(otherObserverTarget.current);
         };
     }, [otherScrollIndex, loading, isMobileView, otherTasks.length]);
 
@@ -328,12 +897,12 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         };
         // Use requestAnimationFrame to defer adding the listener, ensuring it runs after the current click event bubble finishes
         const rafId = requestAnimationFrame(() => {
-             document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("mousedown", handleClickOutside);
         });
 
         return () => {
-             cancelAnimationFrame(rafId);
-             document.removeEventListener("mousedown", handleClickOutside);
+            cancelAnimationFrame(rafId);
+            document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [editingStatus]);
 
@@ -341,7 +910,8 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     // WebSocket for real-time updates
     useEffect(() => {
         const handleTaskEvent = () => {
-            fetchTasks(1, false);
+            // fetchTasks(1, false);
+            fetchAllTasks();
             fetchStats();
         };
 
@@ -354,7 +924,19 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             socket.off("task-updated", handleTaskEvent);
             socket.off("task-deleted", handleTaskEvent);
         };
-    }, [fetchTasks, fetchStats]);
+    }, [fetchAllTasks, fetchStats]);
+
+    // Cleanup on unmount
+useEffect(() => {
+    return () => {
+        if (fetchControllerRef.current) {
+            fetchControllerRef.current.abort();
+        }
+        if (filterTimeoutRef.current) {
+            clearTimeout(filterTimeoutRef.current);
+        }
+    };
+}, []);
 
     // Handle filter changes
     const handleFilterChange = (key, value) => {
@@ -365,7 +947,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     };
 
     // Helper to find the task in the current visible list
-    const getTaskById = (taskId) => tasks.find((t) => t._id === taskId);
+    const getTaskById = (taskId) => allTasks.find((t) => t._id === taskId);
 
     // Handle message send from MessagePopup (using secureAxios)
     const handleMessageSend = async (payload) => {
@@ -390,7 +972,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     // Handle Copy Task functionality
     const handleCopyTask = async (task) => {
         const taskText = `Task: ${task.taskName}\nCode: ${task.code || 'N/A'}\nDue Date: ${new Date(task.dueDate).toLocaleDateString("en-GB")}\nPriority: ${task.priority}`;
-        
+
         try {
             await navigator.clipboard.writeText(taskText);
             Swal.fire({
@@ -420,7 +1002,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         setEditingStatus(null); // Close dropdown immediately
 
         // Optimistic update
-        setTasks(prev => prev.map(task =>
+        // setTasks(prev => prev.map(task =>
+        //     task._id === taskId ? { ...task, status: newStatus } : task
+        // ));
+        setAllTasks(prev => prev.map(task =>
             task._id === taskId ? { ...task, status: newStatus } : task
         ));
 
@@ -430,10 +1015,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             updatedRemark += " [Completed]";
             setRemarks(prev => ({ ...prev, [taskId]: updatedRemark }));
         }
-         // Clean up [Completed] tag if status is reverted from completed
+        // Clean up [Completed] tag if status is reverted from completed
         if (newStatus !== "Completed") {
-             updatedRemark = updatedRemark.replace(" [Completed]", "").trim();
-             setRemarks(prev => ({ ...prev, [taskId]: updatedRemark }));
+            updatedRemark = updatedRemark.replace(" [Completed]", "").trim();
+            setRemarks(prev => ({ ...prev, [taskId]: updatedRemark }));
         }
 
 
@@ -452,7 +1037,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             if (!response.ok) throw new Error("Failed to update status on server");
 
             const updatedTask = await response.json();
-            setTasks(prev => prev.map(task =>
+            setAllTasks(prev => prev.map(task =>
                 task._id === taskId ? updatedTask : task
             ));
             setRemarks(prev => ({ ...prev, [taskId]: updatedTask.remark || "" }));
@@ -460,7 +1045,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
         } catch (error) {
             console.error("Error updating status:", error);
-            fetchTasks(1, false); // Revert or re-fetch on error
+            fetchAllTasks(); // Revert or re-fetch on error
             Swal.fire("Error", "Failed to update status", "error");
         }
         setLoadingStatus(prev => ({ ...prev, [taskId]: false }));
@@ -470,7 +1055,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const handleWorkDescEditClick = (taskId) => {
         const task = getTaskById(taskId);
         if (task && !workDescs[taskId]) {
-             setWorkDescs((prev) => ({ ...prev, [taskId]: task.workDesc || "" }));
+            setWorkDescs((prev) => ({ ...prev, [taskId]: task.workDesc || "" }));
         }
         setOpenWorkDescPopup(taskId);
     };
@@ -491,7 +1076,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
             if (response.ok) {
                 const updatedTask = await response.json();
-                setTasks(prev => prev.map(task =>
+                setAllTasks(prev => prev.map(task =>
                     task._id === taskId ? updatedTask : task
                 ));
                 setOpenWorkDescPopup(null);
@@ -529,7 +1114,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
             if (response.ok) {
                 const updatedTask = await response.json();
-                setTasks(prev => prev.map(task =>
+                setAllTasks(prev => prev.map(task =>
                     task._id === taskId ? updatedTask : task
                 ));
                 setOpenRemarkPopup(null);
@@ -573,7 +1158,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const deleteTaskRequest = async (taskId) => {
         try {
             // Optimistic removal
-            setTasks(prev => prev.filter(t => t._id !== taskId));
+            setAllTasks(prev => prev.filter(t => t._id !== taskId));
 
             const response = await fetch(
                 `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
@@ -587,7 +1172,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 icon: "success",
                 confirmButtonText: "OK",
             });
-            fetchTasks(1, false); // Re-fetch to ensure data integrity and update counts
+            fetchAllTasks(); // Re-fetch to ensure data integrity and update counts
         } catch (err) {
             console.error("Error deleting task:", err);
             Swal.fire({
@@ -596,7 +1181,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 icon: "error",
                 confirmButtonText: "OK",
             });
-             fetchTasks(1, false); // Re-fetch in case of failure to revert state
+            fetchAllTasks(); // Re-fetch in case of failure to revert state
         }
     };
 
@@ -655,10 +1240,13 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     };
 
     // Mobile Pagination Logic based on the full tasks array (after memoization/sorting logic)
-    const allTasksForMobile = [...allHighTasks, ...otherTasks];
+    // const allTasksForMobile = [...allHighTasks, ...otherTasks];
+    const allTasksForMobile = useMemo(() => {
+        return [...allHighTasks, ...otherTasks];
+    }, [allHighTasks, otherTasks]);
     const mobileIndexOfLast = mobileCurrentPage * MOBILE_ITEMS_PER_PAGE;
     const mobileIndexOfFirst = mobileIndexOfLast - MOBILE_ITEMS_PER_PAGE;
-    
+
     // ⭐️ PERFORMANCE: Slice the combined, sorted tasks array once for the current mobile page view
     const mobileTasksToRender = allTasksForMobile.slice(mobileIndexOfFirst, mobileIndexOfLast);
     const mobileTotalPages = Math.ceil(allTasksForMobile.length / MOBILE_ITEMS_PER_PAGE);
@@ -691,11 +1279,11 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     };
 
     // Render task row (Desktop)
-    const renderTaskRow = (task, cumulativeIndex) => {
-        const serialIndex = cumulativeIndex + 1;
-
+    const renderTaskRow = (task, serialIndex, category) => {
+        // const serialIndex = cumulativeIndex + 1;
+        const uniqueKey = `${category}-${task._id}-${serialIndex}-${task.priority}`;
         return (
-            <tr key={task._id} className="group border-b border-gray-200 hover:bg-slate-50">
+            <tr key={uniqueKey} className="group border-b border-gray-200 hover:bg-slate-50">
                 {/* Index */}
                 <td className="py-3 px-2 text-sm text-gray-700 font-semibold">{serialIndex}</td>
 
@@ -1178,64 +1766,64 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
     // Team Members Popup
     const renderTeamPopup = (task) => (
-           <div
-               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-               onClick={() => setShowTeamPopup(null)}
-           >
-               <div
-                   className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-2"
-                   style={{ borderColor: "#4332d2" }}
-                   onClick={(e) => e.stopPropagation()}
-               >
-                   <div
-                       className="flex justify-between items-center mb-4 pb-3 border-b-2"
-                       style={{ borderColor: "#e0dcf9" }}
-                   >
-                       <h3 className="text-xl font-bold" style={{ color: "#4332d2" }}>
-                           👥 Team Members
-                       </h3>
-                       <button
-                           onClick={() => setShowTeamPopup(null)}
-                           className="text-gray-400 hover:text-gray-700 text-2xl font-light"
-                       >
-                           ×
-                       </button>
-                   </div>
+        <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowTeamPopup(null)}
+        >
+            <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-2"
+                style={{ borderColor: "#4332d2" }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div
+                    className="flex justify-between items-center mb-4 pb-3 border-b-2"
+                    style={{ borderColor: "#e0dcf9" }}
+                >
+                    <h3 className="text-xl font-bold" style={{ color: "#4332d2" }}>
+                        👥 Team Members
+                    </h3>
+                    <button
+                        onClick={() => setShowTeamPopup(null)}
+                        className="text-gray-400 hover:text-gray-700 text-2xl font-light"
+                    >
+                        ×
+                    </button>
+                </div>
 
-                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                       {task.assignees?.map((assignee, idx) => (
-                           <div
-                               key={assignee.email}
-                               className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-all"
-                           >
-                               <div
-                                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                                   style={{ backgroundColor: "#4332d2" }}
-                               >
-                                   {assignee.name.charAt(0).toUpperCase()}
-                               </div>
-                               <div className="flex-1">
-                                   <div className="font-bold text-gray-900">
-                                       {assignee.name}
-                                   </div>
-                                   <div className="text-sm text-gray-600">
-                                       {assignee.email}
-                                   </div>
-                               </div>
-                               <span className="text-xs font-semibold text-gray-500">
-                                   #{idx + 1}
-                               </span>
-                           </div>
-                       ))}
-                   </div>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {task.assignees?.map((assignee, idx) => (
+                        <div
+                            key={assignee.email}
+                            className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-all"
+                        >
+                            <div
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                                style={{ backgroundColor: "#4332d2" }}
+                            >
+                                {assignee.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                                <div className="font-bold text-gray-900">
+                                    {assignee.name}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                    {assignee.email}
+                                </div>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-500">
+                                #{idx + 1}
+                            </span>
+                        </div>
+                    ))}
+                </div>
 
-                   <div className="mt-4 pt-3 border-t border-gray-200 text-center">
-                       <span className="text-sm text-gray-600 font-semibold">
-                           Total: {task.assignees?.length} members
-                       </span>
-                   </div>
-               </div>
-           </div>
+                <div className="mt-4 pt-3 border-t border-gray-200 text-center">
+                    <span className="text-sm text-gray-600 font-semibold">
+                        Total: {task.assignees?.length} members
+                    </span>
+                </div>
+            </div>
+        </div>
     );
 
     // Initialize a counter for desktop/mobile index outside the return
@@ -1243,10 +1831,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     let mobileCardIndex = -1; // Specific index for mobile card rendering
 
     // --- RENDER START ---
-    
+
     return (
         <div className="min-h-screen via-indigo-50 to-purple-50">
-            <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+            <div className="w-full ">
                 <FilterSection
                     filters={filters}
                     handleFilterChange={handleFilterChange}
@@ -1264,17 +1852,17 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                     <div ref={scrollContainerRef} className="overflow-y-auto max-h-[70vh]">
                         <table className="w-full table-fixed">
                             <colgroup>
-                                <col style={{ width: "3%" }} /> {/* # */}
-                                <col style={{ width: "8%" }} /> {/* TASK */}
-                                <col style={{ width: "10%" }} /> {/* DESCRIPTION */}
-                                <col style={{ width: "7%" }} /> {/* WORK DATE */}
-                                <col style={{ width: "7%" }} /> {/* DUE DATE */}
-                                <col style={{ width: "8%" }} /> {/* STATUS */}
-                                <col style={{ width: "7%" }} /> {/* PRIORITY */}
-                                <col style={{ width: "12%" }} /> {/* REMARKS */}
-                                <col style={{ width: "10%" }} /> {/* TEAM */}
-                                <col style={{ width: "10%" }} /> {/* ASSIGNED BY */}
-                                <col style={{ width: "8%" }} /> {/* ACTIONS */}
+                                <col style={{ width: "3%" }} />
+                                <col style={{ width: "8%" }} />
+                                <col style={{ width: "10%" }} />
+                                <col style={{ width: "7%" }} />
+                                <col style={{ width: "7%" }} />
+                                <col style={{ width: "8%" }} />
+                                <col style={{ width: "7%" }} />
+                                <col style={{ width: "12%" }} />
+                                <col style={{ width: "10%" }} />
+                                <col style={{ width: "10%" }} />
+                                <col style={{ width: "8%" }} />
                             </colgroup>
 
                             <thead className="sticky top-0 z-20 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 border-b-2 border-indigo-200">
@@ -1298,7 +1886,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                 </tr>
                             </thead>
 
-                            <tbody>
+                            {/* <tbody>
                                 {initialLoading ? (
                                     <tr>
                                         <td colSpan={11} className="py-20 text-center">
@@ -1306,14 +1894,14 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                             <p className="text-gray-600 font-bold">Loading tasks...</p>
                                         </td>
                                     </tr>
-                                ) : tasks.length === 0 && totalCount === 0 ? (
+                                ) : allTasks.length === 0 && !loading ? (
                                     <tr>
                                         <td colSpan={11} className="text-center py-20">
                                             <div className="text-6xl mb-4">📋</div>
                                             <p className="text-gray-500 font-black text-xl">No tasks assigned yet</p>
                                         </td>
                                     </tr>
-                                ) : tasks.length === 0 && totalCount > 0 ? (
+                                ) : filteredTasks.length === 0 && allTasks.length > 0 ? (
                                     <tr>
                                         <td colSpan={11} className="text-center py-20">
                                             <div className="text-6xl mb-4">🔍</div>
@@ -1322,7 +1910,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                     </tr>
                                 ) : (
                                     <>
-                                        {/* ⭐️ High Priority Tasks (VIRTUAL SCROLL APPLIED) */}
+                                        
                                         {highTasks.length > 0 && (
                                             <>
                                                 <tr>
@@ -1334,8 +1922,8 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                                     cumulativeIndex++;
                                                     return renderTaskRow(task, cumulativeIndex);
                                                 })}
+
                                                 
-                                                {/* ⭐️ HIGH PRIORITY SCROLL TRIGGER */}
                                                 {highScrollIndex < allHighTasks.length && (
                                                     <tr ref={highObserverTarget}>
                                                         <td colSpan={11} className="text-center py-4 bg-red-50/50">
@@ -1346,10 +1934,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                                 )}
                                             </>
                                         )}
-                                        {/* Reset cumulativeIndex before rendering Medium/Low tasks if they follow High tasks */}
-                                        {(highTasks.length > 0) ? (cumulativeIndex = highTasks.length - 1) : (cumulativeIndex = -1)} 
+                                      
+                                        {(highTasks.length > 0) ? (cumulativeIndex = highTasks.length - 1) : (cumulativeIndex = -1)}
 
-                                        {/* Medium Priority Tasks (VIRTUAL SCROLL APPLIED) */}
+                                       
                                         {mediumTasks.length > 0 && (
                                             <>
                                                 <tr>
@@ -1363,7 +1951,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                                 })}
                                             </>
                                         )}
-                                        {/* Low Priority Tasks (VIRTUAL SCROLL APPLIED) */}
+                                      
                                         {lowTasks.length > 0 && (
                                             <>
                                                 <tr>
@@ -1377,7 +1965,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                                 })}
                                             </>
                                         )}
-                                        {/* ⭐️ MEDIUM/LOW SCROLL TRIGGER */}
+                                        
                                         {otherScrollIndex < otherTasks.length && (
                                             <tr ref={otherObserverTarget}>
                                                 <td colSpan={11} className="text-center py-4">
@@ -1388,7 +1976,100 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                         )}
                                     </>
                                 )}
-                            </tbody>
+                            </tbody> */}
+<tbody>
+    {initialLoading ? (
+        <tr>
+            <td colSpan={11} className="py-20 text-center">
+                <FaSpinner className="animate-spin h-10 w-10 mx-auto mb-3 text-indigo-600" />
+                <p className="text-gray-600 font-bold">Loading tasks...</p>
+            </td>
+        </tr>
+    ) : allTasks.length === 0 && !loading ? (
+        <tr>
+            <td colSpan={11} className="text-center py-20">
+                <div className="text-6xl mb-4">📋</div>
+                <p className="text-gray-500 font-black text-xl">No tasks assigned yet</p>
+            </td>
+        </tr>
+    ) : filteredTasks.length === 0 && allTasks.length > 0 ? (
+        <tr>
+            <td colSpan={11} className="text-center py-20">
+                <div className="text-6xl mb-4">🔍</div>
+                <p className="text-gray-500 font-black text-xl">No tasks match your current filters.</p>
+            </td>
+        </tr>
+    ) : (
+        <>
+            {/* High Priority Tasks */}
+            {highTasks.length > 0 && (
+                <>
+                    <tr>
+                        <td colSpan={11} className="bg-gradient-to-r from-red-100 to-orange-100 text-red-900 font-black text-sm py-3 px-3 border-y-2 border-red-300">
+                            🔴 High Priority ({allHighTasks.length} total)
+                        </td>
+                    </tr>
+                    {highTasks.map((task, index) => (
+                        <React.Fragment key={`high-fragment-${task._id}-${index}`}>
+                            {renderTaskRow(task, index + 1, 'high')}
+                        </React.Fragment>
+                    ))}
+                    
+                    {highScrollIndex < allHighTasks.length && (
+                        <tr ref={highObserverTarget} key="high-loading-trigger">
+                            <td colSpan={11} className="text-center py-4 bg-red-50/50">
+                                <FaSpinner className="animate-spin h-6 w-6 mx-auto text-red-600" />
+                                <p className="text-xs text-red-700 mt-1">Loading more High Priority tasks...</p>
+                            </td>
+                        </tr>
+                    )}
+                </>
+            )}
+
+            {/* Medium Priority Tasks */}
+            {mediumTasks.length > 0 && (
+                <>
+                    <tr key="medium-header">
+                        <td colSpan={11} className="bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-900 font-black text-sm py-3 px-3 border-y-2 border-yellow-300">
+                            🟡 Medium Priority ({stats.mediumCount} total)
+                        </td>
+                    </tr>
+                    {mediumTasks.map((task, index) => (
+                        <React.Fragment key={`medium-fragment-${task._id}-${index}`}>
+                            {renderTaskRow(task, highTasks.length + index + 1, 'medium')}
+                        </React.Fragment>
+                    ))}
+                </>
+            )}
+
+            {/* Low Priority Tasks */}
+            {lowTasks.length > 0 && (
+                <>
+                    <tr key="low-header">
+                        <td colSpan={11} className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-900 font-black text-sm py-3 px-3 border-y-2 border-green-300">
+                            🟢 Low Priority ({stats.lowCount} total)
+                        </td>
+                    </tr>
+                    {lowTasks.map((task, index) => (
+                        <React.Fragment key={`low-fragment-${task._id}-${index}`}>
+                            {renderTaskRow(task, highTasks.length + mediumTasks.length + index + 1, 'low')}
+                        </React.Fragment>
+                    ))}
+                </>
+            )}
+
+            {/* Medium/Low Scroll Trigger */}
+            {otherScrollIndex < otherTasks.length && (
+                <tr ref={otherObserverTarget} key="other-loading-trigger">
+                    <td colSpan={11} className="text-center py-4">
+                        <FaSpinner className="animate-spin h-6 w-6 mx-auto text-indigo-600" />
+                        <p className="text-xs text-indigo-700 mt-1">Loading more Medium/Low Priority tasks...</p>
+                    </td>
+                </tr>
+            )}
+        </>
+    )}
+</tbody>
                         </table>
                     </div>
 
@@ -1412,12 +2093,12 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             <FaSpinner className="animate-spin h-8 w-8 mx-auto mb-3 text-blue-600" />
                             <p className="text-gray-600 font-semibold">Loading tasks...</p>
                         </div>
-                    ) : allTasksForMobile.length === 0 && totalCount === 0 ? (
+                    ) : allTasks.length === 0 && !loading ? (
                         <div className="bg-white rounded-lg shadow-md p-12 text-center border border-gray-200">
                             <div className="text-5xl mb-3">📋</div>
                             <p className="text-gray-500 font-semibold text-lg">No tasks assigned yet</p>
                         </div>
-                    ) : allTasksForMobile.length === 0 && totalCount > 0 ? (
+                    ) : filteredTasks.length === 0 && allTasks.length > 0 ? (
                         <div className="bg-white rounded-lg shadow-md p-12 text-center border border-gray-200">
                             <div className="text-5xl mb-3">🔍</div>
                             <p className="text-gray-500 font-semibold text-lg">No tasks match your current filters.</p>
@@ -1428,21 +2109,21 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             {mobileCardIndex = -1}
 
                             {/* High Priority Mobile */}
-                            {mobileHigh.length > 0 && (<><div className="bg-red-50 text-red-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-red-200">High Priority ({tasks.filter(t => t.priority === "High").length} total)</div>
+                            {mobileHigh.length > 0 && (<><div className="bg-red-50 text-red-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-red-200">High Priority ({filteredTasks.filter(t => t.priority === "High").length} total)</div>
                                 {mobileHigh.map((task) => {
                                     mobileCardIndex++;
                                     return renderTaskCard(task, mobileCardIndex);
                                 })}
                             </>)}
                             {/* Medium Priority Mobile */}
-                            {mobileMedium.length > 0 && (<><div className="bg-yellow-50 text-yellow-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-yellow-200">Medium Priority ({tasks.filter(t => t.priority === "Medium").length} total)</div>
+                            {mobileMedium.length > 0 && (<><div className="bg-yellow-50 text-yellow-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-yellow-200">Medium Priority ({filteredTasks.filter(t => t.priority === "Medium").length} total)</div>
                                 {mobileMedium.map((task) => {
                                     mobileCardIndex++;
                                     return renderTaskCard(task, mobileCardIndex);
                                 })}
                             </>)}
                             {/* Low Priority Mobile */}
-                            {mobileLow.length > 0 && (<><div className="bg-green-50 text-green-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-green-200">Low Priority ({tasks.filter(t => t.priority === "Low").length} total)</div>
+                            {mobileLow.length > 0 && (<><div className="bg-green-50 text-green-900 font-semibold text-sm py-2.5 px-4 rounded-lg border border-green-200">Low Priority ({filteredTasks.filter(t => t.priority === "Low").length} total)</div>
                                 {mobileLow.map((task) => {
                                     mobileCardIndex++;
                                     return renderTaskCard(task, mobileCardIndex);
@@ -1455,11 +2136,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                     <button
                                         onClick={handlePreviousPage}
                                         disabled={mobileCurrentPage === 1}
-                                        className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                                            mobileCurrentPage === 1
-                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                                : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
-                                        }`}
+                                        className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${mobileCurrentPage === 1
+                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
+                                            }`}
                                     >
                                         <FaChevronLeft size={10} /> Previous
                                     </button>
@@ -1471,11 +2151,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                     <button
                                         onClick={handleNextPage}
                                         disabled={mobileCurrentPage === mobileTotalPages}
-                                        className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                                            mobileCurrentPage === mobileTotalPages
-                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                                : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
-                                        }`}
+                                        className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${mobileCurrentPage === mobileTotalPages
+                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
+                                            }`}
                                     >
                                         Next <FaChevronRight size={10} />
                                     </button>
@@ -1587,9 +2266,9 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 )}
 
                 {/* Team Members Popup */}
-                    {showTeamPopup && getTaskById(showTeamPopup) && (
-                        renderTeamPopup(getTaskById(showTeamPopup))
-                    )}
+                {showTeamPopup && getTaskById(showTeamPopup) && (
+                    renderTeamPopup(getTaskById(showTeamPopup))
+                )}
 
                 {/* Status Dropdown */}
                 {editingStatus && (
@@ -1598,7 +2277,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             ref={dropdownRef}
                             className="absolute rounded-xl shadow-2xl border-2 border-gray-300 w-44 mt-1 z-50 bg-white overflow-hidden"
                             style={{
-                                position: "fixed", 
+                                position: "fixed",
                                 top: dropdownPosition.top,
                                 left: dropdownPosition.left,
                             }}
