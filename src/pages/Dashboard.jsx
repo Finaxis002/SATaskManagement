@@ -939,23 +939,23 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="mb-6 lg:hidden">
+        {/* <div className="mb-6 lg:hidden">
           <div className="grid grid-cols-2 gap-4">
             <StatCard pillLabel="Total" variant="blue" label="All Tasks" value={stats.TotalTask} icon={<ClipboardList className="h-5 w-5" />} loading={stats.loading} />
             <StatCard pillLabel="Done" variant="green" label="Completed" value={stats.Completed} icon={<CheckCircle className="h-5 w-5" />} loading={stats.loading} />
             <StatCard pillLabel="Active" variant="orange" label="In Progress" value={stats.Progress} icon={<Clock className="h-5 w-5" />} loading={stats.loading} />
             <StatCard pillLabel="Late" variant="red" label="Overdue" value={stats.Overdue} icon={<AlertCircle className="h-5 w-5" />} loading={stats.loading} />
           </div>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
           <div className="space-y-6">
-            <div className="hidden lg:grid lg:grid-cols-4 gap-4">
+            {/* <div className="hidden lg:grid lg:grid-cols-4 gap-4">
               <StatCard pillLabel="Total" variant="blue" label="All Tasks" value={stats.TotalTask} icon={<ClipboardList className="h-4 w-4" />} loading={stats.loading} />
               <StatCard pillLabel="Done" variant="green" label="Completed" value={stats.Completed} icon={<CheckCircle className="h-4 w-4" />} loading={stats.loading} />
               <StatCard pillLabel="Active" variant="orange" label="In Progress" value={stats.Progress} icon={<Clock className="h-4 w-4" />} loading={stats.loading} />
               <StatCard pillLabel="Late" variant="red" label="Overdue" value={stats.Overdue} icon={<AlertCircle className="h-4 w-4" />} loading={stats.loading} />
-            </div>
+            </div> */}
 
             <TodaysList ref={todaysListRef} rows={todaysRows} setEvents={setEvents} userId={userId} />
             
