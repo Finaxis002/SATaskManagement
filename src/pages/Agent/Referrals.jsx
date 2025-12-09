@@ -1,46 +1,64 @@
-import React, { useState, useMemo } from 'react';
-import { Users, TrendingUp, Award, Search, Download, SortAsc, SortDesc, Trophy, Star } from 'lucide-react';
+import React, { useState, useMemo } from "react";
+import {
+  Users,
+  TrendingUp,
+  Award,
+  Search,
+  Download,
+  SortAsc,
+  SortDesc,
+  Trophy,
+  Star,
+} from "lucide-react";
 
 const Referrals = ({ agents = [] }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('referrals'); // 'referrals', 'name'
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'Active', 'Inactive'
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("referrals"); // 'referrals', 'name'
+  const [sortOrder, setSortOrder] = useState("desc"); // 'asc', 'desc'
+  const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'Active', 'Inactive'
 
   // Calculations
-  const totalReferrals = agents.reduce((sum, agent) => sum + agent.referrals, 0);
-  const activeAgents = agents.filter(a => a.status === 'Active').length;
-  const avgReferrals = agents.length > 0 ? (totalReferrals / agents.length).toFixed(1) : 0;
+  const totalReferrals = agents.reduce(
+    (sum, agent) => sum + agent.referrals,
+    0
+  );
+  const activeAgents = agents.filter((a) => a.status === "Active").length;
+  const avgReferrals =
+    agents.length > 0 ? (totalReferrals / agents.length).toFixed(1) : 0;
 
   // Top performer
-  const topPerformer = agents.length > 0 
-    ? agents.reduce((max, agent) => agent.referrals > max.referrals ? agent : max, agents[0])
-    : null;
+  const topPerformer =
+    agents.length > 0
+      ? agents.reduce(
+          (max, agent) => (agent.referrals > max.referrals ? agent : max),
+          agents[0]
+        )
+      : null;
 
   // Filtered and sorted agents
   const filteredAgents = useMemo(() => {
     let filtered = agents;
 
     // Filter by status
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(a => a.status === filterStatus);
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((a) => a.status === filterStatus);
     }
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(a => 
+      filtered = filtered.filter((a) =>
         a.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Sort
     filtered = [...filtered].sort((a, b) => {
-      if (sortBy === 'referrals') {
-        return sortOrder === 'asc' 
-          ? a.referrals - b.referrals 
+      if (sortBy === "referrals") {
+        return sortOrder === "asc"
+          ? a.referrals - b.referrals
           : b.referrals - a.referrals;
       } else {
-        return sortOrder === 'asc'
+        return sortOrder === "asc"
           ? a.name.localeCompare(b.name)
           : b.name.localeCompare(a.name);
       }
@@ -51,63 +69,66 @@ const Referrals = ({ agents = [] }) => {
 
   // Download CSV
   const downloadReport = () => {
-    const headers = ['Agent Name', 'Referrals', 'Status'];
-    const rows = filteredAgents.map(a => [a.name, a.referrals, a.status]);
+    const headers = ["Agent Name", "Referrals", "Status"];
+    const rows = filteredAgents.map((a) => [a.name, a.referrals, a.status]);
 
     const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = 'agent_referrals_report.csv';
+    link.download = "agent_referrals_report.csv";
     link.click();
   };
 
   // Toggle sort
   const toggleSort = (field) => {
     if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
-      setSortOrder('desc');
+      setSortOrder("desc");
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Agent Referrals</h1>
-          <p className="text-slate-600">Track and manage agent referral performance</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
+            Agent Referrals
+          </h1>
+          <p className="text-slate-600">
+            Track and manage agent referral performance
+          </p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard 
+          <StatCard
             icon={Users}
             label="Total Agents"
             value={agents.length}
             gradient="from-blue-500 to-cyan-600"
           />
-          <StatCard 
+          <StatCard
             icon={TrendingUp}
             label="Total Referrals"
             value={totalReferrals}
             gradient="from-emerald-500 to-teal-600"
           />
-          <StatCard 
+          <StatCard
             icon={Award}
             label="Active Agents"
             value={activeAgents}
             gradient="from-purple-500 to-pink-600"
           />
-          <StatCard 
+          <StatCard
             icon={Star}
             label="Avg Referrals"
             value={avgReferrals}
@@ -122,23 +143,35 @@ const Referrals = ({ agents = [] }) => {
               <div className="p-2 rounded-lg bg-amber-100">
                 <Trophy className="text-amber-600" size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">Top Performer of the Month</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Top Performer of the Month
+              </h3>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex-1">
-                <p className="text-2xl font-bold text-slate-900 mb-1">{topPerformer.name}</p>
-                <p className="text-sm text-slate-600">Highest referral count this period</p>
+                <p className="text-2xl font-bold text-slate-900 mb-1">
+                  {topPerformer.name}
+                </p>
+                <p className="text-sm text-slate-600">
+                  Highest referral count this period
+                </p>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <div className="text-center px-6 py-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200">
-                  <p className="text-xs font-medium text-amber-700 mb-1">Referrals</p>
-                  <p className="text-3xl font-bold text-amber-600">{topPerformer.referrals}</p>
+                  <p className="text-xs font-medium text-amber-700 mb-1">
+                    Referrals
+                  </p>
+                  <p className="text-3xl font-bold text-amber-600">
+                    {topPerformer.referrals}
+                  </p>
                 </div>
-                
+
                 <div className="sm:block w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
-                  <Trophy className="text-white" size={40} />
+                  <div className="flex md:block justify-center">
+                    <Trophy className="text-white mt-4 w-10 h-10 md:w-14 md:h-14 md:ml-3" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -151,7 +184,10 @@ const Referrals = ({ agents = [] }) => {
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"
+                size={18}
+              />
               <input
                 type="text"
                 placeholder="Search agents..."
@@ -163,21 +199,21 @@ const Referrals = ({ agents = [] }) => {
 
             {/* Filters */}
             <div className="flex gap-2">
-              <FilterButton 
-                active={filterStatus === 'all'} 
-                onClick={() => setFilterStatus('all')}
+              <FilterButton
+                active={filterStatus === "all"}
+                onClick={() => setFilterStatus("all")}
               >
                 All
               </FilterButton>
-              <FilterButton 
-                active={filterStatus === 'Active'} 
-                onClick={() => setFilterStatus('Active')}
+              <FilterButton
+                active={filterStatus === "Active"}
+                onClick={() => setFilterStatus("Active")}
               >
                 Active
               </FilterButton>
-              <FilterButton 
-                active={filterStatus === 'Inactive'} 
-                onClick={() => setFilterStatus('Inactive')}
+              <FilterButton
+                active={filterStatus === "Inactive"}
+                onClick={() => setFilterStatus("Inactive")}
               >
                 Inactive
               </FilterButton>
@@ -199,8 +235,8 @@ const Referrals = ({ agents = [] }) => {
           </p>
 
           {/* Table */}
-          <AgentTable 
-            agents={filteredAgents} 
+          <AgentTable
+            agents={filteredAgents}
             sortBy={sortBy}
             sortOrder={sortOrder}
             toggleSort={toggleSort}
@@ -230,9 +266,9 @@ const FilterButton = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
     className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-      active 
-        ? 'bg-indigo-600 text-white shadow-sm' 
-        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+      active
+        ? "bg-indigo-600 text-white shadow-sm"
+        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
     }`}
   >
     {children}
@@ -247,7 +283,9 @@ const AgentTable = ({ agents, sortBy, sortOrder, toggleSort }) => {
           <Users className="text-slate-400" size={32} />
         </div>
         <p className="text-slate-500 font-medium">No agents found</p>
-        <p className="text-sm text-slate-400 mt-1">Try adjusting your filters</p>
+        <p className="text-sm text-slate-400 mt-1">
+          Try adjusting your filters
+        </p>
       </div>
     );
   }
@@ -261,22 +299,28 @@ const AgentTable = ({ agents, sortBy, sortOrder, toggleSort }) => {
             #{rank}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-900 mb-1 break-words">{agent.name}</p>
-            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-              agent.status === 'Active' 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-red-100 text-red-700'
-            }`}>
+            <p className="font-semibold text-slate-900 mb-1 break-words">
+              {agent.name}
+            </p>
+            <span
+              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                agent.status === "Active"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
               {agent.status}
             </span>
           </div>
         </div>
       </div>
-      
+
       <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-slate-200">
         <div>
           <p className="text-xs text-slate-500 mb-0.5">Total Referrals</p>
-          <p className="text-2xl font-bold text-indigo-600">{agent.referrals}</p>
+          <p className="text-2xl font-bold text-indigo-600">
+            {agent.referrals}
+          </p>
         </div>
         <Award className="text-indigo-400" size={28} />
       </div>
@@ -300,26 +344,32 @@ const AgentTable = ({ agents, sortBy, sortOrder, toggleSort }) => {
               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                 Rank
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
-                onClick={() => toggleSort('name')}
+                onClick={() => toggleSort("name")}
               >
                 <div className="flex items-center gap-2">
                   Agent Name
-                  {sortBy === 'name' && (
-                    sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                  )}
+                  {sortBy === "name" &&
+                    (sortOrder === "asc" ? (
+                      <SortAsc size={14} />
+                    ) : (
+                      <SortDesc size={14} />
+                    ))}
                 </div>
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
-                onClick={() => toggleSort('referrals')}
+                onClick={() => toggleSort("referrals")}
               >
                 <div className="flex items-center justify-end gap-2">
                   Referrals
-                  {sortBy === 'referrals' && (
-                    sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                  )}
+                  {sortBy === "referrals" &&
+                    (sortOrder === "asc" ? (
+                      <SortAsc size={14} />
+                    ) : (
+                      <SortDesc size={14} />
+                    ))}
                 </div>
               </th>
               <th className="px-6 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -332,7 +382,10 @@ const AgentTable = ({ agents, sortBy, sortOrder, toggleSort }) => {
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
             {agents.map((agent, index) => (
-              <tr key={agent._id} className="hover:bg-slate-50 transition-colors">
+              <tr
+                key={agent._id}
+                className="hover:bg-slate-50 transition-colors"
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
                     #{index + 1}
@@ -342,14 +395,18 @@ const AgentTable = ({ agents, sortBy, sortOrder, toggleSort }) => {
                   {agent.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <span className="text-lg font-bold text-indigo-600">{agent.referrals}</span>
+                  <span className="text-lg font-bold text-indigo-600">
+                    {agent.referrals}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    agent.status === 'Active' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-red-100 text-red-700'
-                  }`}>
+                  <span
+                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      agent.status === "Active"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
                     {agent.status}
                   </span>
                 </td>
@@ -366,20 +423,38 @@ const AgentTable = ({ agents, sortBy, sortOrder, toggleSort }) => {
 };
 
 const PerformanceBadge = ({ referrals }) => {
-  let badge = { text: 'Beginner', color: 'bg-slate-100 text-slate-700', icon: '🌱' };
-  
+  let badge = {
+    text: "Beginner",
+    color: "bg-slate-100 text-slate-700",
+    icon: "🌱",
+  };
+
   if (referrals >= 50) {
-    badge = { text: 'Champion', color: 'bg-purple-100 text-purple-700', icon: '🏆' };
+    badge = {
+      text: "Champion",
+      color: "bg-purple-100 text-purple-700",
+      icon: "🏆",
+    };
   } else if (referrals >= 25) {
-    badge = { text: 'Expert', color: 'bg-blue-100 text-blue-700', icon: '⭐' };
+    badge = { text: "Expert", color: "bg-blue-100 text-blue-700", icon: "⭐" };
   } else if (referrals >= 10) {
-    badge = { text: 'Advanced', color: 'bg-green-100 text-green-700', icon: '🚀' };
+    badge = {
+      text: "Advanced",
+      color: "bg-green-100 text-green-700",
+      icon: "🚀",
+    };
   } else if (referrals >= 5) {
-    badge = { text: 'Intermediate', color: 'bg-yellow-100 text-yellow-700', icon: '💪' };
+    badge = {
+      text: "Intermediate",
+      color: "bg-yellow-100 text-yellow-700",
+      icon: "💪",
+    };
   }
 
   return (
-    <span className={`px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full ${badge.color}`}>
+    <span
+      className={`px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full ${badge.color}`}
+    >
       <span>{badge.icon}</span>
       {badge.text}
     </span>
