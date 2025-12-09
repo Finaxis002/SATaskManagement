@@ -8,7 +8,7 @@ import Referrals from "./Referrals";
 import AgentList from "./AgentList";
 import PayoutModal from "./PayoutModal";
 
-const API_URL = "http://localhost:1100/api/agents";
+const API_URL = "https://taskbe.sharda.co.in/api/agents";
 
 const AgentPage = () => {
   const [activeTab, setActiveTab] = useState("list");
