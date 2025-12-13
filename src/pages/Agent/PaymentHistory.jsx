@@ -12,7 +12,7 @@ import {
 
 const API_URL = "https://taskbe.sharda.co.in/api/agents";
 
-const PaymentHistory = ({ agentId }) => {
+const PaymentHistory = ({ agentId, onDataChange }) => {
   const [history, setHistory] = useState([]);
   const [filteredHistory, setFilteredHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +68,11 @@ const PaymentHistory = ({ agentId }) => {
       }
 
       setDeleteConfirm(null);
-      fetchHistory();
+      await fetchHistory();
+     
+      if (onDataChange) {
+        onDataChange();
+      }
     } catch (err) {
       console.error("Error deleting entry:", err);
       alert("Failed to delete entry: " + err.message);
@@ -81,7 +85,11 @@ const PaymentHistory = ({ agentId }) => {
         paid: newStatus === "paid",
       });
 
-      fetchHistory();
+      await fetchHistory();
+      
+      if (onDataChange) {
+        onDataChange();
+      }
     } catch (err) {
       console.error("Error updating status:", err);
       alert("Failed to update status: " + err.message);

@@ -94,21 +94,23 @@ const ClientTableView = React.memo(({ clients, onEdit, onDelete }) => {
                   <td className="px-2 py-3 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-1">
                       {role === "admin" && (
-                        <button
-                          onClick={() => onEdit(client)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 hover:shadow-md"
-                          title="Edit Client"
-                        >
-                          <FaEdit size={14} />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => onEdit(client)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 hover:shadow-md"
+                            title="Edit Client"
+                          >
+                            <FaEdit size={14} />
+                          </button>
+                          <button
+                            onClick={() => onDelete(client.name)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 hover:shadow-md"
+                            title="Delete Client"
+                          >
+                            <FaTrash size={14} />
+                          </button>
+                        </>
                       )}
-                      <button
-                        onClick={() => onDelete(client.name)}
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 hover:shadow-md"
-                        title="Delete Client"
-                      >
-                        <FaTrash size={14} />
-                      </button>
                       <button
                         onClick={() => handleAddService(client.id)}
                         className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-50 hover:bg-cyan-100 transition-all duration-200 hover:shadow-md overflow-hidden"
@@ -171,21 +173,23 @@ const ClientTableView = React.memo(({ clients, onEdit, onDelete }) => {
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-200">
               {role === "admin" && (
-                <button
-                  onClick={() => onEdit(client)}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200"
-                  title="Edit"
-                >
-                  <FaEdit size={16} />
-                </button>
+                <>
+                  <button
+                    onClick={() => onEdit(client)}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200"
+                    title="Edit"
+                  >
+                    <FaEdit size={16} />
+                  </button>
+                  <button
+                    onClick={() => onDelete(client.name)}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200"
+                    title="Delete"
+                  >
+                    <FaTrash size={16} />
+                  </button>
+                </>
               )}
-              <button
-                onClick={() => onDelete(client.name)}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200"
-                title="Delete"
-              >
-                <FaTrash size={16} />
-              </button>
               <button
                 onClick={() => handleAddService(client.id)}
                 className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-cyan-50 hover:bg-cyan-100 transition-all duration-200"
