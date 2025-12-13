@@ -8,46 +8,308 @@ import {
   IndianRupee,
   Copy,
   Check,
+  X,
 } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast"; 
+import axios from "axios";
+
+// API URL
+const API_URL = "https://taskbe.sharda.co.in/api/agents";
+
+// Currency Formatter Utility
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+  }).format(amount || 0);
+};
+
+
+const PaymentModalForList = ({ agent, onClose, onUpdate }) => {
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [processing, setProcessing] = useState(false);
+
+  const totalEarned = agent?.totalEarned || 0;
+  const paidTillDate = agent?.paidTillDate || 0;
+  const pendingAmount = totalEarned - paidTillDate;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid amount.");
+      return;
+    }
+
+    if (amount > pendingAmount) {
+      toast.error(
+        `Amount cannot exceed pending amount of ${formatCurrency(
+          pendingAmount
+        )}.`
+      );
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      // PayOut API Call
+      const response = await axios.post(`${API_URL}/${agent._id}/payout`, {
+        amount: amount,
+        notes: paymentNotes || `Payment of ₹${amount}`,
+        date: new Date().toISOString(),
+      });
+
+      // Show toast on successful payment
+      toast.success(
+        `Payment of ${formatCurrency(amount)} successful for ${agent.name}.`
+      );
+
+
+      onUpdate(agent._id, response.data);
+
+      onClose();
+    } catch (err) {
+      console.error("Payment error:", err);
+      toast.error(
+        "Failed to process payment: " +
+          (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0  bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50"
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto md: mt-10">
+        <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 sm:px-6 py-3 sm:py-4 rounded-t-2xl flex items-center justify-between sticky top-0">
+          <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+            <IndianRupee size={20} className="sm:w-6 sm:h-6" />
+            <span className="hidden sm:inline">Process Payment</span>
+            <span className="sm:hidden">Payment</span>
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 sm:p-2 hover:bg-red-700 rounded-full transition-colors"
+          >
+            <X size={18} className="sm:w-5 sm:h-5 text-white" />
+          </button>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {/* Agent Info */}
+          <div className="bg-slate-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3">
+              {agent.profileImage ? (
+                <img
+                  src={agent.profileImage}
+                  alt={agent.name}
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-indigo-200"
+                />
+              ) : (
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <User className="text-white" size={20} />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-slate-900 text-sm sm:text-base truncate">
+                  {agent.name}
+                </p>
+                <p className="text-xs text-slate-500 truncate">{agent.email}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+              <div className="bg-white rounded-lg p-2">
+                <p className="text-xs text-slate-500 mb-1">Total Earned</p>
+                <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                  {formatCurrency(totalEarned)}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-2">
+                <p className="text-xs text-slate-500 mb-1">Paid</p>
+                <p className="text-xs sm:text-sm font-bold text-green-600 truncate">
+                  {formatCurrency(paidTillDate)}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-2">
+                <p className="text-xs text-slate-500 mb-1">Pending</p>
+                <p className="text-xs sm:text-sm font-bold text-red-600 truncate">
+                  {formatCurrency(pendingAmount)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Form */}
+          <div className="space-y-3 sm:space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                Payment Amount *
+              </label>
+              <div className="relative">
+                <IndianRupee
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={pendingAmount}
+                  required
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-base sm:text-lg font-semibold"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Maximum: {formatCurrency(pendingAmount)}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                Payment Notes (Optional)
+              </label>
+              <textarea
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="Add notes about this payment..."
+                rows="3"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none text-sm"
+              />
+            </div>
+
+            {/* Quick Amount Buttons */}
+            <div>
+              <p className="text-xs font-medium text-gray-600 mb-2">
+                Quick Select:
+              </p>
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                {[
+                  { label: "25%", value: pendingAmount * 0.25 },
+                  { label: "50%", value: pendingAmount * 0.5 },
+                  { label: "75%", value: pendingAmount * 0.75 },
+                  { label: "Full", value: pendingAmount },
+                ].map((option) => (
+                  <button
+                    key={option.label}
+                    type="button"
+                    onClick={() => setPaymentAmount(option.value.toFixed(2))}
+                    className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={processing}
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={processing || !paymentAmount}
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-lg hover:from-red-600 hover:to-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {processing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span className="hidden sm:inline">Processing...</span>
+                  <span className="sm:hidden">Wait...</span>
+                </>
+              ) : (
+                <>
+                  <IndianRupee size={16} className="sm:w-[18px] sm:h-[18px]" />
+                  <span className="hidden sm:inline">Pay Now</span>
+                  <span className="sm:hidden">Pay</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const AgentForm = ({ initialData, onSave, onCancel }) => {
   const isEditing = !!initialData?._id;
 
+  // State initialization updated to match MongoDB model's top-level fields
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     email: initialData?.email || "",
     referralCode: initialData?.referralCode || "",
-    phone: initialData?.phone || "",
-    bankDetails: {
-      bankName: initialData?.bankDetails?.bankName || "",
-      accountNumber: initialData?.bankDetails?.accountNumber || "",
-      ifsc: initialData?.bankDetails?.ifsc || "",
-    },
-    // Add other fields you want to edit here
+    // Use 'phone' for form, fallback to 'mobile' if 'phone' is missing
+    phone: initialData?.phone || initialData?.mobile || "",
+
+    // Bank details match top-level fields in the MongoDB schema
+    bankName: initialData?.bankName || "",
+    accountNumber: initialData?.accountNumber || "",
+    ifscCode: initialData?.ifscCode || "",
   });
+
+  // New state for handling the processing state (prevent double click)
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name.startsWith("bankDetails.")) {
-      const bankFieldName = name.split(".")[1];
-      setFormData((prev) => ({
-        ...prev,
-        bankDetails: {
-          ...prev.bankDetails,
-          [bankFieldName]: value,
-        },
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+    // Direct update to top-level state
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  // UPDATED handleSubmit to show toast and close modal on success
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting form data:", formData);
-    console.log("Bank Details:", formData.bankDetails);
-    onSave(initialData?._id, formData);
+    setIsSaving(true);
+    
+    try {
+  
+        await onSave(initialData?._id, formData); 
+        
+     
+        const successMsg = isEditing 
+            ? `Your profile is updated successfully` 
+            : `New Agent "${formData.name}" created successfully`;
+            
+        toast.success(successMsg);
+
+ 
+        setTimeout(() => {
+            onCancel(); 
+        }, 500); 
+
+    } catch (error) {
+        console.error("Agent save error:", error);
+        toast.error("Failed to save agent details: " + (error.response?.data?.message || error.message));
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -62,13 +324,14 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
           type="button"
           onClick={onCancel}
           className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+          disabled={isSaving}
         >
           ✕
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Details Section */}
+      <form onSubmit={handleSubmit} className="space-y-6 mb-4">
+        {/* Personal Details Section */}
         <div className="space-y-4 border-b pb-4">
           <h4 className="text-lg font-semibold text-indigo-700">
             Personal Details
@@ -89,7 +352,8 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
               required
               value={formData.name}
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+              disabled={isSaving}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border disabled:bg-gray-100"
             />
           </div>
 
@@ -108,11 +372,12 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
               required
               value={formData.email}
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+              disabled={isSaving}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border disabled:bg-gray-100"
             />
           </div>
 
-          {/* 🔔 NEW: Phone Input */}
+          {/* Phone Input */}
           <div>
             <label
               htmlFor="phone"
@@ -126,7 +391,8 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
               type="tel"
               value={formData.phone}
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+              disabled={isSaving}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border disabled:bg-gray-100"
             />
           </div>
 
@@ -165,11 +431,12 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
             </label>
             <input
               id="bankName"
-              name="bankDetails.bankName"
+              name="bankName"
               type="text"
-              value={formData.bankDetails?.bankName || ""}
+              value={formData.bankName || ""}
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+              disabled={isSaving}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border disabled:bg-gray-100"
             />
           </div>
 
@@ -183,29 +450,31 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
             </label>
             <input
               id="accountNumber"
-              name="bankDetails.accountNumber"
+              name="accountNumber"
               type="text"
-              value={formData.bankDetails?.accountNumber || ""}
+              value={formData.accountNumber || ""}
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+              disabled={isSaving}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border disabled:bg-gray-100"
             />
           </div>
 
           {/* IFSC Code */}
           <div>
             <label
-              htmlFor="ifsc"
+              htmlFor="ifscCode"
               className="block text-sm font-medium text-gray-700"
             >
               IFSC Code
             </label>
             <input
-              id="ifsc"
-              name="bankDetails.ifsc"
+              id="ifscCode"
+              name="ifscCode"
               type="text"
-              value={formData.bankDetails?.ifsc || ""}
+              value={formData.ifscCode || ""}
               onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+              disabled={isSaving}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border disabled:bg-gray-100"
             />
           </div>
         </div>
@@ -214,21 +483,31 @@ const AgentForm = ({ initialData, onSave, onCancel }) => {
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 transition-colors"
+            disabled={isSaving}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 transition-colors"
+            disabled={isSaving}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2 justify-center"
           >
-            {isEditing ? "Save Changes" : "Create Agent"}
+            {isSaving ? (
+                <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Saving...
+                </>
+            ) : (
+                isEditing ? "Save Changes" : "Create Agent"
+            )}
           </button>
         </div>
       </form>
     </div>
   );
 };
+
 
 const AgentEditFormModal = ({ agent, onClose, onSave }) => {
   if (!agent) return null;
@@ -250,20 +529,33 @@ const AgentEditFormModal = ({ agent, onClose, onSave }) => {
     </div>
   );
 };
-const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
+
+
+
+// AgentList Component (UPDATED TOASTER POSITION TO "center")
+
+const AgentList = ({ agents = [], onDelete, onUpdate }) => {
   const navigate = useNavigate();
   const [copiedCode, setCopiedCode] = useState(null);
 
   const [editingAgentId, setEditingAgentId] = useState(null);
   const agentToEdit = agents.find((agent) => agent._id === editingAgentId);
 
+  // NEW STATE FOR PAYMENT MODAL
+  const [agentToPay, setAgentToPay] = useState(null);
+  const showPaymentModal = !!agentToPay;
+
   const handleEditAgent = (agentId) => {
     setEditingAgentId(agentId);
   };
 
   const handleSaveAgent = (agentId, updatedData) => {
-    onUpdate(agentId, updatedData);
-    setEditingAgentId(null);
+    return onUpdate(agentId, updatedData); 
+  };
+
+  // Handle Pay Now Button Click (Opens Modal)
+  const handlePayNow = (agent) => {
+    setAgentToPay(agent);
   };
 
   // Copy referral code to clipboard
@@ -271,19 +563,12 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
     try {
       await navigator.clipboard.writeText(code);
       setCopiedCode(code);
+      toast.success("Code copied!");
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
+      toast.error("Failed to copy code.");
     }
-  };
-
-  // Helper to format currency (INR)
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-    }).format(amount || 0);
   };
 
   const handleStatusChange = (agentId, newStatus) => {
@@ -311,11 +596,23 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
 
   return (
     <div className="space-y-4 px-2 sm:px-0">
+      {/* 🛑 TOASTER POSITION CHANGED TO "center" */}
+      <Toaster position="center" reverseOrder={false} /> 
+
       {agentToEdit && (
         <AgentEditFormModal
           agent={agentToEdit}
           onClose={() => setEditingAgentId(null)}
           onSave={handleSaveAgent}
+        />
+      )}
+
+      {/* Payment Modal Display */}
+      {showPaymentModal && (
+        <PaymentModalForList
+          agent={agentToPay}
+          onClose={() => setAgentToPay(null)}
+          onUpdate={onUpdate}
         />
       )}
 
@@ -325,6 +622,8 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
           All Agents ({agents.length})
         </h3>
       </div>
+
+      {/* Desktop Table View (lg) */}
       <div className="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -419,6 +718,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-xs xl:text-sm text-right text-green-600 font-medium">
                       {formatCurrency(paidTillDate)}
                     </td>
+                    {/* Pending Amount Cell (lg) */}
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-xs xl:text-sm text-right font-semibold">
                       <div className="flex flex-col items-end">
                         <span
@@ -432,7 +732,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
                         </span>
                         {pendingAmount > 0 && (
                           <button
-                            onClick={() => onPay(agent)}
+                            onClick={() => handlePayNow(agent)}
                             className="mt-1 px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors flex items-center gap-1"
                           >
                             <IndianRupee size={14} /> Pay
@@ -457,7 +757,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
                       </select>
                     </td>
 
-                    {/* Actions - UPDATED EDIT BUTTON */}
+                    {/* Actions */}
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-1.5 xl:gap-2">
                         <button
@@ -491,6 +791,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
         </div>
       </div>
 
+      {/* Tablet Table View (md to lg) */}
       <div className="hidden md:block lg:hidden bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -557,7 +858,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
                       </div>
                     </td>
 
-                    {/* Code, Refs, Earnings, Pending... (No Change) */}
+                    {/* Code, Refs, Earnings... */}
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <span className="text-xs font-mono font-semibold text-indigo-800">
@@ -590,6 +891,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
                         {formatCurrency(paidTillDate)}
                       </div>
                     </td>
+                    {/* Pending Amount Cell (md) */}
                     <td className="px-4 py-3 text-right">
                       <div
                         className={`text-xs font-bold ${
@@ -600,7 +902,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
                       </div>
                       {pendingAmount > 0 && (
                         <button
-                          onClick={() => onPay(agent)}
+                          onClick={() => handlePayNow(agent)}
                           className="mt-1 px-2 py-0.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors"
                         >
                           Pay
@@ -759,7 +1061,7 @@ const AgentList = ({ agents = [], onDelete, onUpdate, onPay }) => {
               <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
                 {pendingAmount > 0 && (
                   <button
-                    onClick={() => onPay(agent)}
+                    onClick={() => handlePayNow(agent)}
                     className="flex-1 px-3 py-2 text-xs sm:text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors flex items-center justify-center gap-1.5"
                   >
                     <IndianRupee size={16} /> Pay Now
