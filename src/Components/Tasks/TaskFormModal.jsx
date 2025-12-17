@@ -65,9 +65,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const dispatch = useDispatch();
   const employees = useSelector((state) => state.tasks.assignees);
 
-  // 🔥 IMPORTANT: Agar initialData mein clientName nahi hai, to fetch karo
   const [isLoadingFullData, setIsLoadingFullData] = useState(false);
-
   const [taskName, setTaskName] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("Medium");
@@ -93,15 +91,12 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [tempNewClientName, setTempNewClientName] = useState("");
   const [agents, setAgents] = useState([]);
-
-  // 🔥 PRIORITY 1: Sabse pehle complete task data fetch karo if editing
   const [fullTaskData, setFullTaskData] = useState(null);
-  const [forceUpdate, setForceUpdate] = useState(0); // Force re-render trigger
-  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false); // Track if we tried to fetch
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
   useEffect(() => {
     const fetchCompleteTaskData = async () => {
-      // Agar edit mode hai (initialData hai) aur _id hai
       if (initialData && initialData._id && !hasAttemptedFetch) {
         console.log("🔍 Edit mode detected. Fetching complete task data...");
         setIsLoadingFullData(true);
@@ -127,10 +122,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             console.log("✅ Client Name from API:", fullData.clientName);
             console.log("✅ Client ID from API:", fullData.clientId);
 
-            // Store full data
             setFullTaskData(fullData);
-
-            // Immediately set all form fields
             setTaskName(fullData.taskName || initialData.taskName || "");
             setWorkDesc(fullData.workDesc || initialData.workDesc || "");
             setDueDate(
@@ -163,7 +155,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               fullData.repeatType || initialData.repeatType || "Monthly"
             );
 
-            // 🎯 MOST IMPORTANT: Set client data - try API first, fallback to initialData
             const finalClientName =
               fullData.clientName || initialData.clientName || "";
             const finalClientId =
@@ -175,7 +166,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                 "🎯 Setting clientId:",
                 finalClientId || "No ID found"
               );
-
               setClientName(finalClientName);
               setClientId(finalClientId);
             } else {
@@ -210,23 +200,19 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             );
           } else {
             console.error("❌ API returned error:", response.status);
-            // Fallback to initialData
             useInitialDataDirectly();
           }
         } catch (error) {
           console.error("❌ Failed to fetch complete task:", error);
-          // Fallback to initialData
           useInitialDataDirectly();
         } finally {
           setIsLoadingFullData(false);
         }
       } else if (!initialData) {
-        // New task mode
         console.log("✅ New task mode - no fetch needed");
       }
     };
 
-    // Fallback function to use initialData directly
     const useInitialDataDirectly = () => {
       if (initialData) {
         console.log("⚠️ Using initialData directly as fallback");
@@ -279,10 +265,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     };
 
     fetchCompleteTaskData();
-  }, [initialData?._id, hasAttemptedFetch]); // Only run when _id changes
+  }, [initialData?._id, hasAttemptedFetch]);
 
-  // 🔥 Jab clientOptions load ho jayein aur clientName hai but clientId nahi,
-  // to options se clientId extract karo
   useEffect(() => {
     if (clientName && !clientId && clientOptions.length > 0) {
       const matchingOption = clientOptions.find(
@@ -299,7 +283,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     dispatch(fetchAssignees());
   }, [dispatch]);
 
-  // Fetch Clients and Agents data
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     const config = {
@@ -344,16 +327,13 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     fetchAgentData();
   }, [dispatch]);
 
-  // Initialize form with initialData for editing - AB YE SKIP HO JAYEGA kyunki fetch wala handle kar raha hai
   useEffect(() => {
-    // Agar already fetch ho chuka hai to ye skip kar do
     if (fullTaskData) {
       console.log("⏭️ Skipping initialData useEffect - already have full data");
       return;
     }
 
     if (initialData && !initialData._id) {
-      // Agar _id nahi hai to direct data use karo (shouldn't happen normally)
       console.log("🔍 Using initialData directly (no _id found)");
 
       setTaskName(initialData.taskName || "");
@@ -575,11 +555,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
 
   return (
     <div className="fixed inset-0 z-[1000] bg-black/40 p-3 sm:p-4 md:p-6 flex items-center justify-center font-inter overflow-y-auto ">
-      <div
-        className="w-full max-w-4xl bg-white rounded-none sm:rounded-2xl border border-slate-200 shadow-2xl
-                       flex flex-col max-h-[80vh]"
-      >
-        {/* Header */}
+      <div className="w-full max-w-4xl bg-white rounded-none sm:rounded-2xl border border-slate-200 shadow-2xl flex flex-col max-h-[80vh]">
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-2xl border-b border-slate-200 bg-white/90 backdrop-blur px-4 sm:px-6 py-2">
           <div>
             <h3 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900">
@@ -599,7 +575,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           </button>
         </div>
 
-        {/* Body */}
         <div className="px-4 sm:px-6 py-5 space-y-6 flex-1 overflow-y-auto">
           {isLoadingFullData && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-2">
@@ -611,7 +586,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {/* Task Name */}
             <div>
               <label className={labelClass} htmlFor="taskName">
                 Task Name <span className="text-red-500">*</span>
@@ -627,7 +601,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               />
             </div>
 
-            {/* Work Description */}
             <div>
               <label className={labelClass} htmlFor="workDesc">
                 Work Description
@@ -642,7 +615,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               />
             </div>
 
-            {/* Department */}
             <div>
               <label className={labelClass}>Task Department</label>
               <div className="py-1">
@@ -656,7 +628,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               </p>
             </div>
 
-            {/* Client - CreatableSelect */}
             <div>
               <label className={labelClass}>Client Name</label>
               <CreatableSelect
@@ -672,7 +643,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                 }}
                 value={(() => {
                   if (!clientName) return null;
-
                   const foundOption = clientOptions.find(
                     (o) => o.value === clientName
                   );
@@ -680,7 +650,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                     label: clientName,
                     value: clientName,
                   };
-
                   return finalValue;
                 })()}
                 placeholder="Select client or type to create..."
@@ -690,25 +659,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               />
             </div>
 
-            {/* Client ID - Only show when a client is selected */}
-            {clientName && (
-              <div>
-                <label className={labelClass} htmlFor="clientId">
-                  Client ID
-                </label>
-                <input
-                  id="clientId"
-                  type="text"
-                  placeholder="Client ID will appear here"
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  className={`${inputClass} bg-slate-50`}
-                  readOnly={false}
-                />
-              </div>
-            )}
-
-            {/* Task Code */}
             <div>
               <label className={labelClass}>Task Code</label>
               <TaskCodeSelector
@@ -717,7 +667,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               />
             </div>
 
-            {/* Due Date */}
             <div>
               <label className={labelClass} htmlFor="dueDate">
                 Due Date <span className="text-red-500">*</span>
@@ -732,7 +681,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               />
             </div>
 
-            {/* Priority */}
             <div>
               <label className={labelClass} htmlFor="priority">
                 Priority
@@ -749,7 +697,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               </select>
             </div>
 
-            {/* Status */}
             <div>
               <label className={labelClass} htmlFor="status">
                 Status
@@ -767,7 +714,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               </select>
             </div>
 
-            {/* Repetitive toggle */}
             <div className="md:col-span-2">
               <label className="flex items-center gap-3 cursor-pointer">
                 <div className="relative">
@@ -802,7 +748,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             </div>
           </div>
 
-          {/* Assignees */}
           <div>
             <label className={labelClass}>
               Assign to <span className="text-red-500">*</span>
@@ -833,7 +778,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
             />
           </div>
 
-          {/* Assigned By */}
           <div>
             <label className={labelClass}>Assigned By (Admin)</label>
             <Select
@@ -856,7 +800,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="sticky bottom-0 flex items-center justify-end gap-3 rounded-2xl border-t border-slate-200 bg-white px-4 sm:px-6 py-3">
           <button
             onClick={onClose}
@@ -880,7 +823,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         </div>
       </div>
 
-      {/* Repeat Popup */}
       {showRepeatPopup && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-[1100] p-3">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-5 sm:p-6">
@@ -990,7 +932,6 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
         </div>
       )}
 
-      {/* Create Client Modal */}
       {showCreateClientModal && (
         <CreateClientModal
           client={{ name: tempNewClientName }}
