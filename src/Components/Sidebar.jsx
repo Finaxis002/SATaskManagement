@@ -216,7 +216,7 @@ const Sidebar = () => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-gray-200 shadow-lg pb-safe">
         <div
           className={`grid ${
-            role === "admin" ? "grid-cols-6" : "grid-cols-5"
+            role === "admin" ? "grid-cols-7" : "grid-cols-5"
           } gap-0 px-1 py-2`}
         >
           {role === "admin" ? (
@@ -231,9 +231,7 @@ const Sidebar = () => {
                 label="Tasks"
                 to="/all-tasks"
               />
-              {/* 🌟 New Agent Mobile Nav Item (Admin) 🌟 */}
               <MobileNavItem icon={<FaUserTie />} label="Agent" to="/agent" />
-              {/* 🌟 End New Agent Mobile Nav Item 🌟 */}
               <MobileNavItem
                 icon={<FaBriefcase />}
                 label="Clients"
@@ -246,11 +244,15 @@ const Sidebar = () => {
                 badge={pendingLeaveCount}
               />
               <MobileNavItem
+                icon={<FaCheckCircle />}
+                label="Completed"
+                to="/completed"
+              />
+              <MobileNavItem
                 icon={<FaMoneyBill />}
                 label="Invoices"
                 to="/viewinvoicewithotp"
               />
-               {/* <MobileNavItem icon={<FaHome />} label="Home" to="/" /> */}
             </>
           ) : (
             <>
@@ -260,9 +262,7 @@ const Sidebar = () => {
                 label="Tasks"
                 to="/all-tasks"
               />
-              {/* 🌟 New Agent Mobile Nav Item (Non-Admin) 🌟 */}
               <MobileNavItem icon={<FaUserTie />} label="Agent" to="/agent" />
-              {/* 🌟 End New Agent Mobile Nav Item 🌟 */}
               <MobileNavItem
                 icon={<FaBriefcase />}
                 label="Clients"

@@ -506,6 +506,14 @@ const TodaysList = memo(forwardRef(function TodaysList({ rows = [], setEvents, u
         return;
       }
 
+      // --- VALIDATION: Check User ID ---
+      if (!userId) {
+        alert("User ID missing. Please log out and log in again.");
+        console.error("Save Event Failed: userId is missing/null.");
+        setSaving(false);
+        return;
+      }
+
       const start = new Date(`${newEvent.date}T${newEvent.startTime}`);
       const end = new Date(`${newEvent.date}T${newEvent.endTime}`);
       if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
@@ -517,6 +525,12 @@ const TodaysList = memo(forwardRef(function TodaysList({ rows = [], setEvents, u
       await ensureLinkedOrPrompt();
 
       const token = lsGet(K.TOKEN);
+      if (!token) {
+        alert("Auth token missing. Please connect Google Calendar again.");
+        setSaving(false);
+        return;
+      }
+
       const userEmail = lsGet(K.GOOGLE_EMAIL) || "";
 
       const payload = {
@@ -529,6 +543,8 @@ const TodaysList = memo(forwardRef(function TodaysList({ rows = [], setEvents, u
         guestEmails: (newEvent.guests || []).map((e) => e.trim()).filter(Boolean),
         snoozeBefore: Number.parseInt(newEvent.snoozeBefore, 10) || 30,
       };
+
+      console.log("Sending Event Payload:", payload);
 
       const isEdit = Boolean(editingEventId);
       const tempId = `tmp_${Date.now()}`;
@@ -583,8 +599,8 @@ const TodaysList = memo(forwardRef(function TodaysList({ rows = [], setEvents, u
       }
 
       if (!res.ok) {
-        alert(`Failed to save event (${res.status}). Kept locally.`);
-        return;
+        console.error("Server Error Response:", res.status, res.statusText);
+        alert(`Failed to save event (Status: ${res.status}). Data kept locally.`);
       }
 
       const data = await res.json().catch(() => ({}));
@@ -599,6 +615,7 @@ const TodaysList = memo(forwardRef(function TodaysList({ rows = [], setEvents, u
         return next;
       });
     } catch (err) {
+      console.error("Save Event Network Error:", err);
       if (err?.message !== "Google not linked") alert("Network error — Event stored locally.");
     } finally {
       setSaving(false);
@@ -977,11 +994,11 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="xl:hidden mt-8">
+        {/* <div className="xl:hidden mt-8">
           <Suspense fallback={<ComponentLoader />}>
             <StickyNotesDashboard />
           </Suspense>
-        </div>
+        </div> */}
       </div>
 
       <QuickActionsPanel onCreateEvent={handleCreateEvent} />

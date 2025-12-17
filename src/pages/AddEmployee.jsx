@@ -185,7 +185,7 @@ const AddEmployee = ({
       <div className="flex items-center justify-center min-h-screen px-4 py-6 sm:px-6 lg:px-8">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 transition-opacity"
           onClick={handleCloseModal}
         ></div>
 
