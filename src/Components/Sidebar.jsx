@@ -11,7 +11,8 @@ import {
   FaClock,
   FaMoneyBill,
   FaGolfBall,
-  FaUserTie, 
+  FaUserTie,
+  FaRegEnvelopeOpen, // Support Icon
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket";
@@ -91,9 +92,8 @@ const Sidebar = () => {
                     className="font-bold text-lg leading-tight"
                     style={{ color: "#4332d2" }}
                   >
-                  Task Management
+                    Task Management
                   </span>
-                  
                 </div>
               </div>
             ) : (
@@ -132,14 +132,20 @@ const Sidebar = () => {
             expanded={expanded}
           />
           
-          {/* 🌟 New Agent Sidebar Item 🌟 */}
           <SidebarItem
             icon={<FaUserTie />}
             label="Agent"
             to="/agent"
             expanded={expanded}
           />
-          
+
+          {/* Developer Support Item */}
+          <SidebarItem
+            icon={<FaRegEnvelopeOpen />}
+            label="Support Requests"
+            to="/developer-support"
+            expanded={expanded}
+          />
 
           <SidebarItem
             icon={<FaBriefcase />}
@@ -216,14 +222,14 @@ const Sidebar = () => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-gray-200 shadow-lg pb-safe">
         <div
           className={`grid ${
-            role === "admin" ? "grid-cols-7" : "grid-cols-5"
+            role === "admin" ? "grid-cols-8" : "grid-cols-6"
           } gap-0 px-1 py-2`}
         >
           {role === "admin" ? (
             <>
               <MobileNavItem
                 icon={<FaUsers />}
-                label="All Users"
+                label="Users"
                 to="/all-employees"
               />
               <MobileNavItem
@@ -232,6 +238,11 @@ const Sidebar = () => {
                 to="/all-tasks"
               />
               <MobileNavItem icon={<FaUserTie />} label="Agent" to="/agent" />
+              <MobileNavItem 
+                icon={<FaRegEnvelopeOpen />} 
+                label="Support" 
+                to="/developer-support" 
+              />
               <MobileNavItem
                 icon={<FaBriefcase />}
                 label="Clients"
@@ -245,7 +256,7 @@ const Sidebar = () => {
               />
               <MobileNavItem
                 icon={<FaCheckCircle />}
-                label="Completed"
+                label="Done"
                 to="/completed"
               />
               <MobileNavItem
@@ -263,6 +274,11 @@ const Sidebar = () => {
                 to="/all-tasks"
               />
               <MobileNavItem icon={<FaUserTie />} label="Agent" to="/agent" />
+              <MobileNavItem 
+                icon={<FaRegEnvelopeOpen />} 
+                label="Support" 
+                to="/developer-support" 
+              />
               <MobileNavItem
                 icon={<FaBriefcase />}
                 label="Clients"
@@ -320,7 +336,7 @@ const MobileNavItem = ({ icon, label, to, badge }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `flex flex-col items-center justify-center py-2 px-1 transition-all duration-150`
+      `flex flex-col items-center justify-center py-2 px-1 transition-all duration-150 relative`
     }
     style={({ isActive }) => ({
       color: isActive ? "#4332d2" : "#6b7280",
@@ -330,8 +346,8 @@ const MobileNavItem = ({ icon, label, to, badge }) => (
     <span className="text-[9px] font-medium text-center leading-tight">
       {label}
     </span>
-    {badge && (
-      <span className="absolute top-1 right-3 min-w-[14px] h-[14px] bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+    {badge > 0 && (
+      <span className="absolute top-1 right-2 min-w-[14px] h-[14px] bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
         {badge > 9 ? "9+" : badge}
       </span>
     )}
