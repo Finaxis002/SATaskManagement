@@ -11,28 +11,68 @@
   <meta http-equiv="Expires" content="0">
 
   <link rel="icon" type="image/png" href="/favicon.ico?cb=__CACHE_BUSTER__" />
-   <!-- External resources with cache busting -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap&cb=BUILD_TIMESTAMP" rel="stylesheet">
+  <!-- External resources with cache busting -->
+  <!-- <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap&cb=BUILD_TIMESTAMP" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap&cb=BUILD_TIMESTAMP" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap&cb=BUILD_TIMESTAMP" rel="stylesheet">
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css?v=1.3.6&cb=BUILD_TIMESTAMP" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap&cb=BUILD_TIMESTAMP" rel="stylesheet"> -->
 
+  <link rel="preload" href="/fonts/roboto-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/roboto-medium.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/roboto-bold.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+    /* Critical font-face declaration */
+    @font-face {
+      font-family: 'Roboto';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('/fonts/roboto-regular.woff2') format('woff2');
+    }
+
+    /* System font fallback for immediate rendering */
+    * {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+        Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    /* This class will be added when fonts are loaded */
+    .fonts-loaded * {
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+        Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+  </style>
+  <!-- <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css?v=1.3.6&cb=BUILD_TIMESTAMP" rel="stylesheet"> -->
+  <link rel="preload" href="https://cdn.quilljs.com/1.3.6/quill.snow.css?v=1.3.6&cb=BUILD_TIMESTAMP" as="style"
+    onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css?v=1.3.6&cb=BUILD_TIMESTAMP" rel="stylesheet">
+  </noscript>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Task Management</title>
   <!-- ======================================== -->
   <!-- CACHE BUSTING SCRIPT (Runs immediately) -->
   <!-- ======================================== -->
- <script>
+  <script>
     // Version info (will be replaced by Vite)
     const APP_VERSION = 'APP_VERSION_PLACEHOLDER';
     const BUILD_TIMESTAMP = 'BUILD_TIMESTAMP_PLACEHOLDER';
-    
+
     // Store in window for React
     window.APP_VERSION = APP_VERSION;
     window.BUILD_TIMESTAMP = BUILD_TIMESTAMP;
-    
+
     console.log('🏷️ App Version:', APP_VERSION);
+    // 🔥 NEW: Font loading detection
+    document.fonts.ready.then(() => {
+      console.log('✅ Fonts loaded');
+      document.documentElement.classList.add('fonts-loaded');
+    }).catch(() => {
+      // Fallback after 3 seconds
+      setTimeout(() => {
+        document.documentElement.classList.add('fonts-loaded');
+      }, 3000);
+    });
   </script>
 
 
