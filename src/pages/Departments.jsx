@@ -12,6 +12,7 @@ import {
   FaCalendarAlt,
   FaSpinner,
 } from "react-icons/fa";
+import { FiFileText } from "react-icons/fi"; // 👈 New icon for templates
 import Swal from "sweetalert2";
 
 // Lazy load heavy components
@@ -19,6 +20,7 @@ const ReportGeneration = lazy(() => import("../Components/ReportGeneration"));
 const LeaveManagement = lazy(() => import("./LeaveManagement"));
 const MailCreation = lazy(() => import("./MailCreation"));
 const BankDetails = lazy(() => import("./BankDetails"));
+const MessageTemplatesManager = lazy(() => import("../Components/Tasks/MessageTemplatesManager")); // 👈 New import
 
 // ✅ Simple cache utility
 const cache = {
@@ -178,10 +180,11 @@ const Departments = () => {
     fetchPendingLeaveCount();
   }, [fetchPendingLeaveCount]);
 
-  // ✅ Memoized tabs
+  // ✅ Memoized tabs with Message Templates added
   const tabs = useMemo(() => [
     { key: "department", label: "Department Overview", icon: <FaUsers /> },
     { key: "code", label: "Code Overview", icon: <FaCode /> },
+    { key: "templates", label: "Message Templates", icon: <FiFileText /> }, // 👈 New tab
     { key: "report", label: "Report Generation", icon: <FaChartBar /> },
     { key: "Manage Leave", label: "Leave Management", icon: <FaCalendarAlt /> },
     { key: "mail", label: "Mail User Creation", icon: <FaEnvelope /> },
@@ -516,6 +519,7 @@ const Departments = () => {
               )}
 
               <Suspense fallback={<LoadingSpinner />}>
+                {activeTab === "templates" && role === "admin" && <MessageTemplatesManager />} {/* 👈 New tab content */}
                 {activeTab === "report" && role === "admin" && <ReportGeneration />}
                 {activeTab === "Manage Leave" && role === "admin" && <LeaveManagement />}
                 {activeTab === "mail" && role === "admin" && <MailCreation />}
