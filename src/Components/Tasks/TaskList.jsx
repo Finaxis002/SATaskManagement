@@ -5,12 +5,8 @@ import { faPen, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FaTrashAlt, FaExclamationCircle, FaSpinner, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { io } from "socket.io-client";
-// NOTE: These must be imported from your project structure.
-// We are assuming the Redux logic is properly set up in the background.
 import { fetchUsers } from "../../redux/userSlice";
 import { fetchDepartments } from "../../redux/departmentSlice";
-// NOTE: These external UI components must be provided for a complete app.
-// We will use mock data or inline logic for demonstration.
 import FilterSection from "./FilterSection";
 import MessagePopup from "./MessagePopup";
 import StatusDropdownPortal from "../StatusDropdownPortal";

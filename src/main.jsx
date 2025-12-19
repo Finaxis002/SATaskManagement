@@ -1,6 +1,7 @@
 import React, { useEffect } from "react"; // ✅ This fixes the 'React is not defined' error
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import './css/font.css'
 import "./index.css";
 import App from "./App.jsx";
 import { Provider } from "react-redux"; // ✅ Correct provider import
