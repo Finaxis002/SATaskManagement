@@ -714,7 +714,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
               </select>
             </div>
 
-            <div className="md:col-span-2">
+            {/* <div className="md:col-span-2">
               <label className="flex items-center gap-3 cursor-pointer">
                 <div className="relative">
                   <input
@@ -745,7 +745,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
                     : "Is this a repetitive task?"}
                 </span>
               </label>
-            </div>
+            </div> */}
           </div>
 
           <div>
