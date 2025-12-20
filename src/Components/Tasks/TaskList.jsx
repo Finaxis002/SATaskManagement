@@ -16,8 +16,8 @@ import axios from "../../utils/secureAxios";
 const socket = io("https://taskbe.sharda.co.in");
 const ITEMS_PER_PAGE = 50; // Increased for better virtual scroll
 const MOBILE_ITEMS_PER_PAGE = 20;
-const BATCH_SIZE = 500; // For fetching in batches
-const CONCURRENT_BATCHES = 1; // Number of parallel requests
+// const BATCH_SIZE = 500; // For fetching in batches
+// const CONCURRENT_BATCHES = 1; // Number of parallel requests
 const DEBOUNCE_DELAY = 300; // Delay for filter changes
 const BASE_URL = "https://taskbe.sharda.co.in/api/tasks";
 
