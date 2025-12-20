@@ -21,84 +21,7 @@ const CONCURRENT_BATCHES = 1; // Number of parallel requests
 const DEBOUNCE_DELAY = 300; // Delay for filter changes
 const BASE_URL = "https://taskbe.sharda.co.in/api/tasks";
 
-// Add these helper functions ABOVE the TaskList component
-const fetchAllTasksParallel = async (signal, baseUrl, userFilter = {}) => {
-    try {
-        console.log("🚀 Starting parallel fetch of ALL tasks...");
 
-        // First, get total count
-        const countResponse = await fetch(
-            `${baseUrl}/count?${new URLSearchParams(userFilter)}`,
-            { signal, headers: { 'Content-Type': 'application/json' } }
-        );
-
-        if (!countResponse.ok) throw new Error(`HTTP error! status: ${countResponse.status}`);
-
-        const countData = await countResponse.json();
-        const totalCount = countData.total || 0;
-
-        console.log(`📊 Total tasks in database: ${totalCount}`);
-
-        if (totalCount === 0) return [];
-
-        // Calculate batches needed
-        const totalBatches = Math.ceil(totalCount / BATCH_SIZE);
-        console.log(`🔄 Fetching ${totalBatches} batches (${BATCH_SIZE} tasks each)`);
-
-        // Create promises for all batches
-        const batchPromises = [];
-
-        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-            const skip = batchIndex * BATCH_SIZE;
-            const params = new URLSearchParams({
-                ...userFilter,
-                limit: BATCH_SIZE.toString(),
-                skip: skip.toString()
-            });
-
-            const batchPromise = fetch(
-                `${baseUrl}/bulk?${params}`,
-                { signal, headers: { 'Content-Type': 'application/json' } }
-            )
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                    return res.json();
-                })
-                .then(data => {
-                    console.log(`✅ Batch ${batchIndex + 1}/${totalBatches}: ${data.tasks?.length || 0} tasks`);
-                    return data.tasks || [];
-                });
-
-            batchPromises.push(batchPromise);
-
-            // Limit concurrent requests
-            if (batchIndex % CONCURRENT_BATCHES === 0 && batchIndex > 0) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-        }
-
-        // Wait for all batches
-        const batchResults = await Promise.all(batchPromises);
-
-        // Combine all tasks
-        let allTasks = [];
-        batchResults.forEach(batch => {
-            if (Array.isArray(batch)) {
-                allTasks = [...allTasks, ...batch];
-            }
-        });
-
-        console.log(`🎉 Successfully loaded ${allTasks.length} tasks`);
-        return allTasks;
-
-    } catch (err) {
-        if (err.name !== 'AbortError') {
-            console.error("❌ Parallel fetch failed:", err);
-            throw err;
-        }
-        return [];
-    }
-};
 
 const fetchAllTasksSingle = async (signal, baseUrl, userFilter = {}) => {
     try {
@@ -130,7 +53,7 @@ const fetchAllTasksSingle = async (signal, baseUrl, userFilter = {}) => {
 
 const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride, hideCompleted }) => {
     // Add at the VERY beginning of TaskList function:
-   
+
     // Redux
     const dispatch = useDispatch();
     const users = useSelector((state) => state.users.list);
@@ -620,7 +543,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         };
     }, [highScrollIndex, loading, isMobileView, allHighTasks.length]);
 
-    // ⭐️ Intersection Observer for Medium/Low Virtual Scroll (Desktop)
+    // // ⭐️ Intersection Observer for Medium/Low Virtual Scroll (Desktop)
     useEffect(() => {
         if (isMobileView || loading || !otherObserverTarget.current) return;
 
@@ -1110,9 +1033,11 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 </td>
 
                 {/* Work Date */}
-                <td className="py-3 px-2 text-xs text-gray-700">
-                    {new Date(task.assignedDate).toLocaleDateString("en-GB")}
-                </td>
+                {/* <td className="py-3 px-2 text-xs text-gray-700">
+                   
+                    {formatDate(task.assignedDate)}
+                </td> */}
+                 {/* {new Date(task.assignedDate).toLocaleDateString("en-GB")} */}
 
                 {/* Due Date */}
                 <td className="py-3 px-2 text-xs text-gray-700 font-semibold">
@@ -1376,12 +1301,14 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
 
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
+                        {/* <div>
                             <span className="text-xs font-semibold text-gray-600 block mb-1">Work Date</span>
                             <div className="text-sm text-gray-900 font-medium">
-                                {new Date(task.assignedDate).toLocaleDateString("en-GB")}
+                               
+                                {formatDate(task.assignedDate)}
                             </div>
-                        </div>
+                        </div> */}
+                         {/* {new Date(task.assignedDate).toLocaleDateString("en-GB")} */}
                         <div>
                             <span className="text-xs font-semibold text-gray-600 block mb-1">Due Date</span>
                             <div className="text-sm text-gray-900 font-medium">
@@ -1640,7 +1567,6 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                 <col style={{ width: "8%" }} />
                                 <col style={{ width: "10%" }} />
                                 <col style={{ width: "7%" }} />
-                                <col style={{ width: "7%" }} />
                                 <col style={{ width: "8%" }} />
                                 <col style={{ width: "7%" }} />
                                 <col style={{ width: "12%" }} />
@@ -1654,7 +1580,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                     <th className="py-3 px-2 text-xs font-black font-bold">#</th>
                                     <th className="py-3 px-2 text-left text-xs font-black font-bold">TASK</th>
                                     <th className="py-3 px-2 text-left text-xs font-black font-bold">DESCRIPTION</th>
-                                    <th className="py-3 px-2 text-left text-xs font-black font-bold">WORK DATE</th>
+                                    {/* <th className="py-3 px-2 text-left text-xs font-black font-bold">WORK DATE</th> */}
                                     <th
                                         className="py-3 px-2 text-left text-xs font-black cursor-pointer hover:text-indigo-600 font-bold"
                                         onClick={() => setDueDateSortOrder(prev => prev === "asc" ? "desc" : "asc")}
@@ -1674,32 +1600,32 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             <tbody>
                                 {initialLoading ? (
                                     <tr>
-                                        <td colSpan={11} className="py-20 text-center">
+                                        <td colSpan={10} className="py-20 text-center">
                                             <FaSpinner className="animate-spin h-10 w-10 mx-auto mb-3 text-indigo-600" />
                                             <p className="text-gray-600 font-bold">Loading tasks...</p>
                                         </td>
                                     </tr>
                                 ) : allTasks.length === 0 && !loading ? (
                                     <tr>
-                                        <td colSpan={11} className="text-center py-20">
+                                        <td colSpan={10} className="text-center py-20">
                                             <div className="text-6xl mb-4">📋</div>
                                             <p className="text-gray-500 font-black text-xl">No tasks assigned yet</p>
                                         </td>
                                     </tr>
                                 ) : filteredTasks.length === 0 && allTasks.length > 0 ? (
                                     <tr>
-                                        <td colSpan={11} className="text-center py-20">
+                                        <td colSpan={10} className="text-center py-20">
                                             <div className="text-6xl mb-4">🔍</div>
                                             <p className="text-gray-500 font-black text-xl">No tasks match your current filters.</p>
                                         </td>
                                     </tr>
                                 ) : (
                                     <>
-                                        {/* High Priority Tasks */}
+                                        
                                         {highTasks.length > 0 && (
                                             <>
                                                 <tr>
-                                                    <td colSpan={11} className="bg-gradient-to-r from-red-100 to-orange-100 text-red-900 font-black text-sm py-3 px-3 border-y-2 border-red-300 font-bold">
+                                                    <td colSpan={10} className="bg-gradient-to-r from-red-100 to-orange-100 text-red-900 font-black text-sm py-3 px-3 border-y-2 border-red-300 font-bold">
                                                         🔴 High Priority ({allHighTasks.length} total)
                                                     </td>
                                                 </tr>
@@ -1711,7 +1637,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
                                                 {highScrollIndex < allHighTasks.length && (
                                                     <tr ref={highObserverTarget} key="high-loading-trigger">
-                                                        <td colSpan={11} className="text-center py-4 bg-red-50/50">
+                                                        <td colSpan={10} className="text-center py-4 bg-red-50/50">
                                                             <FaSpinner className="animate-spin h-6 w-6 mx-auto text-red-600" />
                                                             <p className="text-xs text-red-700 mt-1">Loading more High Priority tasks...</p>
                                                         </td>
@@ -1720,11 +1646,11 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                             </>
                                         )}
 
-                                        {/* Medium Priority Tasks */}
+                                      
                                         {mediumTasks.length > 0 && (
                                             <>
                                                 <tr key="medium-header">
-                                                    <td colSpan={11} className="bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-900 font-black text-sm py-3 px-3 border-y-2 border-yellow-300 font-bold">
+                                                    <td colSpan={10} className="bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-900 font-black text-sm py-3 px-3 border-y-2 border-yellow-300 font-bold">
                                                         🟡 Medium Priority ({stats.mediumCount} total)
                                                     </td>
                                                 </tr>
@@ -1736,11 +1662,11 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                             </>
                                         )}
 
-                                        {/* Low Priority Tasks */}
+                                        
                                         {lowTasks.length > 0 && (
                                             <>
                                                 <tr key="low-header">
-                                                    <td colSpan={11} className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-900 font-black text-sm py-3 px-3 border-y-2 border-green-300 font-bold">
+                                                    <td colSpan={10} className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-900 font-black text-sm py-3 px-3 border-y-2 border-green-300 font-bold">
                                                         🟢 Low Priority ({stats.lowCount} total)
                                                     </td>
                                                 </tr>
@@ -1752,10 +1678,10 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                             </>
                                         )}
 
-                                        {/* Medium/Low Scroll Trigger */}
+                                        
                                         {otherScrollIndex < otherTasks.length && (
                                             <tr ref={otherObserverTarget} key="other-loading-trigger">
-                                                <td colSpan={11} className="text-center py-4">
+                                                <td colSpan={10} className="text-center py-4">
                                                     <FaSpinner className="animate-spin h-6 w-6 mx-auto text-indigo-600" />
                                                     <p className="text-xs text-indigo-700 mt-1">Loading more Medium/Low Priority tasks...</p>
                                                 </td>
@@ -1767,7 +1693,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                         </table>
                     </div>
 
-                    {/* Task Count Footer */}
+                   
                     <div className="bg-gray-50 border-t border-gray-200 px-6 py-3 flex justify-between items-center">
                         <span className="text-sm text-gray-600">
                             Showing {highTasks.length + mediumTasks.length + lowTasks.length} of {totalCount} tasks
@@ -1779,6 +1705,9 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                         )}
                     </div>
                 </div>
+
+
+
 
                 {/* --- MOBILE VIEW --- */}
                 <div className="lg:hidden mt-6 space-y-4">
