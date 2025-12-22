@@ -26,7 +26,6 @@ const mockTask = {
 };
 
 // --- CONFIGURATION: Phone Numbers Mapping ---
-// Yaha par humne naam aur number map kiye hain (Country code 91 ke saath bina space ke)
 const ASSIGNED_NUMBERS = {
   "CA Shraddha Atal": "917000148090",
   "CA Anunay Sharda": "917987021896",
@@ -34,7 +33,7 @@ const ASSIGNED_NUMBERS = {
 };
 
 // Default number agar assignedBy name list me na mile to
-const DEFAULT_WHATSAPP_NUMBER = "917000148090"; 
+const DEFAULT_WHATSAPP_NUMBER = "917999858202";
 
 // Document Library
 const DOC_LIBRARY = {
@@ -156,6 +155,9 @@ const MessagePopup = ({
   const [isLoadingClientId, setIsLoadingClientId] = useState(false);
   const [documentsExpanded, setDocumentsExpanded] = useState(false);
 
+  // NEW STATE: For controlling the "Show More" in the preview box
+  const [showAllSelectedDocs, setShowAllSelectedDocs] = useState(false);
+
   // Mobile Tab State
   const [activeTab, setActiveTab] = useState("compose");
 
@@ -176,6 +178,11 @@ const MessagePopup = ({
 
   const taskId = task?._id;
   const loggedInUserName = localStorage.getItem("name") || "Default User";
+
+  // NEW FUNCTION: Remove document from preview list
+  const handleRemoveDoc = (docValueToRemove) => {
+    setSelectedDocs((prev) => prev.filter((d) => d.value !== docValueToRemove));
+  };
 
   // Fetch templates
   useEffect(() => {
@@ -280,6 +287,7 @@ const MessagePopup = ({
 
   useEffect(() => {
     setSelectedDocs([]);
+    setShowAllSelectedDocs(false); // Reset expansion on type change
   }, [serviceKey, checklistType]);
 
   // Fetch client ID based on client name
@@ -416,10 +424,7 @@ const MessagePopup = ({
     const docsArray = selectedDocs.map((d) => d.value);
 
     // --- DYNAMIC NUMBER LOGIC STARTS HERE ---
-    // 1. Get the current assigned person's name
     const assigneeName = assignedBy ? assignedBy.trim() : "";
-    
-    // 2. Lookup the number in our list, fallback to default if not found
     const whatsappNumber = ASSIGNED_NUMBERS[assigneeName] || DEFAULT_WHATSAPP_NUMBER;
     // --- DYNAMIC NUMBER LOGIC ENDS HERE ---
 
@@ -814,13 +819,13 @@ const MessagePopup = ({
             </div>
           </div>
 
-          {/* Compose Panel */}
+        {/* Compose Panel */}
           <div
             className={`${
-              activeTab === "compose" ? "block" : "hidden"
-            } lg:block w-full lg:w-[35%] bg-white border-r border-gray-100 overflow-y-auto`}
+              activeTab === "compose" ? "flex" : "hidden"
+            } lg:flex w-full lg:w-[35%] bg-white border-r border-gray-100 flex-col overflow-hidden`}
           >
-            <div className="p-3 sm:p-6 lg:p-6 h-full flex flex-col">
+            <div className="p-3 sm:p-6 lg:p-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
               <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
                 <div className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 bg-green-100 rounded-lg flex items-center justify-center">
                   <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4 text-green-600" />
@@ -831,7 +836,7 @@ const MessagePopup = ({
               </div>
 
               {/* Template Selector */}
-              <div className="mb-4">
+              <div className="mb-4 flex-shrink-0">
                 <button
                   onClick={() => setShowTemplates(!showTemplates)}
                   className="flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700 mb-3"
@@ -846,7 +851,7 @@ const MessagePopup = ({
                 </button>
 
                 {showTemplates && (
-                  <div className="space-y-2 max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-xl border border-gray-200">
+                  <div className="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-xl border border-gray-200">
                     {isLoadingTemplates ? (
                       <div className="text-center py-4 text-sm text-gray-500">
                         Loading templates...
@@ -893,7 +898,7 @@ const MessagePopup = ({
 
               {/* Message Input */}
               <div className="flex-1 flex flex-col min-h-0">
-                <div className="flex-1 relative min-h-[400px] sm:min-h-[200px]">
+                <div className="flex-1 relative min-h-[200px]">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -923,9 +928,9 @@ You can use Ctrl/Cmd + Enter to send quickly"
                   </div>
                 </div>
 
-                {/* Selected Documents Preview */}
+                {/* Selected Documents Preview - UPDATED WITH SHOW MORE & REMOVE */}
                 {selectedDocs.length > 0 && (
-                  <div className="mt-3 lg:mt-4 p-3 lg:p-4 bg-green-50 rounded-lg lg:rounded-xl border border-green-100">
+                  <div className="mt-3 lg:mt-4 p-3 lg:p-4 bg-green-50 rounded-lg lg:rounded-xl border border-green-100 flex-shrink-0">
                     <div className="flex items-center gap-2 mb-2">
                       <FileText className="w-3 h-3 lg:w-4 lg:h-4 text-green-600" />
                       <span className="text-xs lg:text-sm font-medium text-green-800">
@@ -934,15 +939,36 @@ You can use Ctrl/Cmd + Enter to send quickly"
                       </span>
                     </div>
                     <div className="text-xs text-green-600 space-y-1">
-                      {selectedDocs.slice(0, 3).map((doc, index) => (
-                        <div key={index} className="flex items-center gap-1">
-                          <ChevronRight className="w-3 h-3" />
-                          <span>{doc.label}</span>
+                      {/* Toggle Logic: Display all if expanded, otherwise first 3 */}
+                      {(showAllSelectedDocs ? selectedDocs : selectedDocs.slice(0, 3)).map((doc, index) => (
+                        <div key={index} className="flex items-center justify-between group">
+                          <div className="flex items-center gap-1">
+                            <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                            <span>{doc.label}</span>
+                          </div>
+                          
+                          {/* Remove Button */}
+                          <button 
+                            onClick={() => handleRemoveDoc(doc.value)} 
+                            className="p-1 hover:bg-green-200 rounded cursor-pointer text-green-700"
+                            title="Remove document"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
                       ))}
+
+                      {/* Show More / Show Less Button */}
                       {selectedDocs.length > 3 && (
-                        <div className="flex items-center gap-1 text-green-500">
-                          <span>... and {selectedDocs.length - 3} more</span>
+                        <div 
+                          onClick={() => setShowAllSelectedDocs(!showAllSelectedDocs)}
+                          className="flex items-center gap-1 text-green-500 cursor-pointer hover:text-green-700 mt-2 select-none font-medium"
+                        >
+                          <span>
+                            {showAllSelectedDocs 
+                              ? "Show less" 
+                              : `... and ${selectedDocs.length - 3} more`}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -950,7 +976,7 @@ You can use Ctrl/Cmd + Enter to send quickly"
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center pt-4 sm:pt-6 gap-3 sm:gap-0">
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center pt-4 sm:pt-6 gap-3 sm:gap-0 flex-shrink-0">
                   <div className="text-xs text-gray-500 text-center sm:text-left">
                     {message.trim() || selectedDocs.length > 0
                       ? "Ready to send"

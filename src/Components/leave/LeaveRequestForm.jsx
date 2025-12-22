@@ -117,11 +117,20 @@ export default function LeaveRequestForm() {
       return;
     }
 
+    // ✅ Format dates to YYYY-MM-DD to avoid timezone issues
+    const formatDateForAPI = (date) => {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const payload = {
       userId,
       userName,
-      fromDate: range[0].startDate,
-      toDate: range[0].endDate,
+      fromDate: formatDateForAPI(range[0].startDate),
+      toDate: formatDateForAPI(range[0].endDate),
       leaveDuration,
       leaveType: leaveDuration === "Full Day" ? leaveType : "Half Day Leave",
       comments,
