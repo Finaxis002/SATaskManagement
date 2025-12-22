@@ -1,50 +1,198 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
+import { FaRegBell, FaCheckCircle, FaClock } from "react-icons/fa";
+import { MdUpdate } from "react-icons/md";
+import { BsFillCircleFill } from "react-icons/bs";
 
-// ===== Lazy load icons - sirf jab zarurat ho tab load ho =====
-const FaClock = lazy(() => import("react-icons/fa").then(m => ({ default: m.FaClock })));
-const MdUpdate = lazy(() => import("react-icons/md").then(m => ({ default: m.MdUpdate })));
-const BsFillCircleFill = lazy(() => import("react-icons/bs").then(m => ({ default: m.BsFillCircleFill })));
-
-// ===== API Setup =====
+// ===== Optimized API Setup =====
 const api = axios.create({
   baseURL: "https://taskbe.sharda.co.in",
   withCredentials: true,
 });
 
-const token = localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
-if (token) {
-  api.defaults.headers.Authorization = `Bearer ${token}`;
-}
+api.interceptors.request.use((config) => {
+  const token =
+    localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-// ===== Socket singleton =====
-let socketInstance = null;
-const getSocket = () => {
-  if (!socketInstance) {
-    socketInstance = io("https://taskbe.sharda.co.in", {
-      withCredentials: true,
-      transports: ["websocket"], // Fast connection
-    });
+// Initialize socket outside component to prevent recreation
+const socket = io("https://taskbe.sharda.co.in", {
+  withCredentials: true,
+});
+
+// ===== Memoized NotificationItem with performance optimizations =====
+const NotificationItem = React.memo(
+  ({ notification, onMarkAsRead, selectedNotifications, toggleSelectNotification }) => {
+    const isUnread = !notification.read;
+
+    // Parse updatedBy once and memoize
+    const updaterInfo = useMemo(() => {
+      if (!notification.updatedBy) return null;
+      if (notification.updatedBy === "System") {
+        return { type: "system" };
+      }
+      try {
+        const updater =
+          typeof notification.updatedBy === "string"
+            ? JSON.parse(notification.updatedBy)
+            : notification.updatedBy;
+        return updater?.name ? { type: "user", name: updater.name } : null;
+      } catch {
+        return null;
+      }
+    }, [notification.updatedBy]);
+
+    // Memoize formatted date
+    const formattedDate = useMemo(() => {
+      return new Date(notification.createdAt).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }, [notification.createdAt]);
+
+    // Memoize details entries
+    const detailsEntries = useMemo(() => {
+      return notification.details && Object.keys(notification.details).length > 0
+        ? Object.entries(notification.details)
+        : null;
+    }, [notification.details]);
+
+    const handleCheckboxChange = useCallback(() => {
+      toggleSelectNotification(notification._id);
+    }, [toggleSelectNotification, notification._id]);
+
+    const handleMarkRead = useCallback(() => {
+      onMarkAsRead(notification._id);
+    }, [onMarkAsRead, notification._id]);
+
+    return (
+      <div
+        className={`relative group bg-white rounded-xl shadow-lg border transition-all hover:shadow-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center ${
+          isUnread ? "border-blue-400" : "border-gray-200"
+        }`}
+      >
+        {/* Checkbox */}
+        <div className="flex items-start sm:items-center">
+          <input
+            type="checkbox"
+            checked={selectedNotifications.includes(notification._id)}
+            onChange={handleCheckboxChange}
+            className="h-5 w-5 accent-blue-600"
+            aria-label="Select notification"
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {isUnread && (
+              <BsFillCircleFill className="text-green-600 text-sm animate-pulse" aria-label="Unread" />
+            )}
+            <p className="text-lg font-semibold text-gray-800 break-words">
+              {notification.message}
+            </p>
+            {notification.priority && (
+              <span
+                className={`px-3 py-0.5 text-xs font-semibold rounded-full capitalize ${
+                  notification.priority === "high"
+                    ? "bg-red-100 text-red-800"
+                    : notification.priority === "medium"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                Status: {notification.status}
+              </span>
+            )}
+          </div>
+
+          {updaterInfo && (
+            <p className="text-sm text-gray-500 italic flex items-center gap-1">
+              <MdUpdate className="text-gray-400" />
+              {updaterInfo.type === "system" ? "Updated by System" : `Updated by ${updaterInfo.name}`}
+            </p>
+          )}
+
+          {detailsEntries && (
+            <ul className="text-sm text-gray-700 inline-flex gap-2 flex-wrap">
+              {detailsEntries.map(([key, value]) => (
+                <li
+                  key={key}
+                  className="bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1 rounded-2xl"
+                >
+                  <span className="font-medium capitalize">{key}:</span>{" "}
+                  {String(value)}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="text-xs text-gray-500 flex items-center gap-1">
+            <FaClock aria-hidden="true" />
+            <time dateTime={notification.createdAt}>{formattedDate}</time>
+          </div>
+        </div>
+
+        {/* Mark as Read Button */}
+        <div className="self-start sm:self-auto">
+          <button
+            onClick={handleMarkRead}
+            disabled={notification.read}
+            className={`text-sm font-medium px-5 py-2 rounded-lg transition-all border ${
+              notification.read
+                ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
+                : "bg-green-600 text-white border-green-600 hover:bg-green-700"
+            }`}
+            aria-label={notification.read ? "Already read" : "Mark as read"}
+          >
+            {notification.read ? "Read" : "Mark as Read"}
+          </button>
+        </div>
+      </div>
+    );
+  },
+  // Custom comparison function for better memoization
+  (prevProps, nextProps) => {
+    return (
+      prevProps.notification._id === nextProps.notification._id &&
+      prevProps.notification.read === nextProps.notification.read &&
+      prevProps.selectedNotifications.includes(prevProps.notification._id) ===
+        nextProps.selectedNotifications.includes(nextProps.notification._id)
+    );
   }
-  return socketInstance;
-};
+);
 
-// ===== User context - ek baar compute karo =====
-const userContextCache = (() => {
+NotificationItem.displayName = "NotificationItem";
+
+// ===== Memoized getUserContext outside component =====
+const getUserContext = () => {
   const userStr = localStorage.getItem("user");
   let userObj = {};
   try {
-    userObj = userStr ? JSON.parse(userStr) : {};
-  } catch {}
+    userObj = JSON.parse(userStr || "{}");
+  } catch {
+    console.error("Error parsing user data");
+  }
 
-  const token = localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
+  const token =
+    localStorage.getItem("tokenLocal") || localStorage.getItem("authToken");
   let tokenPayload = {};
   try {
-    if (token) tokenPayload = JSON.parse(atob(token.split(".")[1]));
-  } catch {}
+    tokenPayload = JSON.parse(atob((token || "").split(".")[1] || "{}"));
+  } catch {
+    console.error("Error parsing token");
+  }
 
-  const email = userObj.email || tokenPayload.email || localStorage.getItem("email");
+  const email =
+    userObj.email || tokenPayload.email || localStorage.getItem("email");
   const mongoId = userObj._id || localStorage.getItem("userId");
   const shortId = tokenPayload.userId;
 
@@ -55,110 +203,8 @@ const userContextCache = (() => {
     shortId,
     allKeys: new Set([email, mongoId, shortId].filter(Boolean)),
   };
-})();
+};
 
-// ===== Date formatter - reuse karo =====
-const dateFormatter = new Intl.DateTimeFormat("en-IN", {
-  timeZone: "Asia/Kolkata",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: true,
-});
-
-// ===== Optimized Notification Item =====
-const NotificationItem = React.memo(({ notification, onMarkAsRead, isSelected, onToggle }) => {
-  const isUnread = !notification.read;
-
-  // Parse updater sirf ek baar
-  const updaterName = useMemo(() => {
-    if (!notification.updatedBy) return null;
-    if (notification.updatedBy === "System") return "System";
-    try {
-      const updater = typeof notification.updatedBy === "string" 
-        ? JSON.parse(notification.updatedBy) 
-        : notification.updatedBy;
-      return updater?.name || null;
-    } catch {
-      return null;
-    }
-  }, [notification.updatedBy]);
-
-  // Format date once
-  const formattedDate = useMemo(() => 
-    dateFormatter.format(new Date(notification.createdAt)),
-    [notification.createdAt]
-  );
-
-  return (
-    <div className={`bg-white rounded-lg shadow border p-4 flex gap-3 ${isUnread ? "border-blue-400" : "border-gray-200"}`}>
-      <input
-        type="checkbox"
-        checked={isSelected}
-        onChange={() => onToggle(notification._id)}
-        className="h-5 w-5 accent-blue-600 mt-1"
-      />
-
-      <div className="flex-1 space-y-2">
-        <div className="flex items-start gap-2">
-          {isUnread && (
-            <Suspense fallback={<span className="w-3 h-3 bg-green-600 rounded-full" />}>
-              <BsFillCircleFill className="text-green-600 text-sm mt-1" />
-            </Suspense>
-          )}
-          <p className="font-semibold text-gray-800">{notification.message}</p>
-        </div>
-
-        {updaterName && (
-          <p className="text-sm text-gray-500 flex items-center gap-1">
-            <Suspense fallback={<span>↻</span>}>
-              <MdUpdate className="text-gray-400" />
-            </Suspense>
-            Updated by {updaterName}
-          </p>
-        )}
-
-        {notification.details && Object.keys(notification.details).length > 0 && (
-          <div className="flex gap-2 flex-wrap text-xs">
-            {Object.entries(notification.details).map(([key, value]) => (
-              <span key={key} className="bg-blue-50 text-blue-800 px-2 py-1 rounded">
-                <b>{key}:</b> {String(value)}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <p className="text-xs text-gray-500 flex items-center gap-1">
-          <Suspense fallback={<span>🕐</span>}>
-            <FaClock />
-          </Suspense>
-          {formattedDate}
-        </p>
-      </div>
-
-      {/* ===== UPDATED BUTTON: Fixed Width & Height ===== */}
-      <button
-        onClick={() => onMarkAsRead(notification._id)}
-        disabled={notification.read}
-        className={`text-sm w-28 h-10 flex items-center justify-center rounded font-medium transition-colors shrink-0 ${
-          notification.read
-            ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
-            : "bg-green-600 text-white hover:bg-green-700 shadow-sm"
-        }`}
-      >
-        {notification.read ? "✓ Read" : "Mark Read"}
-      </button>
-    </div>
-  );
-}, (prev, next) => (
-  prev.notification._id === next.notification._id &&
-  prev.notification.read === next.notification.read &&
-  prev.isSelected === next.isSelected
-));
-
-// ===== Main Component =====
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,310 +212,495 @@ const Notifications = () => {
   const [hasMore, setHasMore] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedNotifications, setSelectedNotifications] = useState([]);
   const [groupBy, setGroupBy] = useState("none");
   const [filters, setFilters] = useState({
     readStatus: "all",
     timeRange: "all",
     notificationType: "all",
+    priority: "all",
   });
 
+  // Memoize user context - only computed once
+  const userContext = useMemo(() => getUserContext(), []);
+  const { role: userRole, email, allKeys } = userContext;
+
   const limit = 20;
-  const socket = useRef(getSocket()).current;
-  const { role: userRole, email, allKeys } = userContextCache;
 
-  // ===== Debounced search =====
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  // ===== Optimized Handlers =====
+  const handleMarkAsRead = useCallback(
+    async (id) => {
+      try {
+        await api.patch(`/api/notifications/${id}`, { read: true });
 
-  // ===== Fetch notifications =====
+        setNotifications((prev) =>
+          prev.map((notif) =>
+            notif._id === id ? { ...notif, read: true } : notif
+          )
+        );
+
+        setNotificationCount((prev) => Math.max(prev - 1, 0));
+        setSelectedNotifications((prev) => prev.filter((item) => item !== id));
+
+        socket.emit("notificationCountUpdated", {
+          email:
+            userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+        });
+      } catch (error) {
+        console.error("Error marking notification as read", error);
+      }
+    },
+    [userRole]
+  );
+
   const fetchNotifications = useCallback(async () => {
-    if (loading && page > 1) return; // Prevent multiple calls
     setLoading(true);
-    
     try {
-      const endpoint = userRole === "admin"
-        ? `/api/notifications?page=${page}&limit=${limit}`
-        : `/api/notifications/${encodeURIComponent(email)}?page=${page}&limit=${limit}`;
+      let response;
 
-      const { data } = await api.get(endpoint);
+      if (userRole === "admin") {
+        response = await api.get(
+          `/api/notifications?page=${page}&limit=${limit}`
+        );
+      } else {
+        if (!email) {
+          console.error("No email found for current user");
+          setLoading(false);
+          return;
+        }
+        response = await api.get(
+          `/api/notifications/${encodeURIComponent(
+            email
+          )}?page=${page}&limit=${limit}`
+        );
+      }
 
-      // Fast filter
-      const filtered = data.filter(n => {
-        if (userRole === "admin") return n.type === "admin";
-        const recipientKey = n.recipientEmail || n.recipientId || n.recipient || n.userId;
-        const matches = recipientKey && allKeys.has(String(recipientKey));
-        const allowed = !n.action || ["task-created", "task-updated"].includes(n.action);
-        return n.type === "user" && matches && allowed;
+      const newNotifications = response.data;
+
+      const filteredNotifications = newNotifications.filter((n) => {
+        if (userRole === "admin") {
+          return n.type === "admin";
+        }
+
+        if (userRole === "user") {
+          const recipientKey =
+            n.recipientEmail || n.recipientId || n.recipient || n.userId;
+
+          const matchesRecipient = recipientKey
+            ? allKeys.has(String(recipientKey))
+            : false;
+
+          const actionAllowed =
+            !n.action || ["task-created", "task-updated"].includes(n.action);
+
+          return n.type === "user" && matchesRecipient && actionAllowed;
+        }
+
+        return false;
       });
 
-      setNotifications(prev => page === 1 ? filtered : [...prev, ...filtered]);
-      setNotificationCount(prev => {
-        const unread = filtered.filter(n => !n.read).length;
-        return page === 1 ? unread : prev + unread;
-      });
-      setHasMore(data.length === limit);
-    } catch (err) {
-      console.error("Fetch error:", err);
+      setNotifications((prev) =>
+        page === 1 ? filteredNotifications : [...prev, ...filteredNotifications]
+      );
+
+      setNotificationCount((prev) =>
+        page === 1
+          ? filteredNotifications.filter((n) => !n.read).length
+          : prev + filteredNotifications.filter((n) => !n.read).length
+      );
+
+      setHasMore(newNotifications.length === limit);
+    } catch (error) {
+      console.error("Error fetching notifications", error);
     } finally {
       setLoading(false);
     }
-  }, [userRole, page, email, allKeys, loading]);
+  }, [userRole, page, email, allKeys]);
 
   useEffect(() => {
     fetchNotifications();
-  }, [page]); // Only on page change
+  }, [fetchNotifications]);
 
-  // ===== Optimized filtering =====
+  // Optimized date normalization
+  const normalizeDateString = useCallback((dateString) => {
+    return dateString
+      .split("/")
+      .map((part, idx) => (idx < 2 ? String(parseInt(part, 10)) : part))
+      .join("/");
+  }, []);
+
+  // Memoized filtered notifications with optimizations
   const filteredNotifications = useMemo(() => {
-    const query = debouncedSearch.toLowerCase();
-    
-    let result = notifications;
-
-    // Apply filters
-    if (filters.readStatus !== "all") {
-      result = result.filter(n => 
-        filters.readStatus === "read" ? n.read : !n.read
-      );
-    }
-
-    if (filters.timeRange !== "all") {
-      const now = Date.now();
-      const day = 86400000;
-      result = result.filter(n => {
-        const time = new Date(n.createdAt).getTime();
-        if (filters.timeRange === "today") return now - time < day;
-        if (filters.timeRange === "week") return now - time < day * 7;
-        if (filters.timeRange === "month") return now - time < day * 30;
+    let result = notifications.filter((notification) => {
+      // Early return if no search query and default filters
+      if (
+        !searchQuery &&
+        filters.readStatus === "all" &&
+        filters.timeRange === "all" &&
+        filters.notificationType === "all" &&
+        filters.priority === "all"
+      ) {
         return true;
-      });
+      }
+
+      // Search filter
+      const query = searchQuery.toLowerCase();
+      let searchMatch = true;
+
+      if (searchQuery) {
+        const message = notification.message?.toLowerCase() || "";
+        const updaterName = (() => {
+          try {
+            const updater = JSON.parse(notification.updatedBy);
+            return updater?.name?.toLowerCase() || "";
+          } catch {
+            return "";
+          }
+        })();
+        const detailsText = notification.details
+          ? Object.values(notification.details).join(" ").toLowerCase()
+          : "";
+        const normalizedCreatedAt = normalizeDateString(
+          new Date(notification.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })
+        ).toLowerCase();
+        const normalizedQuery = normalizeDateString(searchQuery.toLowerCase());
+
+        searchMatch =
+          message.includes(query) ||
+          updaterName.includes(query) ||
+          detailsText.includes(query) ||
+          normalizedCreatedAt.includes(normalizedQuery);
+      }
+
+      // Filter conditions
+      const readStatusMatch =
+        filters.readStatus === "all" ||
+        (filters.readStatus === "read" && notification.read) ||
+        (filters.readStatus === "unread" && !notification.read);
+
+      let timeRangeMatch = true;
+      if (filters.timeRange !== "all") {
+        const now = new Date();
+        const notifDate = new Date(notification.createdAt);
+        
+        if (filters.timeRange === "today") {
+          timeRangeMatch = notifDate.toDateString() === now.toDateString();
+        } else if (filters.timeRange === "week") {
+          const weekAgo = new Date(now);
+          weekAgo.setDate(now.getDate() - 7);
+          timeRangeMatch = notifDate >= weekAgo;
+        } else if (filters.timeRange === "month") {
+          const monthAgo = new Date(now);
+          monthAgo.setMonth(now.getMonth() - 1);
+          timeRangeMatch = notifDate >= monthAgo;
+        }
+      }
+
+      const typeMatch =
+        filters.notificationType === "all" ||
+        notification.action === filters.notificationType;
+
+      const priorityMatch =
+        filters.priority === "all" ||
+        notification.priority === filters.priority;
+
+      return (
+        searchMatch &&
+        readStatusMatch &&
+        timeRangeMatch &&
+        typeMatch &&
+        priorityMatch
+      );
+    });
+
+    // Grouping logic
+    if (groupBy !== "none") {
+      return result.reduce((groups, notif) => {
+        let key;
+        if (groupBy === "date") {
+          key = new Date(notif.createdAt).toLocaleDateString("en-GB");
+        } else if (groupBy === "type") {
+          key = notif.action || "other";
+        }
+
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(notif);
+        return groups;
+      }, {});
     }
 
-    if (filters.notificationType !== "all") {
-      result = result.filter(n => n.action === filters.notificationType);
-    }
+    return { "All Notifications": result };
+  }, [notifications, searchQuery, filters, groupBy, normalizeDateString]);
 
-    // Search filter
-    if (query) {
-      result = result.filter(n => {
-        const text = `${n.message} ${JSON.stringify(n.details || {})}`.toLowerCase();
-        return text.includes(query);
-      });
-    }
-
-    // Grouping
-    if (groupBy === "none") {
-      return { "All": result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) };
-    }
-
-    return result.reduce((acc, n) => {
-      const key = groupBy === "date" 
-        ? new Date(n.createdAt).toLocaleDateString("en-GB")
-        : n.action || "other";
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(n);
-      return acc;
-    }, {});
-  }, [notifications, debouncedSearch, filters, groupBy]);
-
-  // ===== Mark as read =====
-  const handleMarkAsRead = useCallback(async (id) => {
-    setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
-    setNotificationCount(prev => Math.max(prev - 1, 0));
-    setSelectedNotifications(prev => prev.filter(i => i !== id));
-
-    try {
-      await api.patch(`/api/notifications/${id}`, { read: true });
-      socket.emit("notificationCountUpdated", {
-        email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
-      });
-    } catch (err) {
-      console.error("Mark read error:", err);
-    }
-  }, [userRole, socket]);
-
-  // ===== Bulk mark as read =====
-  const handleBulkMarkAsRead = useCallback(async () => {
-    const ids = selectedNotifications;
-    if (!ids.length) return;
-
-    setNotifications(prev => prev.map(n => ids.includes(n._id) ? { ...n, read: true } : n));
-    setNotificationCount(prev => Math.max(prev - ids.length, 0));
-    setSelectedNotifications([]);
-
-    try {
-      await Promise.all(ids.map(id => api.patch(`/api/notifications/${id}`, { read: true })));
-      socket.emit("notificationCountUpdated", {
-        email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
-      });
-    } catch (err) {
-      console.error("Bulk mark error:", err);
-    }
-  }, [selectedNotifications, userRole, socket]);
-
-  // ===== Mark all as read =====
   const handleMarkAllAsRead = useCallback(async () => {
-    const unread = notifications.filter(n => !n.read);
-    if (!unread.length) return;
-
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setNotificationCount(0);
-
     try {
-      await Promise.all(unread.map(n => api.patch(`/api/notifications/${n._id}`, { read: true })));
+      const unreadNotifications = notifications.filter((n) => !n.read);
+      if (unreadNotifications.length === 0) return;
+
+      // Batch update - more efficient
+      await Promise.all(
+        unreadNotifications.map((notif) =>
+          api.patch(`/api/notifications/${notif._id}`, { read: true })
+        )
+      );
+
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, read: true }))
+      );
+      setNotificationCount(0);
+      setSelectedNotifications([]);
+
       socket.emit("notificationCountUpdated", {
         email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
       });
-    } catch (err) {
-      console.error("Mark all error:", err);
+    } catch (error) {
+      console.error("Error marking all notifications as read", error);
     }
-  }, [notifications, userRole, socket]);
+  }, [notifications, userRole]);
 
-  // ===== Toggle selection =====
-  const toggleSelect = useCallback((id) => {
-    setSelectedNotifications(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+  const handleBulkMarkAsRead = useCallback(async () => {
+    try {
+      await Promise.all(
+        selectedNotifications.map((id) =>
+          api.patch(`/api/notifications/${id}`, { read: true })
+        )
+      );
+
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          selectedNotifications.includes(notif._id)
+            ? { ...notif, read: true }
+            : notif
+        )
+      );
+
+      setNotificationCount((prev) =>
+        Math.max(prev - selectedNotifications.length, 0)
+      );
+      setSelectedNotifications([]);
+
+      socket.emit("notificationCountUpdated", {
+        email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+      });
+    } catch (error) {
+      console.error("Error in bulk mark as read", error);
+    }
+  }, [selectedNotifications, userRole]);
+
+  const toggleSelectNotification = useCallback((id) => {
+    setSelectedNotifications((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   }, []);
 
-  // ===== Scroll handler =====
-  const scrollTimeout = useRef(null);
-  const handleScroll = useCallback((e) => {
-    if (scrollTimeout.current) return;
-    scrollTimeout.current = setTimeout(() => {
+  // Throttled scroll handler for better performance
+  const handleScroll = useCallback(
+    (e) => {
       const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-      if (scrollHeight - scrollTop <= clientHeight * 1.5 && !loading && hasMore) {
-        setPage(p => p + 1);
+      if (
+        scrollHeight - scrollTop <= clientHeight * 1.2 &&
+        !loading &&
+        hasMore
+      ) {
+        setPage((prev) => prev + 1);
       }
-      scrollTimeout.current = null;
-    }, 150);
-  }, [loading, hasMore]);
+    },
+    [loading, hasMore]
+  );
+
+  // Debounced search input
+  const handleSearchChange = useCallback((e) => {
+    setSearchQuery(e.target.value);
+  }, []);
 
   return (
-    <div className="p-4 h-[90vh] overflow-y-auto" onScroll={handleScroll}>
-      {/* Header */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <h2 className="text-2xl font-bold">
-          🔔 Notifications {notificationCount > 0 && `(${notificationCount})`}
+    <div
+      className="p-4 mx-auto h-[90vh] overflow-y-auto"
+      onScroll={handleScroll}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h2 className="text-2xl font-semibold text-gray-800">
+          🔔 Notifications{" "}
+          {notificationCount > 0 && `(${notificationCount} unread)`}
         </h2>
-        
-        <input
-          type="text"
-          placeholder="Search..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 min-w-[200px] px-4 py-2 rounded-full border focus:outline-none focus:ring-2 focus:ring-blue-300"
-        />
 
-        <button
-          onClick={handleMarkAllAsRead}
-          disabled={!notifications.some(n => !n.read)}
-          className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50"
-        >
-          Mark All Read
-        </button>
-      </div>
+        <div className="relative w-full sm:w-100">
+          <input
+            type="text"
+            placeholder="Search notifications..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 shadow-sm focus:border-blue-100 focus:ring-1 focus:ring-blue-300 focus:outline-none text-sm transition-all duration-300"
+            aria-label="Search notifications"
+          />
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <svg
+              className="w-4 h-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"
+              />
+            </svg>
+          </div>
+        </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-3 mb-4 flex flex-wrap gap-2">
-        <span className="text-sm font-medium">Group:</span>
-        {["none", "date", "type"].map(t => (
+        <div className="flex items-center gap-3">
           <button
-            key={t}
-            onClick={() => setGroupBy(t)}
-            className={`text-sm px-3 py-1 rounded-full ${
-              groupBy === t ? "bg-blue-500 text-white" : "bg-gray-100"
-            }`}
+            onClick={handleMarkAllAsRead}
+            disabled={notifications.every((n) => n.read)}
+            className="text-sm font-medium px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Mark all notifications as read"
           >
-            {t}
+            Mark All as Read
           </button>
-        ))}
-
-        <select
-          value={filters.readStatus}
-          onChange={(e) => setFilters(f => ({ ...f, readStatus: e.target.value }))}
-          className="text-sm px-2 py-1 rounded border"
-        >
-          <option value="all">All</option>
-          <option value="read">Read</option>
-          <option value="unread">Unread</option>
-        </select>
-
-        <select
-          value={filters.timeRange}
-          onChange={(e) => setFilters(f => ({ ...f, timeRange: e.target.value }))}
-          className="text-sm px-2 py-1 rounded border"
-        >
-          <option value="all">All Time</option>
-          <option value="today">Today</option>
-          <option value="week">Week</option>
-          <option value="month">Month</option>
-        </select>
-
-        <select
-          value={filters.notificationType}
-          onChange={(e) => setFilters(f => ({ ...f, notificationType: e.target.value }))}
-          className="text-sm px-2 py-1 rounded border"
-        >
-          <option value="all">All Types</option>
-          <option value="task-created">Created</option>
-          <option value="task-updated">Updated</option>
-        </select>
+        </div>
       </div>
 
-      {/* Bulk actions */}
+      <div className="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-center justify-between gap-3 mb-5">
+        {/* Group By Section */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-gray-600 font-medium">Group by:</span>
+          {["none", "date", "type"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setGroupBy(type)}
+              className={`text-sm px-3 py-1 rounded-full border ${
+                groupBy === type
+                  ? "bg-blue-100 text-blue-600 border-blue-300"
+                  : "bg-gray-100 text-gray-700 border-gray-200"
+              } hover:bg-blue-50 transition`}
+              aria-pressed={groupBy === type}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {/* Filters Section */}
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={filters.readStatus}
+            onChange={(e) =>
+              setFilters({ ...filters, readStatus: e.target.value })
+            }
+            className="text-sm px-3 py-1 rounded-md border border-gray-300 focus:ring-1 focus:ring-blue-400 focus:outline-none"
+            aria-label="Filter by read status"
+          >
+            <option value="all">All Status</option>
+            <option value="read">Read</option>
+            <option value="unread">Unread</option>
+          </select>
+
+          <select
+            value={filters.timeRange}
+            onChange={(e) =>
+              setFilters({ ...filters, timeRange: e.target.value })
+            }
+            className="text-sm px-3 py-1 rounded-md border border-gray-300 focus:ring-1 focus:ring-blue-400 focus:outline-none"
+            aria-label="Filter by time range"
+          >
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">Last Week</option>
+            <option value="month">Last Month</option>
+          </select>
+
+          <select
+            value={filters.notificationType}
+            onChange={(e) =>
+              setFilters({ ...filters, notificationType: e.target.value })
+            }
+            className="text-sm px-3 py-1 rounded-md border border-gray-300 focus:ring-1 focus:ring-blue-400 focus:outline-none"
+            aria-label="Filter by notification type"
+          >
+            <option value="all">All Types</option>
+            <option value="task-created">Task Created</option>
+            <option value="task-updated">Task Updated</option>
+          </select>
+        </div>
+      </div>
+
       {selectedNotifications.length > 0 && (
-        <div className="mb-3 flex gap-2 items-center">
-          <span className="text-sm">{selectedNotifications.length} selected</span>
+        <div className="mb-4 flex items-center gap-3">
+          <span className="text-sm text-gray-600">
+            {selectedNotifications.length} selected
+          </span>
           <button
             onClick={handleBulkMarkAsRead}
-            className="text-sm px-3 py-1 bg-green-600 text-white rounded-full hover:bg-green-700"
+            className="text-sm font-medium px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-all"
           >
-            Mark Selected Read
+            Mark Selected as Read
           </button>
           <button
             onClick={() => setSelectedNotifications([])}
-            className="text-sm px-3 py-1 bg-gray-200 rounded-full hover:bg-gray-300"
+            className="text-sm font-medium px-4 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all"
           >
-            Clear
+            Clear Selection
           </button>
         </div>
       )}
 
-      {/* Notifications List */}
       {loading && page === 1 ? (
-        <div className="text-center py-8">Loading...</div>
+        <div className="text-center text-sm text-gray-400" role="status" aria-live="polite">
+          Loading notifications...
+        </div>
       ) : (
-        <div className="space-y-4">
-          {Object.entries(filteredNotifications).length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No notifications</div>
+        <div className="space-y-4 mb-5">
+          {Object.keys(filteredNotifications).length === 0 ? (
+            <div className="text-center text-gray-500 bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-200">
+              🎉 No notifications match your filters
+            </div>
           ) : (
-            Object.entries(filteredNotifications).map(([group, items]) => (
-              <div key={group}>
-                {groupBy !== "none" && (
-                  <h3 className="text-sm font-bold mb-2 sticky top-0 bg-white py-1">
-                    {group}
-                  </h3>
-                )}
-                <div className="space-y-3">
-                  {items.map(notif => (
-                    <NotificationItem
-                      key={notif._id}
-                      notification={notif}
-                      onMarkAsRead={handleMarkAsRead}
-                      isSelected={selectedNotifications.includes(notif._id)}
-                      onToggle={toggleSelect}
-                    />
-                  ))}
+            Object.entries(filteredNotifications)
+              .sort(([a], [b]) => {
+                if (groupBy === "none") return 0;
+                const toDate = (str) => {
+                  const [d, m, y] = (str || "").split("/").map(Number);
+                  return new Date(y, m - 1, d).getTime() || 0;
+                };
+                return toDate(b) - toDate(a);
+              })
+              .map(([group, groupNotifications]) => (
+                <div key={group}>
+                  {groupBy !== "none" && (
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2 sticky top-0 bg-white py-2 z-10">
+                      {group}
+                    </h3>
+                  )}
+                  <div className="space-y-4">
+                    {groupNotifications
+                      .sort(
+                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                      )
+                      .map((notification) => (
+                        <NotificationItem
+                          key={notification._id}
+                          notification={notification}
+                          onMarkAsRead={handleMarkAsRead}
+                          selectedNotifications={selectedNotifications}
+                          toggleSelectNotification={toggleSelectNotification}
+                        />
+                      ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))
           )}
           {loading && page > 1 && (
-            <div className="text-center py-4 text-sm text-gray-400">Loading more...</div>
+            <div className="text-center text-sm text-gray-400 py-4" role="status" aria-live="polite">
+              Loading more notifications...
+            </div>
           )}
         </div>
       )}

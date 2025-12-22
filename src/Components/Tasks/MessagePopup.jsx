@@ -893,7 +893,7 @@ const MessagePopup = ({
 
               {/* Message Input */}
               <div className="flex-1 flex flex-col min-h-0">
-                <div className="flex-1 relative min-h-[500px] sm:min-h-[200px]">
+                <div className="flex-1 relative min-h-[400px] sm:min-h-[200px]">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
