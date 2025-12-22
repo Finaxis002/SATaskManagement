@@ -1,3 +1,4 @@
+
 // src/context/NotesContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
