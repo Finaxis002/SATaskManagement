@@ -1,6 +1,5 @@
 // src/App.jsx
 
-import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
@@ -29,7 +28,6 @@ import MailBox from "./pages/MailBox";
 import { NotesProvider } from "./context/NotesContext";
 import AddServicePage from "./pages/AddServicePage";
 import MessageHistory from "./Components/history/MessageHistory";
-import InvoiceTab from "./pages/InvoiceTab";
 import Support from "./pages/Support";
 import DeveloperSupport from "./pages/DeveloperSupport";
 import ShortcutHandler from "./Components/ShortcutHandler";
@@ -41,12 +39,14 @@ import CreateAgent from "./pages/Agent/CreateAgent";
 import AgentList from "./pages/Agent/AgentList";
 import Referrals from "./pages/Agent/Referrals";
 import AgentProfile from "./pages/Agent/AgentProfile";
-import PayoutModal from "./pages/Agent/PayoutModal";
+
 
 // 📝 Message Templates Import 👇 NEW
 import MessageTemplatesManager from "./Components/Tasks/MessageTemplatesManager";
 
 const App = () => {
+
+
   function MailBoxEmbed() {
     return (
       <iframe

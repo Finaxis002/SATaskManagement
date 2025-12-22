@@ -1584,7 +1584,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 {/* Desktop Table (Virtual Scroll for Medium/Low) */}
                 <div className="hidden lg:block bg-white rounded-3xl shadow-xl border-2 border-gray-200 overflow-hidden mt-6 relative z-10">
                     <div ref={scrollContainerRef} className="overflow-y-auto max-h-[70vh]">
-                        <table className="w-full table-fixed">
+                        <table  className="w-full table-fixed">
                             <colgroup>
                                 <col style={{ width: "3%" }} />
                                 <col style={{ width: "8%" }} />

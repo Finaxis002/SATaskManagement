@@ -98,7 +98,13 @@ export default defineConfig({
     
     // Clean output directory
     emptyOutDir: true,
-    
+     minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
     // Optional optimizations (add if needed):
     // minify: 'terser', // Already minifies by default
     // sourcemap: false // Disable sourcemaps in production
