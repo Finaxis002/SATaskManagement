@@ -118,6 +118,7 @@ const FilterSection = ({
   uniqueAssignedBy,
   uniqueStatuses,
   role,
+  onHide,
 }) => {
   const clearFilters = () => {
     handleFilterChange("department", "");
@@ -203,6 +204,8 @@ const FilterSection = ({
           </button>
         </div>
       </div>
+
+     
 
       {/* Responsive grid: 1 col (xs), 2 cols (sm), 3 cols (lg), 6 cols (xl) */}
       <div
