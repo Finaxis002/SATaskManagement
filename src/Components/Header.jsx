@@ -28,7 +28,6 @@ function WhatsNewModal({
 }) {
   if (!open) return null;
 
-  // Check if user is admin
   const userRole = localStorage.getItem("role");
   const isAdmin = userRole === "admin" || userRole === "Admin";
 
@@ -135,7 +134,6 @@ function WhatsNewModal({
                 key={it.id}
                 className="group rounded-xl border border-gray-200/70 hover:border-gray-300 bg-white shadow-sm hover:shadow-md transition-all duration-200 p-4 relative"
               >
-                {/* Admin Delete Button */}
                 {isAdmin && (
                   <button
                     onClick={() => handleDelete(it.id)}
@@ -177,7 +175,6 @@ function WhatsNewModal({
                   </div>
                 ) : null}
 
-                {/* subtle divider on hover */}
                 <div className="mt-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             ))
@@ -207,21 +204,19 @@ const Header = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
-  // What's New states
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [whatsNewItems, setWhatsNewItems] = useState([]);
   const [wnLoading, setWnLoading] = useState(false);
   const [wnError, setWnError] = useState("");
   const [whatsNewCount, setWhatsNewCount] = useState(0);
   const [lastSeenCount, setLastSeenCount] = useState(0);
+  const [searchFocused, setSearchFocused] = useState(false);
   const navigate = useNavigate();
   useNotificationSocket(setNotificationCount);
 
-  // Check if user is admin for home button visibility
   const userRole = localStorage.getItem("role");
   const isAdmin = userRole === "admin" || userRole === "Admin";
 
-  // Check if device is mobile
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -229,7 +224,6 @@ const Header = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // What's New functions
   const fetchWhatsNew = async (updateCountOnly = false) => {
     try {
       if (!updateCountOnly) {
@@ -255,7 +249,6 @@ const Header = () => {
           date: u.createdAt ? new Date(u.createdAt).toLocaleString() : "",
           createdAt: u.createdAt,
         }));
-        // Sort items by createdAt in descending order (newest first)
         const sortedItems = mappedItems.sort((a, b) => {
           if (!a.createdAt && !b.createdAt) return 0;
           if (!a.createdAt) return 1;
@@ -282,7 +275,6 @@ const Header = () => {
     }
   };
 
-  // Delete function for What's New
   const handleDeleteUpdate = async (itemId) => {
     try {
       const token = localStorage.getItem("authToken");
@@ -331,7 +323,6 @@ const Header = () => {
     }
   };
 
-  // Load What's New data
   useEffect(() => {
     const savedLastSeenCount = localStorage.getItem("whatsNewLastSeen");
     if (savedLastSeenCount) {
@@ -340,10 +331,8 @@ const Header = () => {
     fetchWhatsNew();
   }, []);
 
-  // Calculate unread count for What's New
   const unreadCount = Math.max(0, whatsNewCount - lastSeenCount);
 
-  // Handle What's New button click
   const handleWhatsNewClick = () => {
     setShowWhatsNew(true);
     localStorage.setItem("whatsNewLastSeen", whatsNewCount.toString());
@@ -351,7 +340,6 @@ const Header = () => {
     fetchWhatsNew(false);
   };
 
-  // Periodically check for new updates
   useEffect(() => {
     const interval = setInterval(() => {
       fetchWhatsNew(true);
@@ -359,34 +347,39 @@ const Header = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Search highlight logic
+  // FIXED: Improved search highlight logic
   useEffect(() => {
     const highlightMatches = (term) => {
+      // Clear existing highlights
       document.querySelectorAll("mark[data-highlight]").forEach((mark) => {
         const parent = mark.parentNode;
         parent.replaceChild(document.createTextNode(mark.textContent), mark);
         parent.normalize();
       });
+      
       if (!term) {
         setHighlightRefs([]);
         setCurrentIndex(0);
         return;
       }
-      const regex = new RegExp(`(${term})`, "gi");
+
+      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
       const foundMarks = [];
+      
       const walk = (node) => {
         if (
           node.nodeType === 3 &&
           node.parentNode &&
           node.parentNode.nodeName !== "SCRIPT" &&
-          node.parentNode.nodeName !== "STYLE"
+          node.parentNode.nodeName !== "STYLE" &&
+          node.parentNode.nodeName !== "MARK"
         ) {
           const text = node.nodeValue;
           if (regex.test(text)) {
             const span = document.createElement("span");
             span.innerHTML = text.replace(
               regex,
-              `<mark data-highlight style="background: yellow;">$1</mark>`
+              `<mark data-highlight style="background: yellow; padding: 2px 0;">$1</mark>`
             );
             const fragment = document.createDocumentFragment();
             while (span.firstChild) {
@@ -396,34 +389,57 @@ const Header = () => {
             }
             node.parentNode.replaceChild(fragment, node);
           }
-        } else if (node.nodeType === 1) {
-          for (let i = 0; i < node.childNodes.length; i++)
+        } else if (node.nodeType === 1 && node.nodeName !== "MARK") {
+          for (let i = 0; i < node.childNodes.length; i++) {
             walk(node.childNodes[i]);
+          }
         }
       };
+      
       walk(document.body);
       setHighlightRefs(foundMarks);
       setCurrentIndex(0);
+      
+      // Auto-scroll to first result
+      if (foundMarks.length > 0) {
+        foundMarks[0].scrollIntoView({ behavior: "smooth", block: "center" });
+        foundMarks[0].style.background = "orange";
+      }
     };
-    highlightMatches(searchTerm);
+    
+    const timeoutId = setTimeout(() => {
+      highlightMatches(searchTerm);
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
+  // FIXED: Better Enter key handling for search navigation
   useEffect(() => {
     const handleEnterKey = (e) => {
-      if (e.key === "Enter" && highlightRefs.length > 0) {
+      // Only handle Enter if search input is focused and has results
+      if (e.key === "Enter" && searchFocused && highlightRefs.length > 0) {
         e.preventDefault();
-        const el = highlightRefs[currentIndex];
+        
+        const nextIndex = (currentIndex + 1) % highlightRefs.length;
+        const el = highlightRefs[nextIndex];
+        
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.style.background = "orange";
-        highlightRefs.forEach((mark, idx) => {
-          if (idx !== currentIndex) mark.style.background = "yellow";
+        
+        // Reset all highlights to yellow
+        highlightRefs.forEach((mark) => {
+          mark.style.background = "yellow";
         });
-        setCurrentIndex((prev) => (prev + 1) % highlightRefs.length);
+        
+        // Highlight current one as orange
+        el.style.background = "orange";
+        
+        setCurrentIndex(nextIndex);
       }
     };
     window.addEventListener("keydown", handleEnterKey);
     return () => window.removeEventListener("keydown", handleEnterKey);
-  }, [highlightRefs, currentIndex]);
+  }, [highlightRefs, currentIndex, searchFocused]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -456,13 +472,22 @@ const Header = () => {
     window.location.href = "/login";
   };
 
-  const handleSearchChange = (e) => setSearchTerm(e.target.value.trim());
+  // FIXED: Better search change handler
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value); // Don't trim while typing to allow spaces
+  };
 
+  // FIXED: Improved keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey && e.key === "k") || e.key === "/") {
+      // Ctrl+K or Alt+S to focus search
+      if ((e.ctrlKey && e.key === "k") || (e.altKey && e.key === "s")) {
         e.preventDefault();
-        document.getElementById("global-search-input")?.focus();
+        const searchInput = document.getElementById("global-search-input");
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -496,9 +521,13 @@ const Header = () => {
               type="text"
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Search"
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search anything on this page..."
               id="global-search-input"
               className="w-full pl-8 sm:pl-10 pr-16 sm:pr-32 py-2 sm:py-2.5 rounded-full bg-gray-100 text-xs sm:text-sm placeholder-gray-500 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-200"
+              autoComplete="off"
+              spellCheck="false"
             />
             <div className="absolute inset-y-0 right-2 sm:right-3 flex items-center gap-1 sm:gap-2">
               {searchTerm && (
@@ -510,6 +539,7 @@ const Header = () => {
                   }}
                   className="text-gray-500 hover:text-gray-700 flex-shrink-0 transition-colors duration-200"
                   aria-label="Clear search"
+                  title="Clear search"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -528,10 +558,10 @@ const Header = () => {
                 </button>
               )}
               <span className="text-xs text-gray-500 hidden lg:block px-2 py-1 font-medium">
-                Short Cut Alt + S
+                Alt + S
               </span>
               {highlightRefs.length > 0 && (
-                <span className="text-[10px] sm:text-xs text-gray-500 bg-gray-200 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                <span className="text-[10px] sm:text-xs text-gray-500 bg-gray-200 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-medium">
                   {currentIndex + 1}/{highlightRefs.length}
                 </span>
               )}
@@ -585,11 +615,12 @@ const Header = () => {
             onClick={() => navigate("/notifications")}
             className="relative bg-gray-100 rounded-full p-1.5 sm:p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200"
             aria-label="Notifications"
+            title="Notifications"
           >
             <FaBell className="text-gray-600 text-base sm:text-lg" />
             {notificationCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center">
-                {notificationCount}
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-bold">
+                {notificationCount > 99 ? "99+" : notificationCount}
               </span>
             )}
           </button>
