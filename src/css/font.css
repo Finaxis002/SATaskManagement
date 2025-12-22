@@ -1,4 +1,5 @@
 /* src/fonts.css */
+/* roboto regular */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
@@ -6,15 +7,15 @@
   font-display: swap;
   src: url('../fonts/KFOmCnqEu92Fr1Mu4mxK.woff2') format('woff2');
 }
-
+/* roboto medium */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('../fonts/KFOlCnqEu92Fr1MmEU9fBBc4.woff2') format('woff2');
+  src: url('../fonts/KFOlCnqEu92Fr1MmEU9fBBc4.woff2') format('woff2'); 
 }
-
+/* roboto bold */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
