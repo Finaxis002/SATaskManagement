@@ -11,7 +11,7 @@ import axios from "axios";
 import { FaTimes } from "react-icons/fa";
 import CreateClientModal from "../client/CreateClientModal";
 
-const socket = io("http://localhost:1100", { withCredentials: true });
+const socket = io("https://taskbe.sharda.co.in", { withCredentials: true });
 
 const selectBaseStyles = {
   control: (base, state) => ({
@@ -106,7 +106,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
           const token =
             localStorage.getItem("authToken") || localStorage.getItem("token");
           const response = await fetch(
-            `http://localhost:1100/api/tasks/${initialData._id}`,
+            `https://taskbe.sharda.co.in/api/tasks/${initialData._id}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -295,7 +295,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     const fetchClientData = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:1100/api/clients",
+          "https://taskbe.sharda.co.in/api/clients",
           config
         );
         const formatted = Array.isArray(data)
@@ -314,7 +314,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     const fetchAgentData = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:1100/api/agents",
+          "https://taskbe.sharda.co.in/api/agents",
           config
         );
         setAgents(data);
@@ -413,7 +413,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     try {
       const token = localStorage.getItem("authToken");
       const res = await axios.post(
-        "http://localhost:1100/api/clients",
+        "https://taskbe.sharda.co.in/api/clients",
         clientData,
         {
           headers: {
@@ -509,8 +509,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
     try {
       setIsSubmitting(true);
       const url = initialData
-        ? `http://localhost:1100/api/tasks/${initialData._id}`
-        : "http://localhost:1100/api/tasks";
+        ? `https://taskbe.sharda.co.in/api/tasks/${initialData._id}`
+        : "https://taskbe.sharda.co.in/api/tasks";
 
       const res = await fetch(url, {
         method: initialData ? "PUT" : "POST",
