@@ -492,7 +492,7 @@ const TaskOverview = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:1100/api/tasks/${taskId}`,
+        `https://taskbe.sharda.co.in/api/tasks/${taskId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
