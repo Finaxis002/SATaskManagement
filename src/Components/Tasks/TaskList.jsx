@@ -11,7 +11,7 @@ import FilterSection from "./FilterSection";
 import MessagePopup from "./MessagePopup";
 import StatusDropdownPortal from "../StatusDropdownPortal";
 import axios from "../../utils/secureAxios";
-
+import { Loader2 } from "lucide-react";
 
 const socket = io("https://taskbe.sharda.co.in");
 const ITEMS_PER_PAGE = 50; // Increased for better virtual scroll
@@ -51,7 +51,7 @@ const fetchAllTasksSingle = async (signal, baseUrl, userFilter = {}) => {
 };
 
 
-const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride, hideCompleted }) => {
+const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride, hideCompleted, showFilters, onHideFilters }) => {
     // Add at the VERY beginning of TaskList function:
 
     // Redux
@@ -187,7 +187,27 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                     }
                     break;
                 case 'department':
-                    filtered = filtered.filter(task => task.department === value);
+                    // filtered = filtered.filter(task => {
+                    //     const taskDept = typeof task.department === 'string' ? task.department.toLowerCase() : task.department?.name?.toLowerCase();
+                    //     return taskDept === value.toLowerCase();
+                    // });
+                    // break;
+                    filtered = filtered.filter(task => {
+                        if (Array.isArray(task.department)) {
+                            return task.department.some(dept =>
+                                dept.toLowerCase() === value.toLowerCase()
+                            );
+                        }
+                        // Fallback for string format
+                        else if (typeof task.department === 'string') {
+                            return task.department.toLowerCase() === value.toLowerCase();
+                        }
+                        // Fallback for object format
+                        else if (task.department?.name) {
+                            return task.department.name.toLowerCase() === value.toLowerCase();
+                        }
+                        return false;
+                    });
                     break;
                 case 'code':
                     filtered = filtered.filter(task =>
@@ -1037,7 +1057,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                    
                     {formatDate(task.assignedDate)}
                 </td> */}
-                 {/* {new Date(task.assignedDate).toLocaleDateString("en-GB")} */}
+                {/* {new Date(task.assignedDate).toLocaleDateString("en-GB")} */}
 
                 {/* Due Date */}
                 <td className="py-3 px-2 text-xs text-gray-700 font-semibold">
@@ -1308,7 +1328,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                 {formatDate(task.assignedDate)}
                             </div>
                         </div> */}
-                         {/* {new Date(task.assignedDate).toLocaleDateString("en-GB")} */}
+                        {/* {new Date(task.assignedDate).toLocaleDateString("en-GB")} */}
                         <div>
                             <span className="text-xs font-semibold text-gray-600 block mb-1">Due Date</span>
                             <div className="text-sm text-gray-900 font-medium">
@@ -1546,22 +1566,25 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         <div className="min-h-screen via-indigo-50 to-purple-50">
 
             <div className="w-full ">
-                <FilterSection
-                    filters={filters}
-                    handleFilterChange={handleFilterChange}
-                    departments={departments}
-                    uniqueUsers={uniqueUsers}
-                    uniqueAssignedBy={uniqueAssignedBy}
-                    uniqueStatuses={uniqueStatuses}
-                    role={rawRole} // Passing the original role string
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                />
+                {showFilters && (
+                    <FilterSection
+                        filters={filters}
+                        handleFilterChange={handleFilterChange}
+                        departments={departments}
+                        uniqueUsers={uniqueUsers}
+                        uniqueAssignedBy={uniqueAssignedBy}
+                        uniqueStatuses={uniqueStatuses}
+                        role={rawRole} // Passing the original role string
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        onHide={onHideFilters}
+                    />
+                )}
 
                 {/* Desktop Table (Virtual Scroll for Medium/Low) */}
                 <div className="hidden lg:block bg-white rounded-3xl shadow-xl border-2 border-gray-200 overflow-hidden mt-6 relative z-10">
                     <div ref={scrollContainerRef} className="overflow-y-auto max-h-[70vh]">
-                        <table className="w-full table-fixed">
+                        <table  className="w-full table-fixed">
                             <colgroup>
                                 <col style={{ width: "3%" }} />
                                 <col style={{ width: "8%" }} />
@@ -1601,7 +1624,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                 {initialLoading ? (
                                     <tr>
                                         <td colSpan={10} className="py-20 text-center">
-                                            <FaSpinner className="animate-spin h-10 w-10 mx-auto mb-3 text-indigo-600" />
+                                            <Loader2 className="animate-spin h-10 w-10 mx-auto mb-3 text-indigo-600" />
                                             <p className="text-gray-600 font-bold">Loading tasks...</p>
                                         </td>
                                     </tr>
@@ -1621,7 +1644,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                     </tr>
                                 ) : (
                                     <>
-                                        
+
                                         {highTasks.length > 0 && (
                                             <>
                                                 <tr>
@@ -1646,7 +1669,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                             </>
                                         )}
 
-                                      
+
                                         {mediumTasks.length > 0 && (
                                             <>
                                                 <tr key="medium-header">
@@ -1662,7 +1685,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                             </>
                                         )}
 
-                                        
+
                                         {lowTasks.length > 0 && (
                                             <>
                                                 <tr key="low-header">
@@ -1678,7 +1701,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                             </>
                                         )}
 
-                                        
+
                                         {otherScrollIndex < otherTasks.length && (
                                             <tr ref={otherObserverTarget} key="other-loading-trigger">
                                                 <td colSpan={10} className="text-center py-4">
@@ -1693,7 +1716,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                         </table>
                     </div>
 
-                   
+
                     <div className="bg-gray-50 border-t border-gray-200 px-6 py-3 flex justify-between items-center">
                         <span className="text-sm text-gray-600">
                             Showing {highTasks.length + mediumTasks.length + lowTasks.length} of {totalCount} tasks

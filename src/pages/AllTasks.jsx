@@ -177,7 +177,7 @@ import TaskList from "../Components/Tasks/TaskList";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import Swal from "sweetalert2";
-import { FaTrashAlt } from "react-icons/fa";
+import { FaTrashAlt, FaFilter } from "react-icons/fa";
 
 const AllTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -185,6 +185,7 @@ const AllTasks = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const dispatch = useDispatch();
   const role = localStorage.getItem("role") || "user"; // Default to 'user' if not set
@@ -300,6 +301,16 @@ const AllTasks = () => {
           </h1>
 
           <div className="flex items-center gap-3">
+            {/* Filter Button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              title="Toggle Filters"
+            >
+              <FaFilter className="text-gray-500" />
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </button>
+
             {/* Create Task Button with Tooltip */}
             <button
               onClick={handleCreateClick}
@@ -345,6 +356,8 @@ const AllTasks = () => {
             tasksOverride={tasks}
             hideCompleted={hideCompleted}
             hideObsolete={true}
+            showFilters={showFilters}
+            onHideFilters={() => setShowFilters(false)}
           />
         
           
