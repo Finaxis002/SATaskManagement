@@ -480,8 +480,8 @@ export default function LeaveRequestForm() {
         )}
       </button>
 
-      {/* Animations */}
-      <style jsx global>{`
+      {/* FIXED: Removed 'jsx' and 'global' attributes to fix console warning */}
+      <style>{`
         @keyframes fade-in {
           from {
             opacity: 0;
