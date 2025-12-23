@@ -7,6 +7,8 @@ import {
   FaHome,
   FaStar,
   FaTrash,
+  FaBars,
+  FaTimes,
 } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi";
 import { MdSupportAgent } from "react-icons/md";
@@ -16,7 +18,7 @@ import StickyNotes from "../Components/notes/StickyNotes";
 import QuickActionsDropdown from "../Components/QuickActionsDropdown";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
 /* ---------------------------- What's New Modal ---------------------------- */
 function WhatsNewModal({
   open,
@@ -196,7 +198,7 @@ function WhatsNewModal({
 }
 
 /* --------------------------------- Header -------------------------------- */
-const Header = () => {
+const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileInitial, setProfileInitial] = useState("Fi");
   const [searchTerm, setSearchTerm] = useState("");
@@ -347,25 +349,26 @@ const Header = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // FIXED: Improved search highlight logic
   useEffect(() => {
     const highlightMatches = (term) => {
-      // Clear existing highlights
       document.querySelectorAll("mark[data-highlight]").forEach((mark) => {
         const parent = mark.parentNode;
         parent.replaceChild(document.createTextNode(mark.textContent), mark);
         parent.normalize();
       });
-      
+
       if (!term) {
         setHighlightRefs([]);
         setCurrentIndex(0);
         return;
       }
 
-      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+      const regex = new RegExp(
+        `(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+        "gi"
+      );
       const foundMarks = [];
-      
+
       const walk = (node) => {
         if (
           node.nodeType === 3 &&
@@ -395,45 +398,40 @@ const Header = () => {
           }
         }
       };
-      
+
       walk(document.body);
       setHighlightRefs(foundMarks);
       setCurrentIndex(0);
-      
-      // Auto-scroll to first result
+
       if (foundMarks.length > 0) {
         foundMarks[0].scrollIntoView({ behavior: "smooth", block: "center" });
         foundMarks[0].style.background = "orange";
       }
     };
-    
+
     const timeoutId = setTimeout(() => {
       highlightMatches(searchTerm);
     }, 300);
-    
+
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  // FIXED: Better Enter key handling for search navigation
   useEffect(() => {
     const handleEnterKey = (e) => {
-      // Only handle Enter if search input is focused and has results
       if (e.key === "Enter" && searchFocused && highlightRefs.length > 0) {
         e.preventDefault();
-        
+
         const nextIndex = (currentIndex + 1) % highlightRefs.length;
         const el = highlightRefs[nextIndex];
-        
+
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        
-        // Reset all highlights to yellow
+
         highlightRefs.forEach((mark) => {
           mark.style.background = "yellow";
         });
-        
-        // Highlight current one as orange
+
         el.style.background = "orange";
-        
+
         setCurrentIndex(nextIndex);
       }
     };
@@ -472,15 +470,12 @@ const Header = () => {
     window.location.href = "/login";
   };
 
-  // FIXED: Better search change handler
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value); // Don't trim while typing to allow spaces
+    setSearchTerm(e.target.value);
   };
 
-  // FIXED: Improved keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl+K or Alt+S to focus search
       if ((e.ctrlKey && e.key === "k") || (e.altKey && e.key === "s")) {
         e.preventDefault();
         const searchInput = document.getElementById("global-search-input");
@@ -497,18 +492,22 @@ const Header = () => {
   return (
     <>
       <header className="bg-white w-full text-gray-800 px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center justify-between shadow-sm sticky top-0 z-50">
-        {/* Left Side - Home Button (Admin Only) */}
+        {/* Left Side - Hamburger Button */}
+
         <div className="flex items-center">
-          {isAdmin && (
-            <button
-              onClick={() => navigate("/")}
-              className="bg-gray-100 md:hidden rounded-full p-1.5 sm:p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200 mr-2 sm:mr-4"
-              aria-label="Home"
-              title="Home"
-            >
-              <FaHome className="text-gray-600 text-base sm:text-lg" />
-            </button>
-          )}
+          <button
+            onClick={onToggleSidebar}
+            className="md:hidden  p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200 mr-2"
+            aria-label="Toggle Menu"
+            title="Toggle Menu"
+          >
+            {isSidebarOpen ? (
+              <FaTimes className="text-gray-600 text-lg" />
+            ) : (
+              /* 👇 Yahan FaBars ko hata kar naya icon lagaya hai */
+              <TbLayoutSidebarLeftCollapse className="text-gray-600 text-xl" />
+            )}
+          </button>
         </div>
 
         {/* Search Bar */}
