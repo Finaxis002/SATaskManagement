@@ -284,3 +284,27 @@ main {
   font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   padding: 1px !important;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.notification-enter {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Prevent layout shifts */
+.notification-container {
+  contain: layout style paint;
+}
+
+/* Skeleton animation */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
