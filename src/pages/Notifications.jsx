@@ -437,7 +437,7 @@ const Notifications = () => {
   const handleMarkAsRead = useCallback(
     async (id) => {
       try {
-        await api.patch(`http://localhost:1100/api/notifications/${id}`, { read: true });
+        await api.patch(`https://taskbe.sharda.co.in/api/notifications/${id}`, { read: true });
 
         setNotifications((prev) =>
           prev.map((notif) =>
@@ -530,11 +530,11 @@ const Notifications = () => {
   try {
     let response;
     if (userRole === "admin") {
-      response = await api.get(`http://localhost:1100/api/notifications?page=${pageNum}&limit=10`);
+      response = await api.get(`https://taskbe.sharda.co.in/api/notifications?page=${pageNum}&limit=10`);
     } else {
       if (!email) throw new Error("No email found");
       response = await api.get(
-        `http://localhost:1100/api/notifications/${encodeURIComponent(email)}?page=${pageNum}&limit=10`
+        `https://taskbe.sharda.co.in/api/notifications/${encodeURIComponent(email)}?page=${pageNum}&limit=10`
       );
     }
 
@@ -826,7 +826,7 @@ const filteredNotifications = useMemo(() => {
       // Batch update - more efficient
       await Promise.all(
         unreadNotifications.map((notif) =>
-          api.patch(`http://localhost:1100/api/notifications/${notif._id}`, { read: true })
+          api.patch(`https://taskbe.sharda.co.in/api/notifications/${notif._id}`, { read: true })
         )
       );
 
@@ -848,7 +848,7 @@ const filteredNotifications = useMemo(() => {
     try {
       await Promise.all(
         selectedNotifications.map((id) =>
-          api.patch(`http://localhost:1100/api/notifications/${id}`, { read: true })
+          api.patch(`https://taskbe.sharda.co.in/api/notifications/${id}`, { read: true })
         )
       );
 
