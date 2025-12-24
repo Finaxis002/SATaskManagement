@@ -426,7 +426,7 @@ const Notifications = () => {
     notificationType: "all",
     priority: "all",
   });
-
+const [allNotifications, setAllNotifications] = useState([]);
   // Memoize user context - only computed once
   const userContext = useMemo(() => getUserContext(), []);
   const { role: userRole, email, allKeys } = userContext;
@@ -434,168 +434,248 @@ const Notifications = () => {
   const limit = 20;
 
   // ===== Optimized Handlers =====
-  const handleMarkAsRead = useCallback(
-    async (id) => {
-      try {
-        await api.patch(`https://taskbe.sharda.co.in/api/notifications/${id}`, { read: true });
+  // const handleMarkAsRead = useCallback(
+  //   async (id) => {
+  //     try {
+  //       await api.patch(`https://taskbe.sharda.co.in/api/notifications/${id}`, { read: true });
 
-        setNotifications((prev) =>
-          prev.map((notif) =>
-            notif._id === id ? { ...notif, read: true } : notif
-          )
-        );
-
-        setNotificationCount((prev) => Math.max(prev - 1, 0));
-        setSelectedNotifications((prev) => prev.filter((item) => item !== id));
-
-        socket.emit("notificationCountUpdated", {
-          email:
-            userRole === "admin" ? "admin" : localStorage.getItem("userId"),
-        });
-      } catch (error) {
-        console.error("Error marking notification as read", error);
-      }
-    },
-    [userRole]
-  );
-
-  // const fetchNotifications = useCallback(async () => {
-  //   setLoading(true);
-  //   try {
-  //     let response;
-
-  //     if (userRole === "admin") {
-  //       response = await api.get(
-  //         `/api/notifications?page=${page}&limit=${limit}`
+  //       setNotifications((prev) =>
+  //         prev.map((notif) =>
+  //           notif._id === id ? { ...notif, read: true } : notif
+  //         )
   //       );
-  //     } else {
-  //       if (!email) {
-  //         console.error("No email found for current user");
-  //         setLoading(false);
-  //         return;
-  //       }
-  //       response = await api.get(
-  //         `/api/notifications/${encodeURIComponent(
-  //           email
-  //         )}?page=${page}&limit=${limit}`
-  //       );
+
+  //       setNotificationCount((prev) => Math.max(prev - 1, 0));
+  //       setSelectedNotifications((prev) => prev.filter((item) => item !== id));
+
+  //       socket.emit("notificationCountUpdated", {
+  //         email:
+  //           userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+  //       });
+  //     } catch (error) {
+  //       console.error("Error marking notification as read", error);
   //     }
+  //   },
+  //   [userRole]
+  // );
 
-  //     const newNotifications = response.data;
+//   const handleMarkAsRead = useCallback(
+//   async (id) => {
+//     try {
+//       await api.patch(`http://localhost:1100/api/notifications/${id}`, { read: true });
 
-  //     const filteredNotifications = newNotifications.filter((n) => {
-  //       if (userRole === "admin") {
-  //         return n.type === "admin";
-  //       }
+//       // Update in allNotifications
+//       setAllNotifications((prev) =>
+//         prev.map((notif) =>
+//           notif._id === id ? { ...notif, read: true } : notif
+//         )
+//       );
 
-  //       if (userRole === "user") {
-  //         const recipientKey =
-  //           n.recipientEmail || n.recipientId || n.recipient || n.userId;
+//       setNotificationCount((prev) => Math.max(prev - 1, 0));
+//       setSelectedNotifications((prev) => prev.filter((item) => item !== id));
 
-  //         const matchesRecipient = recipientKey
-  //           ? allKeys.has(String(recipientKey))
-  //           : false;
+//       socket.emit("notificationCountUpdated", {
+//         email:
+//           userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+//       });
+//     } catch (error) {
+//       console.error("Error marking notification as read", error);
+//     }
+//   },
+//   [userRole]
+// );
 
-  //         const actionAllowed =
-  //           !n.action || ["task-created", "task-updated"].includes(n.action);
+const handleMarkAsRead = useCallback(
+  async (id) => {
+    try {
+      await api.patch(`https://taskbe.sharda.co.in/api/notifications/${id}`, { read: true });
 
-  //         return n.type === "user" && matchesRecipient && actionAllowed;
-  //       }
+      // Update local state immediately for better UX
+      setNotifications(prev =>
+        prev.map(notif =>
+          notif._id === id ? { ...notif, read: true } : notif
+        )
+      );
 
-  //       return false;
-  //     });
+      // Decrement count
+      setNotificationCount(prev => Math.max(prev - 1, 0));
+      setSelectedNotifications(prev => prev.filter(item => item !== id));
 
-  //     setNotifications((prev) =>
-  //       page === 1 ? filteredNotifications : [...prev, ...filteredNotifications]
-  //     );
+      // Emit socket event
+      socket.emit("notificationCountUpdated", {
+        email: userRole === "admin" ? "admin" : email,
+        role: userRole
+      });
+    } catch (error) {
+      console.error("❌ Error marking notification as read", error);
+    }
+  },
+  [userRole, email]
+);
 
-  //     setNotificationCount((prev) =>
-  //       page === 1
-  //         ? filteredNotifications.filter((n) => !n.read).length
-  //         : prev + filteredNotifications.filter((n) => !n.read).length
-  //     );
+//  const fetchNotifications = useCallback(async (pageNum = 1) => {
+//   console.time('API fetch total');
+//   setLoading(true);
+  
+//   try {
+//     let response;
+//     if (userRole === "admin") {
+//       response = await api.get(`http://localhost:1100/api/notifications?page=${pageNum}&limit=10`);
+//     } else {
+//       if (!email) throw new Error("No email found");
+//       response = await api.get(
+//         `http://localhost:1100/api/notifications/${encodeURIComponent(email)}?page=${pageNum}&limit=10`
+//       );
+//     }
 
-  //     setHasMore(newNotifications.length === limit);
-  //   } catch (error) {
-  //     console.error("Error fetching notifications", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }, [userRole, page, email, allKeys]);
+//     // DEBUG: Check what the server returns
+//     console.log('API Response:', response.data);
+    
+//     // Extract data - server returns { data: [...], pagination: {...} }
+//     let newNotifications = [];
+//     if (response.data && response.data.data) {
+//       newNotifications = response.data.data; // Array is inside data property
+//     } else if (Array.isArray(response.data)) {
+//       newNotifications = response.data; // Direct array
+//     }
+    
+//     // Process for correct user
+//     const filteredNotifications = newNotifications.filter((n) => {
+//       if (userRole === "admin") {
+//         return n.type === "admin";
+//       }
+//       if (userRole === "user") {
+//         const recipientKey = n.recipientEmail || n.recipientId || n.recipient || n.userId;
+//         return recipientKey && allKeys.has(String(recipientKey));
+//       }
+//       return false;
+//     });
+    
+//     // Update state - append for pagination
+//     setNotifications(prev => 
+//       pageNum === 1 ? filteredNotifications : [...prev, ...filteredNotifications]
+//     );
+    
+//     // Update unread count
+//     const unreadCount = filteredNotifications.filter((n) => !n.read).length;
+//     if (pageNum === 1) {
+//       setNotificationCount(unreadCount);
+//     } else {
+//       setNotificationCount(prev => prev + unreadCount);
+//     }
+    
+//     // Update hasMore based on pagination or array length
+//     const pagination = response.data.pagination;
+//     if (pagination) {
+//       setHasMore(pageNum < pagination.totalPages);
+//     } else {
+//       setHasMore(filteredNotifications.length === 10);
+//     }
+    
+//     console.timeEnd('API fetch total');
+//     console.log(`Fetched ${filteredNotifications.length} notifications, hasMore: ${hasMore}`);
+    
+//   } catch (error) {
+//     console.error("Error fetching notifications:", error);
+//   } finally {
+//     setLoading(false);
+//   }
+// }, [userRole, email, allKeys]);
 
- const fetchNotifications = useCallback(async (pageNum = 1) => {
+// ✅ UPDATE: Fetch notifications with filters (new backend endpoint)
+const fetchNotifications = useCallback(async (pageNum = 1, shouldReset = false) => {
   console.time('API fetch total');
   setLoading(true);
   
   try {
-    let response;
-    if (userRole === "admin") {
-      response = await api.get(`https://taskbe.sharda.co.in/api/notifications?page=${pageNum}&limit=10`);
-    } else {
-      if (!email) throw new Error("No email found");
-      response = await api.get(
-        `https://taskbe.sharda.co.in/api/notifications/${encodeURIComponent(email)}?page=${pageNum}&limit=10`
-      );
+    // Build filter object (matches your frontend filter names)
+    const filterParams = {
+      readStatus: filters.readStatus,
+      timeRange: filters.timeRange,
+      notificationType: filters.notificationType,
+      priority: filters.priority,
+    };
+    
+    // Add search only if it has value
+    if (searchQuery.trim()) {
+      filterParams.search = searchQuery;
     }
 
-    // DEBUG: Check what the server returns
-    console.log('API Response:', response.data);
-    
-    // Extract data - server returns { data: [...], pagination: {...} }
-    let newNotifications = [];
-    if (response.data && response.data.data) {
-      newNotifications = response.data.data; // Array is inside data property
-    } else if (Array.isArray(response.data)) {
-      newNotifications = response.data; // Direct array
-    }
-    
-    // Process for correct user
-    const filteredNotifications = newNotifications.filter((n) => {
-      if (userRole === "admin") {
-        return n.type === "admin";
+    console.log('📡 Sending filters to backend:', filterParams);
+    console.log('📡 Request params:', {
+      email: userRole === "admin" ? "admin" : email,
+      role: userRole,
+      page: pageNum,
+      limit: 10
+    });
+
+    // ✅ MAKE THIS API CALL - Use the new unified endpoint
+    const response = await api.get(`https://taskbe.sharda.co.in/api/notifications`, {
+      params: {
+        email: userRole === "admin" ? "admin" : email,  // For admin: send "admin", for user: send user email
+        role: userRole,                                 // "admin" or "user"
+        page: pageNum,
+        limit: 10,
+        filters: JSON.stringify(filterParams)           // Send filters as JSON string
       }
-      if (userRole === "user") {
-        const recipientKey = n.recipientEmail || n.recipientId || n.recipient || n.userId;
-        return recipientKey && allKeys.has(String(recipientKey));
-      }
-      return false;
+    });
+
+    const newNotifications = response.data.data || [];
+    const pagination = response.data.pagination;
+    
+    console.log('📥 API Response:', {
+      count: newNotifications.length,
+      total: pagination?.total,
+      unreadCount: pagination?.unreadCount,
+      page: pageNum,
+      hasMore: pageNum < pagination?.totalPages
     });
     
-    // Update state - append for pagination
-    setNotifications(prev => 
-      pageNum === 1 ? filteredNotifications : [...prev, ...filteredNotifications]
-    );
-    
-    // Update unread count
-    const unreadCount = filteredNotifications.filter((n) => !n.read).length;
-    if (pageNum === 1) {
-      setNotificationCount(unreadCount);
+    // Update state
+    if (shouldReset || pageNum === 1) {
+      setNotifications(newNotifications);
     } else {
-      setNotificationCount(prev => prev + unreadCount);
+      setNotifications(prev => [...prev, ...newNotifications]);
     }
     
-    // Update hasMore based on pagination or array length
-    const pagination = response.data.pagination;
-    if (pagination) {
-      setHasMore(pageNum < pagination.totalPages);
-    } else {
-      setHasMore(filteredNotifications.length === 10);
-    }
-    
-    console.timeEnd('API fetch total');
-    console.log(`Fetched ${filteredNotifications.length} notifications, hasMore: ${hasMore}`);
+    // Update counts from pagination
+    setNotificationCount(pagination?.unreadCount || 0);
+    setHasMore(pageNum < pagination?.totalPages);
     
   } catch (error) {
-    console.error("Error fetching notifications:", error);
+    console.error("❌ Error fetching notifications:", error);
+    // Optional: Fallback to old endpoints if new one fails
+    console.log("Trying fallback to old endpoint...");
+    // You can add fallback logic here if needed
   } finally {
     setLoading(false);
   }
-}, [userRole, email, allKeys]);
+}, [userRole, email, filters, searchQuery]);
+
+useEffect(() => {
+  console.log('🔄 Filters or search changed, resetting...');
+  setPage(1);
+  setNotifications([]);
+  setHasMore(true);
+  fetchNotifications(1, true);
+}, [filters, searchQuery]);
+
+// ✅ UPDATE: Load more when page changes
+useEffect(() => {
+  if (page > 1) {
+    console.log('📄 Loading page:', page);
+    fetchNotifications(page, false);
+  }
+}, [page]);
+
+  // useEffect(() => {
+  //   fetchNotifications(page);
+  // }, [fetchNotifications, page]);
 
   useEffect(() => {
-    fetchNotifications(page);
-  }, [fetchNotifications, page]);
-
+  console.log('🚀 Initial load');
+  fetchNotifications(1, true);
+}, []);
   // Optimized date normalization
   const normalizeDateString = useCallback((dateString) => {
     return dateString
@@ -604,182 +684,130 @@ const Notifications = () => {
       .join("/");
   }, []);
 
-  // Memoized filtered notifications with optimizations
-  // const filteredNotifications = useMemo(() => {
-  //   let result = notifications.filter((notification) => {
-  //     // Early return if no search query and default filters
-  //     if (
-  //       !searchQuery &&
-  //       filters.readStatus === "all" &&
-  //       filters.timeRange === "all" &&
-  //       filters.notificationType === "all" &&
-  //       filters.priority === "all"
-  //     ) {
-  //       return true;
-  //     }
-
-  //     // Search filter
-  //     const query = searchQuery.toLowerCase();
-  //     let searchMatch = true;
-
-  //     if (searchQuery) {
-  //       const message = notification.message?.toLowerCase() || "";
-  //       const updaterName = (() => {
-  //         try {
-  //           const updater = JSON.parse(notification.updatedBy);
-  //           return updater?.name?.toLowerCase() || "";
-  //         } catch {
-  //           return "";
-  //         }
-  //       })();
-  //       const detailsText = notification.details
-  //         ? Object.values(notification.details).join(" ").toLowerCase()
-  //         : "";
-  //       const normalizedCreatedAt = normalizeDateString(
-  //         new Date(notification.createdAt).toLocaleDateString("en-GB", {
-  //           day: "2-digit",
-  //           month: "2-digit",
-  //           year: "numeric",
-  //         })
-  //       ).toLowerCase();
-  //       const normalizedQuery = normalizeDateString(searchQuery.toLowerCase());
-
-  //       searchMatch =
-  //         message.includes(query) ||
-  //         updaterName.includes(query) ||
-  //         detailsText.includes(query) ||
-  //         normalizedCreatedAt.includes(normalizedQuery);
-  //     }
-
-  //     // Filter conditions
-  //     const readStatusMatch =
-  //       filters.readStatus === "all" ||
-  //       (filters.readStatus === "read" && notification.read) ||
-  //       (filters.readStatus === "unread" && !notification.read);
-
-  //     let timeRangeMatch = true;
-  //     if (filters.timeRange !== "all") {
-  //       const now = new Date();
-  //       const notifDate = new Date(notification.createdAt);
-        
-  //       if (filters.timeRange === "today") {
-  //         timeRangeMatch = notifDate.toDateString() === now.toDateString();
-  //       } else if (filters.timeRange === "week") {
-  //         const weekAgo = new Date(now);
-  //         weekAgo.setDate(now.getDate() - 7);
-  //         timeRangeMatch = notifDate >= weekAgo;
-  //       } else if (filters.timeRange === "month") {
-  //         const monthAgo = new Date(now);
-  //         monthAgo.setMonth(now.getMonth() - 1);
-  //         timeRangeMatch = notifDate >= monthAgo;
-  //       }
-  //     }
-
-  //     const typeMatch =
-  //       filters.notificationType === "all" ||
-  //       notification.action === filters.notificationType;
-
-  //     const priorityMatch =
-  //       filters.priority === "all" ||
-  //       notification.priority === filters.priority;
-
-  //     return (
-  //       searchMatch &&
-  //       readStatusMatch &&
-  //       timeRangeMatch &&
-  //       typeMatch &&
-  //       priorityMatch
-  //     );
-  //   });
-
-  //   // Grouping logic
-  //   if (groupBy !== "none") {
-  //     return result.reduce((groups, notif) => {
-  //       let key;
-  //       if (groupBy === "date") {
-  //         key = new Date(notif.createdAt).toLocaleDateString("en-GB");
-  //       } else if (groupBy === "type") {
-  //         key = notif.action || "other";
-  //       }
-
-  //       if (!groups[key]) groups[key] = [];
-  //       groups[key].push(notif);
-  //       return groups;
-  //     }, {});
-  //   }
-
-  //   return { "All Notifications": result };
-  // }, [notifications, searchQuery, filters, groupBy, normalizeDateString]);
 
   // SIMPLE WORKING FILTER LOGIC
+// const filteredNotifications = useMemo(() => {
+//   // Make sure we have data
+//   if (!Array.isArray(notifications) || notifications.length === 0) {
+//     return { "All Notifications": [] };
+//   }
+
+//   console.log('Current filters:', filters);
+  
+//   // Apply filters
+//   let filtered = [...notifications]; // Start with all notifications
+
+//   // 1. Filter by read status
+//   if (filters.readStatus !== "all") {
+//     filtered = filtered.filter(notif => 
+//       filters.readStatus === "read" ? notif.read : !notif.read
+//     );
+//   }
+
+//   // 2. Filter by notification type (task-created vs task-updated)
+//   if (filters.notificationType !== "all") {
+//     if (filters.notificationType === "task-created") {
+//       filtered = filtered.filter(notif => 
+//         notif.action === "task-created" || 
+//         (notif.message && notif.message.toLowerCase().includes("created"))
+//       );
+//     } else if (filters.notificationType === "task-updated") {
+//       filtered = filtered.filter(notif => 
+//         notif.action === "task-updated" || 
+//         (notif.message && notif.message.toLowerCase().includes("updated"))
+//       );
+//     }
+//   }
+
+//   // 3. Filter by time range
+//   if (filters.timeRange !== "all") {
+//     const now = new Date();
+//     filtered = filtered.filter(notif => {
+//       const notifDate = new Date(notif.createdAt);
+//       const diffDays = Math.floor((now - notifDate) / (1000 * 60 * 60 * 24));
+      
+//       if (filters.timeRange === "today") return diffDays === 0;
+//       if (filters.timeRange === "week") return diffDays <= 7;
+//       if (filters.timeRange === "month") return diffDays <= 30;
+//       return true;
+//     });
+//   }
+
+//   // 4. Filter by priority
+//   if (filters.priority !== "all") {
+//     filtered = filtered.filter(notif => notif.priority === filters.priority);
+//   }
+
+//   // 5. Search filter
+//   if (searchQuery) {
+//     const query = searchQuery.toLowerCase();
+//     filtered = filtered.filter(notif => 
+//       (notif.message && notif.message.toLowerCase().includes(query)) ||
+//       (notif.details && JSON.stringify(notif.details).toLowerCase().includes(query))
+//     );
+//   }
+
+//   console.log('Filter results:', {
+//     total: notifications.length,
+//     filtered: filtered.length,
+//     actions: filtered.map(n => n.action || 'none')
+//   });
+
+//   // Grouping
+//   if (groupBy !== "none") {
+//     const groups = {};
+    
+//     filtered.forEach(notif => {
+//       let key = "other";
+      
+//       if (groupBy === "date") {
+//         key = new Date(notif.createdAt).toLocaleDateString("en-GB");
+//       } else if (groupBy === "type") {
+//         key = notif.action || "other";
+//       }
+      
+//       if (!groups[key]) groups[key] = [];
+//       groups[key].push(notif);
+//     });
+
+//     // Sort date groups (newest first)
+//     if (groupBy === "date") {
+//       const sortedGroups = {};
+//       Object.keys(groups)
+//         .sort((a, b) => {
+//           const dateA = new Date(a.split('/').reverse().join('-'));
+//           const dateB = new Date(b.split('/').reverse().join('-'));
+//           return dateB - dateA;
+//         })
+//         .forEach(key => {
+//           sortedGroups[key] = groups[key];
+//         });
+//       return sortedGroups;
+//     }
+
+//     return groups;
+//   }
+
+//   return { "All Notifications": filtered };
+// }, [notifications, filters, searchQuery, groupBy]);
+
+// SIMPLE WORKING FILTER LOGIC
+// ✅ SIMPLIFIED: Just use server-filtered data (no client-side filtering)
 const filteredNotifications = useMemo(() => {
+  console.log('🔍 Filter memo running. Notifications count:', notifications.length);
+  
   // Make sure we have data
   if (!Array.isArray(notifications) || notifications.length === 0) {
+    console.log('No notifications to display');
     return { "All Notifications": [] };
   }
 
-  console.log('Current filters:', filters);
-  
-  // Apply filters
-  let filtered = [...notifications]; // Start with all notifications
+  // Just use the notifications from server (already filtered)
+  const filtered = [...notifications];
 
-  // 1. Filter by read status
-  if (filters.readStatus !== "all") {
-    filtered = filtered.filter(notif => 
-      filters.readStatus === "read" ? notif.read : !notif.read
-    );
-  }
+  console.log('Using', filtered.length, 'server-filtered notifications');
 
-  // 2. Filter by notification type (task-created vs task-updated)
-  if (filters.notificationType !== "all") {
-    if (filters.notificationType === "task-created") {
-      filtered = filtered.filter(notif => 
-        notif.action === "task-created" || 
-        (notif.message && notif.message.toLowerCase().includes("created"))
-      );
-    } else if (filters.notificationType === "task-updated") {
-      filtered = filtered.filter(notif => 
-        notif.action === "task-updated" || 
-        (notif.message && notif.message.toLowerCase().includes("updated"))
-      );
-    }
-  }
-
-  // 3. Filter by time range
-  if (filters.timeRange !== "all") {
-    const now = new Date();
-    filtered = filtered.filter(notif => {
-      const notifDate = new Date(notif.createdAt);
-      const diffDays = Math.floor((now - notifDate) / (1000 * 60 * 60 * 24));
-      
-      if (filters.timeRange === "today") return diffDays === 0;
-      if (filters.timeRange === "week") return diffDays <= 7;
-      if (filters.timeRange === "month") return diffDays <= 30;
-      return true;
-    });
-  }
-
-  // 4. Filter by priority
-  if (filters.priority !== "all") {
-    filtered = filtered.filter(notif => notif.priority === filters.priority);
-  }
-
-  // 5. Search filter
-  if (searchQuery) {
-    const query = searchQuery.toLowerCase();
-    filtered = filtered.filter(notif => 
-      (notif.message && notif.message.toLowerCase().includes(query)) ||
-      (notif.details && JSON.stringify(notif.details).toLowerCase().includes(query))
-    );
-  }
-
-  console.log('Filter results:', {
-    total: notifications.length,
-    filtered: filtered.length,
-    actions: filtered.map(n => n.action || 'none')
-  });
-
-  // Grouping
+  // Only do grouping locally
   if (groupBy !== "none") {
     const groups = {};
     
@@ -815,63 +843,145 @@ const filteredNotifications = useMemo(() => {
   }
 
   return { "All Notifications": filtered };
-}, [notifications, filters, searchQuery, groupBy]);
+}, [notifications, groupBy]); // Only depend on notifications and groupBy
 
 
-  const handleMarkAllAsRead = useCallback(async () => {
-    try {
-      const unreadNotifications = notifications.filter((n) => !n.read);
-      if (unreadNotifications.length === 0) return;
+// Update filter change handlers - remove page reset
+const handleFilterChange = (filterType, value) => {
+  setFilters(prev => ({
+    ...prev,
+    [filterType]: value
+  }));
+  // 🔥 REMOVED: setPage(1); - Don't reset page on filter change
+};
 
-      // Batch update - more efficient
-      await Promise.all(
-        unreadNotifications.map((notif) =>
-          api.patch(`https://taskbe.sharda.co.in/api/notifications/${notif._id}`, { read: true })
-        )
-      );
+// Update groupBy handler - remove page reset
+const handleGroupByChange = (type) => {
+  setGroupBy(type);
+  // 🔥 REMOVED: setPage(1); - Don't reset page on group change
+};
+  // const handleMarkAllAsRead = useCallback(async () => {
+  //   try {
+  //     const unreadNotifications = notifications.filter((n) => !n.read);
+  //     if (unreadNotifications.length === 0) return;
 
-      setNotifications((prev) =>
-        prev.map((notif) => ({ ...notif, read: true }))
-      );
-      setNotificationCount(0);
-      setSelectedNotifications([]);
+  //     // Batch update - more efficient
+  //     await Promise.all(
+  //       unreadNotifications.map((notif) =>
+  //         api.patch(`http://localhost:1100/api/notifications/${notif._id}`, { read: true })
+  //       )
+  //     );
 
-      socket.emit("notificationCountUpdated", {
-        email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
-      });
-    } catch (error) {
-      console.error("Error marking all notifications as read", error);
+  //     setNotifications((prev) =>
+  //       prev.map((notif) => ({ ...notif, read: true }))
+  //     );
+  //     setNotificationCount(0);
+  //     setSelectedNotifications([]);
+
+  //     socket.emit("notificationCountUpdated", {
+  //       email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+  //     });
+  //   } catch (error) {
+  //     console.error("Error marking all notifications as read", error);
+  //   }
+  // }, [notifications, userRole]);
+
+  // ✅ UPDATE: Mark all as read with filters
+const handleMarkAllAsRead = useCallback(async () => {
+  try {
+    // Build filter object (same as fetch)
+    const filterParams = {
+      readStatus: "unread", // Only mark unread ones
+      timeRange: filters.timeRange,
+      notificationType: filters.notificationType,
+      priority: filters.priority,
+    };
+    
+    if (searchQuery.trim()) {
+      filterParams.search = searchQuery;
     }
-  }, [notifications, userRole]);
+
+    console.log('📤 Mark all as read with filters:', filterParams);
+
+    // Use the new mark-all-read endpoint
+    await api.patch(`https://taskbe.sharda.co.in/api/notifications/mark-all-read`, {
+      email: userRole === "admin" ? "admin" : email,
+      role: userRole,
+      filters: filterParams
+    });
+
+    // Refetch to update UI
+    fetchNotifications(1, true);
+    
+    // Emit socket event
+    socket.emit("notificationCountUpdated", {
+      email: userRole === "admin" ? "admin" : email,
+      role: userRole
+    });
+  } catch (error) {
+    console.error("❌ Error marking all as read", error);
+  }
+}, [userRole, email, filters, searchQuery, fetchNotifications]);
+
+  // const handleBulkMarkAsRead = useCallback(async () => {
+  //   try {
+  //     await Promise.all(
+  //       selectedNotifications.map((id) =>
+  //         api.patch(`http://localhost:1100/api/notifications/${id}`, { read: true })
+  //       )
+  //     );
+
+  //     setNotifications((prev) =>
+  //       prev.map((notif) =>
+  //         selectedNotifications.includes(notif._id)
+  //           ? { ...notif, read: true }
+  //           : notif
+  //       )
+  //     );
+
+  //     setNotificationCount((prev) =>
+  //       Math.max(prev - selectedNotifications.length, 0)
+  //     );
+  //     setSelectedNotifications([]);
+
+  //     socket.emit("notificationCountUpdated", {
+  //       email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+  //     });
+  //   } catch (error) {
+  //     console.error("Error in bulk mark as read", error);
+  //   }
+  // }, [selectedNotifications, userRole]);
 
   const handleBulkMarkAsRead = useCallback(async () => {
-    try {
-      await Promise.all(
-        selectedNotifications.map((id) =>
-          api.patch(`https://taskbe.sharda.co.in/api/notifications/${id}`, { read: true })
-        )
-      );
+  try {
+    await Promise.all(
+      selectedNotifications.map((id) =>
+        api.patch(`https://taskbe.sharda.co.in/api/notifications/${id}`, { read: true })
+      )
+    );
 
-      setNotifications((prev) =>
-        prev.map((notif) =>
-          selectedNotifications.includes(notif._id)
-            ? { ...notif, read: true }
-            : notif
-        )
-      );
+    // Update all notifications
+    setAllNotifications(prev =>
+      prev.map((notif) =>
+        selectedNotifications.includes(notif._id)
+          ? { ...notif, read: true }
+          : notif
+      )
+    );
 
-      setNotificationCount((prev) =>
-        Math.max(prev - selectedNotifications.length, 0)
-      );
-      setSelectedNotifications([]);
+    setNotificationCount(prev =>
+      Math.max(prev - selectedNotifications.length, 0)
+    );
+    setSelectedNotifications([]);
 
-      socket.emit("notificationCountUpdated", {
-        email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
-      });
-    } catch (error) {
-      console.error("Error in bulk mark as read", error);
-    }
-  }, [selectedNotifications, userRole]);
+    socket.emit("notificationCountUpdated", {
+      email: userRole === "admin" ? "admin" : localStorage.getItem("userId"),
+    });
+  } catch (error) {
+    console.error("Error in bulk mark as read", error);
+  }
+}, [selectedNotifications, userRole]);
+
 
   const toggleSelectNotification = useCallback((id) => {
     setSelectedNotifications((prev) =>
@@ -1133,7 +1243,7 @@ const filteredNotifications = useMemo(() => {
     )}
     
     {/* Load More Section */}
-    {hasMore && (
+    {/* {hasMore && (
       <div className="text-center pt-6">
         <button
           onClick={() => setPage(prev => prev + 1)}
@@ -1146,7 +1256,33 @@ const filteredNotifications = useMemo(() => {
           Showing {notifications.length} notifications
         </p>
       </div>
-    )}
+    )}  */}
+   
+{hasMore && (
+  <div className="text-center pt-6">
+    <button
+      onClick={() => setPage(prev => prev + 1)}
+      disabled={loading}
+      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+    >
+      {loading ? "Loading..." : `Load More (Page ${page + 1})`}
+    </button>
+    <p className="text-sm text-gray-500 mt-2">
+      Showing {notifications.length} of {Object.keys(filteredNotifications).length > 0 ? 
+        (Object.values(filteredNotifications)[0]?.length || 0) : 0} filtered notifications
+      {page > 1 && ` • Page ${page}`}
+    </p>
+  </div>
+)}
+
+{!hasMore && allNotifications.length > 0 && (
+  <div className="text-center text-sm text-gray-400 py-4">
+    All {allNotifications.length} notifications loaded
+    {Object.keys(filteredNotifications).length > 0 && 
+     Object.values(filteredNotifications)[0] && 
+     ` • ${Object.values(filteredNotifications)[0].length} match current filters`}
+  </div>
+)}
     
     {!hasMore && notifications.length > 0 && (
       <div className="text-center text-sm text-gray-400 py-4">
