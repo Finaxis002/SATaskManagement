@@ -20,19 +20,18 @@ import {
 const mockTask = {
   _id: "task123",
   code: "GST",
-  assignedBy: { name: "CA Anunay Sharda" }, // Changed for testing
+  assignedBy: { name: "CA Anunay Sharda" },
   clientName: "ABC Industries PvLtd",
   clientId: "CLI_2024_001",
 };
 
-// --- CONFIGURATION: Phone Numbers Mapping ---
+// --- CONFIGURATION: Phone Numbers Mapping (Reference only, unused in group logic) ---
 const ASSIGNED_NUMBERS = {
   "CA Shraddha Atal": "917000148090",
   "CA Anunay Sharda": "917987021896",
   "CA Anugrah Sharda": "917999858202",
 };
 
-// Default number agar assignedBy name list me na mile to
 const DEFAULT_WHATSAPP_NUMBER = "917999858202";
 
 // Document Library
@@ -416,21 +415,23 @@ const MessagePopup = ({
     fetchMessageHistory();
   }, [taskId, isOpen, clientId]);
 
-  // Handle Send Message
+  // -------------------------------------------------------------------------
+  // UPDATED: Handle Send Message (Added Assigned By to Copy Text)
+  // -------------------------------------------------------------------------
   const handleSendMessage = async () => {
     const trimmed = message.trim();
     if (!trimmed && selectedDocs.length === 0) return;
 
     const docsArray = selectedDocs.map((d) => d.value);
 
-    // --- DYNAMIC NUMBER LOGIC STARTS HERE ---
-    const assigneeName = assignedBy ? assignedBy.trim() : "";
-    const whatsappNumber = ASSIGNED_NUMBERS[assigneeName] || DEFAULT_WHATSAPP_NUMBER;
-    // --- DYNAMIC NUMBER LOGIC ENDS HERE ---
+    // --- GROUP LINK CONFIGURATION ---
+    const TARGET_GROUP_LINK = "https://chat.whatsapp.com/KEmBZ8T0NwWHYlH4FjeVzb";
 
-    const baseUrl = `https://wa.me/${whatsappNumber}?text=`;
-
-    let fullMessage = `*Client:* ${clientName}\n\n`;
+    // --- CONSTRUCT COPY TEXT ---
+    // Added "Assigned By" at the top
+    let fullMessage = `*Assigned By:* ${assignedBy}\n`;
+    fullMessage += `*Client:* ${clientName}\n\n`;
+    
     if (trimmed) fullMessage += `*Message:*\n${trimmed}\n\n`;
 
     let docsSection = "";
@@ -440,27 +441,10 @@ const MessagePopup = ({
         .join("\n")}`;
     }
 
-    const maxUrlLength = 2000;
+    // Final text to copy
     let finalWhatsappText = fullMessage + docsSection;
-    let encodedMessage = encodeURIComponent(finalWhatsappText);
 
-    if (baseUrl.length + encodedMessage.length > maxUrlLength) {
-      const limitDocs = 10;
-      const visibleDocs = docsArray.slice(0, limitDocs);
-      const remainingCount = docsArray.length - limitDocs;
-
-      const shortDocSection = `*Documents Requested:*\n${visibleDocs
-        .map((doc) => `• ${doc}`)
-        .join(
-          "\n"
-        )}\n\n_...and ${remainingCount} more documents (See portal/email)_`;
-
-      finalWhatsappText = fullMessage + shortDocSection;
-      encodedMessage = encodeURIComponent(finalWhatsappText);
-    }
-
-    const whatsappURL = `${baseUrl}${encodedMessage}`;
-
+    // Payload for Database (keeps basic structure)
     const payload = {
       taskId: taskId || null,
       clientName: clientName,
@@ -481,9 +465,20 @@ const MessagePopup = ({
     setHistoryError(null);
 
     try {
-      await sendMessage(payload);
-      window.open(whatsappURL, "_blank");
+      // 1. COPY TO CLIPBOARD FIRST (To ensure browser doesn't block it)
+      try {
+        await navigator.clipboard.writeText(finalWhatsappText);
+      } catch (copyError) {
+        console.error("Auto-copy failed:", copyError);
+      }
 
+      // 2. OPEN GROUP IMMEDIATELY (To avoid popup blockers from async delay)
+      window.open(TARGET_GROUP_LINK, "_blank");
+
+      // 3. Save to Database (Background process)
+      await sendMessage(payload);
+
+      // 4. Update UI History (Optimistic)
       const optimisticMessage = {
         _id: `temp-${Date.now()}`,
         sentBy: loggedInUserName,
@@ -498,8 +493,8 @@ const MessagePopup = ({
       setSelectedDocs([]);
       setSelectedTemplate(null);
 
+      // 5. Refresh History from Server
       const token = localStorage.getItem("authToken");
-
       const isClientIdValid =
         clientId &&
         !clientId.toString().includes("not found") &&
@@ -531,6 +526,7 @@ const MessagePopup = ({
       setIsSending(false);
     }
   };
+  // -------------------------------------------------------------------------
 
   const toggleDocument = (doc) => {
     setSelectedDocs((prev) => {
@@ -601,7 +597,7 @@ const MessagePopup = ({
                 <h2 className="text-base sm:text-xl lg:text-2xl font-bold text-white">
                   Send WhatsApp Message
                 </h2>
-                 {/* Displaying to whom the message will go (Optional UI enhancement) */}
+                {/* Displaying to whom the message will go (Optional UI enhancement) */}
                 <span className="text-xs text-green-200">via: {assignedBy}</span>
               </div>
             </div>
