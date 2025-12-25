@@ -228,7 +228,7 @@ const LeaveRequestList = () => {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition max-h-[calc(100vh-180px)] overflow-y-auto">
+    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition max-h-[calc(102vh-180px)] overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-semibold text-gray-800">Your Leave Requests</h2>
         <button
