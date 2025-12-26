@@ -2239,7 +2239,7 @@ import { Loader2 } from "lucide-react";
 const socket = io("https://taskbe.sharda.co.in");
 const ITEMS_PER_PAGE = 30;
 const MOBILE_ITEMS_PER_PAGE = 15;
-const BASE_URL = "http://localhost:1100/api/tasks";
+const BASE_URL = "https://taskbe.sharda.co.in/api/tasks";
 
 const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride, hideCompleted, showFilters, onHideFilters }) => {
     // State for paginated tasks
