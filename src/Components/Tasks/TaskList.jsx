@@ -56,7 +56,7 @@
 //     try {
 //         console.log("🔄 Fetching with server-side filters...");
 //         console.time('API-Request');
-        
+
 //         // Build comprehensive filter for server-side processing
 //         const filterParams = {
 //             ...userFilter,
@@ -155,7 +155,7 @@
 // // Progressive loading function
 // const loadMoreTasks = async () => {
 //     if (isFetchingMore || !hasMoreServerData) return;
-    
+
 //     setIsFetchingMore(true);
 //     try {
 //         const nextPage = currentServerPage + 1;
@@ -557,7 +557,7 @@
 //         hasMore = data.hasMore === true || 
 //                   data.totalPages > page || 
 //                   data.nextPage !== null;
-        
+
 //         page++;
 
 //         // Small delay
@@ -698,7 +698,7 @@
 //     const highTasks = [];
 //     const mediumTasks = [];
 //     const lowTasks = [];
-    
+
 //     for (const task of filteredTasks) {
 //         if (task.priority === "High") {
 //             highTasks.push(task);
@@ -718,12 +718,12 @@
 
 //     // Sort high priority tasks (always sorted since they're always visible)
 //     const sortedHigh = sortIfNeeded(highTasks);
-    
+
 //     if (isMobileView) {
 //         // Mobile: sort medium/low separately
 //         const sortedMedium = sortIfNeeded(mediumTasks);
 //         const sortedLow = sortIfNeeded(lowTasks);
-        
+
 //         return {
 //             allHighTasks: sortedHigh,
 //             otherTasks: [...mediumTasks, ...lowTasks], // unsorted for mobile
@@ -736,7 +736,7 @@
 //     // Desktop with virtualization
 //     const sortedMedium = sortIfNeeded(mediumTasks);
 //     const sortedLow = sortIfNeeded(lowTasks);
-    
+
 //     // Apply virtualization slicing AFTER sorting
 //     const virtualHigh = sortedHigh.slice(0, highScrollIndex);
 //     const virtualMedium = sortedMedium.slice(0, otherScrollIndex);
@@ -835,7 +835,7 @@
 //         };
 //     }, [otherScrollIndex, loading, isMobileView, otherTasks.length]);
 
-    
+
 // //mediumTasks.length, lowTasks.length,
 //     // ⭐️ Intersection Observer for Medium/Low Virtual Scroll (Desktop)
 //     // useEffect(() => {
@@ -1300,7 +1300,7 @@
 
 //                 {/* Work Date */}
 //                 {/* <td className="py-3 px-2 text-xs text-gray-700">
-                   
+
 //                     {formatDate(task.assignedDate)}
 //                 </td> */}
 //                 {/* {new Date(task.assignedDate).toLocaleDateString("en-GB")} */}
@@ -1570,7 +1570,7 @@
 //                         {/* <div>
 //                             <span className="text-xs font-semibold text-gray-600 block mb-1">Work Date</span>
 //                             <div className="text-sm text-gray-900 font-medium">
-                               
+
 //                                 {formatDate(task.assignedDate)}
 //                             </div>
 //                         </div> */}
@@ -2248,22 +2248,22 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [hasMore, setHasMore] = useState(true);
-    
+
     // Loading states
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [loadingStatus, setLoadingStatus] = useState({});
     const [isFetchingMore, setIsFetchingMore] = useState(false);
-    
+
     // Full task details cache
     const [taskDetailsCache, setTaskDetailsCache] = useState({});
-    
+
     // Stats
-    const [stats, setStats] = useState({ 
-        highCount: 0, 
-        mediumCount: 0, 
-        lowCount: 0, 
-        totalCount: 0 
+    const [stats, setStats] = useState({
+        highCount: 0,
+        mediumCount: 0,
+        lowCount: 0,
+        totalCount: 0
     });
 
     // Filter states
@@ -2296,7 +2296,9 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     const [uniqueUsers, setUniqueUsers] = useState([]);
     const [uniqueAssignedBy, setUniqueAssignedBy] = useState([]);
     const [uniqueStatuses, setUniqueStatuses] = useState([]);
-
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    const [userManuallyScrolled, setUserManuallyScrolled] = useState(false);
+    const tableContainerRef = useRef(null);
     // Refs
     const fetchControllerRef = useRef(null);
     const observerRef = useRef(null);
@@ -2364,7 +2366,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             if (filters.department) params.append('department', filters.department);
             if (filters.code) params.append('code', filters.code);
             if (searchTerm) params.append('search', searchTerm);
-            
+
             // For non-admin, filter by assignee
             if (!isAdmin && currentUserName && !filters.assignee) {
                 params.append('assignee', currentUserName);
@@ -2378,14 +2380,14 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
             const data = await response.json();
-            
+
             // Update state
             if (shouldReset || page === 1) {
                 setTasks(data.tasks || []);
             } else {
                 setTasks(prev => [...prev, ...(data.tasks || [])]);
             }
-            
+
             setCurrentPage(page);
             setTotalPages(data.totalPages || 1);
             setTotalCount(data.totalCount || 0);
@@ -2418,7 +2420,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
             const response = await fetch(`${BASE_URL}/stats?${params}`);
             const data = await response.json();
-            
+
             setStats({
                 highCount: data.highCount || 0,
                 mediumCount: data.mediumCount || 0,
@@ -2439,15 +2441,15 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         try {
             const response = await fetch(`${BASE_URL}/${taskId}`);
             if (!response.ok) throw new Error('Failed to fetch task details');
-            
+
             const task = await response.json();
-            
+
             // Cache the result
             setTaskDetailsCache(prev => ({
                 ...prev,
                 [taskId]: task
             }));
-            
+
             return task;
         } catch (error) {
             console.error("Error fetching task details:", error);
@@ -2531,38 +2533,127 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     }, []);
 
     useEffect(() => {
-    if (tasks.length > 0) {
-        // Extract unique assignees
-        const assigneeSet = new Set();
-        const assignedBySet = new Set();
-        const statusSet = new Set();
-        
-        tasks.forEach(task => {
-            // Add assignees
-            if (task.assignees && Array.isArray(task.assignees)) {
-                task.assignees.forEach(assignee => {
-                    if (assignee.name) assigneeSet.add(assignee.name);
-                });
-            }
-            
-            // Add assigned by
-            if (task.assignedBy?.name) {
-                assignedBySet.add(task.assignedBy.name);
-            }
-            
-            // Add status
-            if (task.status) {
-                statusSet.add(task.status);
-            }
+        if (tasks.length > 0) {
+            // Extract unique assignees
+            const assigneeSet = new Set();
+            const assignedBySet = new Set();
+            const statusSet = new Set();
+
+            tasks.forEach(task => {
+                // Add assignees
+                if (task.assignees && Array.isArray(task.assignees)) {
+                    task.assignees.forEach(assignee => {
+                        if (assignee.name) assigneeSet.add(assignee.name);
+                    });
+                }
+
+                // Add assigned by
+                if (task.assignedBy?.name) {
+                    assignedBySet.add(task.assignedBy.name);
+                }
+
+                // Add status
+                if (task.status) {
+                    statusSet.add(task.status);
+                }
+            });
+
+            setUniqueUsers([...assigneeSet]);
+            setUniqueAssignedBy([...assignedBySet]);
+            setUniqueStatuses([...statusSet]);
+        }
+    }, [tasks]);
+
+    // ADD THIS - Function to reset to first page
+    const goToFirstPage = () => {
+        console.log('Going to first page...');
+
+        // Reset to page 1
+        setCurrentPage(1);
+
+        // Fetch first page tasks
+        fetchTasks(1, true);
+
+        // Scroll to top
+        setTimeout(() => {
+            scrollToTop();
+        }, 100);
+    };
+
+
+    // ADD THIS - Enhanced scroll function
+    const scrollToTop = () => {
+        // Scroll window
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
         });
-        
-        setUniqueUsers([...assigneeSet]);
-        setUniqueAssignedBy([...assignedBySet]);
-        setUniqueStatuses([...statusSet]);
-    }
-}, [tasks]);
 
+        // Scroll table container if exists
+        if (tableContainerRef.current) {
+            tableContainerRef.current.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
 
+        // Reset scroll tracking
+        setUserManuallyScrolled(false);
+    };
+
+    // ADD THIS - Track user scrolling
+    useEffect(() => {
+        const handleScroll = () => {
+            // For desktop with table container
+            if (tableContainerRef.current && !isMobileView) {
+                const scrollTop = tableContainerRef.current.scrollTop;
+                setShowScrollTop(scrollTop > 100);
+
+                // Detect if user is manually scrolling up
+                if (scrollTop < 50 && currentPage > 1 && userManuallyScrolled) {
+                    // User scrolled to top - go to first page
+                    goToFirstPage();
+                }
+            } else {
+                // For mobile or window scrolling
+                const scrollTop = window.scrollY || document.documentElement.scrollTop;
+                setShowScrollTop(scrollTop > 100);
+            }
+        };
+
+        // Add scroll listeners
+        window.addEventListener('scroll', handleScroll);
+
+        if (tableContainerRef.current && !isMobileView) {
+            tableContainerRef.current.addEventListener('scroll', handleScroll);
+        }
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (tableContainerRef.current) {
+                tableContainerRef.current.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [isMobileView, currentPage, userManuallyScrolled]);
+
+    // ADD THIS - Track manual scrolling
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (currentPage > 1) {
+                setUserManuallyScrolled(true);
+            }
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [currentPage]);
+
+    // ADD THIS - Auto go to first page on filter/refresh
+    useEffect(() => {
+        // When filters change or page refreshes, go to first page
+        if (!initialLoading) {
+            goToFirstPage();
+        }
+    }, [filters, searchTerm, refreshTrigger])
     // Cleanup
     useEffect(() => {
         return () => {
@@ -2586,15 +2677,15 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     };
 
     useEffect(() => {
-    if (users?.length) {
-        const names = users.map((u) => u.name);
-        // Combine with existing unique users
-        setUniqueUsers(prev => {
-            const combined = new Set([...prev, ...names]);
-            return [...combined];
-        });
-    }
-}, [users]);
+        if (users?.length) {
+            const names = users.map((u) => u.name);
+            // Combine with existing unique users
+            setUniqueUsers(prev => {
+                const combined = new Set([...prev, ...names]);
+                return [...combined];
+            });
+        }
+    }, [users]);
     // Handle message send
     const handleMessageSend = async (payload) => {
         try {
@@ -2680,13 +2771,13 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 task._id === taskId ? updatedTask : task
             ));
             setRemarks(prev => ({ ...prev, [taskId]: updatedTask.remark || "" }));
-            
+
             // Update cache
             setTaskDetailsCache(prev => ({
                 ...prev,
                 [taskId]: updatedTask
             }));
-            
+
             fetchStats();
 
         } catch (error) {
@@ -2803,7 +2894,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
             confirmButtonText: "Yes, delete!",
             cancelButtonText: "Cancel",
         });
-        
+
         if (!confirmDelete.isConfirmed) return;
 
         try {
@@ -2814,7 +2905,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 `https://taskbe.sharda.co.in/api/tasks/${task._id}`,
                 { method: "DELETE" }
             );
-            
+
             if (!response.ok) throw new Error("Failed to delete task");
 
             Swal.fire({
@@ -2823,14 +2914,14 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 icon: "success",
                 confirmButtonText: "OK",
             });
-            
+
             // Clear cache
             setTaskDetailsCache(prev => {
                 const newCache = { ...prev };
                 delete newCache[task._id];
                 return newCache;
             });
-            
+
             fetchTasks(currentPage, true);
         } catch (err) {
             console.error("Error deleting task:", err);
@@ -2882,11 +2973,11 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     // Render task row (Desktop)
     const renderTaskRow = (task, index) => {
         const serialIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
-        
+
         return (
             <tr key={task._id} className="border-b border-gray-200 hover:bg-slate-50">
                 <td className="py-3 px-2 text-sm text-gray-700 font-semibold">{serialIndex}</td>
-                
+
                 {/* Task Name & Code */}
                 <td className="py-3 px-2">
                     <div className="flex flex-col gap-1">
@@ -2914,8 +3005,8 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                 <td className="py-3 px-2">
                     <div className="flex items-center gap-1">
                         <p className="text-xs text-gray-600 line-clamp-2">
-                            {task.workDesc ? 
-                                (task.workDesc.length > 50 ? task.workDesc.slice(0, 50) + "..." : task.workDesc) 
+                            {task.workDesc ?
+                                (task.workDesc.length > 50 ? task.workDesc.slice(0, 50) + "..." : task.workDesc)
                                 : "No description"}
                         </p>
                         <button
@@ -3056,7 +3147,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     // Render task card (Mobile)
     const renderTaskCard = (task, index) => {
         const serialIndex = (currentPage - 1) * MOBILE_ITEMS_PER_PAGE + index + 1;
-        
+
         return (
             <div key={task._id} className="bg-white rounded-xl shadow p-4 border border-gray-200 mb-4">
                 <div className="flex justify-between items-start mb-2">
@@ -3091,7 +3182,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             </span>
                         )}
                     </div>
-                    
+
                     <div className="flex gap-1">
                         <button
                             onClick={() => handleCopyTask(task)}
@@ -3236,7 +3327,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                         <h3 className="text-xl font-bold text-gray-900">👥 Team Members</h3>
                         <button onClick={() => setShowTeamPopup(null)} className="text-gray-400 hover:text-gray-700 text-2xl">×</button>
                     </div>
-                    
+
                     <div className="space-y-2 max-h-96 overflow-y-auto">
                         {task.assignees?.map((assignee, idx) => (
                             <div key={assignee.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
@@ -3251,7 +3342,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             </div>
                         ))}
                     </div>
-                    
+
                     <div className="mt-4 pt-3 border-t border-gray-200 text-center">
                         <span className="text-sm text-gray-600 font-semibold">
                             Total: {task.assignees?.length} members
@@ -3271,8 +3362,8 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                         handleFilterChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
                         departments={Array.isArray(departmentData) ? departmentData : []}
                         uniqueUsers={Array.isArray(users) ? users.map(u => u.name) : []}
-                         uniqueAssignedBy={uniqueAssignedBy}
-        uniqueStatuses={uniqueStatuses}
+                        uniqueAssignedBy={uniqueAssignedBy}
+                        uniqueStatuses={uniqueStatuses}
                         role={rawRole || ""}
                         searchTerm={searchTerm}
                         setSearchTerm={setSearchTerm}
@@ -3280,26 +3371,57 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                     />
                 )}
 
-                {/* Stats Bar */}
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white p-4 rounded-xl shadow border border-red-100">
-                        <div className="text-red-600 text-lg font-bold">{stats.highCount}</div>
-                        <div className="text-gray-600 text-sm">High Priority</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl shadow border border-yellow-100">
-                        <div className="text-yellow-600 text-lg font-bold">{stats.mediumCount}</div>
-                        <div className="text-gray-600 text-sm">Medium Priority</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl shadow border border-green-100">
-                        <div className="text-green-600 text-lg font-bold">{stats.lowCount}</div>
-                        <div className="text-gray-600 text-sm">Low Priority</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl shadow border border-indigo-100">
-                        <div className="text-indigo-600 text-lg font-bold">{stats.totalCount}</div>
-                        <div className="text-gray-600 text-sm">Total Tasks</div>
-                    </div>
-                </div>
 
+
+
+                <div className="flex items-center gap-2">
+                    {currentPage > 1 && (
+                        <button
+                            onClick={goToFirstPage}
+                            className="px-3 py-1.5 text-sm bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 font-semibold flex items-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                                <path fillRule="evenodd" d="M10.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L6.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                            </svg>
+                            First Page
+                        </button>
+                    )}
+                    {/* Previous Button */}
+                    <button
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1 || loading}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${currentPage === 1 || loading
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "bg-blue-600 text-white hover:bg-blue-700"
+                            }`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Previous
+                    </button>
+
+                    {/* Page Indicator */}
+                    <div className="px-4 py-2 text-sm font-medium bg-gray-100 rounded-lg">
+                        {currentPage}
+                    </div>
+
+                    {/* Next Button */}
+                    <button
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages || loading}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${currentPage === totalPages || loading
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "bg-blue-600 text-white hover:bg-blue-700"
+                            }`}
+                    >
+                        Next
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
                 {/* Desktop Table */}
                 {!isMobileView && (
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
@@ -3392,7 +3514,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                                         .map((task, index) => renderTaskRow(task, index))}
                                                 </>
                                             )}
-                                            
+
                                             {/* Infinite scroll trigger */}
                                             {hasMore && (
                                                 <tr ref={observerRef}>
@@ -3408,9 +3530,29 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                             </table>
                         </div>
                         <div className="bg-gray-50 border-t px-6 py-3 flex justify-between items-center">
-                            <span className="text-sm text-gray-600">
+                            {/* <span className="text-sm text-gray-600">
                                 Page {currentPage} of {totalPages} • Showing {tasks.length} of {totalCount} tasks
-                            </span>
+                            </span> */}
+                            <div className="flex items-center gap-4">
+                                {/* GO TO FIRST PAGE BUTTON - Shows when not on first page */}
+                                {currentPage > 1 && (
+                                    <button
+                                        onClick={goToFirstPage}
+                                        className="px-3 py-1.5 text-sm bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 font-semibold flex items-center gap-2"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                                            <path fillRule="evenodd" d="M10.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L6.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                                        </svg>
+                                        First Page
+                                    </button>
+                                )}
+
+                                {/* CURRENT PAGE INFO */}
+                                <span className="text-sm text-gray-600">
+                                    Page {currentPage} of {totalPages} • Showing {tasks.length} of {totalCount} tasks
+                                </span>
+                            </div>
                             {loading && (
                                 <span className="text-sm text-gray-500 flex items-center gap-2">
                                     <FaSpinner className="animate-spin" /> Loading...
@@ -3570,14 +3712,14 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setOpenTaskPopup(null)}>
                         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
                             <button onClick={() => setOpenTaskPopup(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">×</button>
-                            
+
                             <div className="mb-6">
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedTaskDetails.taskName}</h2>
                                 {selectedTaskDetails.code && (
                                     <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded">{selectedTaskDetails.code}</span>
                                 )}
                             </div>
-                            
+
                             <div className="space-y-4">
                                 <div className="bg-gray-50 rounded-lg p-4 border">
                                     <div className="flex justify-between items-start mb-2">
@@ -3588,7 +3730,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                     </div>
                                     <p className="text-gray-700 whitespace-pre-wrap">{selectedTaskDetails.workDesc || "No description"}</p>
                                 </div>
-                                
+
                                 <div className="bg-gray-50 rounded-lg p-4 border">
                                     <div className="flex justify-between items-start mb-2">
                                         <span className="font-semibold text-gray-900">Remarks</span>
@@ -3598,7 +3740,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                     </div>
                                     <p className="text-gray-700 whitespace-pre-wrap">{selectedTaskDetails.remark || "No remark"}</p>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-white p-3 rounded border">
                                         <span className="text-sm text-gray-600">Due Date</span>
@@ -3617,7 +3759,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                                         <div className="font-semibold">{selectedTaskDetails.assignedBy?.name || "—"}</div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex flex-wrap gap-2 pt-4 border-t">
                                     <button onClick={() => onEdit(selectedTaskDetails)} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
                                         Edit Task
@@ -3636,6 +3778,35 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                     </div>
                 )}
 
+                {/* Status Dropdown */}
+                {/* {editingStatus && (
+                    <StatusDropdownPortal>
+                        <div
+                            ref={dropdownRef}
+                            className="absolute rounded-xl shadow-2xl border-2 border-gray-300 w-44 mt-1 z-50 bg-white overflow-hidden"
+                            style={{
+                                position: "fixed",
+                                top: dropdownPosition.top,
+                                left: dropdownPosition.left,
+                            }}
+                        >
+                            {["To Do", "In Progress", "Completed", "Obsolete"].map((statusOption) => (
+                                <div
+                                    key={statusOption}
+                                    className="px-4 py-2.5 text-sm cursor-pointer hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all font-bold border-b border-gray-100 last:border-b-0 flex items-center gap-2"
+                                    style={{ color: statusColors[statusOption]?.text }}
+                                    onClick={() => handleStatusChange(editingStatus, statusOption)}
+                                >
+                                    {statusOption === "Completed" && <span>✓</span>}
+                                    {statusOption === "In Progress" && <span>⏱</span>}
+                                    {statusOption === "To Do" && <span>📝</span>}
+                                    {statusOption === "Obsolete" && <span>⊗</span>}
+                                    {statusOption}
+                                </div>
+                            ))}
+                        </div>
+                    </StatusDropdownPortal>
+                )} */}
                 {/* Status Dropdown */}
                 {editingStatus && (
                     <StatusDropdownPortal>
@@ -3665,6 +3836,7 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
                         </div>
                     </StatusDropdownPortal>
                 )}
+
             </div>
         </div>
     );

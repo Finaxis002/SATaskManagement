@@ -80,6 +80,14 @@ const priorityOptions = [
   { label: "High", value: "High" },
 ];
 
+const statusOptions = [
+  { label: "All Status", value: "" },
+  { label: "To Do", value: "To Do" },
+  { label: "In Progress", value: "In Progress" },
+  { label: "Completed", value: "Completed" },
+  { label: "Obsolete", value: "Obsolete" },
+];
+
 const prioritySelectStyles = {
     ...customSelectStyles,
     option: (base, state) => ({
@@ -249,10 +257,7 @@ const FilterSection = ({
           <Select
             className="w-full"
             classNamePrefix="rs"
-            options={[
-              { label: "All Status", value: "" },
-              ...uniqueStatuses.map((s) => ({ label: s, value: s })),
-            ]}
+            options={statusOptions}
             value={
               filters.status ? { label: filters.status, value: filters.status } : null
             }
