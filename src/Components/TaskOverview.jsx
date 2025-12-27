@@ -149,7 +149,7 @@ const TaskOverview = () => {
     const fetchStats = async () => {
       try {
         const params = new URLSearchParams({ role: userData.role || "user", assignee: userData.userName || "" });
-        const res = await fetch(`http://localhost:1100/api/tasks/dashboard-stats?${params}`);
+        const res = await fetch(`https://taskbe.sharda.co.in/api/tasks/dashboard-stats?${params}`);
         const data = await res.json();
         if (data.success) {
            setStats(data.stats);
@@ -180,7 +180,7 @@ const TaskOverview = () => {
         tab: tabKey
       });
 
-      const res = await fetch(`http://localhost:1100/api/tasks/dashboard-overview?${params}`, {
+      const res = await fetch(`https://taskbe.sharda.co.in/api/tasks/dashboard-overview?${params}`, {
         signal: fetchController.current.signal
       });
       
@@ -251,7 +251,7 @@ const TaskOverview = () => {
         }));
 
         // API Call
-        await fetch(`http://localhost:1100/api/tasks/${taskId}`, {
+        await fetch(`https://taskbe.sharda.co.in/api/tasks/${taskId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
