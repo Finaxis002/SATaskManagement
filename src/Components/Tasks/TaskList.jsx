@@ -2502,23 +2502,24 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         };
     }, [hasMore, loading, currentPage, isMobileView, fetchTasks, isFetchingMore]);
 
-    // WebSocket updates
-    useEffect(() => {
-        const handleTaskEvent = () => {
-            fetchTasks(currentPage, true);
-            fetchStats();
-        };
+   // WebSocket updates
+useEffect(() => {
+    const handleTaskEvent = () => {
+        
+        fetchTasks(currentPage, false); 
+        fetchStats();
+    };
 
-        socket.on("new-task-created", handleTaskEvent);
-        socket.on("task-updated", handleTaskEvent);
-        socket.on("task-deleted", handleTaskEvent);
+    socket.on("new-task-created", handleTaskEvent);
+    socket.on("task-updated", handleTaskEvent);
+    socket.on("task-deleted", handleTaskEvent);
 
-        return () => {
-            socket.off("new-task-created", handleTaskEvent);
-            socket.off("task-updated", handleTaskEvent);
-            socket.off("task-deleted", handleTaskEvent);
-        };
-    }, [currentPage, fetchTasks, fetchStats]);
+    return () => {
+        socket.off("new-task-created", handleTaskEvent);
+        socket.off("task-updated", handleTaskEvent);
+        socket.off("task-deleted", handleTaskEvent);
+    };
+}, [currentPage, fetchTasks, fetchStats]);
 
     // Handle closing dropdown on outside click
     useEffect(() => {
@@ -2732,61 +2733,61 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
         }
     };
 
-    // Status update
-    const handleStatusChange = async (taskId, newStatus) => {
-        setLoadingStatus(prev => ({ ...prev, [taskId]: true }));
-        setEditingStatus(null);
+  const handleStatusChange = async (taskId, newStatus) => {
+    setLoadingStatus(prev => ({ ...prev, [taskId]: true }));
+    setEditingStatus(null);
 
-        // Optimistic update
-        setTasks(prev => prev.map(task =>
-            task._id === taskId ? { ...task, status: newStatus } : task
-        ));
+    setTasks(prev => prev.map(task =>
+        task._id === taskId ? { ...task, status: newStatus } : task
+    ));
 
-        let updatedRemark = remarks[taskId] || "";
-        if (newStatus === "Completed" && !updatedRemark.includes("[Completed]")) {
-            updatedRemark += " [Completed]";
-            setRemarks(prev => ({ ...prev, [taskId]: updatedRemark }));
-        }
-        if (newStatus !== "Completed") {
-            updatedRemark = updatedRemark.replace(" [Completed]", "").trim();
-            setRemarks(prev => ({ ...prev, [taskId]: updatedRemark }));
-        }
+    let updatedRemark = remarks[taskId] || "";
+    if (newStatus === "Completed" && !updatedRemark.includes("[Completed]")) {
+        updatedRemark += " [Completed]";
+        setRemarks(prev => ({ ...prev, [taskId]: updatedRemark }));
+    }
+    if (newStatus !== "Completed") {
+        updatedRemark = updatedRemark.replace(" [Completed]", "").trim();
+        setRemarks(prev => ({ ...prev, [taskId]: updatedRemark }));
+    }
 
-        const updatedBy = {
-            name: localStorage.getItem("name"),
-            email: localStorage.getItem("userId"),
-        };
-
-        try {
-            const response = await fetch(`https://taskbe.sharda.co.in/api/tasks/${taskId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: newStatus, updatedBy, remark: updatedRemark }),
-            });
-
-            if (!response.ok) throw new Error("Failed to update status");
-
-            const updatedTask = await response.json();
-            setTasks(prev => prev.map(task =>
-                task._id === taskId ? updatedTask : task
-            ));
-            setRemarks(prev => ({ ...prev, [taskId]: updatedTask.remark || "" }));
-
-            // Update cache
-            setTaskDetailsCache(prev => ({
-                ...prev,
-                [taskId]: updatedTask
-            }));
-
-            fetchStats();
-
-        } catch (error) {
-            console.error("Error updating status:", error);
-            fetchTasks(currentPage, true);
-            Swal.fire("Error", "Failed to update status", "error");
-        }
-        setLoadingStatus(prev => ({ ...prev, [taskId]: false }));
+    const updatedBy = {
+        name: localStorage.getItem("name"),
+        email: localStorage.getItem("userId"),
     };
+
+    try {
+        const response = await fetch(`https://taskbe.sharda.co.in/api/tasks/${taskId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus, updatedBy, remark: updatedRemark }),
+        });
+
+        if (!response.ok) throw new Error("Failed to update status");
+
+        const updatedTask = await response.json();
+
+      
+        setTasks(prev => prev.map(task =>
+            task._id === taskId ? { ...task, ...updatedTask } : task
+        ));
+        
+        setRemarks(prev => ({ ...prev, [taskId]: updatedTask.remark || "" }));
+        
+        setTaskDetailsCache(prev => ({
+            ...prev,
+            [taskId]: updatedTask
+        }));
+        
+        fetchStats();
+
+    } catch (error) {
+        console.error("Error updating status:", error);
+        fetchTasks(currentPage, true); 
+        Swal.fire("Error", "Failed to update status", "error");
+    }
+    setLoadingStatus(prev => ({ ...prev, [taskId]: false }));
+};
 
     // Work Description handlers
     const handleWorkDescEditClick = async (taskId) => {
