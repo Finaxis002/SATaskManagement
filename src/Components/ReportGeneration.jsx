@@ -655,7 +655,7 @@ const ReportGeneration = ({
               if (value === "Completed") statusColor = "FF10B981";
               else if (value === "In Progress") statusColor = "FFF59E0B";
               else if (value === "Overdue") statusColor = "FFEF4444";
-              else if (value === "Abbstulate") statusColor = "FF8B5CF6";
+              else if (value === "Obsolete") statusColor = "FF8B5CF6";
 
               cell.font = {
                 size: 10,
@@ -812,7 +812,7 @@ const ReportGeneration = ({
           bgColor = "bg-blue-200";
           textColor = "text-blue-600";
           break;
-        case "Abbstulate":
+        case "Obsolete":
           bgColor = "bg-purple-200";
           textColor = "text-purple-600";
           break;
@@ -919,7 +919,7 @@ const ReportGeneration = ({
                     Change Status:
                   </h4>
 
-                  {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
+                  {["To Do", "In Progress", "Completed", "Overdue", "Obsolete"].map(
                     (statusOption) => (
                       <span
                         key={statusOption}
@@ -931,7 +931,7 @@ const ReportGeneration = ({
                             ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
                             : statusOption === "To Do"
                             ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                            : statusOption === "Abbstulate"
+                            : statusOption === "Obsolete"
                             ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
                             : "bg-red-100 text-red-700 hover:bg-red-200"
                         }`}
@@ -1087,7 +1087,7 @@ const ReportGeneration = ({
               ref={dropdownRef}
               className="flex flex-col w-32 sm:w-40 justify-between bg-white absolute shadow-lg rounded-lg z-50 right-0 sm:left-1/2 sm:-translate-x-[65%] top-10 p-2"
             >
-              {["To Do", "In Progress", "Completed", "Overdue", "Abbstulate"].map(
+              {["To Do", "In Progress", "Completed", "Overdue", "Obsolete"].map(
                 (statusOption) => (
                   <span
                     key={statusOption}
@@ -1098,7 +1098,7 @@ const ReportGeneration = ({
                         ? "bg-yellow-200 text-yellow-600 hover:bg-yellow-300"
                         : statusOption === "To Do"
                         ? "bg-blue-200 text-blue-600 hover:bg-blue-300"
-                        : statusOption === "Abbstulate"
+                        : statusOption === "Obsolete"
                         ? "bg-purple-200 text-purple-600 hover:bg-purple-300"
                         : "bg-red-200 text-red-600 hover:bg-red-300"
                     }`}
@@ -1205,7 +1205,7 @@ const ReportGeneration = ({
       {/* Conditional rendering based on whether a user is selected OR if it's a non-admin user */}
       {!isUserFilterSet && role === "admin" ? (
         <div className="text-center text-gray-500 mt-10">
-          🔍 **Please select a user to view a specific report.** (Admin currently sees all tasks filtered below)
+          🔍Please select a user to view a specific report.
         </div>
       ) : (
         <>
@@ -1236,7 +1236,7 @@ const ReportGeneration = ({
                   mediumPriorityTasks.length === 0 &&
                   lowPriorityTasks.length === 0 ? (
                     <div className="text-center py-6 text-gray-500">
-                      🚫 **No tasks Assigned Yet matching filters.**
+                      🚫 No tasks Assigned Yet matching filters.
                     </div>
                   ) : (
                     <>
@@ -1320,7 +1320,7 @@ const ReportGeneration = ({
                             colSpan="13"
                             className="text-center py-6 text-gray-500"
                           >
-                            🚫 **No tasks Assigned Yet matching filters.**
+                            🚫 No tasks Assigned Yet matching filters.
                           </td>
                         </tr>
                       ) : (
