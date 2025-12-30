@@ -659,7 +659,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   <FaUserCircle className="text-gray-500 flex-shrink-0 text-sm sm:text-base" />
                   <span>Profile</span>
                 </button>
-                <button
+                {/* <button
                   onClick={() => {
                     navigate("/support");
                     setIsMenuOpen(false);
@@ -668,7 +668,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                 >
                   <MdSupportAgent className="text-gray-500 flex-shrink-0 text-lg sm:text-xl" />
                   <span>Support</span>
-                </button>
+                </button> */}
                 <div className="border-t border-gray-100 my-1"></div>
                 <button
                   onClick={() => {

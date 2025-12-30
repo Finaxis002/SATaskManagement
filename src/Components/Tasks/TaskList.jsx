@@ -3639,61 +3639,61 @@ useEffect(() => {
                     </div>
                 )}
 
-                {/* Work Description Popup */}
-                {openWorkDescPopup && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setOpenWorkDescPopup(null)}>
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex justify-between items-center mb-4">
-                                <h4 className="font-bold text-xl text-gray-900">Edit Description</h4>
-                                <button onClick={() => setOpenWorkDescPopup(null)} className="text-gray-400 hover:text-gray-700 text-2xl">×</button>
-                            </div>
-                            <textarea
-                                value={workDescs[openWorkDescPopup] || ""}
-                                onChange={(e) => setWorkDescs(prev => ({ ...prev, [openWorkDescPopup]: e.target.value }))}
-                                rows={8}
-                                placeholder="Enter work description..."
-                                className="w-full px-4 py-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                autoFocus
-                            />
-                            <div className="flex justify-end mt-4 gap-3">
-                                <button onClick={() => setOpenWorkDescPopup(null)} className="px-5 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
-                                    Cancel
-                                </button>
-                                <button onClick={() => handleWorkDescSave(openWorkDescPopup)} className="px-5 py-2 text-sm rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700">
-                                    Save
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+{/* Work Description Popup */}
+{openWorkDescPopup && (
+    <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4" onClick={() => setOpenWorkDescPopup(null)}>
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-xl text-gray-900">Edit Description</h4>
+                <button onClick={() => setOpenWorkDescPopup(null)} className="text-gray-400 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <textarea
+                value={workDescs[openWorkDescPopup] || ""}
+                onChange={(e) => setWorkDescs(prev => ({ ...prev, [openWorkDescPopup]: e.target.value }))}
+                rows={8}
+                placeholder="Enter work description..."
+                className="w-full px-4 py-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+            />
+            <div className="flex justify-end mt-4 gap-3">
+                <button onClick={() => setOpenWorkDescPopup(null)} className="px-5 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onClick={() => handleWorkDescSave(openWorkDescPopup)} className="px-5 py-2 text-sm rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+)}
 
-                {/* Remark Popup */}
-                {openRemarkPopup && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setOpenRemarkPopup(null)}>
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex justify-between items-center mb-4">
-                                <h4 className="font-bold text-xl text-gray-900">Edit Remark</h4>
-                                <button onClick={() => setOpenRemarkPopup(null)} className="text-gray-400 hover:text-gray-700 text-2xl">×</button>
-                            </div>
-                            <textarea
-                                value={remarks[openRemarkPopup] || ""}
-                                onChange={(e) => setRemarks(prev => ({ ...prev, [openRemarkPopup]: e.target.value }))}
-                                rows={8}
-                                placeholder="Enter remark..."
-                                className="w-full px-4 py-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                autoFocus
-                            />
-                            <div className="flex justify-end mt-4 gap-3">
-                                <button onClick={() => setOpenRemarkPopup(null)} className="px-5 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
-                                    Cancel
-                                </button>
-                                <button onClick={() => handleRemarkSave(openRemarkPopup)} className="px-5 py-2 text-sm rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700">
-                                    Save
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+ {/* Remark Popup */}
+{openRemarkPopup && (
+    <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4" onClick={() => setOpenRemarkPopup(null)}>
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-xl text-gray-900">Edit Remark</h4>
+                <button onClick={() => setOpenRemarkPopup(null)} className="text-gray-400 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <textarea
+                value={remarks[openRemarkPopup] || ""}
+                onChange={(e) => setRemarks(prev => ({ ...prev, [openRemarkPopup]: e.target.value }))}
+                rows={8}
+                placeholder="Enter remark..."
+                className="w-full px-4 py-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+            />
+            <div className="flex justify-end mt-4 gap-3">
+                <button onClick={() => setOpenRemarkPopup(null)} className="px-5 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onClick={() => handleRemarkSave(openRemarkPopup)} className="px-5 py-2 text-sm rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+)}
 
                 {/* Message Popup */}
                 {openMessagePopup && taskForMessage && (
@@ -3708,76 +3708,87 @@ useEffect(() => {
                 {/* Team Members Popup */}
                 {showTeamPopup && renderTeamPopup(showTeamPopup)}
 
-                {/* Task Details Popup (Mobile) */}
-                {openTaskPopup && selectedTaskDetails && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setOpenTaskPopup(null)}>
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
-                            <button onClick={() => setOpenTaskPopup(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">×</button>
+               {/* Task Details Popup (Mobile) */}
+{openTaskPopup && selectedTaskDetails && (
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setOpenTaskPopup(null)}>
+        {/* Added 'relative' class here */}
+        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            
+            {/* Cross Button added here */}
+            <button 
+                onClick={() => setOpenTaskPopup(null)} 
+                className="absolute top-3 right-3 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors z-10"
+                title="Close"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
 
-                            <div className="mb-6">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedTaskDetails.taskName}</h2>
-                                {selectedTaskDetails.code && (
-                                    <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded">{selectedTaskDetails.code}</span>
-                                )}
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="bg-gray-50 rounded-lg p-4 border">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="font-semibold text-gray-900">Description</span>
-                                        <button onClick={() => handleWorkDescEditClick(selectedTaskDetails._id)} className="text-blue-600 hover:text-blue-800">
-                                            <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
-                                        </button>
-                                    </div>
-                                    <p className="text-gray-700 whitespace-pre-wrap">{selectedTaskDetails.workDesc || "No description"}</p>
-                                </div>
-
-                                <div className="bg-gray-50 rounded-lg p-4 border">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="font-semibold text-gray-900">Remarks</span>
-                                        <button onClick={() => handleRemarkEditClick(selectedTaskDetails._id)} className="text-blue-600 hover:text-blue-800">
-                                            <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
-                                        </button>
-                                    </div>
-                                    <p className="text-gray-700 whitespace-pre-wrap">{selectedTaskDetails.remark || "No remark"}</p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white p-3 rounded border">
-                                        <span className="text-sm text-gray-600">Due Date</span>
-                                        <div className="font-semibold">{selectedTaskDetails.dueDate ? new Date(selectedTaskDetails.dueDate).toLocaleDateString("en-GB") : "—"}</div>
-                                    </div>
-                                    <div className="bg-white p-3 rounded border">
-                                        <span className="text-sm text-gray-600">Priority</span>
-                                        <div className="font-semibold">{selectedTaskDetails.priority}</div>
-                                    </div>
-                                    <div className="bg-white p-3 rounded border">
-                                        <span className="text-sm text-gray-600">Status</span>
-                                        <div className="font-semibold">{selectedTaskDetails.status}</div>
-                                    </div>
-                                    <div className="bg-white p-3 rounded border">
-                                        <span className="text-sm text-gray-600">Assigned by</span>
-                                        <div className="font-semibold">{selectedTaskDetails.assignedBy?.name || "—"}</div>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-2 pt-4 border-t">
-                                    <button onClick={() => onEdit(selectedTaskDetails)} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                                        Edit Task
-                                    </button>
-                                    <button onClick={() => handleStatusChange(selectedTaskDetails._id, "Completed")} className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
-                                        Mark Complete
-                                    </button>
-                                    {isAdmin && (
-                                        <button onClick={() => handleDeleteTask(selectedTaskDetails)} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">
-                                            Delete
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div className="mb-6 pr-8"> {/* Added pr-8 to prevent text overlap with button */}
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedTaskDetails.taskName}</h2>
+                {selectedTaskDetails.code && (
+                    <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded">{selectedTaskDetails.code}</span>
                 )}
+            </div>
+
+            <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="flex justify-between items-start mb-2">
+                        <span className="font-semibold text-gray-900">Description</span>
+                        <button onClick={() => handleWorkDescEditClick(selectedTaskDetails._id)} className="text-blue-600 hover:text-blue-800">
+                            <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedTaskDetails.workDesc || "No description"}</p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="flex justify-between items-start mb-2">
+                        <span className="font-semibold text-gray-900">Remarks</span>
+                        <button onClick={() => handleRemarkEditClick(selectedTaskDetails._id)} className="text-blue-600 hover:text-blue-800">
+                            <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedTaskDetails.remark || "No remark"}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-3 rounded border">
+                        <span className="text-sm text-gray-600">Due Date</span>
+                        <div className="font-semibold">{selectedTaskDetails.dueDate ? new Date(selectedTaskDetails.dueDate).toLocaleDateString("en-GB") : "—"}</div>
+                    </div>
+                    <div className="bg-white p-3 rounded border">
+                        <span className="text-sm text-gray-600">Priority</span>
+                        <div className="font-semibold">{selectedTaskDetails.priority}</div>
+                    </div>
+                    <div className="bg-white p-3 rounded border">
+                        <span className="text-sm text-gray-600">Status</span>
+                        <div className="font-semibold">{selectedTaskDetails.status}</div>
+                    </div>
+                    <div className="bg-white p-3 rounded border">
+                        <span className="text-sm text-gray-600">Assigned by</span>
+                        <div className="font-semibold">{selectedTaskDetails.assignedBy?.name || "—"}</div>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-4 border-t">
+                    <button onClick={() => onEdit(selectedTaskDetails)} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                        Edit Task
+                    </button>
+                    <button onClick={() => handleStatusChange(selectedTaskDetails._id, "Completed")} className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
+                        Mark Complete
+                    </button>
+                    {isAdmin && (
+                        <button onClick={() => handleDeleteTask(selectedTaskDetails)} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">
+                            Delete
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    </div>
+)}
 
                 {/* Status Dropdown */}
                 {/* {editingStatus && (
