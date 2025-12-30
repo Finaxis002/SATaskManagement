@@ -67,8 +67,6 @@ const LeaveRequestList = () => {
         });
 
         if (response.ok) {
-          console.log(`✅ Auto-rejected expired leave: ${leave._id}`);
-          
           // Instant UI update
           setLeaves(prevLeaves => 
             prevLeaves.map(l => 
@@ -121,7 +119,9 @@ const LeaveRequestList = () => {
       
     } catch (error) {
       console.error("Failed to fetch leaves:", error);
-      setError("Failed to load leave requests. Please try again.");
+      if (showLoader) {
+          setError("Failed to load leave requests. Please try again.");
+      }
     } finally {
       if (showLoader) {
         setLoading(false);
@@ -134,19 +134,19 @@ const LeaveRequestList = () => {
     fetchLeaves();
   }, [userId]);
 
-  // Auto-check intervals
+  // Auto-check intervals & FAST REFRESH
   useEffect(() => {
-    // Check every 30 seconds
+    // 1. Check for expiry every 10 seconds
     checkIntervalRef.current = setInterval(() => {
       if (leaves.length > 0) {
         checkAndRejectExpiredLeaves(leaves);
       }
-    }, 30000);
+    }, 10000);
 
-    // Background refresh every 2 minutes
+    // 2. Background refresh every 5 seconds (Silent Update)
     refreshIntervalRef.current = setInterval(() => {
       fetchLeaves(false);
-    }, 120000);
+    }, 5000); 
 
     return () => {
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
@@ -229,17 +229,10 @@ const LeaveRequestList = () => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition max-h-[calc(102vh-180px)] overflow-y-auto">
+      {/* HEADER SECTION - REFRESH BUTTON REMOVED */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-semibold text-gray-800">Your Leave Requests</h2>
-        <button
-          onClick={() => fetchLeaves(true)}
-          className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition"
-          title="Refresh"
-        >
-          {/* <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg> */}
-        </button>
+        {/* Button removed here */}
       </div>
       <div className="border-b border-gray-300 mb-4"></div>
 
@@ -267,9 +260,10 @@ const LeaveRequestList = () => {
         <>
           <div className="mb-4 text-sm text-gray-600 flex items-center justify-between">
             <span>Showing {leaves.length} request{leaves.length !== 1 ? 's' : ''}</span>
-            {/* <span className="text-xs text-green-600 flex items-center gap-1">
+             {/* Live indicator to show it's auto-updating */}
+             {/* <span className="text-xs text-green-600 flex items-center gap-1">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              Live updates
+              Live updates active
             </span> */}
           </div>
           {leaves.map((leave) => {

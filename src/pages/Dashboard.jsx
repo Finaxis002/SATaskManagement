@@ -1,4 +1,3 @@
-// src/pages/Dashboard.jsx
 import {
   useEffect,
   useMemo,
@@ -18,12 +17,6 @@ import { useSelector } from "react-redux";
 import useSocketSetup from "../hook/useSocketSetup";
 import useStickyNotes from "../hook/useStickyNotes";
 import {
-  ClipboardList,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Calendar,
-  Plus,
   ArrowRight,
   Loader2,
 } from "lucide-react";
@@ -42,10 +35,13 @@ import {
   endOfToday,
 } from "date-fns";
 
+// ✅ Import Support Component
+import Support from "./Support";
+
 // Lazy load heavy components
 const StickyNotesDashboard = lazy(() => import("../Components/notes/StickyNotesDashboard"));
 const TaskOverview = lazy(() => import("../Components/TaskOverview"));
-const ProductivityInsights = lazy(() => import(/* webpackChunkName: "insights" */ "./ProductivityInsights"));
+const ProductivityInsights = lazy(() => import("./ProductivityInsights"));
 
 /* ------------------ Constants ------------------ */
 const K = {
@@ -219,64 +215,103 @@ const ModalPortal = memo(({ children }) => {
   return createPortal(children, elRef.current);
 });
 
-/* ------------------ Quick Actions Panel ------------------ */
-const QuickActionsPanel = memo(({ onCreateEvent }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  const quickActions = useMemo(() => [
-    {
-      icon: Calendar,
-      label: "New Event",
-      action: onCreateEvent,
-      color: "from-purple-500 to-blue-600",
-      shortcut: "Alt + A",
-    },
-    {
-      icon: Clock,
-      label: "Set Reminder",
-      action: () => console.log("Create reminder"),
-      color: "from-amber-500 to-orange-600",
-      shortcut: "Alt + R",
-    },
-    {
-      icon: Plus,
-      label: "Sticky Notes",
-      action: () => console.log("Create note"),
-      color: "from-emerald-500 to-green-600",
-      shortcut: "Alt + N",
-    },
-  ], [onCreateEvent]);
+/* ------------------ Draggable Support Button ------------------ */
+const DraggableSupportButton = ({ onClick }) => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [hasMoved, setHasMoved] = useState(false);
+  const buttonRef = useRef(null);
+  const dragStartPos = useRef({ x: 0, y: 0 });
 
-  const toggleOpen = useCallback(() => setIsOpen(p => !p), []);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPosition({
+        x: window.innerWidth - 80,
+        y: window.innerHeight - 80,
+      });
+    }
+  }, []);
+
+  const handlePointerDown = (e) => {
+    setIsDragging(true);
+    setHasMoved(false);
+    dragStartPos.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging) return;
+    
+    let newX = e.clientX - dragStartPos.current.x;
+    let newY = e.clientY - dragStartPos.current.y;
+
+    const maxX = window.innerWidth - 70;
+    const maxY = window.innerHeight - 70;
+    
+    if (newX < 0) newX = 0;
+    if (newY < 0) newY = 0;
+    if (newX > maxX) newX = maxX;
+    if (newY > maxY) newY = maxY;
+
+    setPosition({ x: newX, y: newY });
+    setHasMoved(true);
+  };
+
+  const handlePointerUp = (e) => {
+    setIsDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    
+    if (!hasMoved) {
+      onClick();
+    }
+  };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      {isOpen && (
-        <div className="absolute bottom-16 right-0 space-y-3 mb-10">
-          {quickActions.map(({ icon: Icon, label, action, color, shortcut }) => (
-            <button
-              key={label}
-              onClick={action}
-              className={`flex items-center gap-3 px-4 py-3 bg-gradient-to-r ${color} text-white rounded-xl shadow-lg min-w-[160px]`}
-            >
-              <div className="flex items-center gap-3 flex-1">
-                <Icon className="h-5 w-5" />
-                <span className="font-semibold text-sm">{label}</span>
-              </div>
-              <span className="text-xs opacity-75 font-mono">{shortcut}</span>
-            </button>
-          ))}
-        </div>
-      )}
+    <div
+      ref={buttonRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        touchAction: "none",
+      }}
+      className="fixed top-0 left-0 z-[9999] cursor-grab active:cursor-grabbing transition-transform duration-75"
+    >
       <button
-        onClick={toggleOpen}
-        className={`mb-12 relative w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg flex items-center justify-center ${GLASS_STYLE}`}
+        type="button"
+        className="relative h-16 w-16 rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white shadow-2xl flex items-center justify-center hover:scale-110 transition-all duration-300 ring-4 ring-white/40 group overflow-hidden"
+        title="Contact Support (Drag me!)"
       >
-        <Plus className="h-6 w-6" />
+        {/* Animated background pulse */}
+        <div className="absolute inset-0 rounded-full bg-white/20 animate-ping" />
+        
+        {/* Icon */}
+        <svg 
+          className="relative z-10 w-8 h-8 transition-transform duration-300 group-hover:rotate-12" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+          />
+        </svg>
+        
+        {/* Notification badge */}
+        <div className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg animate-bounce">
+          !
+        </div>
       </button>
     </div>
   );
-});
+};
 
 /* ------------------ Event Row ------------------ */
 const EventRow = memo(({ row, handleArrowClick }) => {
@@ -506,7 +541,6 @@ const TodaysList = memo(forwardRef(function TodaysList({ rows = [], setEvents, u
         return;
       }
 
-      // --- VALIDATION: Check User ID ---
       if (!userId) {
         alert("User ID missing. Please log out and log in again.");
         console.error("Save Event Failed: userId is missing/null.");
@@ -747,6 +781,9 @@ const Dashboard = () => {
     loading: true,
   });
 
+  // ✅ State for Support Modal
+  const [showSupportModal, setShowSupportModal] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -956,24 +993,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* <div className="mb-6 lg:hidden">
-          <div className="grid grid-cols-2 gap-4">
-            <StatCard pillLabel="Total" variant="blue" label="All Tasks" value={stats.TotalTask} icon={<ClipboardList className="h-5 w-5" />} loading={stats.loading} />
-            <StatCard pillLabel="Done" variant="green" label="Completed" value={stats.Completed} icon={<CheckCircle className="h-5 w-5" />} loading={stats.loading} />
-            <StatCard pillLabel="Active" variant="orange" label="In Progress" value={stats.Progress} icon={<Clock className="h-5 w-5" />} loading={stats.loading} />
-            <StatCard pillLabel="Late" variant="red" label="Overdue" value={stats.Overdue} icon={<AlertCircle className="h-5 w-5" />} loading={stats.loading} />
-          </div>
-        </div> */}
-
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
           <div className="space-y-6">
-            {/* <div className="hidden lg:grid lg:grid-cols-4 gap-4">
-              <StatCard pillLabel="Total" variant="blue" label="All Tasks" value={stats.TotalTask} icon={<ClipboardList className="h-4 w-4" />} loading={stats.loading} />
-              <StatCard pillLabel="Done" variant="green" label="Completed" value={stats.Completed} icon={<CheckCircle className="h-4 w-4" />} loading={stats.loading} />
-              <StatCard pillLabel="Active" variant="orange" label="In Progress" value={stats.Progress} icon={<Clock className="h-4 w-4" />} loading={stats.loading} />
-              <StatCard pillLabel="Late" variant="red" label="Overdue" value={stats.Overdue} icon={<AlertCircle className="h-4 w-4" />} loading={stats.loading} />
-            </div> */}
-
             <TodaysList ref={todaysListRef} rows={todaysRows} setEvents={setEvents} userId={userId} />
             
             <Suspense fallback={<ComponentLoader />}>
@@ -993,15 +1014,66 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-        {/* <div className="xl:hidden mt-8">
-          <Suspense fallback={<ComponentLoader />}>
-            <StickyNotesDashboard />
-          </Suspense>
-        </div> */}
       </div>
 
-      <QuickActionsPanel onCreateEvent={handleCreateEvent} />
+      {/* ✅ Draggable Support Button with New Icon */}
+      <DraggableSupportButton onClick={() => setShowSupportModal(true)} />
+
+      {/* ✅ Support Sidebar with Slide Animation */}
+      {showSupportModal && (
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setShowSupportModal(false)}
+          >
+            <div 
+              className="relative w-full max-w-md bg-gray-50 h-full shadow-2xl flex flex-col transform transition-transform duration-500 ease-out"
+              style={{
+                animation: 'slideInFromRight 0.5s ease-out forwards'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              
+              {/* Header */}
+              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-6 flex items-center justify-between shrink-0 shadow-lg">
+                <div>
+                  <h2 className="text-white text-xl font-bold flex items-center gap-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Support Center
+                  </h2>
+                  <p className="text-indigo-100 text-sm mt-1">We're here to help you!</p>
+                </div>
+                <button 
+                  onClick={() => setShowSupportModal(false)}
+                  className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-full transition-all duration-200 hover:rotate-90"
+                >
+                  <FaTimes size={20} />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                 <Support />
+              </div>
+              
+            </div>
+          </div>
+          
+          {/* CSS Animation */}
+          <style>{`
+            @keyframes slideInFromRight {
+              from {
+                transform: translateX(100%);
+              }
+              to {
+                transform: translateX(0);
+              }
+            }
+          `}</style>
+        </ModalPortal>
+      )}
     </div>
   );
 };

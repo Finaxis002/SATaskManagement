@@ -188,28 +188,24 @@ const AllTasks = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const dispatch = useDispatch();
-  const role = localStorage.getItem("role") || "user"; // Default to 'user' if not set
+  const role = localStorage.getItem("role") || "user";
   const navigate = useNavigate();
 
-  // Create Task Click Handler
   const handleCreateClick = () => {
     setEditingTask(null);
     setShowForm(true);
   };
 
-  // Save Task Handler
   const handleSaveTask = (taskData) => {
     setShowForm(false);
-    setRefreshTrigger((prev) => !prev); // ✅ This will tell TaskList to refetch
+    setRefreshTrigger((prev) => !prev);
   };
 
-  // Edit Task Handler
   const handleEdit = (task) => {
     setEditingTask(task);
     setShowForm(true);
   };
 
-  // Remove Completed Tasks Handler
   const handleRemoveCompletedTasks = async () => {
     try {
       const response = await fetch(
@@ -241,7 +237,6 @@ const AllTasks = () => {
     }
   };
 
-  // Remove Obsolete Tasks Handler
   const handleRemoveObsoleteTasks = async () => {
     try {
       const response = await fetch(
@@ -273,49 +268,49 @@ const AllTasks = () => {
     }
   };
 
-  // Added keydown event listener for Alt + N shortcut to trigger task creation
   useEffect(() => {
     const handleKeyPress = (e) => {
-      // Check for Alt + T (both lowercase and uppercase)
       if (e.altKey && (e.key === "t" || e.key === "T")) {
-        e.preventDefault(); // Prevent default behavior for Alt + T
-        handleCreateClick(); // Trigger the task creation form
+        e.preventDefault();
+        handleCreateClick();
       }
     };
 
     window.addEventListener("keydown", handleKeyPress);
-
-    // Cleanup the event listener when component unmounts
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, []); // Empty dependency array to run the effect only once
+  }, []);
 
   return (
     <div className="w-full min-h-screen bg-white font-inter">
       {/* Header Section */}
-      <div className="w-full   px-4 sm:px-6  pt-4 pb-2 border-none bg-white">
+      <div className="w-full px-4 sm:px-6 pt-4 pb-2 border-none bg-white">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900">
             Task Manager
           </h1>
 
           <div className="flex items-center gap-3">
-            {/* Filter Button */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-              title="Toggle Filters"
-            >
-              <FaFilter className="text-gray-500" />
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </button>
+            {/* Filter Button - Desktop Only (Image Style) */}
+            <div className="hidden lg:flex items-center gap-3 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 shadow-sm">
+              <div className="flex items-center gap-2">
+                <FaFilter className="text-gray-500 text-sm" />
+                <span className="text-gray-700">Filters</span>
+              </div>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="text-blue-600 font-medium hover:text-blue-700 focus:outline-none transition-colors"
+              >
+                {showFilters ? 'Hide' : 'Show'}
+              </button>
+            </div>
 
-            {/* Create Task Button with Tooltip */}
+            {/* Create Task Button */}
             <button
               onClick={handleCreateClick}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-cyan-500/50"
-              title="Shortcut: Alt + T" // Tooltip showing the shortcut key
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm transition-all"
+              title="Shortcut: Alt + T"
             >
               <span className="text-white text-lg">＋</span>
               Create Task
@@ -326,7 +321,7 @@ const AllTasks = () => {
                 {/* Remove Completed Button */}
                 <button
                   onClick={handleRemoveCompletedTasks}
-                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
                 >
                   <FaTrashAlt className="text-red-500 text-sm" />
                   Remove Completed
@@ -335,7 +330,7 @@ const AllTasks = () => {
                 {/* Remove Obsolete Button */}
                 <button
                   onClick={handleRemoveObsoleteTasks}
-                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-amber-600 border border-amber-200 hover:bg-amber-50"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-amber-600 border border-amber-200 hover:bg-amber-50 transition-colors"
                 >
                   <FaTrashAlt className="text-amber-500 text-sm" />
                   Remove Obsolete
@@ -347,8 +342,8 @@ const AllTasks = () => {
       </div>
 
       {/* Content Area */}
-      <div className="w-full px-4 sm:px-6    bg-white">
-        <div className="w-full ">
+      <div className="w-full px-4 sm:px-6 bg-white">
+        <div className="w-full">
           <TaskList
             refreshTrigger={refreshTrigger}
             onEdit={handleEdit}
@@ -359,8 +354,6 @@ const AllTasks = () => {
             showFilters={showFilters}
             onHideFilters={() => setShowFilters(false)}
           />
-        
-          
         </div>
 
         {/* Modal Form for Task */}
