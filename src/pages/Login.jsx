@@ -1,13 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaUserAlt, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaUserAlt, FaLock, FaEye, FaEyeSlash, FaSync } from "react-icons/fa";
 import { useDispatch } from "react-redux";
-import { setAuth } from "../redux/authSlice"; // adjust path
-import ReCAPTCHA from "react-google-recaptcha";
+import { setAuth } from "../redux/authSlice";
 import Swal from "sweetalert2";
-
-const RECAPTCHA_SITE_KEY = "6LfwLlMrAAAAAIFtLSnFxwGP_xfkeDU7xuz69sLa";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,14 +15,31 @@ const Login = () => {
 
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaText, setCaptchaText] = useState("");
+  const [userCaptchaInput, setUserCaptchaInput] = useState("");
   const [error, setError] = useState("");
 
   const dispatch = useDispatch();
 
+  // Generate random captcha text
+  const generateCaptcha = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    let captcha = "";
+    for (let i = 0; i < 6; i++) {
+      captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCaptchaText(captcha);
+    setUserCaptchaInput("");
+  };
+
+  // Generate captcha on component mount
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(""); // Clear error when user types
+    setError("");
   };
 
   const computeIsToday = (iso) => {
@@ -38,16 +52,18 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(""); // Clear previous errors
+    setError("");
 
-    if (!captchaToken) {
+    // Verify captcha
+    if (userCaptchaInput !== captchaText) {
       Swal.fire({
         icon: "warning",
-        title: "reCAPTCHA Required",
-        text: "Please verify the reCAPTCHA before signing in.",
+        title: "Invalid CAPTCHA",
+        text: "Please enter the correct CAPTCHA code.",
         confirmButtonColor: "#6366F1",
       });
       setLoading(false);
+      generateCaptcha(); // Generate new captcha
       return;
     }
 
@@ -56,7 +72,7 @@ const Login = () => {
         "https://taskbe.sharda.co.in/api/employees/login",
         {
           ...formData,
-          captchaToken,
+          captchaToken: "manual-captcha-verified" // Backend ke liye dummy token
         }
       );
 
@@ -101,7 +117,6 @@ const Login = () => {
         isBirthdayToday: !!birthdayFlag 
       }));
 
-      // ✅ Fetch linked email directly from linkedemails collection
       try {
         const linkedEmailResponse = await axios.get(
           "https://taskbe.sharda.co.in/api/linkedemails"
@@ -129,7 +144,7 @@ const Login = () => {
       const errorMessage = err.response?.data?.message || "Invalid User ID or Password. Please try again.";
       setError(errorMessage);
       console.error(err);
-      setCaptchaToken(null);
+      generateCaptcha(); // Generate new captcha on error
       setLoading(false);
     }
   };
@@ -144,7 +159,6 @@ const Login = () => {
         {/* Branding Header */}
         <div className="bg-gradient-to-r from-indigo-800 to-indigo-600 py-4 px-6 shadow-md">
           <div className="max-w-6xl mx-auto flex items-center justify-start space-x-5">
-            {/* Logo with subtle shine effect */}
             <div className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
               <img
                 src="/SALOGO.png"
@@ -153,7 +167,6 @@ const Login = () => {
               />
             </div>
 
-            {/* Text with elegant typography */}
             <div className="border-l border-white/20 h-14 flex items-center pl-2">
               <div>
                 <h1 className="text-2xl font-medium text-white tracking-tight leading-none">
@@ -254,11 +267,43 @@ const Login = () => {
               </div>
             </div>
 
-            {/* reCAPTCHA */}
-            <ReCAPTCHA
-              sitekey={RECAPTCHA_SITE_KEY}
-              onChange={(token) => setCaptchaToken(token)}
-            />
+            {/* Letter CAPTCHA */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Enter CAPTCHA
+              </label>
+              
+              {/* CAPTCHA Display */}
+              <div className="flex items-center space-x-2">
+                <div className="flex-1 bg-gradient-to-br from-indigo-100 to-indigo-50 border-2 border-indigo-300 rounded-lg p-4 select-none">
+                  <p className="text-center text-2xl font-bold tracking-widest text-indigo-800 select-none" style={{
+                    fontFamily: 'monospace',
+                    letterSpacing: '0.3em',
+                    textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
+                  }}>
+                    {captchaText}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={generateCaptcha}
+                  className="p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  title="Refresh CAPTCHA"
+                >
+                  <FaSync className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* CAPTCHA Input */}
+              <input
+                type="text"
+                placeholder="Enter the code above"
+                value={userCaptchaInput}
+                onChange={(e) => setUserCaptchaInput(e.target.value)}
+                required
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
 
             {/* Submit Button */}
             <div>

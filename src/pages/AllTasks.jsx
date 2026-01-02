@@ -163,7 +163,7 @@
 //         )}
 //         </div>
 //       </div>
-    
+
 //     </>
 //   );
 // };
@@ -292,17 +292,17 @@ const AllTasks = () => {
           </h1>
 
           <div className="flex items-center gap-3">
-            {/* Filter Button - Desktop Only (Image Style) */}
-            <div className="hidden lg:flex items-center gap-3 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 shadow-sm">
+            {/* Filter Button - Desktop (Image Style) */}
+            <div className="hidden sm:flex items-center gap-3 rounded-lg bg-white px-3 sm:px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 shadow-sm">
               <div className="flex items-center gap-2">
                 <FaFilter className="text-gray-500 text-sm" />
                 <span className="text-gray-700">Filters</span>
               </div>
               <button
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => setShowFilters((prev) => !prev)}
                 className="text-blue-600 font-medium hover:text-blue-700 focus:outline-none transition-colors"
               >
-                {showFilters ? 'Hide' : 'Show'}
+                {showFilters ? "Hide" : "Show"}
               </button>
             </div>
 
@@ -337,6 +337,22 @@ const AllTasks = () => {
                 </button>
               </>
             )}
+          </div>
+        </div>
+
+        {/* Filter Button - Mobile (Bottom Left) */}
+        <div className="sm:hidden mt-3">
+          <div className="flex items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 shadow-sm w-fit">
+            <div className="flex items-center gap-2">
+              <FaFilter className="text-gray-500 text-sm" />
+              <span className="text-gray-700">Filters</span>
+            </div>
+            <button
+              onClick={() => setShowFilters((prev) => !prev)}
+              className="text-blue-600 font-medium hover:text-blue-700 focus:outline-none transition-colors"
+            >
+              {showFilters ? "Hide" : "Show"}
+            </button>
           </div>
         </div>
       </div>

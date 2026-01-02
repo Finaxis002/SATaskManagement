@@ -8,7 +8,6 @@ const LeaveRequestList = () => {
   const checkIntervalRef = useRef(null);
   const refreshIntervalRef = useRef(null);
 
-  // Get userId from localStorage
   const getUserId = () => {
     try {
       return typeof window !== 'undefined' && window.localStorage 
@@ -21,39 +20,81 @@ const LeaveRequestList = () => {
 
   const userId = getUserId();
 
-  // Auto-reject logic
+  // ===== AUTO-REJECT LOGIC WITH UPDATED RULES =====
   const checkAndRejectExpiredLeaves = async (leavesList) => {
     const now = new Date();
     const expiredLeaves = [];
 
     leavesList.forEach((leave) => {
       if (leave.status === "Pending") {
-        const isHalfDay = leave.leaveDuration === "Half Day" || leave.leaveType === "Half Day Leave";
-        const isFullDay = leave.leaveDuration === "Full Day" || !isHalfDay;
+        let shouldReject = false;
+        let rejectionReason = "";
 
-        if (isHalfDay && leave.fromTime) {
-          const leaveDateTime = new Date(leave.fromDate);
-          const [hours, minutes] = leave.fromTime.split(':');
-          leaveDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-          if (now >= leaveDateTime) {
-            expiredLeaves.push(leave);
+        // ===== EMERGENCY LEAVE =====
+        if (leave.leaveType === "Emergency Leave") {
+          if (leave.fromDate) {
+            const leaveDate = new Date(leave.fromDate);
+            const today = new Date();
+            
+            const leaveDateOnly = new Date(leaveDate.getFullYear(), leaveDate.getMonth(), leaveDate.getDate());
+            const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            
+            // Future date ke liye emergency not allowed
+            if (leaveDateOnly.getTime() > todayOnly.getTime()) {
+              shouldReject = true;
+              rejectionReason = "Auto-rejected: Emergency Leave cannot be for future dates";
+            } 
+            // Aaj ka hai - fromTime check karo
+            else if (leaveDateOnly.getTime() === todayOnly.getTime()) {
+              if (leave.fromTime) {
+                const leaveDateTime = new Date(leave.fromDate);
+                const [hours, minutes] = leave.fromTime.split(':');
+                leaveDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                
+                if (now >= leaveDateTime) {
+                  shouldReject = true;
+                  rejectionReason = "Auto-rejected: Emergency Leave time has already passed";
+                }
+              }
+            }
           }
         }
         
-        if (isFullDay) {
-          const leaveStartDate = new Date(leave.fromDate);
-          leaveStartDate.setHours(9, 0, 0, 0);
+        // ===== BAKI SAB LEAVES (Sick, Casual, etc.) =====
+        else {
+          const isHalfDay = leave.leaveDuration === "Half Day" || leave.leaveType === "Half Day Leave";
           
-          if (now >= leaveStartDate) {
-            expiredLeaves.push(leave);
+          // HALF DAY CHECK
+          if (isHalfDay && leave.fromTime && leave.fromDate) {
+            const leaveDateTime = new Date(leave.fromDate);
+            const [hours, minutes] = leave.fromTime.split(':');
+            leaveDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+            if (now >= leaveDateTime) {
+              shouldReject = true;
+              rejectionReason = "Auto-rejected: Half day leave time has passed";
+            }
           }
+          // FULL DAY CHECK
+          else if (!isHalfDay && leave.fromDate) {
+            const leaveStartDate = new Date(leave.fromDate);
+            leaveStartDate.setHours(0, 0, 0, 0);
+            
+            if (now >= leaveStartDate) {
+              shouldReject = true;
+              rejectionReason = "Auto-rejected: Leave start date has passed";
+            }
+          }
+        }
+
+        if (shouldReject) {
+          expiredLeaves.push({ leave, rejectionReason });
         }
       }
     });
 
     // Auto-reject expired leaves
-    for (const leave of expiredLeaves) {
+    for (const { leave, rejectionReason } of expiredLeaves) {
       try {
         setProcessing(prev => new Set(prev).add(leave._id));
         
@@ -62,16 +103,18 @@ const LeaveRequestList = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             status: "Rejected",
-            rejectionReason: "Auto-rejected: Leave time expired without approval"
+            rejectionReason: rejectionReason
           })
         });
 
         if (response.ok) {
+          console.log(`✅ Auto-rejected: ${leave._id} | Reason: ${rejectionReason}`);
+          
           // Instant UI update
           setLeaves(prevLeaves => 
             prevLeaves.map(l => 
               l._id === leave._id 
-                ? { ...l, status: "Rejected", rejectionReason: "Auto-rejected: Leave time expired without approval" }
+                ? { ...l, status: "Rejected", rejectionReason: rejectionReason }
                 : l
             )
           );
@@ -120,7 +163,7 @@ const LeaveRequestList = () => {
     } catch (error) {
       console.error("Failed to fetch leaves:", error);
       if (showLoader) {
-          setError("Failed to load leave requests. Please try again.");
+        setError("Failed to load leave requests. Please try again.");
       }
     } finally {
       if (showLoader) {
@@ -167,16 +210,53 @@ const LeaveRequestList = () => {
     };
   }, []);
 
-  // Helper function to check if leave is expiring soon
+  // ===== UPDATED TIME STATUS WITH NEW LOGIC =====
   const getTimeStatus = (leave) => {
     if (leave.status !== "Pending") {
       return null;
     }
 
-    const isHalfDay = leave.leaveDuration === "Half Day" || leave.leaveType === "Half Day Leave";
-    const isFullDay = leave.leaveDuration === "Full Day" || !isHalfDay;
     const now = new Date();
 
+    // EMERGENCY LEAVE STATUS
+    if (leave.leaveType === "Emergency Leave") {
+      if (leave.fromDate) {
+        const leaveDate = new Date(leave.fromDate);
+        const today = new Date();
+        
+        const leaveDateOnly = new Date(leaveDate.getFullYear(), leaveDate.getMonth(), leaveDate.getDate());
+        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        
+        // Future date
+        if (leaveDateOnly.getTime() > todayOnly.getTime()) {
+          return { type: "expired", text: "❌ Emergency must be for today only" };
+        }
+        
+        // Today with time
+        if (leaveDateOnly.getTime() === todayOnly.getTime() && leave.fromTime) {
+          const leaveDateTime = new Date(leave.fromDate);
+          const [hours, minutes] = leave.fromTime.split(':');
+          leaveDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          
+          const diffMs = leaveDateTime - now;
+          const diffMins = Math.floor(diffMs / 60000);
+
+          if (diffMs <= 0) {
+            return { type: "expired", text: "Expired - Auto-rejecting" };
+          } else if (diffMins <= 30) {
+            return { type: "urgent", text: `⚠️ Expires in ${diffMins} min` };
+          } else if (diffMins <= 120) {
+            return { type: "warning", text: `Expires in ${Math.floor(diffMins / 60)}h ${diffMins % 60}m` };
+          }
+        }
+      }
+      return null;
+    }
+
+    // BAKI SAB LEAVES
+    const isHalfDay = leave.leaveDuration === "Half Day" || leave.leaveType === "Half Day Leave";
+
+    // HALF DAY
     if (isHalfDay && leave.fromTime) {
       const leaveDateTime = new Date(leave.fromDate);
       const [hours, minutes] = leave.fromTime.split(':');
@@ -188,35 +268,36 @@ const LeaveRequestList = () => {
       if (diffMs <= 0) {
         return { type: "expired", text: "Expired - Auto-rejecting" };
       } else if (diffMins <= 30) {
-        return { type: "urgent", text: `⚠️ Expires in ${diffMins} min` };
+        return { type: "urgent", text: ` Expires in ${diffMins} min` };
       } else if (diffMins <= 120) {
         return { type: "warning", text: `Expires in ${Math.floor(diffMins / 60)}h ${diffMins % 60}m` };
       }
     }
 
-    if (isFullDay) {
+    // FULL DAY
+    if (!isHalfDay) {
       const leaveStartDate = new Date(leave.fromDate);
-      leaveStartDate.setHours(9, 0, 0, 0);
+      leaveStartDate.setHours(0, 0, 0, 0);
       
       const diffMs = leaveStartDate - now;
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
       if (diffMs <= 0) {
-        return { type: "expired", text: "Expired - Auto-rejecting (9 AM passed)" };
+        return { type: "expired", text: "Expired - Auto-rejecting" };
       } else if (diffHours <= 2) {
-        return { type: "urgent", text: `⚠️ Expires in ${diffHours}h (9 AM deadline)` };
+        return { type: "urgent", text: `⚠️ Expires in ${diffHours}h` };
       } else if (diffHours <= 12) {
-        return { type: "warning", text: `Expires in ${diffHours}h (9 AM deadline)` };
+        return { type: "warning", text: `Expires in ${diffHours}h` };
       } else if (diffDays === 1) {
-        return { type: "warning", text: "Leave starts tomorrow (9 AM deadline)" };
+        return { type: "warning", text: "Leave starts tomorrow" };
       }
     }
 
     return null;
   };
 
-  if (!userId) {
+  if (!userId) {  
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg">
         <div className="text-center py-8 text-red-500">
@@ -229,10 +310,8 @@ const LeaveRequestList = () => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition max-h-[calc(102vh-180px)] overflow-y-auto">
-      {/* HEADER SECTION - REFRESH BUTTON REMOVED */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-semibold text-gray-800">Your Leave Requests</h2>
-        {/* Button removed here */}
       </div>
       <div className="border-b border-gray-300 mb-4"></div>
 
@@ -260,11 +339,6 @@ const LeaveRequestList = () => {
         <>
           <div className="mb-4 text-sm text-gray-600 flex items-center justify-between">
             <span>Showing {leaves.length} request{leaves.length !== 1 ? 's' : ''}</span>
-             {/* Live indicator to show it's auto-updating */}
-             {/* <span className="text-xs text-green-600 flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              Live updates active
-            </span> */}
           </div>
           {leaves.map((leave) => {
             const timeStatus = getTimeStatus(leave);
