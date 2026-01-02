@@ -215,101 +215,46 @@ const ModalPortal = memo(({ children }) => {
   return createPortal(children, elRef.current);
 });
 
-/* ------------------ Draggable Support Button ------------------ */
-const DraggableSupportButton = ({ onClick }) => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [hasMoved, setHasMoved] = useState(false);
-  const buttonRef = useRef(null);
-  const dragStartPos = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setPosition({
-        x: window.innerWidth - 80,
-        y: window.innerHeight - 80,
-      });
-    }
-  }, []);
-
-  const handlePointerDown = (e) => {
-    setIsDragging(true);
-    setHasMoved(false);
-    dragStartPos.current = {
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (e) => {
-    if (!isDragging) return;
-    
-    let newX = e.clientX - dragStartPos.current.x;
-    let newY = e.clientY - dragStartPos.current.y;
-
-    const maxX = window.innerWidth - 70;
-    const maxY = window.innerHeight - 70;
-    
-    if (newX < 0) newX = 0;
-    if (newY < 0) newY = 0;
-    if (newX > maxX) newX = maxX;
-    if (newY > maxY) newY = maxY;
-
-    setPosition({ x: newX, y: newY });
-    setHasMoved(true);
-  };
-
-  const handlePointerUp = (e) => {
-    setIsDragging(false);
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    
-    if (!hasMoved) {
-      onClick();
-    }
-  };
-
+/* ------------------ FIXED Support Button (No Dragging) ------------------ */
+const FixedSupportButton = ({ onClick }) => {
   return (
-    <div
-      ref={buttonRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+    <button
+      onClick={onClick}
+      type="button"
       style={{
-        transform: `translate(${position.x}px, ${position.y}px)`,
-        touchAction: "none",
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        zIndex: 999999,
+        width: '64px',
+        height: '64px',
       }}
-      className="fixed top-0 left-0 z-[9999] cursor-grab active:cursor-grabbing transition-transform duration-75"
+      className="rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ring-4 ring-white/40 group overflow-hidden"
+      title="Contact Support"
     >
-      <button
-        type="button"
-        className="relative h-16 w-16 rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white shadow-2xl flex items-center justify-center hover:scale-110 transition-all duration-300 ring-4 ring-white/40 group overflow-hidden"
-        title="Contact Support (Drag me!)"
+      {/* Animated background pulse */}
+      <div className="absolute inset-0 rounded-full bg-white/20 animate-ping" />
+      
+      {/* Icon */}
+      <svg 
+        className="relative z-10 w-8 h-8 transition-transform duration-300 group-hover:rotate-12" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
       >
-        {/* Animated background pulse */}
-        <div className="absolute inset-0 rounded-full bg-white/20 animate-ping" />
-        
-        {/* Icon */}
-        <svg 
-          className="relative z-10 w-8 h-8 transition-transform duration-300 group-hover:rotate-12" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
-          />
-        </svg>
-        
-        {/* Notification badge */}
-        <div className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg animate-bounce">
-          !
-        </div>
-      </button>
-    </div>
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+        />
+      </svg>
+      
+      {/* Notification badge */}
+      <div className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg animate-bounce">
+        !
+      </div>
+    </button>
   );
 };
 
@@ -1016,14 +961,14 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ✅ Draggable Support Button with New Icon */}
-      <DraggableSupportButton onClick={() => setShowSupportModal(true)} />
+      {/* ✅ Fixed Support Button (No Dragging) */}
+      <FixedSupportButton onClick={() => setShowSupportModal(true)} />
 
       {/* ✅ Support Sidebar with Slide Animation */}
       {showSupportModal && (
         <ModalPortal>
           <div 
-            className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+            className="fixed inset-0 z-[999998] flex justify-end bg-black/40 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => setShowSupportModal(false)}
           >
             <div 

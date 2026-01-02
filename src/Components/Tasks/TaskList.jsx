@@ -2241,6 +2241,20 @@ const ITEMS_PER_PAGE = 30;
 const MOBILE_ITEMS_PER_PAGE = 15;
 const BASE_URL = "https://taskbe.sharda.co.in/api/tasks";
 
+// Add this helper function at the top of the component
+const deduplicateTasks = (tasks) => {
+    const seen = new Map();
+    return tasks.filter(task => {
+        if (seen.has(task._id)) {
+            console.warn(`Duplicate task found: ${task._id}`);
+            return false;
+        }
+        seen.set(task._id, true);
+        return true;
+    });
+};
+
+
 const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride, hideCompleted, showFilters, onHideFilters }) => {
     // State for paginated tasks
     const [tasks, setTasks] = useState([]);
@@ -2381,12 +2395,12 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
 
             const data = await response.json();
 
-            // Update state
-            if (shouldReset || page === 1) {
-                setTasks(data.tasks || []);
-            } else {
-                setTasks(prev => [...prev, ...(data.tasks || [])]);
-            }
+           // Update state
+if (shouldReset || page === 1) {
+    setTasks(deduplicateTasks(data.tasks || []));
+} else {
+    setTasks(prev => deduplicateTasks([...prev, ...(data.tasks || [])]));
+}
 
             setCurrentPage(page);
             setTotalPages(data.totalPages || 1);
@@ -2503,10 +2517,11 @@ const TaskList = ({ onEdit, refreshTrigger, setTaskListExternally, tasksOverride
     }, [hasMore, loading, currentPage, isMobileView, fetchTasks, isFetchingMore]);
 
    // WebSocket updates
+// WebSocket updates
 useEffect(() => {
     const handleTaskEvent = () => {
-        
-        fetchTasks(currentPage, false); 
+        // Always refetch the current page with reset to avoid duplicates
+        fetchTasks(currentPage, true); // ✅ Changed to true
         fetchStats();
     };
 
@@ -2521,6 +2536,8 @@ useEffect(() => {
     };
 }, [currentPage, fetchTasks, fetchStats]);
 
+    // ... existing code ...
+
     // Handle closing dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -2532,6 +2549,25 @@ useEffect(() => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    // ✅ YE CODE ADD KAREIN: Scroll hone par dropdown band karne ke liye
+    useEffect(() => {
+        const handleScrollClose = () => {
+            if (editingStatus) {
+                setEditingStatus(null);
+            }
+        };
+
+        // 'true' (capture phase) use kar rahe hain taaki window scroll 
+        // aur table container scroll dono pakad sakein
+        window.addEventListener("scroll", handleScrollClose, true);
+
+        return () => {
+            window.removeEventListener("scroll", handleScrollClose, true);
+        };
+    }, [editingStatus]);
+
+    // ... existing code ...
 
     useEffect(() => {
         if (tasks.length > 0) {
@@ -2740,7 +2776,12 @@ useEffect(() => {
     setTasks(prev => prev.map(task =>
         task._id === taskId ? { ...task, status: newStatus } : task
     ));
-
+    setTasks(prev => {
+    const updated = prev.map(task =>
+        task._id === taskId ? { ...task, status: newStatus } : task
+    );
+    return deduplicateTasks(updated);
+});
     let updatedRemark = remarks[taskId] || "";
     if (newStatus === "Completed" && !updatedRemark.includes("[Completed]")) {
         updatedRemark += " [Completed]";

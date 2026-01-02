@@ -30,9 +30,9 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [inboxCount, setInboxCount] = useState(0);
   const [leaveAlert, setLeaveAlert] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  
+
   // ❌ Maine 'mobileMenuOpen' state hata diya hai, ab parent control karega
-  
+
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
 
   const fetchPendingLeaveCount = async () => {
@@ -135,7 +135,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             to="/all-tasks"
             expanded={expanded}
           />
-          
+
           <SidebarItem
             icon={<FaUserTie />}
             label="Agent"
@@ -210,6 +210,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer */}
+
         <div
           className="h-10 flex items-center justify-center px-3 text-xs text-gray-600 border-t flex-shrink-0"
           style={{
@@ -217,12 +218,15 @@ const Sidebar = ({ isOpen, onClose }) => {
             backgroundColor: "rgba(224, 220, 249, 0.2)",
           }}
         >
-          {expanded ? "© 2025 Finaxis" : "©"}
+          {/* Yahan humne dynamic date logic lagayi hai */}
+          {expanded
+            ? `© ${new Date().getFullYear()} Finaxis`
+            : `© ${new Date().getFullYear()}`}
         </div>
       </div>
 
       {/* ---------------- Mobile Sidebar ---------------- */}
-      
+
       {/* Mobile Overlay - Ab 'isOpen' use karega */}
       {isOpen && (
         <div
@@ -365,7 +369,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             backgroundColor: "rgba(224, 220, 249, 0.2)",
           }}
         >
-          © 2025 Finaxis
+          © {new Date().getFullYear()} Finaxis
         </div>
       </div>
 
