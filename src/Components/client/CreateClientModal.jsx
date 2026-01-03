@@ -364,4 +364,4 @@ const CreateClientModal = ({ client, onClose, onCreate }) => {
   );
 };
 
-export default CreateClientModal;   
+export default CreateClientModal;    
