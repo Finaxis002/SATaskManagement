@@ -17,7 +17,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [captchaText, setCaptchaText] = useState("");
   const [userCaptchaInput, setUserCaptchaInput] = useState("");
-  const [error, setError] = useState("");
 
   const dispatch = useDispatch();
 
@@ -39,7 +38,6 @@ const Login = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError("");
   };
 
   const computeIsToday = (iso) => {
@@ -52,7 +50,6 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     // Verify captcha
     if (userCaptchaInput !== captchaText) {
@@ -142,7 +139,15 @@ const Login = () => {
       navigate("/", { replace: true });
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Invalid User ID or Password. Please try again.";
-      setError(errorMessage);
+      
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: errorMessage,
+        confirmButtonColor: "#6366F1",
+        timerProgressBar: true,
+      });
+      
       console.error(err);
       generateCaptcha(); // Generate new captcha on error
       setLoading(false);
@@ -187,24 +192,7 @@ const Login = () => {
             <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8">Please enter your credentials</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 flex items-start space-x-2 sm:space-x-3">
-                <svg
-                  className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <p className="text-xs sm:text-sm text-red-700">{error}</p>
-              </div>
-            )}
+          <form onSubmit={handleSubmit} className="space-y-4">
 
             {/* User ID Field */}
             <div className="space-y-1">
@@ -267,18 +255,18 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Letter CAPTCHA */}
+            {/* Letter CAPTCHA - Reduced Size */}
             <div className="space-y-2">
               <label className="block text-xs sm:text-sm font-medium text-gray-700">
                 Enter CAPTCHA
               </label>
               
-              {/* CAPTCHA Display */}
+              {/* CAPTCHA Display - Smaller */}
               <div className="flex items-center space-x-2">
-                <div className="flex-1 bg-gradient-to-br from-indigo-100 to-indigo-50 border-2 border-indigo-300 rounded-lg p-3 sm:p-4 select-none">
-                  <p className="text-center text-xl sm:text-2xl font-bold tracking-widest text-indigo-800 select-none break-all" style={{
+                <div className="flex-1 bg-gradient-to-br from-indigo-100 to-indigo-50 border-2 border-indigo-300 rounded-lg py-1.5 px-2 select-none">
+                  <p className="text-center text-base sm:text-lg font-bold tracking-widest text-indigo-800 select-none break-all" style={{
                     fontFamily: 'monospace',
-                    letterSpacing: '0.2em',
+                    letterSpacing: '0.15em',
                     textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
                   }}>
                     {captchaText}
@@ -287,10 +275,10 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={generateCaptcha}
-                  className="p-2.5 sm:p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex-shrink-0"
+                  className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex-shrink-0"
                   title="Refresh CAPTCHA"
                 >
-                  <FaSync className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <FaSync className="h-3.5 w-3.5" />
                 </button>
               </div>
 
@@ -301,12 +289,12 @@ const Login = () => {
                 value={userCaptchaInput}
                 onChange={(e) => setUserCaptchaInput(e.target.value)}
                 required
-                className="block w-full px-3 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="block w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
 
             {/* Submit Button */}
-            <div>
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
