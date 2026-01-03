@@ -154,43 +154,43 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-50 flex items-center justify-center p-4 sm:p-6">
       <div className="max-w-md w-full bg-white rounded-2xl overflow-hidden shadow-xl">
         {/* Branding Header */}
-        <div className="bg-gradient-to-r from-indigo-800 to-indigo-600 py-4 px-6 shadow-md">
-          <div className="max-w-6xl mx-auto flex items-center justify-start space-x-5">
-            <div className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+        <div className="bg-gradient-to-r from-indigo-800 to-indigo-600 py-3 px-4 sm:py-4 sm:px-6 shadow-md">
+          <div className="max-w-6xl mx-auto flex items-center justify-start space-x-3 sm:space-x-5">
+            <div className="p-1 sm:p-1.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 flex-shrink-0">
               <img
                 src="/SALOGO.png"
                 alt="ASA Logo"
-                className="h-14 w-14 object-contain drop-shadow-lg"
+                className="h-10 w-10 sm:h-14 sm:w-14 object-contain drop-shadow-lg"
               />
             </div>
 
-            <div className="border-l border-white/20 h-14 flex items-center pl-2">
-              <div>
-                <h1 className="text-2xl font-medium text-white tracking-tight leading-none">
+            <div className="border-l border-white/20 h-10 sm:h-14 flex items-center pl-2 sm:pl-3 min-w-0">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl md:text-2xl font-medium text-white tracking-tight leading-tight sm:leading-none truncate">
                   Anunay Sharda & Associates
                 </h1>
-                <p className="text-indigo-100 text-sm font-light tracking-wider mt-1"></p>
+                <p className="text-indigo-100 text-xs sm:text-sm font-light tracking-wider mt-0.5 sm:mt-1"></p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Login Form */}
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           <div className="flex flex-col items-center">
-            <h2 className="text-3xl font-light text-gray-800 mb-2">
+            <h2 className="text-2xl sm:text-3xl font-light text-gray-800 mb-1 sm:mb-2">
               Welcome Back
             </h2>
-            <p className="text-gray-500 mb-8">Please enter your credentials</p>
+            <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8">Please enter your credentials</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 flex items-start space-x-2 sm:space-x-3">
                 <svg
                   className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"
                   fill="currentColor"
@@ -202,7 +202,7 @@ const Login = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <p className="text-sm text-red-700">{error}</p>
+                <p className="text-xs sm:text-sm text-red-700">{error}</p>
               </div>
             )}
 
@@ -210,13 +210,13 @@ const Login = () => {
             <div className="space-y-1">
               <label
                 htmlFor="userId"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-xs sm:text-sm font-medium text-gray-700"
               >
                 User ID
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaUserAlt className="h-5 w-5 text-gray-400" />
+                  <FaUserAlt className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <input
                   type="text"
@@ -226,7 +226,7 @@ const Login = () => {
                   value={formData.userId}
                   onChange={handleChange}
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full pl-9 sm:pl-10 pr-3 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -235,13 +235,13 @@ const Login = () => {
             <div className="space-y-1">
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-xs sm:text-sm font-medium text-gray-700"
               >
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaLock className="h-5 w-5 text-gray-400" />
+                  <FaLock className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <input
                   type={passwordVisible ? "text" : "password"}
@@ -251,7 +251,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full pl-9 sm:pl-10 pr-10 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
                 <button
                   type="button"
@@ -259,9 +259,9 @@ const Login = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {passwordVisible ? (
-                    <FaEyeSlash className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <FaEyeSlash className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 hover:text-gray-600" />
                   ) : (
-                    <FaEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <FaEye className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 hover:text-gray-600" />
                   )}
                 </button>
               </div>
@@ -269,16 +269,16 @@ const Login = () => {
 
             {/* Letter CAPTCHA */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700">
                 Enter CAPTCHA
               </label>
               
               {/* CAPTCHA Display */}
               <div className="flex items-center space-x-2">
-                <div className="flex-1 bg-gradient-to-br from-indigo-100 to-indigo-50 border-2 border-indigo-300 rounded-lg p-4 select-none">
-                  <p className="text-center text-2xl font-bold tracking-widest text-indigo-800 select-none" style={{
+                <div className="flex-1 bg-gradient-to-br from-indigo-100 to-indigo-50 border-2 border-indigo-300 rounded-lg p-3 sm:p-4 select-none">
+                  <p className="text-center text-xl sm:text-2xl font-bold tracking-widest text-indigo-800 select-none break-all" style={{
                     fontFamily: 'monospace',
-                    letterSpacing: '0.3em',
+                    letterSpacing: '0.2em',
                     textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
                   }}>
                     {captchaText}
@@ -287,10 +287,10 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={generateCaptcha}
-                  className="p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="p-2.5 sm:p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex-shrink-0"
                   title="Refresh CAPTCHA"
                 >
-                  <FaSync className="h-5 w-5" />
+                  <FaSync className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
               </div>
 
@@ -301,7 +301,7 @@ const Login = () => {
                 value={userCaptchaInput}
                 onChange={(e) => setUserCaptchaInput(e.target.value)}
                 required
-                className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="block w-full px-3 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
 
@@ -310,7 +310,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-2.5 sm:py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -345,7 +345,7 @@ const Login = () => {
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-8 py-4 border-t border-gray-200">
+        <div className="bg-gray-50 px-6 sm:px-8 py-3 sm:py-4 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
             © {new Date().getFullYear()} Anunay Sharda Associates. All rights
             reserved.

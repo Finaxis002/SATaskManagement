@@ -49,7 +49,7 @@ export default function Updates() {
   const saveUpdateToDB = async (saveObj) => {
     try {
       const response = await axios.post(
-        "http://localhost:1100/api/updates",
+        "https://taskbe.sharda.co.in/api/updates",
         {
           
           description: saveObj.details,
