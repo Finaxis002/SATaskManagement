@@ -1,15 +1,6 @@
 @import "tailwindcss";
 @import 'animate.css';
-
-/* --- ADDED FIX FOR LOCAL FONT --- */
-@font-face {
-  font-family: 'Roboto';
-  /* Ensure your file is at public/fonts/roboto-regular.woff2 */
-  src: url('/fonts/roboto-regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-}
-/* -------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
 * {
   font-family: 'Roboto', sans-serif;
