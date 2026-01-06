@@ -1,4 +1,3 @@
-// src/Components/Sidebar.jsx
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -23,16 +22,18 @@ const socket = io("https://taskbe.sharda.co.in", {
   query: { token: localStorage.getItem("authToken") },
 });
 
-// 👇 Yahan dhyan dein: isOpen aur onClose props receive karne hain
 const Sidebar = ({ isOpen, onClose }) => {
-  const [role, setRole] = useState("");
+  // 🔥 Initialize from localStorage immediately
+  const storedRole = localStorage.getItem("role") || "";
+  const storedDepartment = localStorage.getItem("department") || "";
+
+  const [role, setRole] = useState(storedRole);
+  const [department, setDepartment] = useState(storedDepartment.toLowerCase());
+  const [isLoadingDept, setIsLoadingDept] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
   const [leaveAlert, setLeaveAlert] = useState(false);
   const [expanded, setExpanded] = useState(false);
-
-  // ❌ Maine 'mobileMenuOpen' state hata diya hai, ab parent control karega
-
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
 
   const fetchPendingLeaveCount = async () => {
@@ -58,16 +59,121 @@ const Sidebar = ({ isOpen, onClose }) => {
   }, []);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("role");
-    setRole(storedRole);
+    const initializeSidebar = async () => {
+      const currentRole = localStorage.getItem("role");
+      const currentDepartment = localStorage.getItem("department");
+      const storedEmail = localStorage.getItem("email");
+
+      // Update state with localStorage values
+      if (currentRole) {
+        setRole(currentRole);
+      }
+
+      if (
+        currentDepartment &&
+        currentDepartment !== "null" &&
+        currentDepartment !== "undefined"
+      ) {
+        const normalizedDept = currentDepartment.toLowerCase();
+
+        setDepartment(normalizedDept);
+      } else if (currentRole === "user" && storedEmail) {
+        // Only fetch if we truly don't have department info
+
+        setIsLoadingDept(true);
+        await fetchUserDepartment();
+      }
+    };
+
+    initializeSidebar();
   }, []);
+
+  const fetchUserDepartment = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const userEmail = localStorage.getItem("email");
+
+      if (!userEmail) {
+        console.error("❌ No email found in localStorage");
+        setIsLoadingDept(false);
+        return;
+      }
+
+      const res = await axios.get("https://taskbe.sharda.co.in/api/employees", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const currentUser = res.data.find((emp) => {
+        console.log("Comparing:", emp.email, "with", userEmail);
+        return emp.email === userEmail;
+      });
+
+      if (currentUser) {
+        let userDept = "";
+
+        if (Array.isArray(currentUser.department)) {
+          // Check for both spelling variations
+          const salesDept = currentUser.department.find(
+            (d) =>
+              d && (d.toLowerCase() === "sales" || d.toLowerCase() === "selles")
+          );
+          userDept = salesDept
+            ? "sales" // Normalize to correct spelling if found
+            : (currentUser.department[0] || "").toLowerCase();
+        } else {
+          userDept = (currentUser.department || "").toLowerCase();
+        }
+
+        setDepartment(userDept);
+        localStorage.setItem("department", userDept);
+        console.log("💾 Department saved to localStorage");
+      } else {
+        console.error("❌ User not found in employees list");
+        console.log(
+          "Available emails:",
+          res.data.map((emp) => emp.email)
+        );
+        setDepartment("");
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch user department:", err);
+      console.error("Error details:", err.response?.data || err.message);
+      setDepartment("");
+    } finally {
+      setIsLoadingDept(false);
+    }
+  };
 
   useMessageSocket(setInboxCount);
   useNotificationSocket(setNotificationCount);
 
+  // Helper check for sales department (includes typo support)
+  const isSales =
+    role === "admin" || department === "sales" || department === "selles";
+
+  // ✅ Helper check for IT department (accepts multiple variations)
+  // Note: Since 'role === admin' is included here, using 'isIT' covers both Admin AND IT users.
+  const isIT =
+    role === "admin" ||
+    department === "it" ||
+    department === "it/software" ||
+    department === "information technology" ||
+    department === "IT" ||
+    department === "IT/Software" ||
+    department === "Information Technology";
+
+  // Show loading state only while fetching department
+  if (isLoadingDept) {
+    return (
+      <div className="hidden md:flex fixed left-0 top-0 h-screen z-[999] w-[70px] bg-gradient-to-b from-purple-50 to-indigo-50 items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* ---------------- Desktop Sidebar (Unchanged) ---------------- */}
+      {/* ---------------- Desktop Sidebar ---------------- */}
       <div
         className={`hidden md:flex fixed left-0 top-0 h-screen z-[999]
         bg-gradient-to-b from-purple-50 to-indigo-50 text-gray-800 flex-col
@@ -143,12 +249,15 @@ const Sidebar = ({ isOpen, onClose }) => {
             expanded={expanded}
           />
 
-          <SidebarItem
-            icon={<FaRegEnvelopeOpen />}
-            label="Support Requests"
-            to="/developer-support"
-            expanded={expanded}
-          />
+          {/* ✅ Only show for IT department users */}
+          {isIT && (
+            <SidebarItem
+              icon={<FaRegEnvelopeOpen />}
+              label="Support Requests"
+              to="/developer-support"
+              expanded={expanded}
+            />
+          )}
 
           <SidebarItem
             icon={<FaBriefcase />}
@@ -190,7 +299,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             />
           )}
 
-          {role === "admin" && (
+          {/* Invoicing for Sales department */}
+          {isSales && (
             <SidebarItem
               icon={<FaMoneyBill />}
               label="Invoicing"
@@ -199,7 +309,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             />
           )}
 
-          {role === "admin" && (
+          {/* ✅ UPDATED: Ab Admin aur IT Department dono ko dikhega */}
+          {isIT && (
             <SidebarItem
               icon={<FaClock />}
               label="Updates"
@@ -210,7 +321,6 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer */}
-
         <div
           className="h-10 flex items-center justify-center px-3 text-xs text-gray-600 border-t flex-shrink-0"
           style={{
@@ -218,7 +328,6 @@ const Sidebar = ({ isOpen, onClose }) => {
             backgroundColor: "rgba(224, 220, 249, 0.2)",
           }}
         >
-          {/* Yahan humne dynamic date logic lagayi hai */}
           {expanded
             ? `© ${new Date().getFullYear()} Finaxis`
             : `© ${new Date().getFullYear()}`}
@@ -226,19 +335,16 @@ const Sidebar = ({ isOpen, onClose }) => {
       </div>
 
       {/* ---------------- Mobile Sidebar ---------------- */}
-
-      {/* Mobile Overlay - Ab 'isOpen' use karega */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0  bg-opacity-50 z-[999]"
-          onClick={onClose} // onClose prop use kiya
+          className="md:hidden fixed inset-0 bg-opacity-50 z-[999]"
+          onClick={onClose}
         ></div>
       )}
 
-      {/* Mobile Sidebar Panel - Ab 'isOpen' use karega */}
       <div
         className={`md:hidden fixed left-0 top-0 h-screen z-[1000] bg-gradient-to-b from-purple-50 to-indigo-50 text-gray-800 flex flex-col transition-transform duration-300 border-r shadow-2xl w-[280px]
-        ${isOpen ? "translate-x-0" : "-translate-x-full"}`} // mobileMenuOpen ko hatake isOpen lagaya
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{ borderRightColor: "#e0dcf9" }}
       >
         {/* Mobile Logo Section */}
@@ -249,7 +355,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <NavLink
             to="/"
             className="flex items-center justify-center px-4"
-            onClick={onClose} // onClose prop call kiya
+            onClick={onClose}
           >
             <div className="flex items-center gap-3 w-full">
               <div
@@ -302,12 +408,15 @@ const Sidebar = ({ isOpen, onClose }) => {
             onClick={onClose}
           />
 
-          <MobileSidebarItem
-            icon={<FaRegEnvelopeOpen />}
-            label="Support Requests"
-            to="/developer-support"
-            onClick={onClose}
-          />
+          {/* ✅ Only show for IT department users */}
+          {isIT && (
+            <MobileSidebarItem
+              icon={<FaRegEnvelopeOpen />}
+              label="Support Requests"
+              to="/developer-support"
+              onClick={onClose}
+            />
+          )}
 
           <MobileSidebarItem
             icon={<FaBriefcase />}
@@ -342,7 +451,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             />
           )}
 
-          {role === "admin" && (
+          {/* Invoicing for Sales department */}
+          {isSales && (
             <MobileSidebarItem
               icon={<FaMoneyBill />}
               label="Invoicing"
@@ -351,7 +461,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             />
           )}
 
-          {role === "admin" && (
+          {/* ✅ UPDATED: Ab Admin aur IT Department dono ko dikhega */}
+          {isIT && (
             <MobileSidebarItem
               icon={<FaClock />}
               label="Updates"
@@ -386,7 +497,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   );
 };
 
-// Helper Components (Unchanged)
+// Helper Components
 const SidebarItem = ({ icon, label, to, expanded, badge }) => (
   <NavLink
     to={to}
