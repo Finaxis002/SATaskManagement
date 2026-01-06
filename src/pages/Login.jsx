@@ -60,7 +60,7 @@ const Login = () => {
         confirmButtonColor: "#6366F1",
       });
       setLoading(false);
-      generateCaptcha(); // Generate new captcha
+      generateCaptcha();
       return;
     }
 
@@ -69,7 +69,7 @@ const Login = () => {
         "https://taskbe.sharda.co.in/api/employees/login",
         {
           ...formData,
-          captchaToken: "manual-captcha-verified" // Backend ke liye dummy token
+          captchaToken: "manual-captcha-verified"
         }
       );
 
@@ -83,18 +83,51 @@ const Login = () => {
       const loginExpiryHours = 10;
       const loginExpiryTime = Date.now() + loginExpiryHours * 60 * 60 * 1000;
 
+      // 🔥 FIX: Properly handle department storage with normalization
+      let deptValue = "";
+      if (Array.isArray(department)) {
+        console.log("🔥 LOGIN - Department is array:", department);
+        
+        // Check for various department names (case-insensitive)
+        const normalizedDept = department[0] ? department[0].toLowerCase().trim() : "";
+        
+        // Normalize common department names
+        if (normalizedDept === "sales" || normalizedDept === "selles") {
+          deptValue = "sales";
+        } else if (normalizedDept === "it" || normalizedDept === "it/software" || normalizedDept === "information technology") {
+          deptValue = "it/software";
+        } else {
+          deptValue = normalizedDept;
+        }
+      } else if (typeof department === "string") {
+        console.log("🔥 LOGIN - Department is string:", department);
+        const normalizedDept = department.toLowerCase().trim();
+        
+        // Normalize common department names
+        if (normalizedDept === "sales" || normalizedDept === "selles") {
+          deptValue = "sales";
+        } else if (normalizedDept === "it" || normalizedDept === "it/software" || normalizedDept === "information technology") {
+          deptValue = "it/software";
+        } else {
+          deptValue = normalizedDept;
+        }
+      }
+
+      
+
       const userData = {
         _id,
         name,
         email,
         position,
-        department,
+        department: deptValue,
         userId,
         role,
         birthdate: birthdate || "",
         isBirthdayToday: birthdayFlag,
       };
 
+      // Store all necessary data in localStorage
       localStorage.setItem("authToken", token);
       localStorage.setItem("loginExpiry", loginExpiryTime);
       localStorage.setItem("tokenLocal", token);
@@ -103,8 +136,15 @@ const Login = () => {
       localStorage.setItem("name", name);
       localStorage.setItem("role", role);
       localStorage.setItem("userId", _id);
+      localStorage.setItem("email", email); // 🔥 Store email
+      localStorage.setItem("department", deptValue); // 🔥 Store normalized department
       localStorage.setItem("birthdate", birthdate || "");
       localStorage.setItem("isBirthdayToday", JSON.stringify(!!birthdayFlag));
+
+      console.log("✅ LOGIN - localStorage set successfully:");
+      console.log("   - Role:", role);
+      console.log("   - Department:", deptValue);
+      console.log("   - Email:", email);
 
       dispatch(setAuth({ 
         name, 
@@ -114,6 +154,7 @@ const Login = () => {
         isBirthdayToday: !!birthdayFlag 
       }));
 
+      // Fetch linked emails
       try {
         const linkedEmailResponse = await axios.get(
           "https://taskbe.sharda.co.in/api/linkedemails"
@@ -148,8 +189,9 @@ const Login = () => {
         timerProgressBar: true,
       });
       
-      console.error(err);
-      generateCaptcha(); // Generate new captcha on error
+      console.error("❌ Login error:", err);
+      generateCaptcha();
+    } finally {
       setLoading(false);
     }
   };
@@ -255,13 +297,13 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Letter CAPTCHA - Reduced Size */}
+            {/* Letter CAPTCHA */}
             <div className="space-y-2">
               <label className="block text-xs sm:text-sm font-medium text-gray-700">
                 Enter CAPTCHA
               </label>
               
-              {/* CAPTCHA Display - Smaller */}
+              {/* CAPTCHA Display */}
               <div className="flex items-center space-x-2">
                 <div className="flex-1 bg-gradient-to-br from-indigo-100 to-indigo-50 border-2 border-indigo-300 rounded-lg py-1.5 px-2 select-none">
                   <p className="text-center text-base sm:text-lg font-bold tracking-widest text-indigo-800 select-none break-all" style={{
@@ -305,7 +347,7 @@ const Login = () => {
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
                       xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
+                      fill="none" 
                       viewBox="0 0 24 24"
                     >
                       <circle
@@ -345,4 +387,3 @@ const Login = () => {
 };
 
 export default Login;
-
