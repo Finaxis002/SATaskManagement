@@ -23,7 +23,6 @@ const socket = io("https://taskbe.sharda.co.in", {
 });
 
 const Sidebar = ({ isOpen, onClose }) => {
-  // 🔥 Initialize from localStorage immediately
   const storedRole = localStorage.getItem("role") || "";
   const storedDepartment = localStorage.getItem("department") || "";
 
@@ -35,6 +34,166 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [leaveAlert, setLeaveAlert] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
+  const [allowedMenuItems, setAllowedMenuItems] = useState([]);
+  const [permissionVersion, setPermissionVersion] = useState(0);
+
+  // Permission mapping - NO adminOnly restrictions
+  const menuItemConfig = {
+    home: { to: "/", icon: <FaHome />, label: "Home" },
+    allUsers: { to: "/all-employees", icon: <FaUsers />, label: "All Users" },
+    tasks: { to: "/all-tasks", icon: <FaClipboardList />, label: "Tasks" },
+    agent: { to: "/agent", icon: <FaUserTie />, label: "Agent" },
+    supportRequests: {
+      to: "/developer-support",
+      icon: <FaRegEnvelopeOpen />,
+      label: "Support Requests",
+    },
+    clients: { to: "/clients", icon: <FaBriefcase />, label: "Clients" },
+    leave: { to: "/leave", icon: <FaGolfBall />, label: "Leave" },
+    settings: {
+      to: "/departments",
+      icon: <FaCog />,
+      label: "Settings",
+      badge: true,
+    },
+    completedTasks: {
+      to: "/completed",
+      icon: <FaCheckCircle />,
+      label: "Completed Tasks",
+    },
+    invoicing: {
+      to: "/viewinvoicewithotp",
+      icon: <FaMoneyBill />,
+      label: "Invoicing",
+    },
+    updates: { to: "/updates", icon: <FaClock />, label: "Updates" },
+  };
+
+  // Default fallback permissions
+  const defaultFallbackPermissions = {
+    marketing: ["home", "tasks", "agent", "clients", "leave"],
+    operations: ["home", "tasks", "agent", "clients", "leave"],
+    "it/software": [
+      "home",
+      "tasks",
+      "agent",
+      "supportRequests",
+      "clients",
+      "leave",
+      "updates",
+    ],
+    seo: ["home", "tasks", "agent", "clients", "leave"],
+    "human resource": ["home", "tasks", "agent", "clients", "leave"],
+    finance: ["home", "tasks", "agent", "clients", "leave"],
+    administration: ["home", "tasks", "agent", "clients", "leave"],
+    sales: ["home", "tasks", "agent", "clients", "leave", "invoicing"],
+  };
+
+  // Helper function to normalize department names
+  const normalizeDepartment = (dept) => {
+    if (!dept) return "";
+    return dept.toLowerCase().trim().replace(/\s+/g, " ");
+  };
+
+  // Function to load permissions from backend
+  const loadPermissions = async () => {
+    // Admin gets everything
+    if (role === "admin") {
+      setAllowedMenuItems(Object.keys(menuItemConfig));
+      return;
+    }
+
+    // Check if department exists
+    if (!department || department === "null" || department === "undefined") {
+      setAllowedMenuItems(["home", "tasks", "leave"]);
+      return;
+    }
+
+    try {
+      // Try to fetch from backend
+
+      const response = await axios.get(
+        "https://taskbe.sharda.co.in/api/permissions"
+      );
+      const permissions = response.data;
+
+      // Cache in localStorage for offline access
+      localStorage.setItem(
+        "departmentPermissions",
+        JSON.stringify(permissions)
+      );
+
+      // Try exact match first
+      let deptPermissions = permissions[department];
+
+      // If not found, try normalized match
+      if (!deptPermissions) {
+        const normalizedDept = normalizeDepartment(department);
+        const matchingKey = Object.keys(permissions).find(
+          (key) => normalizeDepartment(key) === normalizedDept
+        );
+
+        if (matchingKey) {
+          deptPermissions = permissions[matchingKey];
+        }
+      }
+
+      if (
+        deptPermissions &&
+        Array.isArray(deptPermissions) &&
+        deptPermissions.length > 0
+      ) {
+        setAllowedMenuItems(deptPermissions);
+      } else {
+        const fallback = defaultFallbackPermissions[department] ||
+          defaultFallbackPermissions[normalizeDepartment(department)] || [
+            "home",
+            "tasks",
+            "leave",
+          ];
+
+        setAllowedMenuItems(fallback);
+      }
+    } catch (error) {
+      // Fallback to localStorage cache
+
+      const savedPermissions = localStorage.getItem("departmentPermissions");
+
+      if (savedPermissions) {
+        try {
+          const permissions = JSON.parse(savedPermissions);
+
+          const normalizedDept = normalizeDepartment(department);
+          const deptPermissions =
+            permissions[department] ||
+            permissions[
+              Object.keys(permissions).find(
+                (key) => normalizeDepartment(key) === normalizedDept
+              )
+            ];
+
+          if (
+            deptPermissions &&
+            Array.isArray(deptPermissions) &&
+            deptPermissions.length > 0
+          ) {
+            setAllowedMenuItems(deptPermissions);
+            return;
+          }
+        } catch (parseError) {}
+      }
+
+      // Final fallback to defaults
+
+      const fallback = defaultFallbackPermissions[department] ||
+        defaultFallbackPermissions[normalizeDepartment(department)] || [
+          "home",
+          "tasks",
+          "leave",
+        ];
+      setAllowedMenuItems(fallback);
+    }
+  };
 
   const fetchPendingLeaveCount = async () => {
     try {
@@ -64,7 +223,6 @@ const Sidebar = ({ isOpen, onClose }) => {
       const currentDepartment = localStorage.getItem("department");
       const storedEmail = localStorage.getItem("email");
 
-      // Update state with localStorage values
       if (currentRole) {
         setRole(currentRole);
       }
@@ -74,19 +232,69 @@ const Sidebar = ({ isOpen, onClose }) => {
         currentDepartment !== "null" &&
         currentDepartment !== "undefined"
       ) {
-        const normalizedDept = currentDepartment.toLowerCase();
+        const normalizedDept = normalizeDepartment(currentDepartment);
 
         setDepartment(normalizedDept);
       } else if (currentRole === "user" && storedEmail) {
-        // Only fetch if we truly don't have department info
-
         setIsLoadingDept(true);
         await fetchUserDepartment();
+      } else {
       }
     };
 
     initializeSidebar();
   }, []);
+
+  // Listen for socket events for real-time permission updates
+  useEffect(() => {
+    socket.on("permissions-updated", (newPermissions) => {
+      localStorage.setItem(
+        "departmentPermissions",
+        JSON.stringify(newPermissions)
+      );
+      setPermissionVersion((prev) => prev + 1); // Trigger reload
+    });
+
+    return () => {
+      socket.off("permissions-updated");
+    };
+  }, []);
+
+  // Poll for permission changes every 10 seconds (backup to socket)
+  useEffect(() => {
+    if (role === "admin") {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(
+          "https://taskbe.sharda.co.in/api/permissions"
+        );
+        const newPermissions = response.data;
+
+        const oldPerms = localStorage.getItem("departmentPermissions");
+        const newPermsString = JSON.stringify(newPermissions);
+
+        if (oldPerms !== newPermsString) {
+          localStorage.setItem("departmentPermissions", newPermsString);
+          setPermissionVersion((prev) => prev + 1);
+        }
+      } catch (error) {
+        // Silent fail - socket will handle it
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [role]);
+
+  // Load permissions when role, department, or permissionVersion changes
+  useEffect(() => {
+    if (role && department) {
+      loadPermissions();
+    } else {
+    }
+  }, [role, department, permissionVersion]);
 
   const fetchUserDepartment = async () => {
     try {
@@ -94,7 +302,6 @@ const Sidebar = ({ isOpen, onClose }) => {
       const userEmail = localStorage.getItem("email");
 
       if (!userEmail) {
-        console.error("❌ No email found in localStorage");
         setIsLoadingDept(false);
         return;
       }
@@ -103,41 +310,31 @@ const Sidebar = ({ isOpen, onClose }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const currentUser = res.data.find((emp) => {
-        console.log("Comparing:", emp.email, "with", userEmail);
-        return emp.email === userEmail;
-      });
+      const currentUser = res.data.find((emp) => emp.email === userEmail);
 
       if (currentUser) {
         let userDept = "";
 
         if (Array.isArray(currentUser.department)) {
-          // Check for both spelling variations
           const salesDept = currentUser.department.find(
             (d) =>
-              d && (d.toLowerCase() === "sales" || d.toLowerCase() === "selles")
+              d &&
+              (normalizeDepartment(d) === "sales" ||
+                normalizeDepartment(d) === "selles")
           );
           userDept = salesDept
-            ? "sales" // Normalize to correct spelling if found
-            : (currentUser.department[0] || "").toLowerCase();
+            ? "sales"
+            : normalizeDepartment(currentUser.department[0] || "");
         } else {
-          userDept = (currentUser.department || "").toLowerCase();
+          userDept = normalizeDepartment(currentUser.department || "");
         }
 
         setDepartment(userDept);
         localStorage.setItem("department", userDept);
-        console.log("💾 Department saved to localStorage");
       } else {
-        console.error("❌ User not found in employees list");
-        console.log(
-          "Available emails:",
-          res.data.map((emp) => emp.email)
-        );
         setDepartment("");
       }
     } catch (err) {
-      console.error("❌ Failed to fetch user department:", err);
-      console.error("Error details:", err.response?.data || err.message);
       setDepartment("");
     } finally {
       setIsLoadingDept(false);
@@ -147,22 +344,28 @@ const Sidebar = ({ isOpen, onClose }) => {
   useMessageSocket(setInboxCount);
   useNotificationSocket(setNotificationCount);
 
-  // Helper check for sales department (includes typo support)
-  const isSales =
-    role === "admin" || department === "sales" || department === "selles";
+  // Helper function to check if menu item should be shown
+  const shouldShowMenuItem = (menuKey) => {
+    // Admin gets everything
+    if (role === "admin") {
+      return true;
+    }
 
-  // ✅ Helper check for IT department (accepts multiple variations)
-  // Note: Since 'role === admin' is included here, using 'isIT' covers both Admin AND IT users.
-  const isIT =
-    role === "admin" ||
-    department === "it" ||
-    department === "it/software" ||
-    department === "information technology" ||
-    department === "IT" ||
-    department === "IT/Software" ||
-    department === "Information Technology";
+    // Check if user has permission
+    const hasPermission = allowedMenuItems.includes(menuKey);
 
-  // Show loading state only while fetching department
+    if (!hasPermission) {
+    }
+
+    return hasPermission;
+  };
+
+  // Debug effect to log allowed items
+  useEffect(() => {
+    if (allowedMenuItems.length > 0) {
+    }
+  }, [allowedMenuItems, role, department]);
+
   if (isLoadingDept) {
     return (
       <div className="hidden md:flex fixed left-0 top-0 h-screen z-[999] w-[70px] bg-gradient-to-b from-purple-50 to-indigo-50 items-center justify-center">
@@ -173,7 +376,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* ---------------- Desktop Sidebar ---------------- */}
+      {/* Desktop Sidebar */}
       <div
         className={`hidden md:flex fixed left-0 top-0 h-screen z-[999]
         bg-gradient-to-b from-purple-50 to-indigo-50 text-gray-800 flex-col
@@ -219,105 +422,29 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Desktop Navigation */}
         <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 sidebar-scroll">
-          <SidebarItem
-            icon={<FaHome />}
-            label="Home"
-            to="/"
-            expanded={expanded}
-          />
+          {Object.entries(menuItemConfig).map(([key, config]) => {
+            if (!shouldShowMenuItem(key)) return null;
 
-          {role === "admin" && (
-            <SidebarItem
-              icon={<FaUsers />}
-              label="All Users"
-              to="/all-employees"
-              expanded={expanded}
-            />
-          )}
-
-          <SidebarItem
-            icon={<FaClipboardList />}
-            label="Tasks"
-            to="/all-tasks"
-            expanded={expanded}
-          />
-
-          <SidebarItem
-            icon={<FaUserTie />}
-            label="Agent"
-            to="/agent"
-            expanded={expanded}
-          />
-
-          {/* ✅ Only show for IT department users */}
-          {isIT && (
-            <SidebarItem
-              icon={<FaRegEnvelopeOpen />}
-              label="Support Requests"
-              to="/developer-support"
-              expanded={expanded}
-            />
-          )}
-
-          <SidebarItem
-            icon={<FaBriefcase />}
-            label="Clients"
-            to="/clients"
-            expanded={expanded}
-          />
-
-          <SidebarItem
-            icon={
-              <div className="relative">
-                <FaGolfBall />
-                {leaveAlert && (
+            const icon =
+              key === "leave" && leaveAlert ? (
+                <div className="relative">
+                  {config.icon}
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                )}
-              </div>
-            }
-            label="Leave"
-            to="/leave"
-            expanded={expanded}
-          />
+                </div>
+              ) : (
+                config.icon
+              );
 
-          {role === "admin" && (
-            <SidebarItem
-              icon={<FaCog />}
-              label="Settings"
-              to="/departments"
-              expanded={expanded}
-              badge={pendingLeaveCount > 0 ? pendingLeaveCount : null}
-            />
-          )}
-
-          {role === "admin" && (
-            <SidebarItem
-              icon={<FaCheckCircle />}
-              label="Completed Tasks"
-              to="/completed"
-              expanded={expanded}
-            />
-          )}
-
-          {/* Invoicing for Sales department */}
-          {isSales && (
-            <SidebarItem
-              icon={<FaMoneyBill />}
-              label="Invoicing"
-              to="/viewinvoicewithotp"
-              expanded={expanded}
-            />
-          )}
-
-          {/* ✅ UPDATED: Ab Admin aur IT Department dono ko dikhega */}
-          {isIT && (
-            <SidebarItem
-              icon={<FaClock />}
-              label="Updates"
-              to="/updates"
-              expanded={expanded}
-            />
-          )}
+            return (
+              <SidebarItem
+                key={key}
+                icon={icon}
+                label={config.label}
+                to={config.to}
+                expanded={expanded}
+              />
+            );
+          })}
         </div>
 
         {/* Footer */}
@@ -334,10 +461,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {/* ---------------- Mobile Sidebar ---------------- */}
+      {/* Mobile Sidebar */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-opacity-50 z-[999]"
+          className="md:hidden fixed inset-0 bg-black/50 z-[999]"
           onClick={onClose}
         ></div>
       )}
@@ -378,98 +505,23 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Mobile Navigation */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 sidebar-scroll">
-          <MobileSidebarItem
-            icon={<FaHome />}
-            label="Home"
-            to="/"
-            onClick={onClose}
-          />
+          {Object.entries(menuItemConfig).map(([key, config]) => {
+            if (!shouldShowMenuItem(key)) return null;
 
-          {role === "admin" && (
-            <MobileSidebarItem
-              icon={<FaUsers />}
-              label="All Users"
-              to="/all-employees"
-              onClick={onClose}
-            />
-          )}
+            const badge =
+              config.badge && key === "settings" ? pendingLeaveCount : null;
 
-          <MobileSidebarItem
-            icon={<FaClipboardList />}
-            label="Tasks"
-            to="/all-tasks"
-            onClick={onClose}
-          />
-
-          <MobileSidebarItem
-            icon={<FaUserTie />}
-            label="Agent"
-            to="/agent"
-            onClick={onClose}
-          />
-
-          {/* ✅ Only show for IT department users */}
-          {isIT && (
-            <MobileSidebarItem
-              icon={<FaRegEnvelopeOpen />}
-              label="Support Requests"
-              to="/developer-support"
-              onClick={onClose}
-            />
-          )}
-
-          <MobileSidebarItem
-            icon={<FaBriefcase />}
-            label="Clients"
-            to="/clients"
-            onClick={onClose}
-          />
-
-          <MobileSidebarItem
-            icon={<FaGolfBall />}
-            label="Leave"
-            to="/leave"
-            onClick={onClose}
-          />
-
-          {role === "admin" && (
-            <MobileSidebarItem
-              icon={<FaCog />}
-              label="Settings"
-              to="/departments"
-              onClick={onClose}
-              badge={pendingLeaveCount}
-            />
-          )}
-
-          {role === "admin" && (
-            <MobileSidebarItem
-              icon={<FaCheckCircle />}
-              label="Completed Tasks"
-              to="/completed"
-              onClick={onClose}
-            />
-          )}
-
-          {/* Invoicing for Sales department */}
-          {isSales && (
-            <MobileSidebarItem
-              icon={<FaMoneyBill />}
-              label="Invoicing"
-              to="/viewinvoicewithotp"
-              onClick={onClose}
-            />
-          )}
-
-          {/* ✅ UPDATED: Ab Admin aur IT Department dono ko dikhega */}
-          {isIT && (
-            <MobileSidebarItem
-              icon={<FaClock />}
-              label="Updates"
-              to="/updates"
-              onClick={onClose}
-            />
-          )}
+            return (
+              <MobileSidebarItem
+                key={key}
+                icon={config.icon}
+                label={config.label}
+                to={config.to}
+                onClick={onClose}
+                badge={badge}
+              />
+            );
+          })}
         </div>
 
         {/* Footer */}
@@ -514,7 +566,7 @@ const SidebarItem = ({ icon, label, to, expanded, badge }) => (
   >
     <span className="relative flex items-center justify-center min-w-[24px] text-lg">
       {icon}
-      {badge && (
+      {badge && badge > 0 && (
         <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
           {badge > 9 ? "9+" : badge}
         </span>

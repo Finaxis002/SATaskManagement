@@ -201,7 +201,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-50 flex items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-50 flex items-center justify-center p-4 sm:p-6 py-8 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl overflow-hidden shadow-xl">
         {/* Branding Header */}
         <div className="bg-gradient-to-r from-indigo-800 to-indigo-600 py-3 px-4 sm:py-4 sm:px-6 shadow-md">
