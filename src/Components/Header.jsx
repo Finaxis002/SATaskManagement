@@ -9,6 +9,8 @@ import {
   FaTrash,
   FaBars,
   FaTimes,
+  FaCog,
+  FaUserShield,
 } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi";
 import { MdSupportAgent } from "react-icons/md";
@@ -16,9 +18,11 @@ import { motion } from "framer-motion";
 import useNotificationSocket from "../hook/useNotificationSocket";
 import StickyNotes from "../Components/notes/StickyNotes";
 import QuickActionsDropdown from "../Components/QuickActionsDropdown";
+import SettingsModal from "../Components/SettingsModal";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { TbLayoutSidebarLeftCollapse } from "react-icons/tb";
+
 /* ---------------------------- What's New Modal ---------------------------- */
 function WhatsNewModal({
   open,
@@ -207,6 +211,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [whatsNewItems, setWhatsNewItems] = useState([]);
   const [wnLoading, setWnLoading] = useState(false);
   const [wnError, setWnError] = useState("");
@@ -264,10 +269,6 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
       }
     } catch (apiErr) {
       if (!updateCountOnly) {
-        console.warn(
-          "WhatsNew server merge failed:",
-          apiErr?.message || apiErr
-        );
         setWnError("Failed to load updates. Please try again.");
       }
     } finally {
@@ -306,7 +307,6 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
         setWnError("");
       }
     } catch (error) {
-      console.error("Error deleting update:", error);
       if (error.response?.status === 404) {
         setWnError("Update not found. It might have been already deleted.");
         setWhatsNewItems((prevItems) =>
@@ -493,18 +493,16 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     <>
       <header className="bg-white w-full text-gray-800 px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center justify-between shadow-sm sticky top-0 z-50">
         {/* Left Side - Hamburger Button */}
-
         <div className="flex items-center">
           <button
             onClick={onToggleSidebar}
-            className="md:hidden  p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200 mr-2"
+            className="md:hidden p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-200 mr-2"
             aria-label="Toggle Menu"
             title="Toggle Menu"
           >
             {isSidebarOpen ? (
               <FaTimes className="text-gray-600 text-lg" />
             ) : (
-              /* 👇 Yahan FaBars ko hata kar naya icon lagaya hai */
               <TbLayoutSidebarLeftCollapse className="text-gray-600 text-xl" />
             )}
           </button>
@@ -659,16 +657,18 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   <FaUserCircle className="text-gray-500 flex-shrink-0 text-sm sm:text-base" />
                   <span>Profile</span>
                 </button>
-                {/* <button
-                  onClick={() => {
-                    navigate("/support");
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-2 transition-colors duration-150 text-sm sm:text-base"
-                >
-                  <MdSupportAgent className="text-gray-500 flex-shrink-0 text-lg sm:text-xl" />
-                  <span>Support</span>
-                </button> */}
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      setShowSettings(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 hover:bg-purple-50 text-gray-700 flex items-center gap-2 sm:gap-3 transition-colors duration-150 text-sm sm:text-base"
+                  >
+                    <FaUserShield className="text-gray-500 flex-shrink-0 text-sm sm:text-base" />
+                    <span>Permissions</span>
+                  </button>
+                )}
                 <div className="border-t border-gray-100 my-1"></div>
                 <button
                   onClick={() => {
@@ -694,6 +694,12 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
         loading={wnLoading}
         error={wnError}
         onDelete={handleDeleteUpdate}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
       />
     </>
   );
