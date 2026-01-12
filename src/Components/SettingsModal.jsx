@@ -76,11 +76,13 @@ function SettingsModal({ open, onClose }) {
           return;
         }
 
-        const fetchedDepartments = data.map((dept) => ({
-          key: dept.name.toLowerCase().trim(),
-          label: dept.name,
-          color: getRandomColor(),
-        }));
+        const fetchedDepartments = data
+          .filter((dept) => dept.name.toLowerCase().trim() !== "administration")
+          .map((dept) => ({
+            key: dept.name.toLowerCase().trim(),
+            label: dept.name,
+            color: getRandomColor(),
+          }));
 
         setDepartments(fetchedDepartments);
 
