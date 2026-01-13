@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import React from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import {
   FaHome,
@@ -18,16 +19,22 @@ import useMessageSocket from "../hook/useMessageSocket";
 import useNotificationSocket from "../hook/useNotificationSocket";
 import axios from "axios";
 
-const socket = io("https://taskbe.sharda.co.in", {
-  query: { token: localStorage.getItem("authToken") },
-});
+// Socket ko component ke bahar initialize karein
+let socket = null;
+const getSocket = () => {
+  if (!socket) {
+    socket = io("https://taskbe.sharda.co.in", {
+      query: { token: localStorage.getItem("authToken") },
+    });
+  }
+  return socket;
+};
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const storedRole = localStorage.getItem("role") || "";
-  const storedDepartment = localStorage.getItem("department") || "";
-
-  const [role, setRole] = useState(storedRole);
-  const [department, setDepartment] = useState(storedDepartment.toLowerCase());
+  const [role, setRole] = useState(() => localStorage.getItem("role") || "");
+  const [department, setDepartment] = useState(() => 
+    (localStorage.getItem("department") || "").toLowerCase()
+  );
   const [isLoadingDept, setIsLoadingDept] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
@@ -35,10 +42,13 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [expanded, setExpanded] = useState(false);
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
   const [allowedMenuItems, setAllowedMenuItems] = useState([]);
-  const [permissionVersion, setPermissionVersion] = useState(0);
+  
+  // Refs to prevent unnecessary re-renders
+  const permissionsLoadedRef = useRef(false);
+  const socketInitializedRef = useRef(false);
 
-  // Permission mapping - NO adminOnly restrictions
-  const menuItemConfig = {
+  // Menu configuration - memoized to prevent re-creation
+  const menuItemConfig = useMemo(() => ({
     home: { to: "/", icon: <FaHome />, label: "Home" },
     allUsers: { to: "/all-employees", icon: <FaUsers />, label: "All Users" },
     tasks: { to: "/all-tasks", icon: <FaClipboardList />, label: "Tasks" },
@@ -67,10 +77,10 @@ const Sidebar = ({ isOpen, onClose }) => {
       label: "Invoicing",
     },
     updates: { to: "/updates", icon: <FaClock />, label: "Updates" },
-  };
+  }), []);
 
-  // Default fallback permissions
-  const defaultFallbackPermissions = {
+  // Default permissions - memoized
+  const defaultFallbackPermissions = useMemo(() => ({
     marketing: ["home", "tasks", "agent", "clients", "leave"],
     operations: ["home", "tasks", "agent", "clients", "leave"],
     "it/software": [
@@ -87,46 +97,45 @@ const Sidebar = ({ isOpen, onClose }) => {
     finance: ["home", "tasks", "agent", "clients", "leave"],
     administration: ["home", "tasks", "agent", "clients", "leave"],
     sales: ["home", "tasks", "agent", "clients", "leave", "invoicing"],
-  };
+  }), []);
 
-  // Helper function to normalize department names
-  const normalizeDepartment = (dept) => {
+  // Helper function - memoized with useCallback
+  const normalizeDepartment = useCallback((dept) => {
     if (!dept) return "";
     return dept.toLowerCase().trim().replace(/\s+/g, " ");
-  };
+  }, []);
 
-  // Function to load permissions from backend
-  const loadPermissions = async () => {
+  // Load permissions - memoized with useCallback
+  const loadPermissions = useCallback(async () => {
+    if (permissionsLoadedRef.current) return;
+    
     // Admin gets everything
     if (role === "admin") {
       setAllowedMenuItems(Object.keys(menuItemConfig));
+      permissionsLoadedRef.current = true;
       return;
     }
 
     // Check if department exists
     if (!department || department === "null" || department === "undefined") {
       setAllowedMenuItems(["home", "tasks", "leave"]);
+      permissionsLoadedRef.current = true;
       return;
     }
 
     try {
-      // Try to fetch from backend
-
       const response = await axios.get(
         "https://taskbe.sharda.co.in/api/permissions"
       );
       const permissions = response.data;
 
-      // Cache in localStorage for offline access
       localStorage.setItem(
         "departmentPermissions",
         JSON.stringify(permissions)
       );
 
-      // Try exact match first
       let deptPermissions = permissions[department];
 
-      // If not found, try normalized match
       if (!deptPermissions) {
         const normalizedDept = normalizeDepartment(department);
         const matchingKey = Object.keys(permissions).find(
@@ -151,18 +160,14 @@ const Sidebar = ({ isOpen, onClose }) => {
             "tasks",
             "leave",
           ];
-
         setAllowedMenuItems(fallback);
       }
     } catch (error) {
-      // Fallback to localStorage cache
-
       const savedPermissions = localStorage.getItem("departmentPermissions");
 
       if (savedPermissions) {
         try {
           const permissions = JSON.parse(savedPermissions);
-
           const normalizedDept = normalizeDepartment(department);
           const deptPermissions =
             permissions[department] ||
@@ -178,12 +183,11 @@ const Sidebar = ({ isOpen, onClose }) => {
             deptPermissions.length > 0
           ) {
             setAllowedMenuItems(deptPermissions);
+            permissionsLoadedRef.current = true;
             return;
           }
         } catch (parseError) {}
       }
-
-      // Final fallback to defaults
 
       const fallback = defaultFallbackPermissions[department] ||
         defaultFallbackPermissions[normalizeDepartment(department)] || [
@@ -193,9 +197,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         ];
       setAllowedMenuItems(fallback);
     }
-  };
+    
+    permissionsLoadedRef.current = true;
+  }, [role, department, menuItemConfig, defaultFallbackPermissions, normalizeDepartment]);
 
-  const fetchPendingLeaveCount = async () => {
+  // Fetch pending leave count - memoized
+  const fetchPendingLeaveCount = useCallback(async () => {
     try {
       const res = await axios.get(
         "https://taskbe.sharda.co.in/api/leave/pending"
@@ -205,98 +212,10 @@ const Sidebar = ({ isOpen, onClose }) => {
     } catch {
       setPendingLeaveCount(0);
     }
-  };
-
-  useEffect(() => {
-    fetchPendingLeaveCount();
-    socket.on("new-leave", fetchPendingLeaveCount);
-    socket.on("leave-status-updated", fetchPendingLeaveCount);
-    return () => {
-      socket.off("new-leave", fetchPendingLeaveCount);
-      socket.off("leave-status-updated", fetchPendingLeaveCount);
-    };
   }, []);
 
-  useEffect(() => {
-    const initializeSidebar = async () => {
-      const currentRole = localStorage.getItem("role");
-      const currentDepartment = localStorage.getItem("department");
-      const storedEmail = localStorage.getItem("email");
-
-      if (currentRole) {
-        setRole(currentRole);
-      }
-
-      if (
-        currentDepartment &&
-        currentDepartment !== "null" &&
-        currentDepartment !== "undefined"
-      ) {
-        const normalizedDept = normalizeDepartment(currentDepartment);
-
-        setDepartment(normalizedDept);
-      } else if (currentRole === "user" && storedEmail) {
-        setIsLoadingDept(true);
-        await fetchUserDepartment();
-      } else {
-      }
-    };
-
-    initializeSidebar();
-  }, []);
-
-  // Listen for socket events for real-time permission updates
-  useEffect(() => {
-    socket.on("permissions-updated", (newPermissions) => {
-      localStorage.setItem(
-        "departmentPermissions",
-        JSON.stringify(newPermissions)
-      );
-      setPermissionVersion((prev) => prev + 1); // Trigger reload
-    });
-
-    return () => {
-      socket.off("permissions-updated");
-    };
-  }, []);
-
-  // Poll for permission changes every 10 seconds (backup to socket)
-  useEffect(() => {
-    if (role === "admin") {
-      return;
-    }
-
-    const interval = setInterval(async () => {
-      try {
-        const response = await axios.get(
-          "https://taskbe.sharda.co.in/api/permissions"
-        );
-        const newPermissions = response.data;
-
-        const oldPerms = localStorage.getItem("departmentPermissions");
-        const newPermsString = JSON.stringify(newPermissions);
-
-        if (oldPerms !== newPermsString) {
-          localStorage.setItem("departmentPermissions", newPermsString);
-          setPermissionVersion((prev) => prev + 1);
-        }
-      } catch (error) {
-        // Silent fail - socket will handle it
-      }
-    }, 10000); // Check every 10 seconds
-
-    return () => clearInterval(interval);
-  }, [role]);
-
-  // Load permissions when role, department, or permissionVersion changes
-  useEffect(() => {
-    if (role && department) {
-      loadPermissions();
-    } else {
-    }
-  }, [role, department, permissionVersion]);
-
-  const fetchUserDepartment = async () => {
+  // Fetch user department - memoized
+  const fetchUserDepartment = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
       const userEmail = localStorage.getItem("email");
@@ -331,41 +250,114 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         setDepartment(userDept);
         localStorage.setItem("department", userDept);
-      } else {
-        setDepartment("");
       }
     } catch (err) {
       setDepartment("");
     } finally {
       setIsLoadingDept(false);
     }
-  };
+  }, [normalizeDepartment]);
+
+  // Initialize sidebar - single effect
+  useEffect(() => {
+    const initializeSidebar = async () => {
+      const currentRole = localStorage.getItem("role");
+      const currentDepartment = localStorage.getItem("department");
+      const storedEmail = localStorage.getItem("email");
+
+      if (currentRole && currentRole !== role) {
+        setRole(currentRole);
+      }
+
+      if (
+        currentDepartment &&
+        currentDepartment !== "null" &&
+        currentDepartment !== "undefined"
+      ) {
+        const normalizedDept = normalizeDepartment(currentDepartment);
+        if (normalizedDept !== department) {
+          setDepartment(normalizedDept);
+        }
+      } else if (currentRole === "user" && storedEmail) {
+        setIsLoadingDept(true);
+        await fetchUserDepartment();
+      }
+    };
+
+    initializeSidebar();
+  }, []); // Empty dependency array - runs only once
+
+  // Load permissions - separate effect
+  useEffect(() => {
+    if (role && (department || role === "admin") && !permissionsLoadedRef.current) {
+      loadPermissions();
+    }
+  }, [role, department, loadPermissions]);
+
+  // Socket initialization - single effect
+  useEffect(() => {
+    if (socketInitializedRef.current) return;
+    
+    const socketInstance = getSocket();
+    
+    fetchPendingLeaveCount();
+    socketInstance.on("new-leave", fetchPendingLeaveCount);
+    socketInstance.on("leave-status-updated", fetchPendingLeaveCount);
+
+    socketInstance.on("permissions-updated", (newPermissions) => {
+      localStorage.setItem(
+        "departmentPermissions",
+        JSON.stringify(newPermissions)
+      );
+      permissionsLoadedRef.current = false;
+      loadPermissions();
+    });
+
+    socketInitializedRef.current = true;
+
+    return () => {
+      socketInstance.off("new-leave", fetchPendingLeaveCount);
+      socketInstance.off("leave-status-updated", fetchPendingLeaveCount);
+      socketInstance.off("permissions-updated");
+    };
+  }, [fetchPendingLeaveCount, loadPermissions]);
+
+  // Permission polling - only for non-admin
+  useEffect(() => {
+    if (role === "admin") return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(
+          "https://taskbe.sharda.co.in/api/permissions"
+        );
+        const newPermissions = response.data;
+        const oldPerms = localStorage.getItem("departmentPermissions");
+        const newPermsString = JSON.stringify(newPermissions);
+
+        if (oldPerms !== newPermsString) {
+          localStorage.setItem("departmentPermissions", newPermsString);
+          permissionsLoadedRef.current = false;
+          loadPermissions();
+        }
+      } catch (error) {
+        // Silent fail
+      }
+    }, 30000); // Increased to 30 seconds to reduce load
+
+    return () => clearInterval(interval);
+  }, [role, loadPermissions]);
 
   useMessageSocket(setInboxCount);
   useNotificationSocket(setNotificationCount);
 
-  // Helper function to check if menu item should be shown
-  const shouldShowMenuItem = (menuKey) => {
-    // Admin gets everything
-    if (role === "admin") {
-      return true;
-    }
+  // Helper function - memoized
+  const shouldShowMenuItem = useCallback((menuKey) => {
+    if (role === "admin") return true;
+    return allowedMenuItems.includes(menuKey);
+  }, [role, allowedMenuItems]);
 
-    // Check if user has permission
-    const hasPermission = allowedMenuItems.includes(menuKey);
-
-    if (!hasPermission) {
-    }
-
-    return hasPermission;
-  };
-
-  // Debug effect to log allowed items
-  useEffect(() => {
-    if (allowedMenuItems.length > 0) {
-    }
-  }, [allowedMenuItems, role, department]);
-
+  // Loading state
   if (isLoadingDept) {
     return (
       <div className="hidden md:flex fixed left-0 top-0 h-screen z-[999] w-[70px] bg-gradient-to-b from-purple-50 to-indigo-50 items-center justify-center">
@@ -427,7 +419,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
             const icon =
               key === "leave" && leaveAlert ? (
-                <div className="relative">
+                <div className="relative flex items-center justify-center">
                   {config.icon}
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 </div>
@@ -437,12 +429,13 @@ const Sidebar = ({ isOpen, onClose }) => {
 
             return (
               <SidebarItem
-                key={key}
-                icon={icon}
-                label={config.label}
-                to={config.to}
-                expanded={expanded}
-              />
+  key={key}
+  icon={icon}
+  label={config.label}
+  to={config.to}
+  expanded={expanded}
+/>
+
             );
           })}
         </div>
@@ -549,12 +542,12 @@ const Sidebar = ({ isOpen, onClose }) => {
   );
 };
 
-// Helper Components
-const SidebarItem = ({ icon, label, to, expanded, badge }) => (
+// Memoized Helper Components to prevent unnecessary re-renders
+const SidebarItem = React.memo(({ icon, label, to, expanded, badge }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200
+      `flex items-center gap-3 px-3 py-3 rounded-xl transition-colors duration-200
         ${
           isActive ? "text-white shadow-md" : "text-gray-600 hover:bg-white/70"
         }`
@@ -564,7 +557,7 @@ const SidebarItem = ({ icon, label, to, expanded, badge }) => (
       color: isActive ? "#ffffff" : undefined,
     })}
   >
-    <span className="relative flex items-center justify-center min-w-[24px] text-lg">
+    <span className="relative flex items-center justify-center min-w-[24px] text-lg flex-shrink-0">
       {icon}
       {badge && badge > 0 && (
         <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
@@ -572,11 +565,13 @@ const SidebarItem = ({ icon, label, to, expanded, badge }) => (
         </span>
       )}
     </span>
-    {expanded && <span className="text-sm font-semibold">{label}</span>}
+    <span className={`text-sm font-semibold whitespace-nowrap transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+      {label}
+    </span>
   </NavLink>
-);
+));
 
-const MobileSidebarItem = ({ icon, label, to, onClick, badge }) => (
+const MobileSidebarItem = React.memo(({ icon, label, to, onClick, badge }) => (
   <NavLink
     to={to}
     onClick={onClick}
@@ -601,6 +596,6 @@ const MobileSidebarItem = ({ icon, label, to, onClick, badge }) => (
     </span>
     <span className="text-base font-semibold">{label}</span>
   </NavLink>
-);
+));
 
 export default Sidebar;

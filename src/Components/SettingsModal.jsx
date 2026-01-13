@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCog, FaSave, FaUsers } from "react-icons/fa";
 import { MdSecurity } from "react-icons/md";
@@ -10,6 +10,10 @@ function SettingsModal({ open, onClose }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [showScrollHint, setShowScrollHint] = useState(false);
+
+  // Ref to prevent multiple API calls
+  const hasLoadedPermissions = useRef(false);
+  const hasLoadedDepartments = useRef(false);
 
   // All available sidebar items
   const allMenuItems = [
@@ -47,65 +51,12 @@ function SettingsModal({ open, onClose }) {
     seo: ["home", "tasks", "agent", "clients", "leave"],
     "human resource": ["home", "tasks", "agent", "clients", "leave"],
     finance: ["home", "tasks", "agent", "clients", "leave"],
-    administration: ["home", "tasks", "agent", "clients", "leave"],
     sales: ["home", "tasks", "agent", "clients", "leave", "invoicing"],
   };
 
   const [departmentPermissions, setDepartmentPermissions] =
     useState(defaultPermissions);
   const [selectedDepartment, setSelectedDepartment] = useState("marketing");
-
-  // ✅ Fetch departments from backend
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      if (!open) return;
-
-      try {
-        const response = await fetch(
-          "https://taskbe.sharda.co.in/api/departments"
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!data || data.length === 0) {
-          setDepartments([]);
-          return;
-        }
-
-        const fetchedDepartments = data
-          .filter((dept) => dept.name.toLowerCase().trim() !== "administration")
-          .map((dept) => ({
-            key: dept.name.toLowerCase().trim(),
-            label: dept.name,
-            color: getRandomColor(),
-          }));
-
-        setDepartments(fetchedDepartments);
-
-        if (fetchedDepartments.length > 0 && !selectedDepartment) {
-          setSelectedDepartment(fetchedDepartments[0].key);
-        }
-
-        // Check if horizontal scroll is needed (mobile view)
-        setTimeout(() => {
-          const container = document.getElementById("dept-scroll-container");
-          if (container && container.scrollWidth > container.clientWidth) {
-            setShowScrollHint(true);
-            // Hide hint after 3 seconds
-            setTimeout(() => setShowScrollHint(false), 3000);
-          }
-        }, 100);
-      } catch (error) {
-        setDepartments([]);
-      }
-    };
-
-    fetchDepartments();
-  }, [open]);
 
   const getRandomColor = () => {
     const colors = [
@@ -125,14 +76,79 @@ function SettingsModal({ open, onClose }) {
     return colors[Math.floor(Math.random() * colors.length)];
   };
 
-  // Load permissions from backend on mount
+  // ✅ Fetch departments from backend (OPTIMIZED)
   useEffect(() => {
+    if (!open || hasLoadedDepartments.current) return;
+
+    let isMounted = true;
+
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch("https://taskbe.sharda.co.in/api/departments");
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!isMounted) return;
+
+        if (!data || data.length === 0) {
+          setDepartments([]);
+          return;
+        }
+
+        const fetchedDepartments = data
+          .filter((dept) => dept.name.toLowerCase().trim() !== "administration")
+          .map((dept) => ({
+            key: dept.name.toLowerCase().trim(),
+            label: dept.name,
+            color: getRandomColor(),
+          }));
+
+        setDepartments(fetchedDepartments);
+        hasLoadedDepartments.current = true;
+
+        if (fetchedDepartments.length > 0 && !selectedDepartment) {
+          setSelectedDepartment(fetchedDepartments[0].key);
+        }
+
+        // Check if horizontal scroll is needed (mobile view)
+        setTimeout(() => {
+          const container = document.getElementById("dept-scroll-container");
+          if (container && container.scrollWidth > container.clientWidth) {
+            setShowScrollHint(true);
+            setTimeout(() => setShowScrollHint(false), 3000);
+          }
+        }, 100);
+      } catch (error) {
+        if (isMounted) {
+          console.error("Error fetching departments:", error);
+          setDepartments([]);
+        }
+      }
+    };
+
+    fetchDepartments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open]);
+
+  // ✅ Load permissions from backend on mount (OPTIMIZED)
+  useEffect(() => {
+    if (!open || hasLoadedPermissions.current) return;
+
+    let isMounted = true;
+
     const loadPermissions = async () => {
       try {
-        const response = await fetch(
-          "https://taskbe.sharda.co.in/api/permissions"
-        );
+        const response = await fetch("https://taskbe.sharda.co.in/api/permissions");
         const data = await response.json();
+
+        if (!isMounted) return;
 
         const mergedPermissions = { ...defaultPermissions, ...data };
         setDepartmentPermissions(mergedPermissions);
@@ -141,12 +157,16 @@ function SettingsModal({ open, onClose }) {
           "departmentPermissions",
           JSON.stringify(mergedPermissions)
         );
+
+        hasLoadedPermissions.current = true;
       } catch (error) {
+        if (!isMounted) return;
+
+        console.error("Error loading permissions:", error);
         const savedPermissions = localStorage.getItem("departmentPermissions");
         if (savedPermissions) {
           try {
             const parsed = JSON.parse(savedPermissions);
-
             setDepartmentPermissions(parsed);
           } catch (parseError) {
             setDepartmentPermissions(defaultPermissions);
@@ -157,8 +177,18 @@ function SettingsModal({ open, onClose }) {
       }
     };
 
-    if (open) {
-      loadPermissions();
+    loadPermissions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open]);
+
+  // Reset refs when modal closes
+  useEffect(() => {
+    if (!open) {
+      hasLoadedPermissions.current = false;
+      hasLoadedDepartments.current = false;
     }
   }, [open]);
 
@@ -182,17 +212,14 @@ function SettingsModal({ open, onClose }) {
     try {
       const token = localStorage.getItem("authToken");
 
-      const response = await fetch(
-        "https://taskbe.sharda.co.in/api/permissions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(departmentPermissions),
-        }
-      );
+      const response = await fetch("https://taskbe.sharda.co.in/api/permissions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(departmentPermissions),
+      });
 
       const data = await response.json();
 
@@ -405,27 +432,6 @@ function SettingsModal({ open, onClose }) {
 
                     {/* Glowing Edge Effect - Permanent */}
                     <div className="lg:hidden absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-purple-100/80 via-transparent to-transparent pointer-events-none rounded-r-lg"></div>
-
-                    {/* Animated Dots Indicator */}
-                    {/* {departments.length > 3 && (
-                      <div className="lg:hidden flex justify-center gap-1 mt-2">
-                        {departments.slice(0, Math.min(departments.length, 5)).map((_, index) => (
-                          <motion.div
-                            key={index}
-                            className="w-1.5 h-1.5 rounded-full bg-purple-300"
-                            animate={{
-                              scale: [1, 1.3, 1],
-                              opacity: [0.5, 1, 0.5]
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Infinity,
-                              delay: index * 0.2
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )} */}
                   </div>
                 )}
               </div>
