@@ -1,4 +1,4 @@
-name: Test GitHub SSH Access
+name: Test SSH After Fix
 
 on: workflow_dispatch
 
@@ -6,19 +6,40 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Test SSH
+      - name: Test SSH Connection
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          echo "Testing from GitHub Actions..."
-          echo "Runner IP: $(curl -s ifconfig.me)"
+          echo "=== Testing SSH ==="
+          RUNNER_IP=$(curl -s ifconfig.me)
+          echo "Runner IP: $RUNNER_IP"
           
+          # Clean setup
+          rm -rf ~/.ssh
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/key
-          chmod 600 ~/.ssh/key
+          chmod 700 ~/.ssh
           
-          ssh -o ConnectTimeout=30 \
-              -o StrictHostKeyChecking=no \
-              -i ~/.ssh/key \
-              finaxis_in@$SERVER_IP "echo 'SUCCESS: GitHub can connect!'"
+          # Use backend's EXACT method
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          
+          # Don't use ssh-keyscan (creates extra connection)
+          # Use pre-populated known_hosts instead
+          echo "[$SERVER_IP]:22 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ..." > ~/.ssh/known_hosts
+          
+          # SSH config
+          cat > ~/.ssh/config << EOF
+          Host deploy
+            HostName $SERVER_IP
+            User finaxis_in
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking no
+            ConnectTimeout 30
+            BatchMode yes
+          EOF
+          chmod 600 ~/.ssh/config
+          
+          # Test
+          ssh deploy "echo '✅ SUCCESS! SSH working from GitHub Actions'"
