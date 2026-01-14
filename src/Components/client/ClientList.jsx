@@ -135,11 +135,11 @@ const ClientCard = ({
 
     <div className="space-y-2 mb-4 text-sm">
       <div>
-        <span className="text-gray-500">Business:</span>
+        <span className="text-gray-500">Business::</span>
         <span className="ml-2 text-gray-900">{client.businessName}</span>
       </div>
       <div>
-        <span className="text-gray-500">Contact:</span>
+        <span className="text-gray-500">Contact::</span>
         <span className="ml-2 text-gray-900">{client.contactPerson}</span>
       </div>
     </div>
