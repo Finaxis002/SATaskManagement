@@ -110,7 +110,7 @@ const DeveloperSupport = () => {
         color: "bg-gray-50 text-gray-700 border border-gray-200",
       },
     };
-
+console.log(reason, otherReason);
     const badge = badges[reason] || badges["other"];
     return (
       <span
@@ -460,6 +460,7 @@ const DeveloperSupport = () => {
       )}
     </div>
   );
+
 };
 
 export default DeveloperSupport;
