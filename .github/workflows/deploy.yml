@@ -15,6 +15,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -22,52 +23,143 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Setup SSH and Deploy
+      # STEP 1: Setup SSH Connection (EXACT SAME as working backend)
+      - name: Setup SSH Connection
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          echo "=== Setting up SSH ==="
+          echo "=== Setting up SSH (Copy from Backend) ==="
           
           # Create .ssh directory
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           
-          # Write the SSH private key
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          # Save private key (fixing Windows line endings) - EXACT SAME as backend
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
           
-          # Add server to known_hosts without prompting
-          ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
+          # Test if key is valid
+          echo "Checking key format..."
+          if ssh-keygen -l -f ~/.ssh/deploy_key 2>/dev/null; then
+            echo "✓ SSH key is valid"
+          else
+            echo "✗ SSH key is invalid"
+            exit 1
+          fi
           
+          # Add server to known_hosts
+          echo "Adding server to known_hosts..."
+          ssh-keyscan -H "$SERVER_IP" >> ~/.ssh/known_hosts 2>/dev/null
+          
+          # Create SSH config - EXACT SAME as backend
+          cat > ~/.ssh/config << EOF
+          Host deploy-server
+            HostName $SERVER_IP
+            User finaxis_in
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            ConnectTimeout 30
+            ServerAliveInterval 60
+          EOF
+          chmod 600 ~/.ssh/config
+          
+          echo "=== SSH Setup Complete ==="
+
+      # STEP 2: Test SSH Connection (EXACT SAME as working backend)
+      - name: Test SSH Connection
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
           echo "=== Testing SSH Connection ==="
           
-          # Test connection with simple command
-          ssh -o ConnectTimeout=10 -i ~/.ssh/id_rsa finaxis_in@$SERVER_IP "echo 'SSH connection successful!'"
+          # Test 1: Simple connection test - EXACT SAME as backend
+          echo "Test 1: Simple connection..."
+          ssh -o ConnectTimeout=10 -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "echo 'Hello from server - User: \$(whoami)'" && echo "✓ Connection successful" || echo "✗ Connection failed"
           
+          # Test 2: Check target directory - Modified for frontend
+          echo -e "\nTest 2: Check frontend directory..."
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            echo 'Home: \$(pwd)'
+            echo 'Checking /home/finaxis_in/softwares/SATaskManagement directory...'
+            ls -la /home/finaxis_in/softwares/ 2>/dev/null || echo 'Directory not found'
+            mkdir -p /home/finaxis_in/softwares/SATaskManagement
+            echo 'Directory created/verified'
+            
+            # List existing files
+            echo 'Existing files in SATaskManagement:'
+            ls -la /home/finaxis_in/softwares/SATaskManagement/ 2>/dev/null || echo 'No files found'
+          " && echo "✓ Directory check passed" || echo "✗ Directory check failed"
+
+      # STEP 3: Deploy Frontend Files (Simplified - just copy dist folder)
+      - name: Deploy Frontend Files
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
           echo "=== Deploying Frontend Files ==="
           
-          # Create remote directory if it doesn't exist
-          ssh -i ~/.ssh/id_rsa finaxis_in@$SERVER_IP "mkdir -p /home/finaxis_in/softwares/SATaskManagement"
-          
-          # Deploy files using rsync
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa" \
-            --delete \
-            ./dist/ \
-            finaxis_in@$SERVER_IP:/home/finaxis_in/softwares/SATaskManagement/
-          
-          echo "=== Setting Permissions ==="
-          
-          # Set permissions
-          ssh -i ~/.ssh/id_rsa finaxis_in@$SERVER_IP "
-            sudo chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement
-            sudo chmod -R 755 /home/finaxis_in/softwares/SATaskManagement
-            sudo systemctl restart nginx
+          # First, clean the remote directory
+          echo "Cleaning remote directory..."
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            cd /home/finaxis_in/softwares/SATaskManagement
+            echo 'Cleaning directory...'
+            rm -rf ./* 2>/dev/null || true
+            echo 'Directory cleaned'
           "
           
-          echo "✓ Deployment completed successfully!"
+          # Deploy the dist folder contents - SIMPLE RSYNC
+          echo "Copying build files..."
+          rsync -avz --progress -e "ssh -i ~/.ssh/deploy_key" \
+            ./dist/ finaxis_in@$SERVER_IP:/home/finaxis_in/softwares/SATaskManagement/
+          
+          echo "✓ Frontend files deployed successfully"
 
+      # STEP 4: Verify Deployment
+      - name: Verify Deployment
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Verifying Deployment ==="
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            echo '1. Checking deployed files:'
+            ls -la /home/finaxis_in/softwares/SATaskManagement/
+            echo ''
+            echo '2. Checking if index.html exists:'
+            ls -la /home/finaxis_in/softwares/SATaskManagement/index.html 2>/dev/null && echo '✓ index.html found' || echo '✗ index.html not found'
+            echo ''
+            echo '3. File count:'
+            find /home/finaxis_in/softwares/SATaskManagement/ -type f | wc -l
+          "
 
+      # STEP 5: Set Permissions and Restart Nginx
+      - name: Set Permissions and Restart Nginx
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Setting Permissions and Restarting Nginx ==="
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            echo 'Setting permissions...'
+            sudo chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement
+            sudo chmod -R 755 /home/finaxis_in/softwares/SATaskManagement
+            
+            echo 'Restarting nginx...'
+            sudo systemctl restart nginx
+            
+            echo 'Checking nginx status...'
+            sudo systemctl status nginx --no-pager | head -10
+            
+            echo '✓ Permissions set and nginx restarted'
+          "
+
+      # STEP 6: Final Verification
+      - name: Final Verification
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Final Verification ==="
+          echo "Frontend deployment completed successfully!"
+          echo "Check your website at: http://$SERVER_IP"
 
 
 # name: Deploy Task Management React App to GCP
