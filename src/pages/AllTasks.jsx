@@ -186,6 +186,7 @@ const AllTasks = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const dispatch = useDispatch();
   const role = localStorage.getItem("role") || "user";
@@ -207,6 +208,22 @@ const AllTasks = () => {
   };
 
   const handleRemoveCompletedTasks = async () => {
+    // Confirmation dialog
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This will hide all completed tasks from view",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, remove them!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    setIsRemoving(true);
+
     try {
       const response = await fetch(
         "https://taskbe.sharda.co.in/api/tasks/hide-completed",
@@ -218,26 +235,53 @@ const AllTasks = () => {
           },
         }
       );
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
       if (!response.ok) {
-        throw new Error("Failed to remove completed tasks");
+        throw new Error(data.message || "Failed to remove completed tasks");
       }
+
       Swal.fire({
         icon: "success",
-        title: "Completed Tasks Removed",
-        timer: 1500,
+        title: "Success!",
+        text: `${data.modifiedCount || 0} completed task(s) removed`,
+        timer: 2000,
         showConfirmButton: false,
       });
-      setRefreshTrigger((prev) => !prev);
+
+      // Force refresh with timestamp
+      setRefreshTrigger(Date.now());
     } catch (err) {
+      console.error("Error:", err);
       Swal.fire({
         icon: "error",
         title: "Error",
         text: err.message || "Something went wrong",
       });
+    } finally {
+      setIsRemoving(false);
     }
   };
 
   const handleRemoveObsoleteTasks = async () => {
+    // Confirmation dialog
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This will hide all obsolete tasks from view",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, remove them!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    setIsRemoving(true);
+
     try {
       const response = await fetch(
         "https://taskbe.sharda.co.in/api/tasks/hide-obsolete",
@@ -249,22 +293,33 @@ const AllTasks = () => {
           },
         }
       );
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
       if (!response.ok) {
-        throw new Error("Failed to remove obsolete tasks");
+        throw new Error(data.message || "Failed to remove obsolete tasks");
       }
+
       Swal.fire({
         icon: "success",
-        title: "Obsolete Tasks Removed",
-        timer: 1500,
+        title: "Success!",
+        text: `${data.modifiedCount || 0} obsolete task(s) removed`,
+        timer: 2000,
         showConfirmButton: false,
       });
-      setRefreshTrigger((prev) => !prev);
+
+      // Force refresh
+      setRefreshTrigger(Date.now());
     } catch (err) {
+      console.error("Error:", err);
       Swal.fire({
         icon: "error",
         title: "Error",
         text: err.message || "Something went wrong",
       });
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -321,19 +376,21 @@ const AllTasks = () => {
                 {/* Remove Completed Button */}
                 <button
                   onClick={handleRemoveCompletedTasks}
-                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
+                  disabled={isRemoving}
+                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FaTrashAlt className="text-red-500 text-sm" />
-                  Remove Completed
+                  {isRemoving ? "Removing..." : "Remove Completed"}
                 </button>
 
                 {/* Remove Obsolete Button */}
                 <button
                   onClick={handleRemoveObsoleteTasks}
-                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-amber-600 border border-amber-200 hover:bg-amber-50 transition-colors"
+                  disabled={isRemoving}
+                  className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-amber-600 border border-amber-200 hover:bg-amber-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FaTrashAlt className="text-amber-500 text-sm" />
-                  Remove Obsolete
+                  {isRemoving ? "Removing..." : "Remove Obsolete"}
                 </button>
               </>
             )}
