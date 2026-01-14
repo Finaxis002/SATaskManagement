@@ -1,53 +1,49 @@
-name: Debug SSH Connection
+name: Deploy Frontend to GCP
 
 on:
-  workflow_dispatch:  # This enables manual trigger
+  push:
+    branches: [main]
 
 jobs:
-  debug:
+  deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Network Diagnostics
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-        run: |
-          echo "=== NETWORK DIAGNOSTICS ==="
-          echo "Server IP: $SERVER_IP"
-          
-          echo -e "\n1. Testing ping..."
-          ping -c 3 $SERVER_IP 2>&1 | grep "packets\|time" || echo "Ping test failed"
-          
-          echo -e "\n2. Testing port 22..."
-          timeout 3 nc -z -w 2 $SERVER_IP 22 && echo "✓ Port 22 is open" || echo "✗ Port 22 connection failed"
-          
-          echo -e "\n3. Checking GitHub runner IP..."
-          echo "Runner IP: $(curl -s ifconfig.me)"
-          
-          echo -e "\n4. Testing SSH with verbose output (5 seconds)..."
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/test_key
-          chmod 600 ~/.ssh/test_key
-          ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts 2>/dev/null
-          
-          timeout 5 ssh -vvv -o ConnectTimeout=3 -i ~/.ssh/test_key finaxis_in@$SERVER_IP "echo test" 2>&1 | grep -i "timeout\|refused\|auth\|debug" | head -20 || echo "SSH test timed out"
-      
-      - name: SSH Key Test
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Setup SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          echo "=== SSH KEY TEST ==="
-          
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/key_test
-          chmod 600 ~/.ssh/key_test
-          
-          echo "Key fingerprint:"
-          ssh-keygen -l -f ~/.ssh/key_test 2>/dev/null || echo "Cannot read key"
-          
-          echo -e "\nFirst 3 lines of key:"
-          head -3 ~/.ssh/key_test
-          
-          echo -e "\nLast 3 lines of key:"
-          tail -3 ~/.ssh/key_test
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
+
+      - name: Deploy Files
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          scp -r -i ~/.ssh/deploy_key ./dist/* finaxis_in@$SERVER_IP:/home/finaxis_in/softwares/SATaskManagement/
+
+      - name: Set Permissions
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            sudo chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement
+            sudo chmod -R 755 /home/finaxis_in/softwares/SATaskManagement
+            sudo systemctl restart nginx
+          "
