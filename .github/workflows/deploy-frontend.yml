@@ -1,4 +1,4 @@
-name: Test SSH After Fix
+name: Test Frontend SSH Fix
 
 on: workflow_dispatch
 
@@ -6,40 +6,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Test SSH Connection
+      - name: Test SSH (Backend Method)
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          echo "=== Testing SSH ==="
-          RUNNER_IP=$(curl -s ifconfig.me)
-          echo "Runner IP: $RUNNER_IP"
-          
-          # Clean setup
-          rm -rf ~/.ssh
+          echo "=== Copying Backend Method ==="
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          
-          # Use backend's EXACT method
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           
-          # Don't use ssh-keyscan (creates extra connection)
-          # Use pre-populated known_hosts instead
-          echo "[$SERVER_IP]:22 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ..." > ~/.ssh/known_hosts
-          
-          # SSH config
-          cat > ~/.ssh/config << EOF
-          Host deploy
-            HostName $SERVER_IP
-            User finaxis_in
-            IdentityFile ~/.ssh/deploy_key
-            IdentitiesOnly yes
-            StrictHostKeyChecking no
-            ConnectTimeout 30
-            BatchMode yes
-          EOF
-          chmod 600 ~/.ssh/config
-          
-          # Test
-          ssh deploy "echo '✅ SUCCESS! SSH working from GitHub Actions'"
+          echo "=== Testing ==="
+          ssh -o ConnectTimeout=10 -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "echo '✅ Works!'"
