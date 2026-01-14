@@ -1,4 +1,4 @@
-name: Deploy Task Management React App to VPS
+name: Deploy Task Management React App to GCP
 
 on:
   push:
@@ -34,9 +34,9 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SERVER_IP }}
           REMOTE_USER: root
-          TARGET: /var/www/tasks.sharda.co.in  # Path for Task Management app
+          TARGET: /home/finaxis_in/softwares/SATaskManagement  # Path for Task Management app
           SOURCE: dist/  # Use the dist folder as the source for deployment
           SCRIPT_AFTER: |
-            chown -R www-data:www-data /var/www/tasks.sharda.co.in
-            chmod -R 755 /var/www/tasks.sharda.co.in
+            chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement
+            chmod -R 755 /home/finaxis_in/softwares/SATaskManagement
             sudo systemctl restart nginx  # Restart nginx to reflect changes
