@@ -1,85 +1,56 @@
-name: Deploy Frontend to GCP
+name: SSH Debug Test
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build project
-        run: npm run build
-
-      - name: Setup SSH
+      - name: Test 1 - Simple Connection
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          echo "=== Setting up SSH ==="
-          
-          # Create .ssh directory
+          echo "=== Test 1: Basic SSH setup ==="
           mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          
-          # Save private key
-          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          
-          # Add server to known_hosts
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/test_key
+          chmod 600 ~/.ssh/test_key
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
           
-          # Create SSH config to force using only our key
+          echo "Testing direct SSH..."
+          ssh -v -o ConnectTimeout=10 -i ~/.ssh/test_key finaxis_in@$SERVER_IP "echo 'Direct SSH works!'"
+      
+      - name: Test 2 - With Config
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Test 2: With SSH Config ==="
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/test_key2
+          chmod 600 ~/.ssh/test_key2
+          
           cat > ~/.ssh/config << EOF
-          Host deploy
+          Host testserver
             HostName $SERVER_IP
             User finaxis_in
-            IdentityFile ~/.ssh/deploy_key
-            IdentitiesOnly yes
+            IdentityFile ~/.ssh/test_key2
             StrictHostKeyChecking no
-            UserKnownHostsFile /dev/null
-            ConnectTimeout 30
-            ServerAliveInterval 60
+            ConnectTimeout 10
           EOF
           chmod 600 ~/.ssh/config
-
-      - name: Test SSH Connection
-        run: |
-          echo "=== Testing SSH Connection ==="
-          ssh deploy "echo 'SSH connection successful!'"
-
-      - name: Prepare Remote Directory
-        run: |
-          echo "=== Preparing Remote Directory ==="
-          ssh deploy "mkdir -p /home/finaxis_in/softwares/SATaskManagement"
-
-      - name: Deploy Files
-        run: |
-          echo "=== Deploying Files ==="
           
-          # Using rsync instead of scp (better for multiple files)
-          rsync -avz -e "ssh -o IdentitiesOnly=yes" \
-            --progress \
-            ./dist/ \
-            deploy:/home/finaxis_in/softwares/SATaskManagement/
-
-      - name: Set Permissions
+          echo "Testing via config..."
+          ssh testserver "echo 'SSH via config works!'"
+      
+      - name: Test 3 - Network Test
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          echo "=== Setting Permissions ==="
-          ssh deploy "
-            sudo chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement
-            sudo chmod -R 755 /home/finaxis_in/softwares/SATaskManagement
-            sudo systemctl restart nginx
-            echo '✓ Deployment completed successfully!'
-          "
+          echo "=== Test 3: Network ==="
+          echo "Testing port 22..."
+          timeout 5 nc -z -w 3 $SERVER_IP 22 && echo "✓ Port 22 open" || echo "✗ Port 22 closed"
+          
+          echo "Traceroute (first 3 hops)..."
+          traceroute -m 3 $SERVER_IP 2>&1 | head -10 || echo "Traceroute failed"
