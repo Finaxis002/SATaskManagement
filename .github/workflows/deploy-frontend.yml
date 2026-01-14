@@ -1,66 +1,24 @@
-name: Deploy Frontend to GCP
+name: Test GitHub SSH Access
 
-on:
-  push:
-    branches: [main]
+on: workflow_dispatch
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
-    
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      
-      - name: Install and Build
-        run: |
-          npm ci
-          npm run build
-      
-      - name: Setup SSH with Wait
+      - name: Test SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          echo "=== Setting up SSH ==="
-          rm -rf ~/.ssh 2>/dev/null || true
+          echo "Testing from GitHub Actions..."
+          echo "Runner IP: $(curl -s ifconfig.me)"
+          
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/key
           chmod 600 ~/.ssh/key
-          ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts 2>/dev/null
           
-          # CRITICAL: Wait to avoid connection flooding
-          echo "Waiting 15 seconds to avoid rate limiting..."
-          sleep 15
-          
-          # Test with longer timeout
-          echo "Testing connection with 20-second timeout..."
-          ssh -o ConnectTimeout=20 \
-              -o BatchMode=yes \
+          ssh -o ConnectTimeout=30 \
               -o StrictHostKeyChecking=no \
               -i ~/.ssh/key \
-              finaxis_in@$SERVER_IP "echo 'Connection successful!'"
-      
-      - name: Deploy Files
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-        run: |
-          echo "=== Deploying Files ==="
-          scp -r -o ConnectTimeout=20 -i ~/.ssh/key \
-              ./dist/* \
-              finaxis_in@$SERVER_IP:/home/finaxis_in/softwares/SATaskManagement/
-      
-      - name: Set Permissions
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-        run: |
-          ssh -o ConnectTimeout=20 -i ~/.ssh/key finaxis_in@$SERVER_IP "
-            sudo chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement
-            sudo chmod -R 755 /home/finaxis_in/softwares/SATaskManagement
-            sudo systemctl restart nginx
-            echo '✓ Deployment completed!'
-          "
+              finaxis_in@$SERVER_IP "echo 'SUCCESS: GitHub can connect!'"
