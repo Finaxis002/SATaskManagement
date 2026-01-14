@@ -9,6 +9,8 @@ import {
   FaCalendarAlt,
   FaFilter,
   FaSearch,
+  FaImage,
+  FaTimes,
 } from "react-icons/fa";
 import { MdOutlineMoreHoriz } from "react-icons/md";
 
@@ -17,6 +19,7 @@ const DeveloperSupport = () => {
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [selectedImage, setSelectedImage] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -24,7 +27,6 @@ const DeveloperSupport = () => {
     completed: 0,
   });
 
-  // Fetch support requests
   useEffect(() => {
     fetch("https://taskbe.sharda.co.in/api/support")
       .then((res) => res.json())
@@ -38,7 +40,6 @@ const DeveloperSupport = () => {
       .catch((err) => console.error("Error fetching support requests:", err));
   }, []);
 
-  // Calculate statistics
   const calculateStats = (data) => {
     setStats({
       total: data.length,
@@ -48,7 +49,6 @@ const DeveloperSupport = () => {
     });
   };
 
-  // Filter and search
   useEffect(() => {
     let filtered = requests;
 
@@ -68,7 +68,6 @@ const DeveloperSupport = () => {
     setFilteredRequests(filtered);
   }, [searchTerm, filterStatus, requests]);
 
-  // Update status
   const updateStatus = (id, newStatus) => {
     fetch(`https://taskbe.sharda.co.in/api/support/${id}/status`, {
       method: "PUT",
@@ -88,7 +87,6 @@ const DeveloperSupport = () => {
       .catch((err) => console.error("Error updating status:", err));
   };
 
-  // Render reason badges
   const getReasonBadge = (reason, otherReason) => {
     const badges = {
       error: {
@@ -113,7 +111,7 @@ const DeveloperSupport = () => {
       },
     };
 
-    const badge = badges[reason];
+    const badge = badges[reason] || badges["other"];
     return (
       <span
         className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md ${badge.color}`}
@@ -152,72 +150,52 @@ const DeveloperSupport = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <p className="text-xs font-medium text-gray-500 uppercase">
                   Total
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
                   {stats.total}
                 </p>
               </div>
-              <div className="p-3 bg-gray-100 rounded-lg">
-                <FaRegEnvelopeOpen className="text-gray-600 text-lg" />
-              </div>
+              <FaRegEnvelopeOpen className="text-gray-400 text-lg" />
             </div>
           </div>
-
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-amber-600 uppercase tracking-wide">
-                  Pending
-                </p>
-                <p className="text-2xl font-bold text-amber-600 mt-1">
-                  {stats.pending}
-                </p>
-              </div>
-              <div className="p-3 bg-amber-50 rounded-lg">
-                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-              </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div>
+              <p className="text-xs font-medium text-amber-600 uppercase">
+                Pending
+              </p>
+              <p className="text-2xl font-bold text-amber-600 mt-1">
+                {stats.pending}
+              </p>
             </div>
           </div>
-
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">
-                  In Progress
-                </p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
-                  {stats.inProgress}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div>
+              <p className="text-xs font-medium text-blue-600 uppercase">
+                In Progress
+              </p>
+              <p className="text-2xl font-bold text-blue-600 mt-1">
+                {stats.inProgress}
+              </p>
             </div>
           </div>
-
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">
-                  Completed
-                </p>
-                <p className="text-2xl font-bold text-emerald-600 mt-1">
-                  {stats.completed}
-                </p>
-              </div>
-              <div className="p-3 bg-emerald-50 rounded-lg">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-              </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div>
+              <p className="text-xs font-medium text-emerald-600 uppercase">
+                Completed
+              </p>
+              <p className="text-2xl font-bold text-emerald-600 mt-1">
+                {stats.completed}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Search and Filter Bar */}
+        {/* Search and Filter */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-1 relative">
@@ -227,7 +205,7 @@ const DeveloperSupport = () => {
                 placeholder="Search by name, email, or issue..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -235,7 +213,7 @@ const DeveloperSupport = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               >
                 <option value="All">All Status</option>
                 <option value="Pending">Pending</option>
@@ -246,13 +224,13 @@ const DeveloperSupport = () => {
           </div>
         </div>
 
-        {/* Mobile Card View */}
+        {/* Mobile View */}
         <div className="md:hidden space-y-3 max-h-[600px] overflow-y-auto">
           {filteredRequests.length > 0 ? (
             filteredRequests.map((req) => (
               <div
                 key={req._id}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow overflow-hidden"
+                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-3">
@@ -276,16 +254,37 @@ const DeveloperSupport = () => {
                   </div>
 
                   <div className="bg-gray-50 p-3 rounded-lg mb-3 border-l-3 border-blue-500">
-                    <p className="text-sm text-gray-700 leading-relaxed">
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
                       {req.issue}
                     </p>
+
+                    {req.images && req.images.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-gray-200">
+                        <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1">
+                          <FaImage /> Attachments:
+                        </p>
+                        <div className="flex gap-2">
+                          {req.images.map((img, idx) => (
+                            <img
+                              key={idx}
+                              src={img.data}
+                              alt="attachment"
+                              className="w-16 h-16 object-cover rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition"
+                              onClick={() => setSelectedImage(img.data)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <select
                       value={req.status}
                       onChange={(e) => updateStatus(req._id, e.target.value)}
-                      className={`text-xs font-medium px-3 py-1.5 border rounded-lg cursor-pointer ${statusStyles[req.status]}`}
+                      className={`text-xs font-medium px-3 py-1.5 border rounded-lg cursor-pointer ${
+                        statusStyles[req.status]
+                      }`}
                     >
                       <option value="Pending">Pending</option>
                       <option value="In Progress">In Progress</option>
@@ -305,13 +304,7 @@ const DeveloperSupport = () => {
             ))
           ) : (
             <div className="bg-white p-8 text-center rounded-xl shadow-sm border border-gray-100">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <FaRegEnvelopeOpen className="text-gray-400 text-2xl" />
-              </div>
-              <p className="text-gray-500 font-medium">No requests found</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Try adjusting your filters
-              </p>
+              <p className="text-gray-500">No requests found</p>
             </div>
           )}
         </div>
@@ -323,22 +316,25 @@ const DeveloperSupport = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                       Name
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                       Contact
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                       Reason
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                       Issue
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Attachments
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                       Date
                     </th>
                   </tr>
@@ -350,73 +346,86 @@ const DeveloperSupport = () => {
                         key={req._id}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="font-semibold text-gray-900">
-                            {req.fullName}
-                          </div>
+                        <td className="px-4 py-4 whitespace-nowrap font-semibold text-gray-900 align-top">
+                          {req.fullName}
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <td className="px-4 py-4 align-top">
+                          <div className="flex flex-col gap-1 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
                               <FaEnvelope className="text-blue-500 text-xs" />
-                              <span className="truncate max-w-[200px]">
+                              <span className="truncate max-w-[150px]">
                                 {req.email}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <FaPhone className="text-emerald-500 text-xs" />
-                              <span>{req.phone}</span>
+                            <div className="flex items-center gap-2">
+                              <FaPhone className="text-emerald-500 text-xs" />{" "}
+                              {req.phone}
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap align-top">
                           {getReasonBadge(req.reason, req.otherReason)}
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="max-w-xs text-sm text-gray-700 line-clamp-2">
+
+                        {/* ✅ ISSUE COLUMN: Full Text Always Visible */}
+                        <td className="px-4 py-4 align-top">
+                          <div className="max-w-md text-sm text-gray-700 whitespace-pre-wrap break-words">
                             {req.issue}
                           </div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
+
+                        <td className="px-4 py-4 align-top">
+                          {req.images && req.images.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {req.images.map((img, idx) => (
+                                <img
+                                  key={idx}
+                                  src={img.data}
+                                  alt="proof"
+                                  className="h-10 w-10 rounded-lg border border-gray-200 object-cover cursor-pointer hover:scale-105 transition"
+                                  onClick={() => setSelectedImage(img.data)}
+                                  title={img.name || "Attachment"}
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs italic">
+                              None
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-4 whitespace-nowrap align-top">
                           <select
                             value={req.status}
                             onChange={(e) =>
                               updateStatus(req._id, e.target.value)
                             }
-                            className={`text-xs font-medium px-3 py-1.5 border rounded-lg cursor-pointer ${statusStyles[req.status]}`}
+                            className={`text-xs font-medium px-3 py-1.5 border rounded-lg cursor-pointer ${
+                              statusStyles[req.status]
+                            }`}
                           >
                             <option value="Pending">Pending</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Completed">Completed</option>
                           </select>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex items-center gap-1.5">
-                            <FaCalendarAlt className="text-gray-400 text-xs" />
-                            {new Date(req.createdAt).toLocaleDateString(
-                              "en-GB",
-                              {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )}
-                          </div>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 align-top">
+                          {new Date(req.createdAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="px-4 py-12 text-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <FaRegEnvelopeOpen className="text-gray-400 text-2xl" />
-                        </div>
-                        <p className="text-gray-500 font-medium">
-                          No requests found
-                        </p>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Try adjusting your filters
-                        </p>
+                      <td
+                        colSpan="7"
+                        className="px-4 py-12 text-center text-gray-500"
+                      >
+                        No requests found
                       </td>
                     </tr>
                   )}
@@ -426,6 +435,29 @@ const DeveloperSupport = () => {
           </div>
         </div>
       </div>
+
+      {/* IMAGE PREVIEW MODAL */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-5xl w-full max-h-[90vh] flex items-center justify-center">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-10 right-0 md:-right-10 text-white hover:text-gray-300 transition"
+            >
+              <FaTimes size={30} />
+            </button>
+            <img
+              src={selectedImage}
+              alt="Full Preview"
+              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain bg-white"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -9,7 +9,7 @@ const LeaveSummary = () => {
   const [leaveByType, setLeaveByType] = useState({
     sick: 0,
     casual: 0,
-    emergency: 0
+    emergency: 0,
   });
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -18,8 +18,8 @@ const LeaveSummary = () => {
 
   const getUserId = () => {
     try {
-      return typeof window !== 'undefined' && window.localStorage 
-        ? window.localStorage.getItem("userId") 
+      return typeof window !== "undefined" && window.localStorage
+        ? window.localStorage.getItem("userId")
         : null;
     } catch {
       return null;
@@ -33,20 +33,22 @@ const LeaveSummary = () => {
       setLoading(false);
       return;
     }
-    
+
     try {
       setLoading(true);
-      const response = await fetch(`https://taskbe.sharda.co.in/api/leave?userId=${userId}`);
-      
+      const response = await fetch(
+        `https://taskbe.sharda.co.in/api/leave?userId=${userId}`
+      );
+
       if (!response.ok) throw new Error("Network response was not ok");
-      
+
       const data = await response.json();
-      
+
       // Status-wise count
       const approved = data.filter((leave) => leave.status === "Approved");
       const pending = data.filter((leave) => leave.status === "Pending");
       const rejected = data.filter((leave) => leave.status === "Rejected");
-      
+
       setApprovedCount(approved.length);
       setPendingCount(pending.length);
       setRejectedCount(rejected.length);
@@ -58,31 +60,26 @@ const LeaveSummary = () => {
         const days = Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
         return acc + days;
       }, 0);
-      
+
       setApprovedDays(totalDays);
       setRemainingLeaves(TOTAL_ANNUAL_LEAVES - totalDays);
 
-   
-      
       const typeCount = {
-        sick: approved.filter(l => {
-          console.log("Checking leave:", l.leaveType);
+        sick: approved.filter((l) => {
           return l.leaveType && l.leaveType.toLowerCase().includes("sick");
         }).length,
-        casual: approved.filter(l => 
-          l.leaveType && l.leaveType.toLowerCase().includes("casual")
+        casual: approved.filter(
+          (l) => l.leaveType && l.leaveType.toLowerCase().includes("casual")
         ).length,
-        emergency: approved.filter(l => 
-          l.leaveType && l.leaveType.toLowerCase().includes("emergency")
-        ).length
+        emergency: approved.filter(
+          (l) => l.leaveType && l.leaveType.toLowerCase().includes("emergency")
+        ).length,
       };
-      
-      console.log("📊 Type Count Result:", typeCount);
+
       setLeaveByType(typeCount);
 
       // Update timestamp
       setLastUpdated(new Date());
-      
     } catch (error) {
       console.error("Failed to load summary", error);
     } finally {
@@ -102,9 +99,9 @@ const LeaveSummary = () => {
 
   const formatTime = (date) => {
     if (!date) return "";
-    return date.toLocaleTimeString('en-IN', { 
-      hour: '2-digit', 
-      minute: '2-digit'
+    return date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -122,7 +119,7 @@ const LeaveSummary = () => {
   };
 
   if (!userId) return null;
-  
+
   if (loading) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg">
@@ -150,17 +147,20 @@ const LeaveSummary = () => {
           </svg> */}
         </button>
       </div>
-      
-      <div className="border-b border-gray-300 mb-3"></div>
 
+      <div className="border-b border-gray-300 mb-3"></div>
 
       {/* Main Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-3 shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs text-green-700 font-medium mb-0.5">Approved Days</div>
-              <div className="text-xl font-bold text-green-800">{approvedDays}</div>
+              <div className="text-xs text-green-700 font-medium mb-0.5">
+                Approved Days
+              </div>
+              <div className="text-xl font-bold text-green-800">
+                {approvedDays}
+              </div>
             </div>
             <div className="text-green-500 text-2xl">✅</div>
           </div>
@@ -169,8 +169,12 @@ const LeaveSummary = () => {
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3 shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs text-blue-700 font-medium mb-0.5">Approved Requests</div>
-              <div className="text-xl font-bold text-blue-800">{approvedCount}</div>
+              <div className="text-xs text-blue-700 font-medium mb-0.5">
+                Approved Requests
+              </div>
+              <div className="text-xl font-bold text-blue-800">
+                {approvedCount}
+              </div>
             </div>
             <div className="text-blue-500 text-2xl">📝</div>
           </div>
@@ -179,8 +183,12 @@ const LeaveSummary = () => {
         <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-3 shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs text-yellow-700 font-medium mb-0.5">Pending</div>
-              <div className="text-xl font-bold text-yellow-800">{pendingCount}</div>
+              <div className="text-xs text-yellow-700 font-medium mb-0.5">
+                Pending
+              </div>
+              <div className="text-xl font-bold text-yellow-800">
+                {pendingCount}
+              </div>
             </div>
             <div className="text-yellow-500 text-2xl">⏳</div>
           </div>
@@ -189,8 +197,12 @@ const LeaveSummary = () => {
         <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-3 shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs text-red-700 font-medium mb-0.5">Rejected</div>
-              <div className="text-xl font-bold text-red-800">{rejectedCount}</div>
+              <div className="text-xs text-red-700 font-medium mb-0.5">
+                Rejected
+              </div>
+              <div className="text-xl font-bold text-red-800">
+                {rejectedCount}
+              </div>
             </div>
             <div className="text-red-500 text-2xl">❌</div>
           </div>
@@ -199,28 +211,36 @@ const LeaveSummary = () => {
 
       {/* Leave Type Breakdown */}
       <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-        <h3 className="text-xs font-semibold text-gray-700 mb-2">📋 Approved by Type</h3>
+        <h3 className="text-xs font-semibold text-gray-700 mb-2">
+          📋 Approved by Type
+        </h3>
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-600 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
               Sick Leave
             </span>
-            <span className="text-xs font-semibold text-gray-800">{leaveByType.sick}</span>
+            <span className="text-xs font-semibold text-gray-800">
+              {leaveByType.sick}
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-600 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
               Casual Leave
             </span>
-            <span className="text-xs font-semibold text-gray-800">{leaveByType.casual}</span>
+            <span className="text-xs font-semibold text-gray-800">
+              {leaveByType.casual}
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-600 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
               Emergency Leave
             </span>
-            <span className="text-xs font-semibold text-gray-800">{leaveByType.emergency}</span>
+            <span className="text-xs font-semibold text-gray-800">
+              {leaveByType.emergency}
+            </span>
           </div>
         </div>
       </div>
