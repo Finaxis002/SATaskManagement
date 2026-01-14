@@ -27,64 +27,45 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
           echo "=== Setting up SSH ==="
-          
-          # Create .ssh directory
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          
-          # Save private key (fixing Windows line endings)
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          
-          # Test if key is valid
-          echo "Checking key format..."
-          if ssh-keygen -l -f ~/.ssh/deploy_key 2>/dev/null; then
-            echo "✓ SSH key is valid"
-          else
-            echo "✗ SSH key is invalid"
-            exit 1
-          fi
-          
-          # Add server to known_hosts
-          echo "Adding server to known_hosts..."
           ssh-keyscan -H "$SERVER_IP" >> ~/.ssh/known_hosts 2>/dev/null
-          
-          # Create SSH config
-          cat > ~/.ssh/config << EOF
-          Host deploy-server
-            HostName $SERVER_IP
-            User finaxis_in
-            IdentityFile ~/.ssh/deploy_key
-            StrictHostKeyChecking no
-            UserKnownHostsFile /dev/null
-            ConnectTimeout 30
-            ServerAliveInterval 60
-          EOF
-          chmod 600 ~/.ssh/config
-          
-          echo "=== SSH Setup Complete ==="
       
-      - name: Test SSH Connection
+      - name: Prepare Server Directory
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          echo "=== Testing SSH Connection ==="
-          ssh -o ConnectTimeout=10 -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "echo '✅ SSH connection successful - Frontend'"
+          echo "=== Preparing server directory ==="
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            # Ensure directory exists and has right permissions
+            sudo mkdir -p /home/finaxis_in/softwares/SATaskManagement
+            sudo chown -R finaxis_in:www-data /home/finaxis_in/softwares/SATaskManagement
+            sudo chmod -R 775 /home/finaxis_in/softwares/SATaskManagement
+          "
       
       - name: Deploy Files
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
           echo "=== Deploying Files ==="
+          
+          # Clean old files (optional)
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            sudo find /home/finaxis_in/softwares/SATaskManagement -type f -delete 2>/dev/null || true
+          "
+          
+          # Deploy all files
           scp -r -o ConnectTimeout=20 -i ~/.ssh/deploy_key \
               ./dist/* \
               finaxis_in@$SERVER_IP:/home/finaxis_in/softwares/SATaskManagement/
       
-      - name: Set Permissions
+      - name: Set Final Permissions
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          ssh -o ConnectTimeout=20 -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
             sudo chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement
             sudo chmod -R 755 /home/finaxis_in/softwares/SATaskManagement
             sudo systemctl restart nginx
