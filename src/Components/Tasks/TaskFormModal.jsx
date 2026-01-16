@@ -58,7 +58,7 @@ const selectBaseStyles = {
       : "#fff",
     color: "#0f172a",
   }),
-  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+  menuPortal: (base) => ({ ...base, zIndex: 99999 }),
 };
 
 const TaskFormModal = ({ onClose, onSave, initialData }) => {
@@ -554,8 +554,8 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
   }));
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-black/40 p-3 sm:p-4 md:p-6 flex items-center justify-center font-inter overflow-y-auto ">
-      <div className="w-full max-w-4xl bg-white rounded-none sm:rounded-2xl border border-slate-200 shadow-2xl flex flex-col max-h-[80vh]">
+    <div className="fixed inset-0 z-[9999] bg-black/40 p-3 sm:p-4 md:p-6 flex items-center justify-center font-inter overflow-y-auto">
+      <div className="w-full max-w-4xl bg-white rounded-none sm:rounded-2xl border border-slate-200 shadow-2xl flex flex-col max-h-[80vh] relative z-[10000]">
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-2xl border-b border-slate-200 bg-white/90 backdrop-blur px-4 sm:px-6 py-2">
           <div>
             <h3 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900">
@@ -824,7 +824,7 @@ const TaskFormModal = ({ onClose, onSave, initialData }) => {
       </div>
 
       {showRepeatPopup && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-[1100] p-3">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-[10001] p-3">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-5 sm:p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">
               Repetition Settings

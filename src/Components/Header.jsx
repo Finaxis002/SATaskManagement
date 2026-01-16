@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FaBell,
   FaUserCircle,
@@ -206,8 +206,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileInitial, setProfileInitial] = useState("Fi");
   const [searchTerm, setSearchTerm] = useState("");
-  const [highlightRefs, setHighlightRefs] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [highlightCount, setHighlightCount] = useState(0);
+  const [currentHighlightIndex, setCurrentHighlightIndex] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
@@ -217,7 +217,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [wnError, setWnError] = useState("");
   const [whatsNewCount, setWhatsNewCount] = useState(0);
   const [lastSeenCount, setLastSeenCount] = useState(0);
-  const [searchFocused, setSearchFocused] = useState(false);
+  const contentRef = useRef(null);
   const navigate = useNavigate();
   useNotificationSocket(setNotificationCount);
 
@@ -225,6 +225,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const isAdmin = userRole === "admin" || userRole === "Admin";
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
@@ -349,95 +350,254 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const highlightMatches = (term) => {
-      document.querySelectorAll("mark[data-highlight]").forEach((mark) => {
-        const parent = mark.parentNode;
-        parent.replaceChild(document.createTextNode(mark.textContent), mark);
+  // Advanced Search Functions from layout.tsx
+  const escapeReg = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const clearHighlights = (root) => {
+    if (!root) return;
+    const marks = root.querySelectorAll("mark.__hl");
+    marks.forEach((m) => {
+      const parent = m.parentNode;
+      if (parent) {
+        parent.replaceChild(document.createTextNode(m.textContent || ""), m);
         parent.normalize();
+      }
+    });
+  };
+
+  const applyHighlights = (root, term) => {
+    if (!root || !term) return;
+    const safeTerm = escapeReg(term);
+    const rx = new RegExp(safeTerm, "gi");
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+
+    const skipTags = new Set([
+      "SCRIPT",
+      "STYLE",
+      "NOSCRIPT",
+      "MARK",
+      "INPUT",
+      "TEXTAREA",
+      "DIALOG",
+    ]);
+
+    const skipSelectors = [
+      '[role="dialog"]',
+      '[aria-modal="true"]',
+      ".modal",
+      ".dialog",
+      ".MuiModal-root",
+      '[data-state="open"]',
+      "dialog[open]",
+    ];
+
+    let nodes = [];
+    let node;
+
+    while ((node = walker.nextNode())) {
+      const textNode = node;
+      const el = textNode.parentElement;
+
+      if (!el) continue;
+      if (skipTags.has(el.tagName)) continue;
+
+      const isInModal = skipSelectors.some((selector) => {
+        return el.closest(selector) !== null;
       });
 
+      if (isInModal) continue;
+
+      const style = window.getComputedStyle(el);
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        style.opacity === "0"
+      ) {
+        continue;
+      }
+
+      let parent = el.parentElement;
+      let isHidden = false;
+      while (parent && parent !== root) {
+        const parentStyle = window.getComputedStyle(parent);
+        if (
+          parentStyle.display === "none" ||
+          parentStyle.visibility === "hidden"
+        ) {
+          isHidden = true;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+
+      if (isHidden) continue;
+
+      if (textNode.nodeValue?.trim()) {
+        nodes.push(textNode);
+      }
+    }
+
+    let count = 0;
+
+    nodes.forEach((textNode) => {
+      const text = textNode.nodeValue || "";
+      const matches = [...text.matchAll(rx)];
+      if (matches.length === 0) return;
+
+      const frag = document.createDocumentFragment();
+      let lastIndex = 0;
+
+      matches.forEach((m) => {
+        const start = m.index;
+        const end = start + m[0].length;
+
+        if (start > lastIndex) {
+          frag.appendChild(
+            document.createTextNode(text.slice(lastIndex, start))
+          );
+        }
+
+        const mark = document.createElement("mark");
+        mark.className = "__hl";
+
+        if (count === currentHighlightIndex) {
+          mark.style.backgroundColor = "#f59e0b";
+          mark.style.color = "#000000";
+          mark.style.fontWeight = "bold";
+          mark.style.boxShadow = "0 0 0 2px #d97706";
+        } else {
+          mark.style.backgroundColor = "yellow";
+          mark.style.color = "#000000";
+          mark.style.fontWeight = "normal";
+        }
+
+        mark.style.padding = "2px 1px";
+        mark.style.borderRadius = "3px";
+        mark.style.cursor = "pointer";
+
+        mark.textContent = m[0];
+        frag.appendChild(mark);
+
+        lastIndex = end;
+        count++;
+      });
+
+      if (lastIndex < text.length) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+
+      textNode.replaceWith(frag);
+    });
+
+    setHighlightCount(count);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        navigateToHighlight("prev");
+      } else {
+        navigateToHighlight("next");
+      }
+    }
+  };
+
+  const navigateToHighlight = (direction = "next") => {
+    if (highlightCount === 0) return;
+
+    let newIndex;
+    if (direction === "next") {
+      newIndex = (currentHighlightIndex + 1) % highlightCount;
+    } else {
+      newIndex = (currentHighlightIndex - 1 + highlightCount) % highlightCount;
+    }
+
+    setCurrentHighlightIndex(newIndex);
+    scrollToHighlight(newIndex);
+  };
+
+  const scrollToHighlight = (index) => {
+    const marks = document.querySelectorAll("mark.__hl");
+    if (marks && marks[index]) {
+      const targetMark = marks[index];
+      targetMark.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  };
+
+  // Main Highlighting Effect
+  useEffect(() => {
+    const runSearch = () => {
+      const root = document.body;
+      if (!root) return;
+
+      const term = searchTerm.trim();
+
       if (!term) {
-        setHighlightRefs([]);
-        setCurrentIndex(0);
+        clearHighlights(root);
+        setHighlightCount(0);
+        setCurrentHighlightIndex(0);
         return;
       }
-
-      const regex = new RegExp(
-        `(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-        "gi"
-      );
-      const foundMarks = [];
-
-      const walk = (node) => {
-        if (
-          node.nodeType === 3 &&
-          node.parentNode &&
-          node.parentNode.nodeName !== "SCRIPT" &&
-          node.parentNode.nodeName !== "STYLE" &&
-          node.parentNode.nodeName !== "MARK"
-        ) {
-          const text = node.nodeValue;
-          if (regex.test(text)) {
-            const span = document.createElement("span");
-            span.innerHTML = text.replace(
-              regex,
-              `<mark data-highlight style="background: yellow; padding: 2px 0;">$1</mark>`
-            );
-            const fragment = document.createDocumentFragment();
-            while (span.firstChild) {
-              const child = span.firstChild;
-              if (child.tagName === "MARK") foundMarks.push(child);
-              fragment.appendChild(child);
-            }
-            node.parentNode.replaceChild(fragment, node);
-          }
-        } else if (node.nodeType === 1 && node.nodeName !== "MARK") {
-          for (let i = 0; i < node.childNodes.length; i++) {
-            walk(node.childNodes[i]);
-          }
-        }
-      };
-
-      walk(document.body);
-      setHighlightRefs(foundMarks);
-      setCurrentIndex(0);
-
-      if (foundMarks.length > 0) {
-        foundMarks[0].scrollIntoView({ behavior: "smooth", block: "center" });
-        foundMarks[0].style.background = "orange";
-      }
+      clearHighlights(root);
+      applyHighlights(root, term);
     };
 
-    const timeoutId = setTimeout(() => {
-      highlightMatches(searchTerm);
+    const timer1 = setTimeout(() => {
+      runSearch();
     }, 300);
 
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+    const timer2 = setTimeout(() => {
+      if (searchTerm.trim()) {
+        runSearch();
+      }
+    }, 1500);
 
+    const timer3 = setTimeout(() => {
+      if (searchTerm.trim()) {
+        runSearch();
+      }
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, [searchTerm, currentHighlightIndex]);
+
+  // Reset highlight index on navigation
   useEffect(() => {
-    const handleEnterKey = (e) => {
-      if (e.key === "Enter" && searchFocused && highlightRefs.length > 0) {
-        e.preventDefault();
+    setCurrentHighlightIndex(0);
+  }, [window.location.pathname]);
 
-        const nextIndex = (currentIndex + 1) % highlightRefs.length;
-        const el = highlightRefs[nextIndex];
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (
+        event.key === "ArrowDown" &&
+        currentHighlightIndex < highlightCount - 1
+      ) {
+        setCurrentHighlightIndex(currentHighlightIndex + 1);
+        scrollToHighlight(currentHighlightIndex + 1);
+      }
 
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-
-        highlightRefs.forEach((mark) => {
-          mark.style.background = "yellow";
-        });
-
-        el.style.background = "orange";
-
-        setCurrentIndex(nextIndex);
+      if (event.key === "ArrowUp" && currentHighlightIndex > 0) {
+        setCurrentHighlightIndex(currentHighlightIndex - 1);
+        scrollToHighlight(currentHighlightIndex - 1);
       }
     };
-    window.addEventListener("keydown", handleEnterKey);
-    return () => window.removeEventListener("keydown", handleEnterKey);
-  }, [highlightRefs, currentIndex, searchFocused]);
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [currentHighlightIndex, highlightCount]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -518,8 +678,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               type="text"
               value={searchTerm}
               onChange={handleSearchChange}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Search anything on this page..."
               id="global-search-input"
               className="w-full pl-8 sm:pl-10 pr-16 sm:pr-32 py-2 sm:py-2.5 rounded-full bg-gray-100 text-xs sm:text-sm placeholder-gray-500 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-200"
@@ -531,8 +690,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                 <button
                   onClick={() => {
                     setSearchTerm("");
-                    setHighlightRefs([]);
-                    setCurrentIndex(0);
+                    setHighlightCount(0);
+                    setCurrentHighlightIndex(0);
                   }}
                   className="text-gray-500 hover:text-gray-700 flex-shrink-0 transition-colors duration-200"
                   aria-label="Clear search"
@@ -557,10 +716,28 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               <span className="text-xs text-gray-500 hidden lg:block px-2 py-1 font-medium">
                 Alt + S
               </span>
-              {highlightRefs.length > 0 && (
-                <span className="text-[10px] sm:text-xs text-gray-500 bg-gray-200 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-medium">
-                  {currentIndex + 1}/{highlightRefs.length}
-                </span>
+              {highlightCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => navigateToHighlight("prev")}
+                    className="text-xs text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-200"
+                    title="Previous match (Shift+Enter)"
+                  >
+                    ↑
+                  </button>
+                  <span className="text-[10px] sm:text-xs text-gray-500 bg-gray-200 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-medium min-w-[30px] text-center">
+                    {currentHighlightIndex + 1}/{highlightCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => navigateToHighlight("next")}
+                    className="text-xs text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-200"
+                    title="Next match (Enter)"
+                  >
+                    ↓
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -577,24 +754,20 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
-            {/* Desktop View - Button with Text */}
             <span className="hidden md:flex bg-indigo-600 text-white text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-full hover:opacity-90 items-center gap-1 sm:gap-2">
               <FaStar className="text-yellow-300 text-xs sm:text-sm" />
               <span className="hidden lg:inline">What's New</span>
               <span className="lg:hidden">New</span>
             </span>
-            {/* Mobile/Tablet View - Icon Only */}
             <div className="md:hidden relative">
               <span className="bg-indigo-600 rounded-full px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-indigo-700 flex items-center">
                 <HiSparkles className="text-yellow-400 text-sm sm:text-base" />
               </span>
-              {/* Tooltip for mobile */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-20">
                 What's New
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
               </div>
             </div>
-            {/* Count Badge */}
             {unreadCount > 0 && (
               <motion.span
                 className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center font-bold shadow-md z-10"
