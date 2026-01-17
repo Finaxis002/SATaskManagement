@@ -2387,7 +2387,7 @@ const TaskList = ({
         }
       }
     },
-    [filters, searchTerm, isAdmin, currentUserName, isMobileView]
+    [filters, searchTerm, isAdmin, currentUserName, isMobileView],
   );
 
   // ✅ OPTIMIZED: Fetch stats only
@@ -2437,7 +2437,7 @@ const TaskList = ({
         return null;
       }
     },
-    [taskDetailsCache]
+    [taskDetailsCache],
   );
 
   // Initial load and refresh
@@ -2620,7 +2620,7 @@ const TaskList = ({
     try {
       const response = await axios.post(
         "https://taskbe.sharda.co.in/api/message-history",
-        payload
+        payload,
       );
 
       if (response.status === 201) {
@@ -2639,7 +2639,7 @@ const TaskList = ({
     const taskText = `Task: ${task.taskName}\nCode: ${
       task.code || "N/A"
     }\nDue Date: ${new Date(task.dueDate).toLocaleDateString(
-      "en-GB"
+      "en-GB",
     )}\nPriority: ${task.priority}`;
 
     try {
@@ -2673,9 +2673,9 @@ const TaskList = ({
     setTasks((prev) =>
       deduplicateTasks(
         prev.map((task) =>
-          task._id === taskId ? { ...task, status: newStatus } : task
-        )
-      )
+          task._id === taskId ? { ...task, status: newStatus } : task,
+        ),
+      ),
     );
 
     let updatedRemark = remarks[taskId] || "";
@@ -2704,7 +2704,7 @@ const TaskList = ({
             updatedBy,
             remark: updatedRemark,
           }),
-        }
+        },
       );
 
       if (!response.ok) throw new Error("Failed to update status");
@@ -2714,9 +2714,9 @@ const TaskList = ({
       setTasks((prev) =>
         deduplicateTasks(
           prev.map((task) =>
-            task._id === taskId ? { ...task, ...updatedTask } : task
-          )
-        )
+            task._id === taskId ? { ...task, ...updatedTask } : task,
+          ),
+        ),
       );
 
       setRemarks((prev) => ({ ...prev, [taskId]: updatedTask.remark || "" }));
@@ -2758,13 +2758,13 @@ const TaskList = ({
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ workDesc: workDescText, updatedBy }),
-        }
+        },
       );
 
       if (response.ok) {
         const updatedTask = await response.json();
         setTasks((prev) =>
-          prev.map((task) => (task._id === taskId ? updatedTask : task))
+          prev.map((task) => (task._id === taskId ? updatedTask : task)),
         );
         setTaskDetailsCache((prev) => ({
           ...prev,
@@ -2803,13 +2803,13 @@ const TaskList = ({
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ remark: remarkText, updatedBy }),
-        }
+        },
       );
 
       if (response.ok) {
         const updatedTask = await response.json();
         setTasks((prev) =>
-          prev.map((task) => (task._id === taskId ? updatedTask : task))
+          prev.map((task) => (task._id === taskId ? updatedTask : task)),
         );
         setTaskDetailsCache((prev) => ({
           ...prev,
@@ -2856,7 +2856,7 @@ const TaskList = ({
 
       const response = await fetch(
         `https://taskbe.sharda.co.in/api/tasks/${task._id}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
 
       if (!response.ok) throw new Error("Failed to delete task");
@@ -2942,7 +2942,8 @@ const TaskList = ({
                 task.status !== "Completed" &&
                 task.status !== "Obsolete" && (
                   <FaExclamationCircle
-                    className="text-red-600 animate-pulse"
+                    // Yahan 'flex-shrink-0' add kiya hai taaki icon shrink na ho
+                    className="text-red-600 animate-pulse flex-shrink-0"
                     size={12}
                     title="Overdue"
                   />
@@ -2997,8 +2998,17 @@ const TaskList = ({
             onClick={(e) => {
               e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
+              const dropdownHeight = 180; // Dropdown ki height ka anuman
+              const spaceBelow = window.innerHeight - rect.bottom;
+
+              // Agar niche jagah kam hai to upar khulega, nahi to niche
+              const topPosition =
+                spaceBelow < dropdownHeight
+                  ? rect.top + window.scrollY - dropdownHeight
+                  : rect.bottom + window.scrollY + 5;
+
               setDropdownPosition({
-                top: rect.bottom + window.scrollY + 5,
+                top: topPosition,
                 left: rect.left + window.scrollX,
               });
               setEditingStatus(task._id);
@@ -3208,11 +3218,21 @@ const TaskList = ({
               color: statusColors[task.status]?.text,
               borderColor: statusColors[task.status]?.border,
             }}
+            // NYA CODE (Paste Karen)
             onClick={(e) => {
               e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
+              const dropdownHeight = 180; // Dropdown ki height ka anuman
+              const spaceBelow = window.innerHeight - rect.bottom;
+
+              // Agar niche jagah kam hai to upar khulega, nahi to niche
+              const topPosition =
+                spaceBelow < dropdownHeight
+                  ? rect.top + window.scrollY - dropdownHeight
+                  : rect.bottom + window.scrollY + 5;
+
               setDropdownPosition({
-                top: rect.bottom + window.scrollY + 5,
+                top: topPosition,
                 left: rect.left + window.scrollX,
               });
               setEditingStatus(task._id);
@@ -3433,7 +3453,7 @@ const TaskList = ({
                       className="py-3 px-2 text-left text-xs font-bold cursor-pointer hover:text-indigo-600"
                       onClick={() =>
                         setDueDateSortOrder((prev) =>
-                          prev === "asc" ? "desc" : "asc"
+                          prev === "asc" ? "desc" : "asc",
                         )
                       }
                     >
@@ -3892,7 +3912,7 @@ const TaskList = ({
                     <div className="font-semibold">
                       {selectedTaskDetails.dueDate
                         ? new Date(
-                            selectedTaskDetails.dueDate
+                            selectedTaskDetails.dueDate,
                           ).toLocaleDateString("en-GB")
                         : "—"}
                     </div>
@@ -3974,7 +3994,7 @@ const TaskList = ({
                     {statusOption === "Obsolete" && <span>⊗</span>}
                     {statusOption}
                   </div>
-                )
+                ),
               )}
             </div>
           </StatusDropdownPortal>

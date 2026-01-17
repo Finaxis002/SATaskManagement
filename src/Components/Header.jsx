@@ -6,11 +6,12 @@ import {
   FaSignOutAlt,
   FaHome,
   FaStar,
-  FaTrash,
   FaBars,
   FaTimes,
   FaCog,
   FaUserShield,
+  FaCheck,
+  FaCheckDouble,
 } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi";
 import { MdSupportAgent } from "react-icons/md";
@@ -30,7 +31,9 @@ function WhatsNewModal({
   items = [],
   loading = false,
   error = "",
-  onDelete,
+  readIds = [],
+  onMarkRead,
+  onMarkAllRead,
 }) {
   if (!open) return null;
 
@@ -55,15 +58,6 @@ function WhatsNewModal({
       </div>
     </div>
   );
-
-  const handleDelete = async (itemId) => {
-    if (!window.confirm("Are you sure you want to delete this update?")) {
-      return;
-    }
-    if (onDelete) {
-      await onDelete(itemId);
-    }
-  };
 
   return (
     <motion.div
@@ -102,14 +96,29 @@ function WhatsNewModal({
               </span>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-full p-2 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40 transition"
-            aria-label="Close"
-            title="Close"
-          >
-            <span className="block h-4 w-4 leading-none">✕</span>
-          </button>
+
+          <div className="flex items-center gap-3">
+            {/* Mark All as Read Button */}
+            {items.length > 0 && (
+              <button
+                onClick={onMarkAllRead}
+                className="flex items-center gap-1 text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-white"
+                title="Mark all items as read"
+              >
+                <FaCheckDouble className="text-xs" />
+                <span className="hidden sm:inline">Mark All Read</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="rounded-full p-2 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40 transition"
+              aria-label="Close"
+              title="Close"
+            >
+              <span className="block h-4 w-4 leading-none">✕</span>
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -135,55 +144,84 @@ function WhatsNewModal({
               </p>
             </div>
           ) : (
-            items.map((it) => (
-              <div
-                key={it.id}
-                className="group rounded-xl border border-gray-200/70 hover:border-gray-300 bg-white shadow-sm hover:shadow-md transition-all duration-200 p-4 relative"
-              >
-                {isAdmin && (
-                  <button
-                    onClick={() => handleDelete(it.id)}
-                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-all duration-200 z-10"
-                    title="Delete this update"
-                    aria-label="Delete update"
-                  >
-                    <FaTrash className="w-3 h-3" />
-                  </button>
-                )}
+            items.map((it) => {
+              const isRead = readIds.includes(it.id);
 
-                <div className="flex items-start justify-between gap-3 mb-1.5 pr-8">
-                  <span className="text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-2">
-                    {it.title}
-                  </span>
-                  {it.date ? (
-                    <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-                      {it.date}
-                    </span>
-                  ) : null}
-                </div>
-
-                {it.desc ? (
-                  <p className="text-sm text-gray-700 leading-relaxed mt-1 line-clamp-4">
-                    {it.desc}
-                  </p>
-                ) : null}
-
-                {it.tags?.length ? (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {it.tags.map((t, ti) => (
+              return (
+                <div
+                  key={it.id}
+                  className={`group rounded-xl border transition-all duration-200 p-4 relative ${
+                    isRead
+                      ? "border-gray-200 bg-gray-50/50"
+                      : "border-indigo-200 bg-white shadow-sm ring-1 ring-indigo-50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-1.5 pr-8">
+                    <div className="flex items-center gap-2">
+                      {/* Unread Indicator Dot */}
+                      {!isRead && (
+                        <span className="flex h-2 w-2 relative shrink-0 mt-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                        </span>
+                      )}
                       <span
-                        key={`${it.id}-${t}-${ti}`}
-                        className="text-[11px] px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
+                        className={`text-sm sm:text-base font-semibold leading-snug line-clamp-2 ${
+                          isRead ? "text-gray-600" : "text-gray-900"
+                        }`}
                       >
-                        #{t}
+                        {it.title}
                       </span>
-                    ))}
+                    </div>
+                    {it.date ? (
+                      <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+                        {it.date}
+                      </span>
+                    ) : null}
                   </div>
-                ) : null}
 
-                <div className="mt-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            ))
+                  {it.desc ? (
+                    <p
+                      className={`text-sm leading-relaxed mt-1 line-clamp-4 ${
+                        isRead ? "text-gray-500" : "text-gray-700"
+                      }`}
+                    >
+                      {it.desc}
+                    </p>
+                  ) : null}
+
+                  {/* Footer of Card: Tags & Read Button */}
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {it.tags?.length
+                        ? it.tags.map((t, ti) => (
+                            <span
+                              key={`${it.id}-${t}-${ti}`}
+                              className={`text-[11px] px-2 py-1 rounded-full border ${
+                                isRead
+                                  ? "bg-gray-100 text-gray-500 border-gray-200"
+                                  : "bg-indigo-50 text-indigo-700 border-indigo-100"
+                              }`}
+                            >
+                              #{t}
+                            </span>
+                          ))
+                        : null}
+                    </div>
+
+                    {!isRead && (
+                      <button
+                        onClick={() => onMarkRead(it.id)}
+                        className="flex items-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2 py-1 rounded transition-colors"
+                      >
+                        <FaCheck className="text-[10px]" />
+                        Mark as Read
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
 
@@ -216,7 +254,22 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [wnLoading, setWnLoading] = useState(false);
   const [wnError, setWnError] = useState("");
   const [whatsNewCount, setWhatsNewCount] = useState(0);
-  const [lastSeenCount, setLastSeenCount] = useState(0);
+
+  // --- LOGIC CHANGE: Get Unique User Identifier ---
+  // We prefer userId, fallback to email, fallback to name, fallback to "guest"
+  const getUserId = () => {
+    return (
+      localStorage.getItem("userId") || 
+      localStorage.getItem("_id") ||
+      localStorage.getItem("email") || 
+      localStorage.getItem("name") || 
+      "guest"
+    ).replace(/\s+/g, '_'); // Replace spaces with underscore
+  };
+
+  const [currentUserId, setCurrentUserId] = useState(getUserId());
+  const [readUpdateIds, setReadUpdateIds] = useState([]);
+
   const contentRef = useRef(null);
   const navigate = useNavigate();
   useNotificationSocket(setNotificationCount);
@@ -225,12 +278,49 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const isAdmin = userRole === "admin" || userRole === "Admin";
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // --- LOGIC CHANGE: Load User-Specific Data ---
+  useEffect(() => {
+    // Determine the storage key based on current user
+    const storageKey = `readWhatsNewIds_${currentUserId}`;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setReadUpdateIds(JSON.parse(saved));
+      } else {
+        setReadUpdateIds([]);
+      }
+    } catch (e) {
+      setReadUpdateIds([]);
+    }
+  }, [currentUserId]);
+
+  /* ---------------------- Whats New Logic ---------------------- */
+
+  // Mark single item as read (Saved to User-Specific Key)
+  const handleMarkAsRead = (id) => {
+    if (!readUpdateIds.includes(id)) {
+      const newIds = [...readUpdateIds, id];
+      setReadUpdateIds(newIds);
+      const storageKey = `readWhatsNewIds_${currentUserId}`;
+      localStorage.setItem(storageKey, JSON.stringify(newIds));
+    }
+  };
+
+  // Mark all items as read (Saved to User-Specific Key)
+  const handleMarkAllAsRead = () => {
+    const allIds = whatsNewItems.map((item) => item.id);
+    const combinedIds = [...new Set([...readUpdateIds, ...allIds])];
+    setReadUpdateIds(combinedIds);
+    const storageKey = `readWhatsNewIds_${currentUserId}`;
+    localStorage.setItem(storageKey, JSON.stringify(combinedIds));
+  };
 
   const fetchWhatsNew = async (updateCountOnly = false) => {
     try {
@@ -257,12 +347,18 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
           date: u.createdAt ? new Date(u.createdAt).toLocaleString() : "",
           createdAt: u.createdAt,
         }));
+        
+        // Sorting
         const sortedItems = mappedItems.sort((a, b) => {
           if (!a.createdAt && !b.createdAt) return 0;
           if (!a.createdAt) return 1;
           if (!b.createdAt) return -1;
           return new Date(b.createdAt) - new Date(a.createdAt);
         });
+
+        // Filter: You can add Backend Role Filtering logic here if needed
+        // For example: if (u.targetRole && u.targetRole !== userRole) return false;
+        
         if (!updateCountOnly) {
           setWhatsNewItems(sortedItems);
         }
@@ -279,67 +375,17 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     }
   };
 
-  const handleDeleteUpdate = async (itemId) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        setWnError("Authentication required");
-        return;
-      }
-      setWnLoading(true);
-      const cleanItemId = itemId.toString().split(":")[0];
-      const response = await axios.delete(
-        `https://taskbe.sharda.co.in/api/UpdateDelete/${cleanItemId}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token,
-          },
-        }
-      );
-      if (response.status === 200 || response.status === 204) {
-        setWhatsNewItems((prevItems) =>
-          prevItems.filter((item) => item.id !== itemId)
-        );
-        setWhatsNewCount((prevCount) => prevCount - 1);
-        const newLastSeenCount = Math.max(0, lastSeenCount - 1);
-        localStorage.setItem("whatsNewLastSeen", newLastSeenCount.toString());
-        setLastSeenCount(newLastSeenCount);
-        setWnError("");
-      }
-    } catch (error) {
-      if (error.response?.status === 404) {
-        setWnError("Update not found. It might have been already deleted.");
-        setWhatsNewItems((prevItems) =>
-          prevItems.filter((item) => item.id !== itemId)
-        );
-        setWhatsNewCount((prevCount) => prevCount - 1);
-      } else if (error.response?.status === 403) {
-        setWnError("You don't have permission to delete this update.");
-      } else if (error.response?.status === 401) {
-        setWnError("Authentication failed. Please login again.");
-      } else {
-        setWnError("Failed to delete update. Please try again.");
-      }
-    } finally {
-      setWnLoading(false);
-    }
-  };
-
   useEffect(() => {
-    const savedLastSeenCount = localStorage.getItem("whatsNewLastSeen");
-    if (savedLastSeenCount) {
-      setLastSeenCount(parseInt(savedLastSeenCount, 10));
-    }
     fetchWhatsNew();
   }, []);
 
-  const unreadCount = Math.max(0, whatsNewCount - lastSeenCount);
+  // Calculate unread count (User Specific)
+  const unreadCount = whatsNewItems.filter(
+    (item) => !readUpdateIds.includes(item.id)
+  ).length;
 
   const handleWhatsNewClick = () => {
     setShowWhatsNew(true);
-    localStorage.setItem("whatsNewLastSeen", whatsNewCount.toString());
-    setLastSeenCount(whatsNewCount);
     fetchWhatsNew(false);
   };
 
@@ -349,6 +395,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     }, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  /* ---------------------- Search Logic ---------------------- */
 
   // Advanced Search Functions from layout.tsx
   const escapeReg = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -627,6 +675,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     localStorage.removeItem("role");
     localStorage.removeItem("department");
     localStorage.removeItem("whatsNewLastSeen");
+    // Do NOT remove readWhatsNewIds_USERID so preferences persist on next login
     window.location.href = "/login";
   };
 
@@ -866,7 +915,9 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
         items={whatsNewItems}
         loading={wnLoading}
         error={wnError}
-        onDelete={handleDeleteUpdate}
+        readIds={readUpdateIds}
+        onMarkRead={handleMarkAsRead}
+        onMarkAllRead={handleMarkAllAsRead}
       />
 
       {/* Settings Modal */}

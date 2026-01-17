@@ -1,19 +1,28 @@
 import React, { useState } from "react";
-import { FaEdit, FaTrash, FaHistory, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-
+import { FaEdit, FaTrash, FaHistory, FaChevronLeft, FaChevronRight, FaSearch } from "react-icons/fa";
 
 const ClientTableView = React.memo(({ clients, onEdit, onDelete }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState(""); // Search state add kiya
   const ITEMS_PER_PAGE = 10;
 
-  // Pagination Logic
-  const totalItems = clients.length;
+  // --- Search Filter Logic ---
+  const filteredClients = clients.filter((client) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      client.name?.toLowerCase().includes(query) ||
+      client.businessName?.toLowerCase().includes(query) ||
+      client.contactPerson?.toLowerCase().includes(query)
+    );
+  });
+
+  // --- Pagination Logic (Ab filteredClients use karega) ---
+  const totalItems = filteredClients.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
-  
-  
-  const currentClients = clients.slice(startIndex, endIndex);
+
+  const currentClients = filteredClients.slice(startIndex, endIndex);
 
   const handlePrevious = () => {
     if (currentPage > 1) {
@@ -27,8 +36,13 @@ const ClientTableView = React.memo(({ clients, onEdit, onDelete }) => {
     }
   };
 
+  // Search input change hone par page 1 pe reset karein
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
 
-  const role = typeof window !== 'undefined' ? localStorage.getItem("role") : null;
+  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
 
   const handleAddService = (clientId) => {
     window.location.href = `/add-service/${clientId}`;
@@ -41,6 +55,22 @@ const ClientTableView = React.memo(({ clients, onEdit, onDelete }) => {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 mb-8">
       
+      {/* --- Search Bar Section --- */}
+      <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <div className="relative max-w-md w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FaSearch className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by Name, Business, or Contact..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+          />
+        </div>
+      </div>
+
       {/* Desktop Table View */}
       <div className="hidden lg:block overflow-x-auto">
         {totalItems > 0 ? (
@@ -65,7 +95,6 @@ const ClientTableView = React.memo(({ clients, onEdit, onDelete }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-             
               {currentClients.map((client, idx) => (
                 <tr
                   key={client.id}
@@ -252,13 +281,17 @@ const ClientTableView = React.memo(({ clients, onEdit, onDelete }) => {
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State (Updated text for search) */}
       {totalItems === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-400 text-5xl mb-4">📋</div>
-          <p className="text-gray-500 text-lg font-medium">No clients found</p>
+          <div className="text-gray-400 text-5xl mb-4">🔍</div>
+          <p className="text-gray-500 text-lg font-medium">
+            {searchQuery ? "No matching clients found" : "No clients found"}
+          </p>
           <p className="text-gray-400 text-sm mt-1">
-            Add your first client to get started
+            {searchQuery
+              ? "Try searching with a different name"
+              : "Add your first client to get started"}
           </p>
         </div>
       )}
