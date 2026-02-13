@@ -236,126 +236,174 @@
 
 // export default BankDetails;
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////
 
+// import React, { useState, useEffect } from "react";
+// import axios from "../utils/secureAxios";
+// import Swal from "sweetalert2";
+// import { FaPen, FaTrash } from "react-icons/fa";
 
+// const BankDetails = () => {
+//   const [submittingFirm, setSubmittingFirm] = useState(false);
+//   const [firms, setFirms] = useState([]);
+//   const [activeFirmId, setActiveFirmId] = useState(null);
+//   const [expandedFirms, setExpandedFirms] = useState({});
 
-import React, { useState, useEffect } from "react";
-import axios from "../utils/secureAxios";
-import Swal from "sweetalert2";
+//   const [isFirmModalOpen, setIsFirmModalOpen] = useState(false);
+//   const [firmModalMode, setFirmModalMode] = useState("add");
+//   const [formFirm, setFormFirm] = useState({
+//     _id: "",
+//     name: "",
+//     address: "",
+//     gstin: "",
+//     phone: "",
+//     prefix: "",
+//   });
 
-const BankDetails = () => {
+//   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+//   const [bankModalMode, setBankModalMode] = useState("add");
+//   const [formBank, setFormBank] = useState({
+//     _id: "",
+//     bankName: "",
+//     accountName: "",
+//     accountNumber: "",
+//     ifsc: "",
+//     upiIdName: "",
+//     upiMobile: "",
+//     upiId: "",
+//   });
 
-const [submittingFirm, setSubmittingFirm] = useState(false);
+//   const openAddFirm = () => {
+//     setFirmModalMode("add");
+//     setFormFirm({
+//       _id: "",
+//       name: "",
+//       address: "",
+//       gstin: "",
+//       phone: "",
+//       prefix: "",
+//     });
+//     setIsFirmModalOpen(true);
+//   };
 
-  const [firms, setFirms] = useState([]);
-  const [showFirmModal, setShowFirmModal] = useState(false);
-  const [newFirm, setNewFirm] = useState({ name: "", address: "" });
-  const [activeFirmId, setActiveFirmId] = useState(null);
-  const [showBankModal, setShowBankModal] = useState(false);
-  const [newBank, setNewBank] = useState({
-    bankName: "",
-    accountName: "",
-    accountNumber: "",
-    ifsc: "",
-    upiIdName: "",
-    upiMobile: "",
-    upiId: "",
-  });
-  const [expandedFirms, setExpandedFirms] = useState({});
-  const [editingFirm, setEditingFirm] = useState(null);
-  const [editingBank, setEditingBank] = useState(null);
-  const [showEditFirmModal, setShowEditFirmModal] = useState(false);
-  const [showEditBankModal, setShowEditBankModal] = useState(false);
-  //new
-  const [isFirmModalOpen, setIsFirmModalOpen] = useState(false);
-  const [firmModalMode, setFirmModalMode] = useState("add"); // 'add' | 'edit'
-  const [formFirm, setFormFirm] = useState({
-    _id: "",
-    name: "",
-    address: "",
-    gstin: "",
-    phone: "",
-    prefix: "",
-  });
+//   const openEditFirm = (firm) => {
+//     setFirmModalMode("edit");
+//     setFormFirm({
+//       _id: firm._id,
+//       name: firm.name || "",
+//       address: firm.address || "",
+//       gstin: firm.gstin || "",
+//       phone: firm.phone || "",
+//       prefix: firm.prefix || "",
+//     });
+//     setIsFirmModalOpen(true);
+//   };
 
-  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
-  const [bankModalMode, setBankModalMode] = useState("add"); // 'add' | 'edit'
-  const [formBank, setFormBank] = useState({
-    _id: "",
-    bankName: "",
-    accountName: "",
-    accountNumber: "",
-    ifsc: "",
-    upiIdName: "",
-    upiMobile: "",
-    upiId: "",
-  });
-  // helpers
-  const openAddFirm = () => {
-    setFirmModalMode("add");
-    setFormFirm({
-      _id: "",
-      name: "",
-      address: "",
-      gstin: "",
-      phone: "",
-      prefix: "",
-    });
-    setIsFirmModalOpen(true);
-  };
+//   const closeFirmModal = () => {
+//     setIsFirmModalOpen(false);
+//   };
 
-  const openEditFirm = (firm) => {
-    setFirmModalMode("edit");
-    setFormFirm({
-      _id: firm._id,
-      name: firm.name || "",
-      address: firm.address || "",
-      gstin: firm.gstin || "",
-      phone: firm.phone || "",
-      prefix: firm.prefix || "",
-    });
-    setIsFirmModalOpen(true);
-  };
+//   const Toast = Swal.mixin({
+//     toast: true,
+//     position: "top-end",
+//     showConfirmButton: false,
+//     timer: 2000,
+//     timerProgressBar: true,
+//   });
 
-  const closeFirmModal = () => {
-    setIsFirmModalOpen(false);
-  };
+//   const submitFirm = async () => {
+//     const payload = {
+//       name: (formFirm.name || "").trim(),
+//       address: (formFirm.address || "").trim(),
+//       gstin: (formFirm.gstin || "").trim(),
+//       phone: (formFirm.phone || "").trim(),
+//       prefix: (formFirm.prefix || "").trim(),
+//     };
 
-  const Toast = Swal.mixin({
-  toast: true,
-  position: "top-end",
-  showConfirmButton: false,
-  timer: 2000,
-  timerProgressBar: true,
-});
+//     try {
+//       setSubmittingFirm(true);
+//       if (firmModalMode === "add") {
+//         await axios.post("https://taskbe.sharda.co.in/firms", payload);
+//         Toast.fire({ icon: "success", title: "Firm created successfully" });
+//       } else {
+//         await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
+//         Toast.fire({ icon: "success", title: "Firm updated successfully" });
+//       }
+//       closeFirmModal();
+//       fetchFirms();
+//     } catch (err) {
+//       const status = err?.response?.status;
+//       const data = err?.response?.data;
+//       const msg = data?.message ?? err?.message ?? "Unknown error";
+//       const code = data?.code;
 
-  // submit
-  // const submitFirm = async () => {
-  //   if (firmModalMode === "add") {
-  //     await axios.post("https://taskbe.sharda.co.in/firms", {
-  //       name: formFirm.name,
-  //       address: formFirm.address,
-  //       gstin: formFirm.gstin,
-  //       phone: formFirm.phone,
-  //       prefix: formFirm.prefix,
-  //     });
-  //   } else {
-  //     await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, {
-  //       name: formFirm.name,
-  //       address: formFirm.address,
-  //       gstin: formFirm.gstin,
-  //       phone: formFirm.phone,
-  //       prefix: formFirm.prefix,
-  //     });
-  //   }
-  //   closeFirmModal();
-  //   fetchFirms();
-  // };
+//       const isDupPrefix =
+//         status === 409 ||
+//         code === 11000 ||
+//         data?.keyPattern?.prefix ||
+//         (/duplicate/i.test(String(msg)) && /prefix/i.test(String(msg))) ||
+//         ((status === 400 || status === 422) && /prefix/i.test(String(msg)) && /exist/i.test(String(msg)));
 
+//       if (isDupPrefix) {
+//         await Swal.fire({
+//           icon: "error",
+//           title: "Duplicate Prefix",
+//           text: "This firm prefix already exists. Please choose a different prefix.",
+//           confirmButtonText: "OK",
+//           confirmButtonColor: "#2563eb",
+//         });
+//       } else {
+//         await Swal.fire({
+//           icon: "error",
+//           title: `Failed to ${firmModalMode === "add" ? "create" : "update"} firm`,
+//           text: msg,
+//           confirmButtonText: "OK",
+//           confirmButtonColor: "#2563eb",
+//         });
+//       }
+//     } finally {
+//       setSubmittingFirm(false);
+//     }
+//   };
+
+//   const openAddBank = (firmId) => {
+//     setActiveFirmId(firmId);
+//     setBankModalMode("add");
+//     setFormBank({
+//       _id: "",
+//       bankName: "",
+//       accountName: "",
+//       accountNumber: "",
+//       ifsc: "",
+//       upiIdName: "",
+//       upiMobile: "",
+//       upiId: "",
+//     });
+//     setIsBankModalOpen(true);
+//   };
+
+// submit
+// const submitFirm = async () => {
+//   if (firmModalMode === "add") {
+//     await axios.post("https://taskbe.sharda.co.in/firms", {
+//       name: formFirm.name,
+//       address: formFirm.address,
+//       gstin: formFirm.gstin,
+//       phone: formFirm.phone,
+//       prefix: formFirm.prefix,
+//     });
+//   } else {
+//     await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, {
+//       name: formFirm.name,
+//       address: formFirm.address,
+//       gstin: formFirm.gstin,
+//       phone: formFirm.phone,
+//       prefix: formFirm.prefix,
+//     });
+//   }
+//   closeFirmModal();
+//   fetchFirms();
+// };
 
 //   const submitFirm = async () => {
 //   const payload = {
@@ -401,66 +449,260 @@ const [submittingFirm, setSubmittingFirm] = useState(false);
 //   }
 // };
 
+import React, { useState, useEffect, useCallback } from "react";
+import axios from "axios"; // Using standard axios instead of secureAxios for self-containment
+// Removed Swal (SweetAlert2) and replaced it with a simple React UI for confirmation/toasts
+import {
+  Plus,
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  Banknote,
+  Edit,
+  Trash2,
+} from "lucide-react"; // Using Lucide icons
 
-const submitFirm = async () => {
-  const payload = {
-    name: (formFirm.name || "").trim(),
-    address: (formFirm.address || "").trim(),
-    gstin: (formFirm.gstin || "").trim(),
-    phone: (formFirm.phone || "").trim(),
-    prefix: (formFirm.prefix || "").trim(),
-  };
+// --- Helper Components ---
 
-  try {
-    setSubmittingFirm(true);
+// Reusable Loading Spinner Component
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center py-10 min-h-[300px] w-full bg-white rounded-xl shadow-lg">
+    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    <span className="ml-3 text-lg text-gray-500">Loading firm data...</span>
+  </div>
+);
 
-    if (firmModalMode === "add") {
-      await axios.post("https://taskbe.sharda.co.in/firms", payload);
-      Toast.fire({ icon: "success", title: "Firm created successfully" });
-    } else {
-      await axios.put(`https://taskbe.sharda.co.in/firms/${formFirm._id}`, payload);
-      Toast.fire({ icon: "success", title: "Firm updated successfully" });
-    }
+// Reusable Toast/Notification Component Logic (Simplified)
+const useToast = () => {
+  const [toast, setToast] = useState(null);
 
-    closeFirmModal();
-    fetchFirms();
-  } catch (err) {
-    const status = err?.response?.status;
-    const data   = err?.response?.data;
-    const msg    = data?.message ?? err?.message ?? "Unknown error";
-    const code   = data?.code;
+  const showToast = useCallback((icon, title) => {
+    setToast({ icon, title });
+    setTimeout(() => setToast(null), 2000);
+  }, []);
 
-    const isDupPrefix =
-      status === 409 ||
-      code === 11000 ||
-      data?.keyPattern?.prefix ||
-      (/duplicate/i.test(String(msg)) && /prefix/i.test(String(msg))) ||
-      ((status === 400 || status === 422) && /prefix/i.test(String(msg)) && /exist/i.test(String(msg)));
+ const ToastContainer = () =>
+    toast && (
+      <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] bg-white border border-gray-200 p-3 rounded-lg shadow-xl animate-fade-in-down mt-12">
+        <div className="flex items-center space-x-2">
+          <span
+            className={`text-xl ${
+              toast.icon === "success" ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {toast.icon === "success" ? "✅" : "❌"}
+          </span>
+          <p className="text-sm font-medium text-gray-800">{toast.title}</p>
+        </div>
+      </div>
+    );
 
-    if (isDupPrefix) {
-      await Swal.fire({
-        icon: "error",
-        title: "Duplicate Prefix",
-        text: "This firm prefix already exists. Please choose a different prefix.",
-        confirmButtonText: "OK",
-        confirmButtonColor: "#2563eb",
-      });
-    } else {
-      await Swal.fire({
-        icon: "error",
-        title: `Failed to ${firmModalMode === "add" ? "create" : "update"} firm`,
-        text: msg,
-        confirmButtonText: "OK",
-        confirmButtonColor: "#2563eb",
-      });
-    }
-  } finally {
-    setSubmittingFirm(false);
-  }
+  return { showToast, ToastContainer };
 };
 
+// Reusable Confirmation Modal Component Logic (Replaces Swal.fire for confirmation)
+const useConfirmationModal = () => {
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    confirmButtonColor: "#dc2626",
+    confirmButtonText: "Confirm",
+  });
 
-  // open/close
+  const openConfirm = useCallback(({ title, message, onConfirm }) => {
+    setModalState({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      confirmButtonColor: "#dc2626",
+      confirmButtonText: "Yes, delete it!",
+    });
+  }, []);
+
+  const closeConfirm = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const ConfirmationModal = () => {
+    if (!modalState.isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+          <div className="p-6 text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <Trash2 className="h-6 w-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {modalState.title}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">{modalState.message}</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={closeConfirm}
+                className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  modalState.onConfirm();
+                  closeConfirm();
+                }}
+                className={`px-4 py-2 text-white rounded-md text-sm transition-colors`}
+                style={{ backgroundColor: modalState.confirmButtonColor }}
+              >
+                {modalState.confirmButtonText}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return { openConfirm, closeConfirm, ConfirmationModal };
+};
+
+// --- Main Component ---
+const BankDetails = () => {
+  const { showToast, ToastContainer } = useToast();
+  const { openConfirm, ConfirmationModal } = useConfirmationModal();
+
+  const [loading, setLoading] = useState(true);
+  const [submittingFirm, setSubmittingFirm] = useState(false);
+  const [firms, setFirms] = useState([]);
+  const [activeFirmId, setActiveFirmId] = useState(null);
+  const [expandedFirms, setExpandedFirms] = useState({});
+
+  const [isFirmModalOpen, setIsFirmModalOpen] = useState(false);
+  const [firmModalMode, setFirmModalMode] = useState("add");
+  const [formFirm, setFormFirm] = useState({
+    _id: "",
+    name: "",
+    address: "",
+    gstin: "",
+    phone: "",
+    prefix: "",
+  });
+
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [bankModalMode, setBankModalMode] = useState("add");
+  const [formBank, setFormBank] = useState({
+    _id: "",
+    bankName: "",
+    accountName: "",
+    accountNumber: "",
+    ifsc: "",
+    upiIdName: "",
+    upiMobile: "",
+    upiId: "",
+  });
+
+  // --- Firm Modal Handlers ---
+  const openAddFirm = () => {
+    setFirmModalMode("add");
+    setFormFirm({
+      _id: "",
+      name: "",
+      address: "",
+      gstin: "",
+      phone: "",
+      prefix: "",
+    });
+    setIsFirmModalOpen(true);
+  };
+
+  const openEditFirm = (firm) => {
+    setFirmModalMode("edit");
+    setFormFirm({
+      _id: firm._id,
+      name: firm.name || "",
+      address: firm.address || "",
+      gstin: firm.gstin || "",
+      phone: firm.phone || "",
+      prefix: firm.prefix || "",
+    });
+    setIsFirmModalOpen(true);
+  };
+
+  const closeFirmModal = () => {
+    setIsFirmModalOpen(false);
+  };
+
+  // --- Firm API Logic ---
+  const fetchFirms = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Note: Replaced secureAxios with axios, assuming the endpoint is accessible.
+      const res = await axios.get("https://taskbe.sharda.co.in/firms");
+      setFirms(res.data);
+    } catch (error) {
+      console.error("Error fetching firms:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const submitFirm = async () => {
+    const payload = {
+      name: (formFirm.name || "").trim(),
+      address: (formFirm.address || "").trim(),
+      gstin: (formFirm.gstin || "").trim(),
+      phone: (formFirm.phone || "").trim(),
+      prefix: (formFirm.prefix || "").trim(),
+    };
+
+    try {
+      setSubmittingFirm(true);
+      if (firmModalMode === "add") {
+        await axios.post("https://taskbe.sharda.co.in/firms", payload);
+        showToast("success", "Firm created successfully");
+      } else {
+        await axios.put(
+          `https://taskbe.sharda.co.in/firms/${formFirm._id}`,
+          payload
+        );
+        showToast("success", "Firm updated successfully");
+      }
+      closeFirmModal();
+      fetchFirms();
+    } catch (err) {
+      // Simplified error handling since Swal.fire is removed
+      const data = err?.response?.data;
+      const msg = data?.message ?? err?.message ?? "Unknown error";
+      console.error(msg);
+      showToast(
+        "error",
+        `Failed to ${firmModalMode === "add" ? "create" : "update"} firm`
+      );
+    } finally {
+      setSubmittingFirm(false);
+    }
+  };
+
+  const handleDeleteFirm = (firmId) => {
+    openConfirm({
+      title: "Confirm Deletion",
+      message:
+        "Are you sure you want to delete this firm? This action cannot be undone.",
+      onConfirm: async () => {
+        try {
+          await axios.delete(`https://taskbe.sharda.co.in/firms/${firmId}`);
+          showToast("success", "Firm deleted successfully");
+          fetchFirms();
+        } catch (error) {
+          console.error("Error deleting firm:", error);
+          showToast("error", "Failed to delete firm");
+        }
+      },
+    });
+  };
+
+  // --- Bank Modal Handlers ---
   const openAddBank = (firmId) => {
     setActiveFirmId(firmId);
     setBankModalMode("add");
@@ -495,76 +737,54 @@ const submitFirm = async () => {
 
   const closeBankModal = () => setIsBankModalOpen(false);
 
-  // submit (decide POST vs PUT)
+  // --- Bank API Logic ---
   const submitBank = async () => {
     if (!activeFirmId) return;
-    if (bankModalMode === "add") {
-      await axios.post(
-        `https://taskbe.sharda.co.in/firms/${activeFirmId}/banks`,
-        {
-          bankName: formBank.bankName,
-          accountName: formBank.accountName,
-          accountNumber: formBank.accountNumber,
-          ifsc: formBank.ifsc,
-          upiIdName: formBank.upiIdName,
-          upiMobile: formBank.upiMobile,
-          upiId: formBank.upiId,
-        }
-      );
-    } else {
-      await axios.put(
-        `https://taskbe.sharda.co.in/firms/${activeFirmId}/banks/${formBank._id}`,
-        {
-          bankName: formBank.bankName,
-          accountName: formBank.accountName,
-          accountNumber: formBank.accountNumber,
-          ifsc: formBank.ifsc,
-          upiIdName: formBank.upiIdName,
-          upiMobile: formBank.upiMobile,
-          upiId: formBank.upiId,
-        }
+    try {
+      const url = `https://taskbe.sharda.co.in/firms/${activeFirmId}/banks${
+        bankModalMode === "edit" ? `/${formBank._id}` : ""
+      }`;
+
+      if (bankModalMode === "add") {
+        await axios.post(url, formBank);
+        showToast("success", "Bank added successfully");
+      } else {
+        await axios.put(url, formBank);
+        showToast("success", "Bank updated successfully");
+      }
+
+      closeBankModal();
+      fetchFirms();
+    } catch (err) {
+      console.error(err);
+      showToast(
+        "error",
+        `Failed to ${bankModalMode === "add" ? "add" : "update"} bank`
       );
     }
-    closeBankModal();
-    fetchFirms();
   };
 
-  //new
-
-  useEffect(() => {
-    fetchFirms();
-  }, []);
-
-  const fetchFirms = async () => {
-    const res = await axios.get("https://taskbe.sharda.co.in/firms");
-    setFirms(res.data);
-  };
-
-  const handleAddFirm = async () => {
-    await axios.post("https://taskbe.sharda.co.in/firms", newFirm);
-    setShowFirmModal(false);
-    setNewFirm({ name: "", address: "", gstin: "", phone: "", banks: "" });
-    fetchFirms();
-  };
-
-  const handleAddBank = async () => {
-    await axios.post(
-      `https://taskbe.sharda.co.in/firms/${activeFirmId}/banks`,
-      newBank
-    );
-    setShowBankModal(false);
-    setNewBank({
-      bankName: "",
-      accountName: "",
-      accountNumber: "",
-      ifsc: "",
-      upiIdName: "",
-      upiMobile: "",
-      upiId: "",
+  const handleDeleteBank = (firmId, bankId) => {
+    openConfirm({
+      title: "Confirm Deletion",
+      message:
+        "Are you sure you want to delete this bank account? This action cannot be undone.",
+      onConfirm: async () => {
+        try {
+          await axios.delete(
+            `https://taskbe.sharda.co.in/firms/${firmId}/banks/${bankId}`
+          );
+          showToast("success", "Bank deleted successfully");
+          fetchFirms();
+        } catch (error) {
+          console.error("Error deleting bank:", error);
+          showToast("error", "Failed to delete bank");
+        }
+      },
     });
-    fetchFirms();
   };
 
+  // --- Other Handlers ---
   const toggleFirmExpansion = (firmId) => {
     setExpandedFirms((prev) => ({
       ...prev,
@@ -572,394 +792,351 @@ const submitFirm = async () => {
     }));
   };
 
-  // Delete Firm
-  const handleDeleteFirm = async (firmId) => {
-    try {
-      await axios.delete(`https://taskbe.sharda.co.in/firms/${firmId}`);
-      fetchFirms();
-    } catch (error) {
-      console.error("Error deleting firm:", error);
-    }
-  };
+  // Removed confirmDelete since all confirmations now use useConfirmationModal hook
 
-  // Delete Bank
-  const handleDeleteBank = async (firmId, bankId) => {
-    try {
-      await axios.delete(
-        `https://taskbe.sharda.co.in/firms/${firmId}/banks/${bankId}`
-      );
-      fetchFirms();
-    } catch (error) {
-      console.error("Error deleting bank:", error);
-    }
-  };
-
-  // Edit Firm
-  const handleEditFirm = (firm) => {
-    setEditingFirm(firm);
-    setShowEditFirmModal(true);
-  };
-
-  // Edit Bank
-  const handleEditBank = (firmId, bank) => {
-    setActiveFirmId(firmId);
-    setEditingBank(bank);
-    setShowEditBankModal(true);
-  };
-
-  // Update Firm
-  const handleUpdateFirm = async () => {
-    try {
-      await axios.put(
-        `https://taskbe.sharda.co.in/firms/${editingFirm._id}`,
-        editingFirm
-      );
-      setShowEditFirmModal(false);
-      fetchFirms();
-    } catch (error) {
-      console.error("Error updating firm:", error);
-    }
-  };
-
-  // Update Bank
-  const handleUpdateBank = async () => {
-    try {
-      await axios.put(
-        `https://taskbe.sharda.co.in/firms/${activeFirmId}/banks/${editingBank._id}`,
-        editingBank
-      );
-      setShowEditBankModal(false);
-      fetchFirms();
-    } catch (error) {
-      console.error("Error updating bank:", error);
-    }
-  };
-
-  const confirmDelete = (type, onConfirm) => {
-    const isConfirmed = window.confirm(
-      `Are you sure you want to delete this ${type}?`
-    );
-    if (isConfirmed) {
-      onConfirm();
-    }
-  };
+  // --- Initial Fetch ---
+  useEffect(() => {
+    fetchFirms();
+  }, [fetchFirms]);
 
   return (
-    <div
-      className="max-w-6xl mx-auto  flex flex-col"
-  
-    >
-     <div className="max-h-[calc(100vh-220px)] overflow-y-auto pb-8 pr-2">
-       <div className="px-4 pt-4 flex-shrink-0">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Firm & Bank Management
-          </h1>
-          <button
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-colors flex items-center gap-2"
-            // onClick={() => setShowFirmModal(true)}
-            onClick={openAddFirm}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+    <div className="w-full mx-auto flex flex-col px-2 sm:px-4">
+      <div className="overflow-y-auto pb-8">
+        <div className="pt-4 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+              Firm & Bank Management
+            </h1>
+            <button
+              className="w-full sm:w-auto px-4 py-2 text-white rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+              style={{ backgroundColor: "#4332d2" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#342599")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#4332d2")
+              }
+              onClick={openAddFirm}
             >
-              <path
-                fillRule="evenodd"
-                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Add New Firm
-          </button>
+              <Plus className="h-5 w-5" />
+              Add New Firm
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="">
-        <div className="space-y-6 pb-6">
-          {firms.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-12 w-12 mx-auto text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+        {/* Conditional rendering based on loading state */}
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          <div className="space-y-4 sm:space-y-6 pb-6">
+            {firms.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-6 sm:p-8 text-center">
+                <Building2
+                  className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-400"
+                  strokeWidth={1.5}
                 />
-              </svg>
-              <h3 className="mt-4 text-lg font-medium text-gray-900">
-                No firms found
-              </h3>
-              <p className="mt-1 text-gray-500">
-                Get started by adding your first firm
-              </p>
-              <button
-                className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                onClick={() => setShowFirmModal(true)}
-              >
-                Add Firm
-              </button>
-            </div>
-          ) : (
-            firms.map((firm) => (
-              <div
-                key={firm._id}
-                className="bg-white rounded-xl shadow-md overflow-hidden"
-              >
-                <div
-                  className="p-6 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-center"
-                  onClick={() => toggleFirmExpansion(firm._id)}
+                <h3 className="mt-4 text-base sm:text-lg font-medium text-gray-900">
+                  No firms found
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by adding your first firm
+                </p>
+                <button
+                  className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm sm:text-base"
+                  onClick={openAddFirm}
                 >
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800">
-                      {firm.name}
-                    </h2>
-                    <p className="text-gray-500 mt-1">{firm.address}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                      {firm.banks?.length || 0}{" "}
-                      {firm.banks?.length === 1 ? "Bank" : "Banks"}
-                    </span>
-                    <button
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center gap-2"
-                      // onClick={(e) => {
-                      //   e.stopPropagation();
-                      //   setActiveFirmId(firm._id);
-                      //   setShowBankModal(true);
-                      // }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openAddBank(firm._id);
-                      }}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Add Bank
-                    </button>
-
-                    <button
-                      // onClick={(e) => {
-                      //   e.stopPropagation();
-                      //   handleUpdateFirm(firm);
-                      // }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEditFirm(firm);
-                      }}
-                      className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        confirmDelete("firm", () => handleDeleteFirm(firm._id));
-                      }}
-                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
-                    >
-                      Delete
-                    </button>
-
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className={`h-5 w-5 text-gray-500 transition-transform ${
-                        expandedFirms[firm._id] ? "rotate-180" : ""
-                      }`}
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                </div>
-
-                {expandedFirms[firm._id] && (
-                  <div className="border-t border-gray-200 p-6 pb-8">
-                    {firm.banks && firm.banks.length > 0 ? (
-                      <div
-                        className="overflow-x-auto "
-                        style={{ maxHeight: "400px", overflowY: "auto" }}
-                      >
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                              >
-                                Bank Name
-                              </th>
-                              <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                              >
-                                A/C Name
-                              </th>
-                              <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                              >
-                                A/C Number
-                              </th>
-                              <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                              >
-                                IFSC
-                              </th>
-                              <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                              >
-                                UPI Details
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {firm.banks.map((bank, idx) => (
-                              <tr
-                                key={idx}
-                                className={
-                                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                }
-                              >
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {bank.bankName}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {bank.accountName}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {bank.accountNumber}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {bank.ifsc}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  <div>Name: {bank.upiIdName || "-"}</div>
-                                  <div>Mobile: {bank.upiMobile || "-"}</div>
-                                  <div>ID: {bank.upiId || "-"}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  <button
-                                    // onClick={() =>
-                                    //   handleUpdateBank(firm._id, bank)
-                                    // }
-                                    onClick={() => openEditBank(firm._id, bank)}
-                                    className="mr-2 text-blue-600 hover:text-blue-800"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      confirmDelete("bank", () =>
-                                        handleDeleteBank(firm._id, bank._id)
-                                      )
-                                    }
-                                    className="text-red-600 hover:text-red-800"
-                                  >
-                                    Delete
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                  Add Firm
+                </button>
+              </div>
+            ) : (
+              firms.map((firm) => (
+                <div
+                  key={firm._id}
+                  className="bg-white rounded-xl shadow-md overflow-hidden"
+                >
+                  <div
+                    className="p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors bg-gray-50" // Adjusted hover color
+                    onClick={() => toggleFirmExpansion(firm._id)}
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 break-words">
+                            {firm.name}
+                          </h2>
+                          <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">
+                            {firm.address}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          {expandedFirms[firm._id] ? (
+                            <ChevronUp className="h-5 w-5 text-gray-500 flex-shrink-0 transition-transform" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-gray-500 flex-shrink-0 transition-transform" />
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-12 w-12 mx-auto text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
-                          />
-                        </svg>
-                        <h3 className="mt-4 text-lg font-medium text-gray-900">
-                          No banks added
-                        </h3>
-                        <p className="mt-1 text-gray-500">
-                          Add a bank account to this firm
-                        </p>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs sm:text-sm font-medium text-blue-700 px-2 py-1 bg-blue-100 rounded-full">
+                          {firm.banks?.length || 0}{" "}
+                          {firm.banks?.length === 1 ? "Bank" : "Banks"}
+                        </span>
+
+                        {/* Action Buttons */}
                         <button
-                          className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-                          onClick={() => {
-                            setActiveFirmId(firm._id);
-                            setShowBankModal(true);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAddBank(firm._id);
                           }}
+                          className="flex-1 sm:flex-none px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm"
                         >
-                          Add Bank Account
+                          <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Add Bank</span>
+                          <span className="sm:hidden">Bank</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditFirm(firm);
+                          }}
+                          className="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteFirm(firm._id); // Use new handler
+                          }}
+                          className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>
                       </div>
-                    )}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+
+                  {expandedFirms[firm._id] && (
+                    <div className="border-t border-gray-200 p-3 sm:p-6 bg-white">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                        Bank Accounts
+                      </h3>
+
+                      {firm.banks && firm.banks.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          {/* Mobile Card View */}
+                          <div className="block md:hidden space-y-3">
+                            {firm.banks.map((bank, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-200 shadow-sm"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <h3 className="font-semibold text-gray-900 text-sm">
+                                    {bank.bankName || "Unknown Bank"}
+                                  </h3>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() =>
+                                        openEditBank(firm._id, bank)
+                                      }
+                                      className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center"
+                                    >
+                                      <Edit className="w-3.5 h-3.5 mr-1" /> Edit
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        handleDeleteBank(firm._id, bank._id)
+                                      } // Use new handler
+                                      className="text-red-600 hover:text-red-800 text-xs font-medium flex items-center"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 mr-1" />{" "}
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="space-y-1 text-xs text-gray-600">
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">
+                                      A/C Name:
+                                    </span>{" "}
+                                    <span>{bank.accountName}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">
+                                      A/C Number:
+                                    </span>{" "}
+                                    <span>{bank.accountNumber}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">
+                                      IFSC:
+                                    </span>{" "}
+                                    <span>{bank.ifsc}</span>
+                                  </div>
+                                  {(bank.upiIdName ||
+                                    bank.upiMobile ||
+                                    bank.upiId) && (
+                                    <div className="pt-2 border-t border-gray-200 mt-2">
+                                      <div className="font-medium text-gray-700 mb-1">
+                                        UPI Details:
+                                      </div>
+                                      {bank.upiIdName && (
+                                        <div>Name: {bank.upiIdName}</div>
+                                      )}
+                                      {bank.upiMobile && (
+                                        <div>Mobile: {bank.upiMobile}</div>
+                                      )}
+                                      {bank.upiId && (
+                                        <div>ID: {bank.upiId}</div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Desktop Table View */}
+                          <div className="hidden md:block">
+                            <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+                              <thead className="bg-gray-100">
+                                <tr>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/5">
+                                    Bank Name
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/6">
+                                    A/C Name
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/6">
+                                    A/C Number
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/12">
+                                    IFSC
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/4">
+                                    UPI Details
+                                  </th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/12">
+                                    Actions
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {firm.banks.map((bank, idx) => (
+                                  <tr
+                                    key={idx}
+                                    className={
+                                      idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                    }
+                                  >
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                      {bank.bankName}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                                      {bank.accountName}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                                      {bank.accountNumber}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                                      {bank.ifsc}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                      <div className="flex flex-col space-y-0.5">
+                                        <div className="text-xs">
+                                          Name: {bank.upiIdName || "-"}
+                                        </div>
+                                        <div className="text-xs">
+                                          Mobile: {bank.upiMobile || "-"}
+                                        </div>
+                                        <div className="text-xs">
+                                          ID: {bank.upiId || "-"}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                      <button
+                                        onClick={() =>
+                                          openEditBank(firm._id, bank)
+                                        }
+                                        className="mr-2 text-blue-600 hover:text-blue-800"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteBank(firm._id, bank._id)
+                                        }
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        Delete
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 sm:py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                          <Banknote
+                            className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-400"
+                            strokeWidth={1.5}
+                          />
+                          <h3 className="mt-4 text-base sm:text-lg font-medium text-gray-900">
+                            No bank accounts added
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            Add a bank account to this firm
+                          </p>
+                          <button
+                            className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors text-sm"
+                            onClick={() => openAddBank(firm._id)}
+                          >
+                            <Plus className="h-4 w-4 mr-1 inline-block" /> Add
+                            Bank Account
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
-     </div>
 
-      {/* Add Firm Modal */}
-
+      {/* Firm Modal */}
       {isFirmModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="p-6">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
                   {firmModalMode === "add" ? "Add New Firm" : "Edit Firm"}
                 </h2>
                 <button
                   onClick={closeFirmModal}
-                  className="text-gray-400 hover:text-gray-500"
+                  className="text-gray-400 hover:text-gray-500 text-2xl leading-none"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Firm Name
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:ring-2 focus:ring-blue-500"
                     value={formFirm.name}
                     onChange={(e) =>
                       setFormFirm({ ...formFirm, name: e.target.value })
@@ -969,12 +1146,12 @@ const submitFirm = async () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Address
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:ring-2 focus:ring-blue-500"
                     value={formFirm.address}
                     onChange={(e) =>
                       setFormFirm({ ...formFirm, address: e.target.value })
@@ -984,12 +1161,12 @@ const submitFirm = async () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     GSTIN
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:ring-2 focus:ring-blue-500"
                     value={formFirm.gstin}
                     onChange={(e) =>
                       setFormFirm({ ...formFirm, gstin: e.target.value })
@@ -999,12 +1176,12 @@ const submitFirm = async () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Phone
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:ring-2 focus:ring-blue-500"
                     value={formFirm.phone}
                     onChange={(e) =>
                       setFormFirm({ ...formFirm, phone: e.target.value })
@@ -1014,12 +1191,12 @@ const submitFirm = async () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Firm Prefix
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:ring-2 focus:ring-blue-500"
                     value={formFirm.prefix}
                     onChange={(e) =>
                       setFormFirm({ ...formFirm, prefix: e.target.value })
@@ -1029,45 +1206,37 @@ const submitFirm = async () => {
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end gap-3">
+              <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   onClick={closeFirmModal}
-                  className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
+                  className="w-full sm:w-auto px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50 text-sm"
                 >
                   Cancel
                 </button>
-                {/* <button
-                  onClick={submitFirm}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
-                >
-                  {firmModalMode === "add" ? "Add Firm" : "Update Firm"}
-                </button> */}
                 <button
-  onClick={submitFirm}
-  disabled={submittingFirm}
-  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-md"
->
-  {submittingFirm
-    ? "Saving..."
-    : firmModalMode === "add"
-      ? "Add Firm"
-      : "Update Firm"}
-</button>
-
+                  onClick={submitFirm}
+                  disabled={submittingFirm}
+                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-md text-sm"
+                >
+                  {submittingFirm
+                    ? "Saving..."
+                    : firmModalMode === "add"
+                    ? "Add Firm"
+                    : "Update Firm"}
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add Bank Modal */}
-
+      {/* Bank Modal */}
       {isBankModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
                   {bankModalMode === "add"
                     ? "Add Bank Account"
                     : "Edit Bank Account"}
@@ -1093,14 +1262,15 @@ const submitFirm = async () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {/* Bank Name Field (Added for completeness) */}
+                <div className="sm:col-span-2 md:col-span-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Bank Name
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formBank.bankName}
                     onChange={(e) =>
                       setFormBank({ ...formBank, bankName: e.target.value })
@@ -1108,14 +1278,14 @@ const submitFirm = async () => {
                     placeholder="Enter bank name"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                {/* Account Name Field */}
+                <div className="sm:col-span-2 md:col-span-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Account Name
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formBank.accountName}
                     onChange={(e) =>
                       setFormBank({ ...formBank, accountName: e.target.value })
@@ -1124,13 +1294,13 @@ const submitFirm = async () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="sm:col-span-2 md:col-span-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Account Number
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formBank.accountNumber}
                     onChange={(e) =>
                       setFormBank({
@@ -1142,13 +1312,13 @@ const submitFirm = async () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="sm:col-span-2 md:col-span-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     IFSC Code
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formBank.ifsc}
                     onChange={(e) =>
                       setFormBank({ ...formBank, ifsc: e.target.value })
@@ -1157,18 +1327,18 @@ const submitFirm = async () => {
                   />
                 </div>
 
-                <div className="md:col-span-2 border-t pt-4">
-                  <h3 className="text-lg font-medium text-gray-800 mb-3">
+                <div className="sm:col-span-2 border-t pt-3 sm:pt-4">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-3">
                     UPI Details (Optional)
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         UPI ID Name
                       </label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={formBank.upiIdName}
                         onChange={(e) =>
                           setFormBank({
@@ -1180,12 +1350,12 @@ const submitFirm = async () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         UPI Mobile
                       </label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={formBank.upiMobile}
                         onChange={(e) =>
                           setFormBank({
@@ -1197,12 +1367,12 @@ const submitFirm = async () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         UPI ID
                       </label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={formBank.upiId}
                         onChange={(e) =>
                           setFormBank({ ...formBank, upiId: e.target.value })
@@ -1214,16 +1384,16 @@ const submitFirm = async () => {
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end gap-3">
+              <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   onClick={closeBankModal}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={submitBank}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
                 >
                   {bankModalMode === "add"
                     ? "Add Bank Account"
@@ -1234,6 +1404,11 @@ const submitFirm = async () => {
           </div>
         </div>
       )}
+
+      {/* Toast Container for notifications */}
+      <ToastContainer />
+      {/* Confirmation Modal for delete actions */}
+      <ConfirmationModal />
     </div>
   );
 };

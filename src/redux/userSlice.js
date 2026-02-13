@@ -54,17 +54,37 @@ export const updateUser = async (id, updatedUserData) => {
   }
 };
 
-export const resetPassword = async (id, newPassword) => {
-  try {
-    const response = await axios.post(
-      `https://taskbe.sharda.co.in/api/employees/reset-password/${id}`,
-      { newPassword }
-    );
-    return response.data; // Return response data
-  } catch (error) {
-    throw error; // Handle errors
+// export const resetPassword = async (id, newPassword) => {
+//   try {
+//     const response = await axios.post(
+//       `https://taskbe.sharda.co.in/api/employees/reset-password/${String(id)}`,
+//       { newPassword }
+//     );
+//     return response.data; // Return response data
+//   } catch (error) {
+//     throw error; // Handle errors
+//   }
+// };
+
+// Thunk to reset password
+export const resetPassword = createAsyncThunk(
+  "users/resetPassword",
+  async ({ id, newPassword }, { rejectWithValue }) => {
+    try {
+      // Ensure id is a string
+      const userId = typeof id === 'object' ? id.toString() : String(id);
+      
+      const response = await axios.post(
+        `https://taskbe.sharda.co.in/api/employees/reset-password/${userId}`,
+        { newPassword }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to reset password");
+    }
   }
-};
+);
+
 
 const userSlice = createSlice({
   name: "users",
@@ -96,7 +116,19 @@ const userSlice = createSlice({
       })
       .addCase(deleteUser.rejected, (state, action) => {
         state.error = action.payload;
-      });
+      })
+      .addCase(resetPassword.pending, (state) => {
+      state.loading = true;
+      state.error = "";
+    })
+    .addCase(resetPassword.fulfilled, (state) => {
+      state.loading = false;
+      // Password reset successful
+    })
+    .addCase(resetPassword.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    });
   },
 });
 

@@ -1,57 +1,302 @@
-import React from "react";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import React, { useState } from "react";
+import { FaEdit, FaTrash, FaHistory, FaChevronLeft, FaChevronRight, FaSearch } from "react-icons/fa";
 
-const ClientTableView = ({ clients, onEdit, onDelete }) => {
-  const role = localStorage.getItem("role");
+const ClientTableView = React.memo(({ clients, onEdit, onDelete }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState(""); // Search state add kiya
+  const ITEMS_PER_PAGE = 10;
+
+  // --- Search Filter Logic ---
+  const filteredClients = clients.filter((client) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      client.name?.toLowerCase().includes(query) ||
+      client.businessName?.toLowerCase().includes(query) ||
+      client.contactPerson?.toLowerCase().includes(query)
+    );
+  });
+
+  // --- Pagination Logic (Ab filteredClients use karega) ---
+  const totalItems = filteredClients.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+
+  const currentClients = filteredClients.slice(startIndex, endIndex);
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Search input change hone par page 1 pe reset karein
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+
+  const handleAddService = (clientId) => {
+    window.location.href = `/add-service/${clientId}`;
+  };
+
+  const handleShowHistory = (clientId) => {
+    window.location.href = `/message-history/${clientId}`;
+  };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white shadow rounded-lg">
-        <thead>
-          <tr>
-            <th className="px-4 py-2 border-b text-left">S.No</th>
-            <th className="px-4 py-2 border-b text-left">Client Name</th>
-            <th className="px-4 py-2 border-b text-left">Business Name</th>
-            <th className="px-4 py-2 border-b text-left">Contact Person</th>
-            <th className="px-4 py-2 border-b text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {clients.map((client, idx) => (
-            <tr
-              key={client.id}
-              className={`hover:bg-indigo-50 ${
-                idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-              }`}
-            >
-              <td className="px-4 py-2 border-b">{idx + 1}</td>
-              <td className="px-4 py-2 border-b">{client.name}</td>
-              <td className="px-4 py-2 border-b">{client.businessName}</td>
-              <td className="px-4 py-2 border-b">{client.contactPerson}</td>
-              <td className="px-4 py-2 border-b text-right">
-                {role == "admin" && (
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 mb-8">
+      
+      {/* --- Search Bar Section --- */}
+      <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <div className="relative max-w-md w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FaSearch className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by Name, Business, or Contact..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+          />
+        </div>
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block overflow-x-auto">
+        {totalItems > 0 ? (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead style={{ backgroundColor: "#4332d2" }}>
+              <tr>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider w-12">
+                  S.No
+                </th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                  Client Name
+                </th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                  Business Name
+                </th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                  Contact Person
+                </th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider w-40">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {currentClients.map((client, idx) => (
+                <tr
+                  key={client.id}
+                  className={`transition-all duration-200 hover:bg-purple-50 ${
+                    idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  }`}
+                >
+                  <td className="px-2 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {startIndex + idx + 1}
+                  </td>
+                  <td className="px-2 py-3">
+                    <div className="text-sm font-semibold text-gray-900 max-w-xs truncate">
+                      {client.name}
+                    </div>
+                  </td>
+                  <td className="px-2 py-3">
+                    <div className="text-sm text-gray-700 max-w-xs truncate">
+                      {client.businessName}
+                    </div>
+                  </td>
+                  <td className="px-2 py-3">
+                    <div className="text-sm text-gray-700 max-w-xs truncate">
+                      {client.contactPerson}
+                    </div>
+                  </td>
+                  <td className="px-2 py-3 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1">
+                      {role === "admin" && (
+                        <>
+                          <button
+                            onClick={() => onEdit(client)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 hover:shadow-md"
+                            title="Edit Client"
+                          >
+                            <FaEdit size={14} />
+                          </button>
+                          <button
+                            onClick={() => onDelete(client.name)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 hover:shadow-md"
+                            title="Delete Client"
+                          >
+                            <FaTrash size={14} />
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleAddService(client.id)}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-50 hover:bg-cyan-100 transition-all duration-200 hover:shadow-md overflow-hidden"
+                        title="Add Service"
+                      >
+                        <img
+                          src="../service2.png"
+                          alt="Add Service"
+                          className="w-5 h-5 object-contain"
+                        />
+                      </button>
+                      <button
+                        onClick={() => handleShowHistory(client.id)}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 transition-all duration-200 hover:shadow-md"
+                        title="Show Message History"
+                      >
+                        <FaHistory size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="lg:hidden p-4 space-y-4">
+        {currentClients.map((client, idx) => (
+          <div
+            key={client.id}
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow hover:shadow-md transition-all"
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <div className="text-xs text-gray-500 mb-1">
+                  Client #{startIndex + idx + 1}
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {client.name}
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-4 text-sm">
+              <div>
+                <span className="text-gray-500">Business:</span>
+                <span className="ml-2 text-gray-900">
+                  {client.businessName}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500">Contact:</span>
+                <span className="ml-2 text-gray-900">
+                  {client.contactPerson}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-200">
+              {role === "admin" && (
+                <>
                   <button
                     onClick={() => onEdit(client)}
-                    className="inline-flex items-center text-indigo-500 hover:text-indigo-800 mr-2 pe-2"
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200"
                     title="Edit"
                   >
-                    <FaEdit size={18} />
+                    <FaEdit size={16} />
                   </button>
-                )}
-                <button
-                  onClick={() => onDelete(client.name)}
-                  className="inline-flex items-center text-red-500 hover:text-red-800"
-                  title="Delete"
-                >
-                  <FaTrash size={18} />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <button
+                    onClick={() => onDelete(client.name)}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200"
+                    title="Delete"
+                  >
+                    <FaTrash size={16} />
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => handleAddService(client.id)}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-cyan-50 hover:bg-cyan-100 transition-all duration-200"
+                title="Add Service"
+              >
+                <img
+                  src="../service2.png"
+                  alt="Add Service"
+                  className="w-6 h-6 object-contain"
+                />
+              </button>
+              <button
+                onClick={() => handleShowHistory(client.id)}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 transition-all duration-200"
+                title="Show History"
+              >
+                <FaHistory size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination Footer */}
+      {totalItems > 0 && (
+        <div className="bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between mb-2">
+          <div className="flex-1 flex justify-start">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+              <span className="font-medium">{endIndex}</span> of{" "}
+              <span className="font-medium">{totalItems}</span> clients
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                currentPage === 1
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+              }`}
+            >
+              <FaChevronLeft className="mr-2" size={12} />
+              Previous
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                currentPage === totalPages
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              Next
+              <FaChevronRight className="ml-2" size={12} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State (Updated text for search) */}
+      {totalItems === 0 && (
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-5xl mb-4">🔍</div>
+          <p className="text-gray-500 text-lg font-medium">
+            {searchQuery ? "No matching clients found" : "No clients found"}
+          </p>
+          <p className="text-gray-400 text-sm mt-1">
+            {searchQuery
+              ? "Try searching with a different name"
+              : "Add your first client to get started"}
+          </p>
+        </div>
+      )}
     </div>
   );
-};
+});
 
 export default ClientTableView;

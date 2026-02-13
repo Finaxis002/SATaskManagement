@@ -8,11 +8,25 @@ import ClientTableView from "../Components/client/ClientTableView";
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
+  const [agents, setAgents] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
-  const [viewMode, setViewMode] = useState("card");
+  const [viewMode, setViewMode] = useState("table");
 
+  // ********** Agent Fetch Function **********
+  const fetchAgents = async () => {
+    try {
+      const res = await axios.get("/agents");
+      setAgents(res.data);
+      console.log("Agents fetched for referrer dropdown:", res.data.length);
+    } catch (err) {
+      console.error("Failed to fetch agents for dropdown", err);
+    }
+  };
+
+  // ********** Client Fetch Function (Updated) **********
   const fetchClients = async () => {
     setLoading(true);
     try {
@@ -29,6 +43,8 @@ const Clients = () => {
             mobile: client.mobile || "",
             emailId: client.emailId || "",
             GSTIN: client.GSTIN || "",
+            referrer: client.referrer || "",
+            commissionAmount: client.commissionAmount,
           }))
         : [];
 
@@ -47,6 +63,7 @@ const Clients = () => {
 
   useEffect(() => {
     fetchClients();
+    fetchAgents();
   }, []);
 
   const handleDeleteClient = async (clientName) => {
@@ -73,7 +90,7 @@ const Clients = () => {
         timer: 2000,
         showConfirmButton: false,
       });
-      fetchClients(); // refresh list
+      fetchClients();
     } catch (err) {
       console.error("Delete failed", err);
       Swal.fire({
@@ -85,8 +102,8 @@ const Clients = () => {
   };
 
   const handleEditClient = (client) => {
-    setEditingClient(client); // Set client to edit
-    setShowClientModal(true); // Open modal
+    setEditingClient(client);
+    setShowClientModal(true);
   };
 
   return (
@@ -102,35 +119,40 @@ const Clients = () => {
 
         {/* Controls container */}
         <div className="flex items-center gap-4">
-          {/* View toggle buttons */}
-          <div className="flex bg-gray-100 p-1 rounded-lg">
-            <button
-              onClick={() => setViewMode("card")}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === "card"
-                  ? "bg-white shadow-sm text-indigo-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              title="Card View"
-            >
-              <FaThLarge size={18} />
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === "table"
-                  ? "bg-white shadow-sm text-indigo-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              title="Table View"
-            >
-              <FaTable size={18} />
-            </button>
+          {/* View toggle buttons with border */}
+          <div className="flex bg-gray-100 p-1 rounded-lg ">
+            <div className="bg-gray-100 p-1 rounded-lg hidden sm:flex">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-2 rounded-md transition-all duration-200 ${
+                  viewMode === "table"
+                    ? "bg-white shadow-sm text-indigo-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                title="Table View"
+              >
+                <FaTable size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode("card")}
+                className={`p-2 rounded-md transition-all duration-200 ${
+                  viewMode === "card"
+                    ? "bg-white shadow-sm text-indigo-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                title="Card View"
+              >
+                <FaThLarge size={18} />
+              </button>
+            </div>
           </div>
 
           {/* Add Client button */}
           <button
-            onClick={() => setShowClientModal(true)}
+            onClick={() => {
+              setEditingClient(null);
+              setShowClientModal(true);
+            }}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <FaPlus className="text-sm" />
@@ -139,6 +161,7 @@ const Clients = () => {
         </div>
       </div>
 
+      {/* Conditional Rendering: Loading, No Clients, or Client List/Table */}
       {loading ? (
         <div className="flex items-center justify-center h-[250px]">
           <svg
@@ -168,9 +191,7 @@ const Clients = () => {
           <p className="text-center text-gray-500">No clients found.</p>
         </div>
       ) : (
-
-        <div className="space-y-6 mx-auto max-h-[72vh] overflow-y-auto">
-
+        <div className="space-y-6 mx-auto">
           {viewMode === "card" ? (
             <ClientList
               clients={clients}
@@ -187,17 +208,17 @@ const Clients = () => {
         </div>
       )}
 
+      {/* Create/Edit Client Modal */}
       {showClientModal && (
         <CreateClientModal
-          client={editingClient} // Pass the client being edited or null
+          client={editingClient}
           onClose={() => {
             setShowClientModal(false);
-            setEditingClient(null); // Clear edit state on close
+            setEditingClient(null);
           }}
           onCreate={async (clientData) => {
             try {
               if (editingClient) {
-                // Edit mode - update existing client
                 await axios.put("/clients", {
                   id: editingClient.id,
                   ...clientData,
@@ -210,7 +231,6 @@ const Clients = () => {
                   showConfirmButton: false,
                 });
               } else {
-                // Create mode - add new client
                 await axios.post("/clients", clientData);
                 Swal.fire({
                   icon: "success",
@@ -220,11 +240,10 @@ const Clients = () => {
                   showConfirmButton: false,
                 });
               }
-              fetchClients(); // Refresh the list
+              fetchClients();
               setShowClientModal(false);
               setEditingClient(null);
             } catch (err) {
-              // Check if error is due to duplicate client name
               if (err.response && err.response.status === 409) {
                 Swal.fire({
                   icon: "warning",

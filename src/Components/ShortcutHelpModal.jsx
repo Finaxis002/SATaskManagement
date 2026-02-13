@@ -17,7 +17,7 @@ const ShortcutHelpModal = ({ open, onClose }) => {
     { keys: "Alt + T", desc: "Go to Tasks page & open create task form" },
     { keys: "Alt + C", desc: "Go to Clients page" },
     { keys: "Alt + L", desc: "Go to Leave page" },
-    { keys: "Alt + I", desc: "Go to Invoice page" },
+    // { keys: "Alt + I", desc: "Go to Invoice page" },
     { keys: "Alt + Q", desc: "Go to Settings" },
     { keys: "Alt + U", desc: "Go to All Employees" },
     { keys: "Alt + A", desc: "Open Add Event popup" },

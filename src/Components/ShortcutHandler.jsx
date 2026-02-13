@@ -38,10 +38,10 @@ const ShortcutHandler = ({ children }) => {
           e.preventDefault();
           navigate("/leave");
         }
-        if (e.key.toLowerCase() === "i") {
-          e.preventDefault();
-          navigate("/invoice");
-        }
+        // if (e.key.toLowerCase() === "i") {
+        //   e.preventDefault();
+        //   navigate("/invoice");
+        // }
         if (e.key.toLowerCase() === "u") {
           e.preventDefault();
           navigate("/all-employees");

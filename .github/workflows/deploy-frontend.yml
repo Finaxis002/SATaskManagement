@@ -1,0 +1,136 @@
+name: Deploy Frontend to GCP
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install and Build
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Setup SSH Connection
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Setting up SSH ==="
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SERVER_IP" >> ~/.ssh/known_hosts 2>/dev/null
+      
+      - name: Test SSH Connection
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Testing SSH ==="
+          ssh -o ConnectTimeout=10 -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "echo '✅ SSH connection working'"
+      
+      - name: Clean Server Directory
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Cleaning server directory ==="
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            # Remove existing files but preserve the directory
+            sudo find /home/finaxis_in/softwares/SATaskManagement -mindepth 1 -delete 2>/dev/null || true
+          "
+      
+      - name: Deploy Files to DIST Folder
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Deploying Files to dist/ ==="
+          
+          # First, ensure dist directory exists with correct ownership
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            sudo mkdir -p /home/finaxis_in/softwares/SATaskManagement/dist
+            sudo chown -R finaxis_in:finaxis_in /home/finaxis_in/softwares/SATaskManagement/dist
+          "
+          
+          # Copy files to dist folder
+          scp -r -o ConnectTimeout=20 -i ~/.ssh/deploy_key \
+              ./dist/* \
+              finaxis_in@$SERVER_IP:/home/finaxis_in/softwares/SATaskManagement/dist/
+      
+      - name: Create Symlink for NGINX Compatibility
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Creating NGINX compatibility symlinks ==="
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            # Create symlink from root to dist folder for NGINX compatibility
+            cd /home/finaxis_in/softwares/SATaskManagement
+            
+            # Copy files from dist to root (for NGINX that expects files in root)
+            sudo cp -r dist/* . 2>/dev/null || true
+            
+            # Also create a symlink from root files back to dist for consistency
+            for file in dist/*; do
+              if [ -f \"\$file\" ]; then
+                filename=\$(basename \"\$file\")
+                sudo ln -sf \"\$file\" \"/home/finaxis_in/softwares/SATaskManagement/\$filename\" 2>/dev/null || true
+              fi
+            done
+          "
+      
+      - name: Set Final Permissions
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            echo '=== Setting permissions ==='
+            
+            # Fix ownership for NGINX
+            sudo chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement
+            
+            # Set correct permissions
+            sudo find /home/finaxis_in/softwares/SATaskManagement -type f -exec chmod 644 {} \;
+            sudo find /home/finaxis_in/softwares/SATaskManagement -type d -exec chmod 755 {} \;
+            
+            # Ensure proper ownership of dist folder too
+            sudo chown -R www-data:www-data /home/finaxis_in/softwares/SATaskManagement/dist
+            
+            # Verify files
+            echo 'File count:'
+            find /home/finaxis_in/softwares/SATaskManagement -type f | wc -l
+            echo 'Checking index.html:'
+            ls -la /home/finaxis_in/softwares/SATaskManagement/index.html
+            
+            # Restart NGINX
+            sudo systemctl restart nginx
+            echo '✅ Frontend deployment completed!'
+          "
+      
+      - name: Verify Deployment
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "=== Verifying deployment ==="
+          ssh -i ~/.ssh/deploy_key finaxis_in@$SERVER_IP "
+            # Check NGINX status
+            sudo systemctl status nginx --no-pager | head -10
+            
+            # Check if files are accessible
+            echo '=== File verification ==='
+            [ -f '/home/finaxis_in/softwares/SATaskManagement/index.html' ] && echo '✓ index.html exists' || echo '✗ index.html missing'
+            [ -d '/home/finaxis_in/softwares/SATaskManagement/assets' ] && echo '✓ assets/ exists' || echo '✗ assets/ missing'
+            
+            # Quick curl test
+            echo '=== Testing with curl ==='
+            curl -s -o /dev/null -w 'HTTP Status: %{http_code}\n' http://localhost || echo 'Curl test failed'
+          "
