@@ -3,9 +3,82 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCog, FaSave, FaUsers } from "react-icons/fa";
 import { MdSecurity } from "react-icons/md";
 
+/* ---------------------------- Constants ---------------------------- */
+
+const ALL_MENU_ITEMS = [
+  { key: "home", label: "Home", icon: "🏠" },
+  { key: "allUsers", label: "All Users", icon: "👥", adminOnly: true },
+  { key: "teamStatus", label: "Team Status", icon: "📊" },
+  { key: "tasks", label: "Tasks", icon: "📋" },
+  { key: "agent", label: "Agent", icon: "👔" },
+  { key: "supportRequests", label: "Support Requests", icon: "📧" },
+  { key: "clients", label: "Clients", icon: "💼" },
+  { key: "leave", label: "Leave", icon: "⛳" },
+  { key: "settings", label: "Settings", icon: "⚙️", adminOnly: true },
+  {
+    key: "completedTasks",
+    label: "Completed Tasks",
+    icon: "✅",
+    adminOnly: true,
+  },
+  { key: "invoicing", label: "Invoicing", icon: "💰" },
+  { key: "updates", label: "Updates", icon: "🕒" },
+];
+
+const DEFAULT_PERMISSIONS = {
+  marketing: ["home", "tasks", "agent", "clients", "leave", "teamStatus"],
+  operations: ["home", "tasks", "agent", "clients", "leave", "teamStatus"],
+  "it/software": [
+    "home",
+    "teamStatus",
+    "tasks",
+    "agent",
+    "supportRequests",
+    "clients",
+    "leave",
+    "updates",
+  ],
+  seo: ["home", "tasks", "agent", "clients", "leave", "teamStatus"],
+  "human resource": [
+    "home",
+    "tasks",
+    "agent",
+    "clients",
+    "leave",
+    "teamStatus",
+  ],
+  finance: ["home", "tasks", "agent", "clients", "leave", "teamStatus"],
+  sales: [
+    "home",
+    "tasks",
+    "agent",
+    "clients",
+    "leave",
+    "invoicing",
+    "teamStatus",
+  ],
+};
+
+const getRandomColor = () => {
+  const colors = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-purple-500",
+    "bg-orange-500",
+    "bg-pink-500",
+    "bg-indigo-500",
+    "bg-red-500",
+    "bg-teal-500",
+    "bg-cyan-500",
+    "bg-yellow-500",
+    "bg-lime-500",
+    "bg-violet-500",
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
 /* ---------------------------- Settings Modal ---------------------------- */
 function SettingsModal({ open, onClose }) {
-  const [activeTab, setActiveTab] = useState("permissions");
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [departments, setDepartments] = useState([]);
@@ -15,68 +88,11 @@ function SettingsModal({ open, onClose }) {
   const hasLoadedPermissions = useRef(false);
   const hasLoadedDepartments = useRef(false);
 
-  // All available sidebar items
-  const allMenuItems = [
-    { key: "home", label: "Home", icon: "🏠" },
-    { key: "allUsers", label: "All Users", icon: "👥", adminOnly: true },
-    { key: "tasks", label: "Tasks", icon: "📋" },
-    { key: "agent", label: "Agent", icon: "👔" },
-    { key: "supportRequests", label: "Support Requests", icon: "📧" },
-    { key: "clients", label: "Clients", icon: "💼" },
-    { key: "leave", label: "Leave", icon: "⛳" },
-    { key: "settings", label: "Settings", icon: "⚙️", adminOnly: true },
-    {
-      key: "completedTasks",
-      label: "Completed Tasks",
-      icon: "✅",
-      adminOnly: true,
-    },
-    { key: "invoicing", label: "Invoicing", icon: "💰" },
-    { key: "updates", label: "Updates", icon: "🕒" },
-  ];
-
-  // Default permissions - Admin-only items removed
-  const defaultPermissions = {
-    marketing: ["home", "tasks", "agent", "clients", "leave"],
-    operations: ["home", "tasks", "agent", "clients", "leave"],
-    "it/software": [
-      "home",
-      "tasks",
-      "agent",
-      "supportRequests",
-      "clients",
-      "leave",
-      "updates",
-    ],
-    seo: ["home", "tasks", "agent", "clients", "leave"],
-    "human resource": ["home", "tasks", "agent", "clients", "leave"],
-    finance: ["home", "tasks", "agent", "clients", "leave"],
-    sales: ["home", "tasks", "agent", "clients", "leave", "invoicing"],
-  };
-
   const [departmentPermissions, setDepartmentPermissions] =
-    useState(defaultPermissions);
+    useState(DEFAULT_PERMISSIONS);
   const [selectedDepartment, setSelectedDepartment] = useState("marketing");
 
-  const getRandomColor = () => {
-    const colors = [
-      "bg-blue-500",
-      "bg-green-500",
-      "bg-purple-500",
-      "bg-orange-500",
-      "bg-pink-500",
-      "bg-indigo-500",
-      "bg-red-500",
-      "bg-teal-500",
-      "bg-cyan-500",
-      "bg-yellow-500",
-      "bg-lime-500",
-      "bg-violet-500",
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
-
-  // ✅ Fetch departments from backend (OPTIMIZED)
+  // ✅ Fetch departments from backend
   useEffect(() => {
     if (!open || hasLoadedDepartments.current) return;
 
@@ -84,7 +100,9 @@ function SettingsModal({ open, onClose }) {
 
     const fetchDepartments = async () => {
       try {
-        const response = await fetch("https://taskbe.sharda.co.in/api/departments");
+        const response = await fetch(
+          "https://taskbe.sharda.co.in/api/departments"
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -135,9 +153,9 @@ function SettingsModal({ open, onClose }) {
     return () => {
       isMounted = false;
     };
-  }, [open]);
+  }, [open, selectedDepartment]);
 
-  // ✅ Load permissions from backend on mount (OPTIMIZED)
+  // ✅ Load permissions from backend on mount
   useEffect(() => {
     if (!open || hasLoadedPermissions.current) return;
 
@@ -145,12 +163,14 @@ function SettingsModal({ open, onClose }) {
 
     const loadPermissions = async () => {
       try {
-        const response = await fetch("https://taskbe.sharda.co.in/api/permissions");
+        const response = await fetch(
+          "https://taskbe.sharda.co.in/api/permissions"
+        );
         const data = await response.json();
 
         if (!isMounted) return;
 
-        const mergedPermissions = { ...defaultPermissions, ...data };
+        const mergedPermissions = { ...DEFAULT_PERMISSIONS, ...data };
         setDepartmentPermissions(mergedPermissions);
 
         localStorage.setItem(
@@ -168,11 +188,11 @@ function SettingsModal({ open, onClose }) {
           try {
             const parsed = JSON.parse(savedPermissions);
             setDepartmentPermissions(parsed);
-          } catch (parseError) {
-            setDepartmentPermissions(defaultPermissions);
+          } catch {
+            setDepartmentPermissions(DEFAULT_PERMISSIONS);
           }
         } else {
-          setDepartmentPermissions(defaultPermissions);
+          setDepartmentPermissions(DEFAULT_PERMISSIONS);
         }
       }
     };
@@ -182,7 +202,7 @@ function SettingsModal({ open, onClose }) {
     return () => {
       isMounted = false;
     };
-  }, [open]);
+  }, [open]); // Dependencies are genuinely just 'open' since other vars are constants/stable
 
   // Reset refs when modal closes
   useEffect(() => {
@@ -212,14 +232,17 @@ function SettingsModal({ open, onClose }) {
     try {
       const token = localStorage.getItem("authToken");
 
-      const response = await fetch("https://taskbe.sharda.co.in/api/permissions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(departmentPermissions),
-      });
+      const response = await fetch(
+        "https://taskbe.sharda.co.in/api/permissions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(departmentPermissions),
+        }
+      );
 
       const data = await response.json();
 
@@ -407,7 +430,7 @@ function SettingsModal({ open, onClose }) {
                           display: none;
                         }
                       `}</style>
-                      {departments.map((dept, index) => (
+                      {departments.map((dept) => (
                         <button
                           key={dept.key}
                           onClick={() => setSelectedDepartment(dept.key)}
@@ -470,7 +493,7 @@ function SettingsModal({ open, onClose }) {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
-                    {allMenuItems.map((item) => {
+                    {ALL_MENU_ITEMS.map((item) => {
                       const isEnabled = currentPermissions.includes(item.key);
                       const isAdminOnly = item.adminOnly;
 

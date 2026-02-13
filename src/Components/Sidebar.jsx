@@ -13,6 +13,7 @@ import {
   FaGolfBall,
   FaUserTie,
   FaRegEnvelopeOpen,
+  FaUsersCog,
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket";
@@ -36,9 +37,14 @@ const Sidebar = ({ isOpen, onClose }) => {
     (localStorage.getItem("department") || "").toLowerCase()
   );
   const [isLoadingDept, setIsLoadingDept] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(0);
-  const [inboxCount, setInboxCount] = useState(0);
-  const [leaveAlert, setLeaveAlert] = useState(false);
+  
+  // 'notificationCount' and 'inboxCount' values were unused, but setters are used by hooks.
+  const [, setNotificationCount] = useState(0);
+  const [, setInboxCount] = useState(0);
+
+  // 'leaveAlert' value is used, but setter was unused so we removed it from destructuring
+  const [leaveAlert] = useState(false);
+  
   const [expanded, setExpanded] = useState(false);
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
   const [allowedMenuItems, setAllowedMenuItems] = useState([]);
@@ -47,10 +53,15 @@ const Sidebar = ({ isOpen, onClose }) => {
   const permissionsLoadedRef = useRef(false);
   const socketInitializedRef = useRef(false);
 
-  // Menu configuration - memoized to prevent re-creation
+  // Menu configuration - memoized
   const menuItemConfig = useMemo(() => ({
     home: { to: "/", icon: <FaHome />, label: "Home" },
     allUsers: { to: "/all-employees", icon: <FaUsers />, label: "All Users" },
+    
+    // --- NEW BUTTON ADDED HERE ---
+    teamStatus: { to: "/team-status", icon: <FaUsersCog />, label: "Team Status" },
+    // -----------------------------
+
     tasks: { to: "/all-tasks", icon: <FaClipboardList />, label: "Tasks" },
     agent: { to: "/agent", icon: <FaUserTie />, label: "Agent" },
     supportRequests: {
@@ -79,12 +90,13 @@ const Sidebar = ({ isOpen, onClose }) => {
     updates: { to: "/updates", icon: <FaClock />, label: "Updates" },
   }), []);
 
-  // Default permissions - memoized
+// Default permissions - memoized
   const defaultFallbackPermissions = useMemo(() => ({
     marketing: ["home", "tasks", "agent", "clients", "leave"],
     operations: ["home", "tasks", "agent", "clients", "leave"],
     "it/software": [
       "home",
+      "teamStatus", // <--- YAHAN ADD KAR DIYA
       "tasks",
       "agent",
       "supportRequests",
@@ -92,6 +104,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       "leave",
       "updates",
     ],
+    // ... baki sab same rahega
     seo: ["home", "tasks", "agent", "clients", "leave"],
     "human resource": ["home", "tasks", "agent", "clients", "leave"],
     finance: ["home", "tasks", "agent", "clients", "leave"],
@@ -162,7 +175,8 @@ const Sidebar = ({ isOpen, onClose }) => {
           ];
         setAllowedMenuItems(fallback);
       }
-    } catch (error) {
+    // FIX: Removed unused variable from catch block
+    } catch {
       const savedPermissions = localStorage.getItem("departmentPermissions");
 
       if (savedPermissions) {
@@ -186,7 +200,10 @@ const Sidebar = ({ isOpen, onClose }) => {
             permissionsLoadedRef.current = true;
             return;
           }
-        } catch (parseError) {}
+        // FIX: Removed unused variable from catch block
+        } catch {
+            // Fallback to default if parsing fails
+        }
       }
 
       const fallback = defaultFallbackPermissions[department] ||
@@ -251,7 +268,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         setDepartment(userDept);
         localStorage.setItem("department", userDept);
       }
-    } catch (err) {
+    // FIX: Removed unused variable from catch block
+    } catch {
       setDepartment("");
     } finally {
       setIsLoadingDept(false);
@@ -285,7 +303,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     };
 
     initializeSidebar();
-  }, []); // Empty dependency array - runs only once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
   // Load permissions - separate effect
   useEffect(() => {
@@ -340,7 +359,8 @@ const Sidebar = ({ isOpen, onClose }) => {
           permissionsLoadedRef.current = false;
           loadPermissions();
         }
-      } catch (error) {
+      // FIX: Removed unused variable from catch block
+      } catch {
         // Silent fail
       }
     }, 30000); // Increased to 30 seconds to reduce load
@@ -429,12 +449,12 @@ const Sidebar = ({ isOpen, onClose }) => {
 
             return (
               <SidebarItem
-  key={key}
-  icon={icon}
-  label={config.label}
-  to={config.to}
-  expanded={expanded}
-/>
+                key={key}
+                icon={icon}
+                label={config.label}
+                to={config.to}
+                expanded={expanded}
+              />
 
             );
           })}
@@ -598,4 +618,4 @@ const MobileSidebarItem = React.memo(({ icon, label, to, onClick, badge }) => (
   </NavLink>
 ));
 
-export default Sidebar;
+export default Sidebar; 
