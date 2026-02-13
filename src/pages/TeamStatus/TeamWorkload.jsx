@@ -16,7 +16,7 @@ const TeamWorkload = () => {
       
       // API call to get personal tasks
       const response = await axios.get(
-        `http://localhost:1100/api/workload/personal?status=${filterStatus}`, 
+        `https://taskbe.sharda.co.in/api/workload/personal?status=${filterStatus}`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -39,7 +39,7 @@ const TeamWorkload = () => {
     
     try {
       const token = localStorage.getItem("authToken");
-      await axios.delete(`http://localhost:1100/api/workload/personal/${id}`, {
+      await axios.delete(`https://taskbe.sharda.co.in/api/workload/personal/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -55,7 +55,7 @@ const TeamWorkload = () => {
   const handleComplete = async (id) => {
     try {
       const token = localStorage.getItem("authToken");
-      await axios.patch(`http://localhost:1100/api/workload/personal/${id}`, 
+      await axios.patch(`https://taskbe.sharda.co.in/api/workload/personal/${id}`, 
         { status: 'Completed' },
         { headers: { Authorization: `Bearer ${token}` } }
       );

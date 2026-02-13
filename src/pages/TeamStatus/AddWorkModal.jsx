@@ -23,7 +23,7 @@ const AddWorkModal = ({ isOpen, onClose, refreshData }) => {
       
       // ✅ API Call to Backend
       await axios.post(
-        'http://localhost:1100/api/workload/personal', 
+        'https://taskbe.sharda.co.in/api/workload/personal', 
         taskData, 
         {
           headers: { Authorization: `Bearer ${token}` }
