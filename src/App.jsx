@@ -32,7 +32,7 @@ import Support from "./pages/Support";
 import DeveloperSupport from "./pages/DeveloperSupport";
 import ShortcutHandler from "./Components/ShortcutHandler";
 import Updates from "./pages/Updates";
-
+import TeamWorkload from './pages/TeamStatus/TeamWorkload';
 // 🌟 Agent Pages Imports 🌟
 import AgentPage from "./pages/Agent/AgentPage";
 import CreateAgent from "./pages/Agent/CreateAgent";
@@ -75,7 +75,16 @@ const App = () => {
             <Route path="/login" element={<Login />} />
 
             {/* ------------------- Protected Routes ------------------- */}
-
+<Route
+              path="/team-status"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <TeamWorkload />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/"
               element={
