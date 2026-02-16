@@ -8,7 +8,7 @@ import { MdSecurity } from "react-icons/md";
 const ALL_MENU_ITEMS = [
   { key: "home", label: "Home", icon: "🏠" },
   { key: "allUsers", label: "All Users", icon: "👥", adminOnly: true },
-  { key: "teamStatus", label: "Team Status", icon: "📊" },
+  { key: "teamStatus", label: "IT Department", icon: "📊" },
   { key: "tasks", label: "Tasks", icon: "📋" },
   { key: "agent", label: "Agent", icon: "👔" },
   { key: "supportRequests", label: "Support Requests", icon: "📧" },
