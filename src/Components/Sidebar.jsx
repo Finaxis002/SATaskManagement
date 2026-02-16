@@ -59,7 +59,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     allUsers: { to: "/all-employees", icon: <FaUsers />, label: "All Users" },
     
     // --- NEW BUTTON ADDED HERE ---
-    teamStatus: { to: "/team-status", icon: <FaUsersCog />, label: "Team Status" },
+    teamStatus: { to: "/team-status", icon: <FaUsersCog />, label: "IT Department" },
     // -----------------------------
 
     tasks: { to: "/all-tasks", icon: <FaClipboardList />, label: "Tasks" },

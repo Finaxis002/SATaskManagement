@@ -34,13 +34,14 @@ import ShortcutHandler from "./Components/ShortcutHandler";
 import Updates from "./pages/Updates";
 import TeamWorkload from './pages/TeamStatus/TeamWorkload';
 // 🌟 Agent Pages Imports 🌟
+import TaskNotificationManager from "./pages/TeamStatus/Tasknotificationmanager";
 import AgentPage from "./pages/Agent/AgentPage";
 import CreateAgent from "./pages/Agent/CreateAgent";
 import AgentList from "./pages/Agent/AgentList";
 import Referrals from "./pages/Agent/Referrals";
 import AgentProfile from "./pages/Agent/AgentProfile";
 
-
+import WorkBoardNotifications from "./pages/TeamStatus/WorkBoardNotifications";
 // 📝 Message Templates Import 👇 NEW
 import MessageTemplatesManager from "./Components/Tasks/MessageTemplatesManager";
 
@@ -69,6 +70,7 @@ const App = () => {
 
   return (
     <Router>
+      <TaskNotificationManager />
       <NotesProvider>
         <ShortcutHandler>
           <Routes>
@@ -85,6 +87,7 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+            <Route path="/work-notifications" element={<WorkBoardNotifications />} />
             <Route
               path="/"
               element={
