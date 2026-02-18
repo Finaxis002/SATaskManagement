@@ -34,7 +34,7 @@ import ShortcutHandler from "./Components/ShortcutHandler";
 import Updates from "./pages/Updates";
 
 // ✅ FIXED IMPORTS (Correct Path: pages/TeamStatus/...)
-import TeamWorkload from "./pages/TeamStatus/TeamWorkload";
+import TeamWorkload from "./Components/TeamStatus/TeamWorkload";
 // import TaskNotificationManager from "./pages/TeamStatus/TaskNotificationManager";
 // import WorkBoardNotifications from "./pages/TeamStatus/WorkBoardNotifications";
 
