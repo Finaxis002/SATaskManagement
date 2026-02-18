@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import TaskModal from './Taskmodal';
 import RemarkModal from './RemarkModal';
-import NotificationBell from './Notificationbell';
+
 
 const TeamWorkload = () => {
   const [myWorks, setMyWorks] = useState([]);
@@ -173,7 +173,7 @@ const TeamWorkload = () => {
             
             {/* ✅ UPDATED: Added flex-shrink-0 to prevent buttons from squishing */}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <NotificationBell />
+           
               
               <button 
                 onClick={() => {

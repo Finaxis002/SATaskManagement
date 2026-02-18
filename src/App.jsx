@@ -32,21 +32,23 @@ import Support from "./pages/Support";
 import DeveloperSupport from "./pages/DeveloperSupport";
 import ShortcutHandler from "./Components/ShortcutHandler";
 import Updates from "./pages/Updates";
-import TeamWorkload from './pages/TeamStatus/TeamWorkload';
+
+// ✅ FIXED IMPORTS (Correct Path: pages/TeamStatus/...)
+import TeamWorkload from "./pages/TeamStatus/TeamWorkload";
+// import TaskNotificationManager from "./pages/TeamStatus/TaskNotificationManager";
+// import WorkBoardNotifications from "./pages/TeamStatus/WorkBoardNotifications";
+
 // 🌟 Agent Pages Imports 🌟
-import TaskNotificationManager from "./pages/TeamStatus/Tasknotificationmanager";
 import AgentPage from "./pages/Agent/AgentPage";
 import CreateAgent from "./pages/Agent/CreateAgent";
 import AgentList from "./pages/Agent/AgentList";
 import Referrals from "./pages/Agent/Referrals";
 import AgentProfile from "./pages/Agent/AgentProfile";
 
-import WorkBoardNotifications from "./pages/TeamStatus/WorkBoardNotifications";
-// 📝 Message Templates Import 👇 NEW
+// 📝 Message Templates Import
 import MessageTemplatesManager from "./Components/Tasks/MessageTemplatesManager";
 
 const App = () => {
-
 
   function MailBoxEmbed() {
     return (
@@ -70,14 +72,14 @@ const App = () => {
 
   return (
     <Router>
-      <TaskNotificationManager />
+     
       <NotesProvider>
         <ShortcutHandler>
           <Routes>
             <Route path="/login" element={<Login />} />
 
             {/* ------------------- Protected Routes ------------------- */}
-<Route
+            <Route
               path="/team-status"
               element={
                 <ProtectedRoute>
@@ -87,7 +89,7 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-            <Route path="/work-notifications" element={<WorkBoardNotifications />} />
+            {/* <Route path="/work-notifications" element={<WorkBoardNotifications />} /> */}
             <Route
               path="/"
               element={
@@ -219,7 +221,7 @@ const App = () => {
               }
             />
 
-            {/* 📝 Message Templates Route 👇 NEW */}
+            {/* 📝 Message Templates Route */}
             <Route
               path="/message-templates"
               element={
