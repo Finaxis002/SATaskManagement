@@ -2636,11 +2636,10 @@ const TaskList = ({
 
   // Handle Copy Task functionality
   const handleCopyTask = async (task) => {
-    const taskText = `Task: ${task.taskName}\nCode: ${
-      task.code || "N/A"
-    }\nDue Date: ${new Date(task.dueDate).toLocaleDateString(
-      "en-GB",
-    )}\nPriority: ${task.priority}`;
+    const taskText = `Task: ${task.taskName}\nCode: ${task.code || "N/A"
+      }\nDue Date: ${new Date(task.dueDate).toLocaleDateString(
+        "en-GB",
+      )}\nPriority: ${task.priority}`;
 
     try {
       await navigator.clipboard.writeText(taskText);
@@ -2987,9 +2986,8 @@ const TaskList = ({
         {/* Status */}
         <td className="py-3 px-2">
           <span
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold cursor-pointer border ${
-              loadingStatus[task._id] ? "opacity-75" : ""
-            }`}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold cursor-pointer border ${loadingStatus[task._id] ? "opacity-75" : ""
+              }`}
             style={{
               backgroundColor: statusColors[task.status]?.bg,
               color: statusColors[task.status]?.text,
@@ -3055,23 +3053,57 @@ const TaskList = ({
 
         {/* Team */}
         <td className="py-3 px-2">
-          <div className="flex flex-wrap gap-1">
-            {task.assignees?.slice(0, 2).map((assignee) => (
-              <span
+          <div className="flex items-center">
+            {task.assignees?.slice(0, 2).map((assignee, idx) => (
+              <div
                 key={assignee.email}
-                className="text-xs py-0.5 px-2 rounded-full bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200"
+                onClick={() => setShowTeamPopup(task._id)}
+                title={assignee.name}
+                style={{
+                  marginLeft: idx === 0 ? '0px' : '-8px',
+                  zIndex: idx,
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  backgroundColor: ['#BFDBFE', '#DDD6FE', '#BBF7D0', '#FDE68A', '#FBCFE8'][idx % 5],
+                  color: ['#1E40AF', '#6D28D9', '#065F46', '#92400E', '#9D174D'][idx % 5],
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  border: '2px solid white',
+                  cursor: 'pointer',
+                  position: 'relative',
+                }}
               >
-                {assignee.name.split(" ")[0]}
-              </span>
+                {assignee.name.charAt(0).toUpperCase()}
+              </div>
             ))}
             {task.assignees?.length > 2 && (
-              <span
+              <div
                 onClick={() => setShowTeamPopup(task._id)}
-                className="text-xs py-0.5 px-2 rounded-full bg-gray-100 text-gray-600 font-semibold cursor-pointer hover:bg-gray-200"
-                title="View all team members"
+                title={`+${task.assignees.length - 2} more members`}
+                style={{
+                  marginLeft: '-8px',
+                  zIndex: 3,
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  backgroundColor: '#E5E7EB',
+                  color: '#374151',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  border: '2px solid white',
+                  cursor: 'pointer',
+                  position: 'relative',
+                }}
               >
                 +{task.assignees.length - 2}
-              </span>
+              </div>
             )}
           </div>
         </td>
@@ -3210,9 +3242,8 @@ const TaskList = ({
         <div className="space-y-3">
           {/* Status */}
           <span
-            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-semibold cursor-pointer border ${
-              loadingStatus[task._id] ? "opacity-75" : ""
-            }`}
+            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-semibold cursor-pointer border ${loadingStatus[task._id] ? "opacity-75" : ""
+              }`}
             style={{
               backgroundColor: statusColors[task.status]?.bg,
               color: statusColors[task.status]?.text,
@@ -3435,9 +3466,9 @@ const TaskList = ({
                   <col style={{ width: "8%" }} />
                   <col style={{ width: "8%" }} />
                   <col style={{ width: "8%" }} />
-                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "9%" }} />
                   <col style={{ width: "10%" }} />
-                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "7%" }} />
                   <col style={{ width: "8%" }} />
                 </colgroup>
                 <thead className="bg-gradient-to-r from-indigo-100 to-purple-100">
@@ -3592,22 +3623,20 @@ const TaskList = ({
                 <button
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1 || loading}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
-                    currentPage === 1 || loading
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${currentPage === 1 || loading
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
                       : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
-                  }`}
+                    }`}
                 >
                   Previous
                 </button>
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages || loading}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
-                    currentPage === totalPages || loading
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${currentPage === totalPages || loading
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
                       : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
-                  }`}
+                    }`}
                 >
                   Next
                 </button>
@@ -3679,11 +3708,10 @@ const TaskList = ({
                     <button
                       onClick={handlePreviousPage}
                       disabled={currentPage === 1}
-                      className={`px-4 py-2 rounded-lg ${
-                        currentPage === 1
+                      className={`px-4 py-2 rounded-lg ${currentPage === 1
                           ? "bg-gray-100 text-gray-400"
                           : "bg-blue-600 text-white"
-                      }`}
+                        }`}
                     >
                       Previous
                     </button>
@@ -3693,11 +3721,10 @@ const TaskList = ({
                     <button
                       onClick={handleNextPage}
                       disabled={currentPage === totalPages}
-                      className={`px-4 py-2 rounded-lg ${
-                        currentPage === totalPages
+                      className={`px-4 py-2 rounded-lg ${currentPage === totalPages
                           ? "bg-gray-100 text-gray-400"
                           : "bg-blue-600 text-white"
-                      }`}
+                        }`}
                     >
                       Next
                     </button>
@@ -3912,8 +3939,8 @@ const TaskList = ({
                     <div className="font-semibold">
                       {selectedTaskDetails.dueDate
                         ? new Date(
-                            selectedTaskDetails.dueDate,
-                          ).toLocaleDateString("en-GB")
+                          selectedTaskDetails.dueDate,
+                        ).toLocaleDateString("en-GB")
                         : "—"}
                     </div>
                   </div>
