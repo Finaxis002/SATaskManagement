@@ -260,7 +260,7 @@ const CreateClientModal = ({ client, onClose, onCreate }) => {
 
   // --- Render ---
   return (
-    <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50 p-4 mt-4">
+    <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-[11000] p-4">
       <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg max-h-[90vh] flex flex-col">
         
         {/* Header */}
