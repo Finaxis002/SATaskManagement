@@ -2279,6 +2279,9 @@ const TaskList = ({
   const [userManuallyScrolled, setUserManuallyScrolled] = useState(false);
   const tableContainerRef = useRef(null);
 
+
+  const [openActionMenu, setOpenActionMenu] = useState(null);
+  const actionMenuRef = useRef(null);
   // Refs
   const fetchControllerRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -2486,6 +2489,9 @@ const TaskList = ({
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setEditingStatus(null);
+      }
+      if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
+        setOpenActionMenu(null);
       }
     };
 
@@ -3115,54 +3121,78 @@ const TaskList = ({
 
         {/* Actions */}
         <td className="py-3 px-2">
-          <div className="flex gap-1">
-            {/* Message Button */}
+          <div className="relative" ref={openActionMenu === task._id ? actionMenuRef : null}>
             <button
-              onClick={() => {
-                setTaskForMessage(task);
-                setOpenMessagePopup(true);
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenActionMenu(openActionMenu === task._id ? null : task._id);
               }}
-              className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600"
-              title="Message"
+              title="More actions"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
-                <path d="m21.854 2.147-10.94 10.939" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="19" cy="12" r="2" />
               </svg>
             </button>
-            {/* Copy Button */}
-            <button
-              onClick={() => handleCopyTask(task)}
-              className="p-1.5 hover:bg-indigo-50 rounded-lg text-indigo-600"
-              title="Copy"
-            >
-              <FontAwesomeIcon icon={faCopy} className="h-3.5 w-3.5" />
-            </button>
-            {/* Edit Button */}
-            <button
-              onClick={() => onEdit(task)}
-              className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600"
-              title="Edit"
-            >
-              <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
-            </button>
-            {/* Delete Button */}
-            {isAdmin && (
-              <button
-                onClick={() => handleDeleteTask(task)}
-                className="p-1.5 hover:bg-red-50 rounded-lg text-red-600"
-                title="Delete"
+
+            {openActionMenu === task._id && (
+              <div
+                className="absolute right-0 top-8 w-36 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
+                style={{ zIndex: 9999 }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <FaTrashAlt size={12} />
-              </button>
+                <button
+                  onClick={() => {
+                    setTaskForMessage(task);
+                    setOpenMessagePopup(true);
+                    setOpenActionMenu(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+                    <path d="m21.854 2.147-10.94 10.939" />
+                  </svg>
+                  Message
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleCopyTask(task);
+                    setOpenActionMenu(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors border-b border-gray-100"
+                >
+                  <FontAwesomeIcon icon={faCopy} className="h-3 w-3" />
+                  Copy
+                </button>
+
+                <button
+                  onClick={() => {
+                    onEdit(task);
+                    setOpenActionMenu(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors border-b border-gray-100"
+                >
+                  <FontAwesomeIcon icon={faPen} className="h-3 w-3" />
+                  Edit
+                </button>
+
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      handleDeleteTask(task);
+                      setOpenActionMenu(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <FaTrashAlt size={11} />
+                    Delete
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </td>
@@ -3461,15 +3491,15 @@ const TaskList = ({
               <table className="w-full">
                 <colgroup>
                   <col style={{ width: "3%" }} />
+                  <col style={{ width: "18%" }} />
                   <col style={{ width: "12%" }} />
-                  <col style={{ width: "15%" }} />
                   <col style={{ width: "8%" }} />
                   <col style={{ width: "8%" }} />
                   <col style={{ width: "8%" }} />
-                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "8%" }} />
                   <col style={{ width: "10%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "6%" }} />
                 </colgroup>
                 <thead className="bg-gradient-to-r from-indigo-100 to-purple-100">
                   <tr>
@@ -3624,8 +3654,8 @@ const TaskList = ({
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1 || loading}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${currentPage === 1 || loading
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
-                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
+                    : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
                     }`}
                 >
                   Previous
@@ -3634,8 +3664,8 @@ const TaskList = ({
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages || loading}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${currentPage === totalPages || loading
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
-                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
+                    : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
                     }`}
                 >
                   Next
@@ -3709,8 +3739,8 @@ const TaskList = ({
                       onClick={handlePreviousPage}
                       disabled={currentPage === 1}
                       className={`px-4 py-2 rounded-lg ${currentPage === 1
-                          ? "bg-gray-100 text-gray-400"
-                          : "bg-blue-600 text-white"
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-blue-600 text-white"
                         }`}
                     >
                       Previous
@@ -3722,8 +3752,8 @@ const TaskList = ({
                       onClick={handleNextPage}
                       disabled={currentPage === totalPages}
                       className={`px-4 py-2 rounded-lg ${currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400"
-                          : "bg-blue-600 text-white"
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-blue-600 text-white"
                         }`}
                     >
                       Next
