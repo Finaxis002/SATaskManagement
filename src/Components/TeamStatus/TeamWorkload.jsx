@@ -1,16 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import axios from 'axios';
 import TaskModal from './Taskmodal';
 import RemarkModal from './RemarkModal';
 
-// ✅ FIX: Helper function to decode JWT Token locally
-// Agar localStorage me data nahi mila, toh hum isse nikalenge
 const parseJwt = (token) => {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
+  try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; }
 };
 
 // ─── Notification Bell Component ──────────────────────────────────────────────
@@ -19,17 +14,14 @@ const NotificationBell = ({ token, userEmail, userRole, userId }) => {
   const [unreadCount, setUnreadCount]     = useState(0);
   const [isOpen, setIsOpen]               = useState(false);
   const [loading, setLoading]             = useState(false);
-  const panelRef = useRef(null);
+  const [isMobile, setIsMobile]           = useState(false);
 
-  // Close panel when clicking outside
+  // Mobile detect
   useEffect(() => {
-    const handleOutside = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
   const fetchNotifications = useCallback(async () => {
@@ -43,15 +35,12 @@ const NotificationBell = ({ token, userEmail, userRole, userId }) => {
         limit:  20,
         page:   1,
       });
-      // ✅ Using Corrected API Route
-     const { data } = await axios.get(
-  `https://taskbe.sharda.co.in/api/worknotify?${params}`, 
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-      // Backend response structure handle karna (success: true wrapper)
+      const { data } = await axios.get(
+        `https://taskbe.sharda.co.in/api/worknotify?${params}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       const notifList = data.notifications || data.data || [];
       const count = data.unreadCount !== undefined ? data.unreadCount : (data.pagination?.unreadCount || 0);
-
       setNotifications(notifList);
       setUnreadCount(count);
     } catch (err) {
@@ -61,7 +50,6 @@ const NotificationBell = ({ token, userEmail, userRole, userId }) => {
     }
   }, [userEmail, userRole, userId, token]);
 
-  // Fetch on mount + every 30 s
   useEffect(() => {
     fetchNotifications();
     const id = setInterval(fetchNotifications, 30_000);
@@ -75,28 +63,22 @@ const NotificationBell = ({ token, userEmail, userRole, userId }) => {
         { email: userEmail, role: userRole || 'user', userId: userId || '' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true }))); // Frontend logic updated for isRead
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    } catch (err) {
-      console.error('Mark all read error:', err);
-    }
+    } catch (err) { console.error('Mark all read error:', err); }
   };
 
   const markOneRead = async (notif) => {
-    if (notif.isRead) return; // Check backend field name (isRead usually)
+    if (notif.isRead) return;
     try {
       await axios.patch(
         `https://taskbe.sharda.co.in/api/worknotify/${notif._id}/read`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setNotifications(prev =>
-        prev.map(n => n._id === notif._id ? { ...n, isRead: true } : n)
-      );
+      setNotifications(prev => prev.map(n => n._id === notif._id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Mark read error:', err);
-    }
+    } catch (err) { console.error('Mark read error:', err); }
   };
 
   const timeAgo = (dateStr) => {
@@ -109,40 +91,118 @@ const NotificationBell = ({ token, userEmail, userRole, userId }) => {
     return `${Math.floor(h / 24)}d ago`;
   };
 
-  // Icon colour by action type
   const actionMeta = (action) => {
     switch (action) {
-      case 'task_created': case 'task-created':  return { bg: 'bg-blue-100',   text: 'text-blue-600',   icon: '➕' };
-      case 'task_updated': case 'task-updated':  return { bg: 'bg-amber-100',  text: 'text-amber-600',  icon: '✏️' };
-      case 'status_changed': case 'status-changed':return { bg: 'bg-teal-100',   text: 'text-teal-600',   icon: '🔄' };
-      case 'remark_added': case 'remark-added':  return { bg: 'bg-purple-100', text: 'text-purple-600', icon: '💬' };
-      default:              return { bg: 'bg-gray-100',   text: 'text-gray-600',   icon: '🔔' };
+      case 'task_created':   case 'task-created':   return { bg: 'bg-blue-100',   text: 'text-blue-600',   icon: '➕' };
+      case 'task_updated':   case 'task-updated':   return { bg: 'bg-amber-100',  text: 'text-amber-600',  icon: '✏️' };
+      case 'status_changed': case 'status-changed': return { bg: 'bg-teal-100',   text: 'text-teal-600',   icon: '🔄' };
+      case 'remark_added':   case 'remark-added':   return { bg: 'bg-purple-100', text: 'text-purple-600', icon: '💬' };
+      default:               return { bg: 'bg-gray-100',   text: 'text-gray-600',   icon: '🔔' };
     }
   };
 
+  // ✅ Notification Panel Content (reuse for both mobile & desktop)
+  const PanelContent = () => (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span className="text-sm font-semibold text-white">Notifications</span>
+          {unreadCount > 0 && (
+            <span className="bg-white/25 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {unreadCount} new
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <button onClick={markAllRead} className="text-xs text-blue-100 hover:text-white transition-colors font-medium underline underline-offset-2">
+              Mark all read
+            </button>
+          )}
+          {/* ✅ Close button — mobile modal ke liye */}
+          <button
+            onClick={() => setIsOpen(false)}
+            className="text-blue-100 hover:text-white transition-colors ml-1"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* List */}
+      <div className="overflow-y-auto divide-y divide-gray-100" style={{ maxHeight: isMobile ? '55vh' : '400px' }}>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600" />
+            <p className="text-xs text-gray-500">Loading notifications...</p>
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
+              <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-700">All caught up!</p>
+            <p className="text-xs text-gray-400">No notifications yet</p>
+          </div>
+        ) : (
+          notifications.map(notif => {
+            const meta   = actionMeta(notif.type || notif.action);
+            const isRead = notif.isRead || notif.read;
+            return (
+              <div
+                key={notif._id}
+                onClick={() => markOneRead(notif)}
+                className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50 ${!isRead ? 'bg-blue-50/60' : 'bg-white'}`}
+              >
+                <div className={`w-9 h-9 rounded-full ${meta.bg} flex items-center justify-center flex-shrink-0 text-base`}>
+                  {meta.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs leading-relaxed ${!isRead ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                    {notif.message}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-1">{timeAgo(notif.createdAt)}</p>
+                </div>
+                {!isRead && <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Footer */}
+      {notifications.length > 0 && (
+        <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 text-center flex-shrink-0">
+          <button onClick={fetchNotifications} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">
+            ↻ Refresh
+          </button>
+        </div>
+      )}
+    </>
+  );
+
   return (
-    <div className="relative flex-shrink-0" ref={panelRef}>
+    <div className="relative flex-shrink-0">
       {/* Bell Button */}
       <button
-        onClick={() => {
-          setIsOpen(o => !o);
-          if (!isOpen) fetchNotifications();
-        }}
+        onClick={() => { setIsOpen(o => !o); if (!isOpen) fetchNotifications(); }}
         className="relative p-2 sm:p-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group"
         title="Notifications"
       >
-        {/* Bell SVG */}
-        <svg
-          className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors"
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-          />
+        <svg className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
-
-        {/* Unread badge */}
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-sm animate-pulse">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -150,98 +210,44 @@ const NotificationBell = ({ token, userEmail, userRole, userId }) => {
         )}
       </button>
 
-      {/* Notification Panel */}
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-[9999] overflow-hidden">
-          
-          {/* Panel Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span className="text-sm font-semibold text-white">Notifications</span>
-              {unreadCount > 0 && (
-                <span className="bg-white/25 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {unreadCount} new
-                </span>
-              )}
-            </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                className="text-xs text-blue-100 hover:text-white transition-colors font-medium underline underline-offset-2"
-              >
-                Mark all read
-              </button>
-            )}
+      {/* ✅ MOBILE — Portal se document.body me render, flex center */}
+      {isOpen && isMobile && ReactDOM.createPortal(
+        <div
+          onClick={() => setIsOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',      // ✅ top-bottom center
+            justifyContent: 'center',  // ✅ left-right center
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '92vw',
+              maxWidth: '420px',
+              background: 'white',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <PanelContent />
           </div>
+        </div>,
+        document.body
+      )}
 
-          {/* Notification List */}
-          <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-100">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-10 gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600" />
-                <p className="text-xs text-gray-500">Loading notifications...</p>
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium text-gray-700">All caught up!</p>
-                <p className="text-xs text-gray-400">No notifications yet</p>
-              </div>
-            ) : (
-              notifications.map(notif => {
-                const meta = actionMeta(notif.type || notif.action); // Handle both field names
-                const isRead = notif.isRead || notif.read; // Handle both field names
-                return (
-                  <div
-                    key={notif._id}
-                    onClick={() => markOneRead(notif)}
-                    className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50 ${
-                      !isRead ? 'bg-blue-50/60' : 'bg-white'
-                    }`}
-                  >
-                    {/* Icon */}
-                    <div className={`w-9 h-9 rounded-full ${meta.bg} flex items-center justify-center flex-shrink-0 text-base`}>
-                      {meta.icon}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs leading-relaxed ${!isRead ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
-                        {notif.message}
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-1">{timeAgo(notif.createdAt)}</p>
-                    </div>
-
-                    {/* Unread dot */}
-                    {!isRead && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Footer */}
-          {notifications.length > 0 && (
-            <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 text-center">
-              <button
-                onClick={fetchNotifications}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
-              >
-                ↻ Refresh
-              </button>
-            </div>
-          )}
+      {/* ✅ DESKTOP — Normal dropdown */}
+      {isOpen && !isMobile && (
+        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col">
+          <PanelContent />
         </div>
       )}
     </div>
@@ -263,36 +269,26 @@ const TeamWorkload = () => {
   const [showAssignedUsersModal, setShowAssignedUsersModal] = useState(false);
   const [selectedAssignedUsers, setSelectedAssignedUsers]   = useState([]);
 
-  // ── Auth info logic with Fallback ──────────────────────────────────────────
   const token = localStorage.getItem('authToken');
-  
-  // Try getting from storage first
-  let storedEmail = localStorage.getItem('userEmail');
-  let storedRole = localStorage.getItem('userRole');
+  let storedEmail  = localStorage.getItem('userEmail');
+  let storedRole   = localStorage.getItem('userRole');
   let storedUserId = localStorage.getItem('userId');
 
-  // ✅ FIX: Decode token if localStorage is empty
   if (token && (!storedEmail || !storedRole || !storedUserId)) {
     const decoded = parseJwt(token);
     if (decoded) {
-        if (!storedEmail) storedEmail = decoded.email;
-        if (!storedRole)  storedRole = decoded.role;
-        // Backend often sends _id, but frontend might expect userId
-        if (!storedUserId) storedUserId = decoded._id || decoded.id;
-        
-        // Optional: Persist back to localStorage so we don't decode every time
-        if(storedEmail) localStorage.setItem('userEmail', storedEmail);
-        if(storedRole)  localStorage.setItem('userRole', storedRole);
-        if(storedUserId) localStorage.setItem('userId', storedUserId);
+      if (!storedEmail)  storedEmail  = decoded.email;
+      if (!storedRole)   storedRole   = decoded.role;
+      if (!storedUserId) storedUserId = decoded._id || decoded.id;
+      if (storedEmail)  localStorage.setItem('userEmail',  storedEmail);
+      if (storedRole)   localStorage.setItem('userRole',   storedRole);
+      if (storedUserId) localStorage.setItem('userId',     storedUserId);
     }
   }
 
-  // Final variables to use
-  const userEmail = storedEmail || '';
-  const userRole = storedRole || 'user';
-  const userId = storedUserId || '';
-
-  console.log("Current User Data:", { token, userEmail, userRole, userId });
+  const userEmail = storedEmail  || '';
+  const userRole  = storedRole   || 'user';
+  const userId    = storedUserId || '';
 
   const fetchMyWork = useCallback(async () => {
     try {
@@ -303,7 +299,6 @@ const TeamWorkload = () => {
       );
       const allData = response.data;
       setAllWorks(allData);
-
       let filteredData = allData;
       if (filterStatus === 'Pending') {
         filteredData = allData.filter(t => t.status === 'Pending' || t.status === 'In Progress');
@@ -334,25 +329,20 @@ const TeamWorkload = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchMyWork();
-    } catch (error) {
-      console.error('Delete Error:', error);
-    }
+    } catch (error) { console.error('Delete Error:', error); }
   };
 
-  // ✅ Frontend Fix: Method PUT karein aur URL ke end mein /status jodein
-const handleStatusChange = async (id, newStatus) => {
-  try {
-    await axios.put(
-      `https://taskbe.sharda.co.in/api/workload/personal/${id}/status`, // 👈 /status zaroori hai
-      { status: newStatus },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setOpenStatusMenu(null);
-    fetchMyWork(); // Refresh list
-  } catch (error) {
-    console.error('Update Error:', error); // Ab ye 404 nahi dega
-  }
-};
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await axios.put(
+        `https://taskbe.sharda.co.in/api/workload/personal/${id}/status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setOpenStatusMenu(null);
+      fetchMyWork();
+    } catch (error) { console.error('Update Error:', error); }
+  };
 
   const handleEdit   = (work) => { setSelectedWork(work); setTaskModalMode('edit'); setTaskModalOpen(true); };
   const handleRemark = (work) => { setSelectedWork(work); setRemarkModalOpen(true); };
@@ -370,14 +360,14 @@ const handleStatusChange = async (id, newStatus) => {
 
   const getPriorityColor = (status) => {
     switch (status) {
-      case 'Completed':  return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'In Progress':return 'bg-amber-50   text-amber-700   border-amber-200';
-      default:           return 'bg-blue-50    text-blue-700    border-blue-200';
+      case 'Completed':   return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'In Progress': return 'bg-amber-50   text-amber-700   border-amber-200';
+      default:            return 'bg-blue-50    text-blue-700    border-blue-200';
     }
   };
 
-  const getCreatorName      = (work) => (work.createdBy     && typeof work.createdBy     !== 'string') ? work.createdBy.name     || null : null;
-  const getStatusUpdaterName= (work) => (work.statusUpdatedBy && typeof work.statusUpdatedBy !== 'string') ? work.statusUpdatedBy.name || null : null;
+  const getCreatorName       = (work) => (work.createdBy      && typeof work.createdBy      !== 'string') ? work.createdBy.name      || null : null;
+  const getStatusUpdaterName = (work) => (work.statusUpdatedBy && typeof work.statusUpdatedBy !== 'string') ? work.statusUpdatedBy.name || null : null;
 
   const getStatusDisplay = (status) => {
     switch (status) {
@@ -392,7 +382,7 @@ const handleStatusChange = async (id, newStatus) => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
+        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
             <div>
@@ -403,19 +393,8 @@ const handleStatusChange = async (id, newStatus) => {
                 <span className="xs:hidden">Team Tasks</span>
               </p>
             </div>
-
-            {/* Right buttons */}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-
-              {/* ── 🔔 Notification Bell ─────────────────────────────────── */}
-              <NotificationBell
-                token={token}
-                userEmail={userEmail}
-                userRole={userRole}
-                userId={userId}
-              />
-
-              {/* New Task button */}
+              <NotificationBell token={token} userEmail={userEmail} userRole={userRole} userId={userId} />
               <button
                 onClick={() => { setSelectedWork(null); setTaskModalMode('add'); setTaskModalOpen(true); }}
                 className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg"
@@ -442,28 +421,24 @@ const handleStatusChange = async (id, newStatus) => {
                 }`}
               >
                 {status}
-                {filterStatus === status && (
-                  <span className="absolute inset-0 rounded-md ring-2 ring-blue-600 ring-opacity-50" />
-                )}
+                {filterStatus === status && <span className="absolute inset-0 rounded-md ring-2 ring-blue-600 ring-opacity-50" />}
               </button>
             ))}
           </div>
         </div>
 
-        {/* ── Stats Cards ─────────────────────────────────────────────────── */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {[
-            { label: 'Total Tasks',  value: allWorks.length,                                    color: 'blue',   icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-            { label: 'In Progress',  value: allWorks.filter(w => w.status === 'In Progress').length, color: 'amber',  icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-            { label: 'Completed',    value: allWorks.filter(w => w.status === 'Completed').length,   color: 'emerald',icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', extra: 'sm:col-span-2 lg:col-span-1' },
+            { label: 'Total Tasks', value: allWorks.length,                                         color: 'blue',    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+            { label: 'In Progress', value: allWorks.filter(w => w.status === 'In Progress').length, color: 'amber',   icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+            { label: 'Completed',   value: allWorks.filter(w => w.status === 'Completed').length,   color: 'emerald', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', extra: 'sm:col-span-2 lg:col-span-1' },
           ].map(stat => (
             <div key={stat.label} className={`bg-white rounded-xl p-4 sm:p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow ${stat.extra || ''}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className={`text-xl sm:text-2xl font-bold mt-1 text-${stat.color}-${stat.color === 'blue' ? '900' : '600'}`}>
-                    {stat.value}
-                  </p>
+                  <p className={`text-xl sm:text-2xl font-bold mt-1 text-${stat.color}-${stat.color === 'blue' ? '900' : '600'}`}>{stat.value}</p>
                 </div>
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-${stat.color}-100 rounded-lg flex items-center justify-center flex-shrink-0`}>
                   <svg className={`w-5 h-5 sm:w-6 sm:h-6 text-${stat.color}-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -475,7 +450,7 @@ const handleStatusChange = async (id, newStatus) => {
           ))}
         </div>
 
-        {/* ── Content ─────────────────────────────────────────────────────── */}
+        {/* Content */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 sm:py-20">
             <div className="relative">
@@ -511,27 +486,15 @@ const handleStatusChange = async (id, newStatus) => {
               const creatorName       = getCreatorName(work);
               const statusUpdaterName = getStatusUpdaterName(work);
               const statusInfo        = getStatusDisplay(work.status);
-
               return (
-                <div
-                  key={work._id}
-                  className="group bg-white border border-gray-200 rounded-xl p-3 sm:p-4 md:p-5 hover:border-blue-300 hover:shadow-lg transition-all duration-200"
-                >
+                <div key={work._id} className="group bg-white border border-gray-200 rounded-xl p-3 sm:p-4 md:p-5 hover:border-blue-300 hover:shadow-lg transition-all duration-200">
                   <div className="flex flex-col gap-3">
-                    {/* Top row */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-                        {/* Avatars */}
                         {work.assignedTo?.length > 0 && (
-                          <div
-                            className="flex -space-x-1.5 sm:-space-x-2 cursor-pointer"
-                            onClick={e => handleShowAssignedUsers(e, work.assignedTo)}
-                          >
+                          <div className="flex -space-x-1.5 sm:-space-x-2 cursor-pointer" onClick={e => handleShowAssignedUsers(e, work.assignedTo)}>
                             {work.assignedTo.slice(0, 3).map((person, idx) => (
-                              <div
-                                key={person._id || idx}
-                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold border-2 border-white hover:z-10 transition-transform hover:scale-110 shadow-sm"
-                              >
+                              <div key={person._id || idx} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold border-2 border-white hover:z-10 transition-transform hover:scale-110 shadow-sm">
                                 {person.name.charAt(0).toUpperCase()}
                               </div>
                             ))}
@@ -542,8 +505,6 @@ const handleStatusChange = async (id, newStatus) => {
                             )}
                           </div>
                         )}
-
-                        {/* Status badge + dropdown */}
                         <div className="relative">
                           <button
                             onClick={e => toggleStatusMenu(e, work._id)}
@@ -556,7 +517,6 @@ const handleStatusChange = async (id, newStatus) => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                             </svg>
                           </button>
-
                           {openStatusMenu === work._id && (
                             <div className="absolute left-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
                               {[
@@ -567,9 +527,7 @@ const handleStatusChange = async (id, newStatus) => {
                                 <button
                                   key={s.value}
                                   onClick={e => { e.stopPropagation(); handleStatusChange(work._id, s.value); }}
-                                  className={`flex items-center gap-3 w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                                    work.status === s.value ? 'bg-blue-50 font-semibold text-blue-700' : 'text-gray-700 hover:bg-gray-50'
-                                  }`}
+                                  className={`flex items-center gap-3 w-full text-left px-4 py-2.5 text-sm transition-colors ${work.status === s.value ? 'bg-blue-50 font-semibold text-blue-700' : 'text-gray-700 hover:bg-gray-50'}`}
                                 >
                                   <span>{s.icon}</span>{s.label}
                                 </button>
@@ -577,16 +535,12 @@ const handleStatusChange = async (id, newStatus) => {
                             </div>
                           )}
                         </div>
-
-                        {/* Remarks count */}
                         {work.remarks?.length > 0 && (
                           <span className="hidden xs:flex items-center gap-1 px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                             💬 {work.remarks.length}
                           </span>
                         )}
                       </div>
-
-                      {/* Mobile 3-dot menu */}
                       <div className="sm:hidden relative flex-shrink-0">
                         <button
                           onClick={e => { e.stopPropagation(); setOpenStatusMenu(openStatusMenu === `${work._id}-menu` ? null : `${work._id}-menu`); }}
@@ -599,19 +553,15 @@ const handleStatusChange = async (id, newStatus) => {
                         {openStatusMenu === `${work._id}-menu` && (
                           <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
                             {work.status !== 'Completed' && (
-                              <button onClick={e => { e.stopPropagation(); handleEdit(work); setOpenStatusMenu(null); }}
-                                className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">✏️ Edit</button>
+                              <button onClick={e => { e.stopPropagation(); handleEdit(work); setOpenStatusMenu(null); }} className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">✏️ Edit</button>
                             )}
-                            <button onClick={e => { e.stopPropagation(); handleRemark(work); setOpenStatusMenu(null); }}
-                              className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">💬 Remarks</button>
-                            <button onClick={e => { e.stopPropagation(); handleDelete(work._id); setOpenStatusMenu(null); }}
-                              className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50">🗑️ Delete</button>
+                            <button onClick={e => { e.stopPropagation(); handleRemark(work); setOpenStatusMenu(null); }} className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">💬 Remarks</button>
+                            <button onClick={e => { e.stopPropagation(); handleDelete(work._id); setOpenStatusMenu(null); }} className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50">🗑️ Delete</button>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Creator / updater badges */}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {creatorName && (
                         <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -631,29 +581,20 @@ const handleStatusChange = async (id, newStatus) => {
                       )}
                     </div>
 
-                    {/* Title */}
-                    <h3 className={`text-sm sm:text-base md:text-lg font-semibold leading-tight ${
-                      work.status === 'Completed' ? 'text-gray-400 line-through' : 'text-gray-900'
-                    }`}>
+                    <h3 className={`text-sm sm:text-base md:text-lg font-semibold leading-tight ${work.status === 'Completed' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                       {work.title}
                     </h3>
 
-                    {/* Description */}
                     {work.description && (
-                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                        {work.description}
-                      </p>
+                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{work.description}</p>
                     )}
 
-                    {/* Meta */}
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-medium text-gray-500">
                       <span className="flex items-center gap-1">
                         <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        {work.dueDate
-                          ? new Date(work.dueDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
-                          : 'No due date'}
+                        {work.dueDate ? new Date(work.dueDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'No due date'}
                       </span>
                       {work.createdAt && (
                         <span className="hidden sm:flex items-center gap-1 text-gray-400">
@@ -665,24 +606,20 @@ const handleStatusChange = async (id, newStatus) => {
                       )}
                     </div>
 
-                    {/* Desktop actions */}
                     <div className="hidden sm:flex items-center gap-2 pt-2 border-t border-gray-100">
                       {work.status !== 'Completed' && (
-                        <button onClick={() => handleEdit(work)}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit task">
+                        <button onClick={() => handleEdit(work)} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit task">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
                       )}
-                      <button onClick={() => handleRemark(work)}
-                        className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all" title="View remarks">
+                      <button onClick={() => handleRemark(work)} className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all" title="View remarks">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                         </svg>
                       </button>
-                      <button onClick={() => handleDelete(work._id)}
-                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete task">
+                      <button onClick={() => handleDelete(work._id)} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete task">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -696,18 +633,14 @@ const handleStatusChange = async (id, newStatus) => {
         )}
       </div>
 
-      {/* ── Assigned Users Modal ─────────────────────────────────────────── */}
+      {/* Assigned Users Modal */}
       {showAssignedUsersModal && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4"
-          onClick={() => setShowAssignedUsersModal(false)}
-        >
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => setShowAssignedUsersModal(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in" onClick={e => e.stopPropagation()}>
             <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-base sm:text-lg font-bold text-gray-900">Assigned Team</h3>
-                <button onClick={() => setShowAssignedUsersModal(false)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-white/50 p-1.5 rounded-lg transition-all">
+                <button onClick={() => setShowAssignedUsersModal(false)} className="text-gray-400 hover:text-gray-600 hover:bg-white/50 p-1.5 rounded-lg transition-all">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -734,8 +667,7 @@ const handleStatusChange = async (id, newStatus) => {
               )}
             </div>
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
-              <button onClick={() => setShowAssignedUsersModal(false)}
-                className="w-full px-4 py-2 sm:py-2.5 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+              <button onClick={() => setShowAssignedUsersModal(false)} className="w-full px-4 py-2 sm:py-2.5 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
                 Close
               </button>
             </div>
@@ -743,30 +675,15 @@ const handleStatusChange = async (id, newStatus) => {
         </div>
       )}
 
-      {/* ── Modals ──────────────────────────────────────────────────────── */}
-      <TaskModal
-        isOpen={isTaskModalOpen}
-        onClose={() => { setTaskModalOpen(false); setSelectedWork(null); }}
-        work={selectedWork}
-        mode={taskModalMode}
-        refreshData={fetchMyWork}
-      />
-      <RemarkModal
-        isOpen={isRemarkModalOpen}
-        onClose={() => setRemarkModalOpen(false)}
-        work={selectedWork}
-        refreshData={fetchMyWork}
-      />
+      <TaskModal isOpen={isTaskModalOpen} onClose={() => { setTaskModalOpen(false); setSelectedWork(null); }} work={selectedWork} mode={taskModalMode} refreshData={fetchMyWork} />
+      <RemarkModal isOpen={isRemarkModalOpen} onClose={() => setRemarkModalOpen(false)} work={selectedWork} refreshData={fetchMyWork} />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        @keyframes slide-in {
-          from { opacity: 0; transform: scale(0.95); }
-          to   { opacity: 1; transform: scale(1);    }
-        }
+        @keyframes slide-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .animate-in { animation: slide-in 0.2s ease-out; }
         @media (min-width: 400px) {
           .xs\\:flex    { display: flex   !important; }
