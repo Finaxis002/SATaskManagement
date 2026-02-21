@@ -2270,7 +2270,7 @@ const TaskList = ({
   const [showTeamPopup, setShowTeamPopup] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [selectedTaskDetails, setSelectedTaskDetails] = useState(null);
-
+  const [actionMenuPosition, setActionMenuPosition] = useState({ top: 0, left: 0 });
   const [departments, setDepartments] = useState([]);
   const [uniqueUsers, setUniqueUsers] = useState([]);
   const [uniqueAssignedBy, setUniqueAssignedBy] = useState([]);
@@ -2502,15 +2502,14 @@ const TaskList = ({
   // Scroll close logic
   useEffect(() => {
     const handleScrollClose = () => {
-      if (editingStatus) {
-        setEditingStatus(null);
-      }
+      if (editingStatus) setEditingStatus(null);
+      if (openActionMenu) setOpenActionMenu(null);
     };
     window.addEventListener("scroll", handleScrollClose, true);
     return () => {
       window.removeEventListener("scroll", handleScrollClose, true);
     };
-  }, [editingStatus]);
+  }, [editingStatus, openActionMenu]);
 
   useEffect(() => {
     if (tasks.length > 0) {
@@ -3121,12 +3120,23 @@ const TaskList = ({
 
         {/* Actions */}
         <td className="py-3 px-2">
-          <div className="relative" ref={openActionMenu === task._id ? actionMenuRef : null}>
+          <div ref={openActionMenu === task._id ? actionMenuRef : null}>
             <button
               className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
-                setOpenActionMenu(openActionMenu === task._id ? null : task._id);
+                if (openActionMenu === task._id) {
+                  setOpenActionMenu(null);
+                } else {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const spaceBelow = window.innerHeight - rect.bottom;
+                  const showAbove = spaceBelow < 160;
+                  setActionMenuPosition({
+                    top: showAbove ? rect.top - 150 : rect.bottom + 4,
+                    left: rect.right - 144,
+                  });
+                  setOpenActionMenu(task._id);
+                }
               }}
               title="More actions"
             >
@@ -3136,64 +3146,6 @@ const TaskList = ({
                 <circle cx="19" cy="12" r="2" />
               </svg>
             </button>
-
-            {openActionMenu === task._id && (
-              <div
-                className="absolute right-0 top-8 w-36 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
-                style={{ zIndex: 9999 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => {
-                    setTaskForMessage(task);
-                    setOpenMessagePopup(true);
-                    setOpenActionMenu(null);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors border-b border-gray-100"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
-                    <path d="m21.854 2.147-10.94 10.939" />
-                  </svg>
-                  Message
-                </button>
-
-                <button
-                  onClick={() => {
-                    handleCopyTask(task);
-                    setOpenActionMenu(null);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors border-b border-gray-100"
-                >
-                  <FontAwesomeIcon icon={faCopy} className="h-3 w-3" />
-                  Copy
-                </button>
-
-                <button
-                  onClick={() => {
-                    onEdit(task);
-                    setOpenActionMenu(null);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors border-b border-gray-100"
-                >
-                  <FontAwesomeIcon icon={faPen} className="h-3 w-3" />
-                  Edit
-                </button>
-
-                {isAdmin && (
-                  <button
-                    onClick={() => {
-                      handleDeleteTask(task);
-                      setOpenActionMenu(null);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <FaTrashAlt size={11} />
-                    Delete
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         </td>
       </tr>
@@ -4022,6 +3974,54 @@ const TaskList = ({
             </div>
           </div>
         )}
+        {/* Action Menu Fixed */}
+        {openActionMenu && (() => {
+          const t = tasks.find(t => t._id === openActionMenu);
+          if (!t) return null;
+          return (
+            <div
+              ref={actionMenuRef}
+              className="fixed w-36 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
+              style={{ zIndex: 99999, top: actionMenuPosition.top, left: actionMenuPosition.left }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => { setTaskForMessage(t); setOpenMessagePopup(true); setOpenActionMenu(null); }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors border-b border-gray-100"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+                  <path d="m21.854 2.147-10.94 10.939" />
+                </svg>
+                Message
+              </button>
+              <button
+                onClick={() => { handleCopyTask(t); setOpenActionMenu(null); }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors border-b border-gray-100"
+              >
+                <FontAwesomeIcon icon={faCopy} className="h-3 w-3" />
+                Copy
+              </button>
+              <button
+                onClick={() => { onEdit(t); setOpenActionMenu(null); }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors border-b border-gray-100"
+              >
+                <FontAwesomeIcon icon={faPen} className="h-3 w-3" />
+                Edit
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => { handleDeleteTask(t); setOpenActionMenu(null); }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <FaTrashAlt size={11} />
+                  Delete
+                </button>
+              )}
+            </div>
+          );
+        })()}
+
 
         {/* Status Dropdown */}
         {editingStatus && (

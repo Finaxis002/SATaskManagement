@@ -38,30 +38,22 @@ const Sidebar = ({ isOpen, onClose }) => {
   );
   const [isLoadingDept, setIsLoadingDept] = useState(false);
   
-  // 'notificationCount' and 'inboxCount' values were unused, but setters are used by hooks.
   const [, setNotificationCount] = useState(0);
   const [, setInboxCount] = useState(0);
 
-  // 'leaveAlert' value is used, but setter was unused so we removed it from destructuring
   const [leaveAlert] = useState(false);
   
   const [expanded, setExpanded] = useState(false);
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
   const [allowedMenuItems, setAllowedMenuItems] = useState([]);
   
-  // Refs to prevent unnecessary re-renders
   const permissionsLoadedRef = useRef(false);
   const socketInitializedRef = useRef(false);
 
-  // Menu configuration - memoized
   const menuItemConfig = useMemo(() => ({
     home: { to: "/", icon: <FaHome />, label: "Home" },
     allUsers: { to: "/all-employees", icon: <FaUsers />, label: "All Users" },
-    
-    // --- NEW BUTTON ADDED HERE ---
     teamStatus: { to: "/team-status", icon: <FaUsersCog />, label: "IT Department" },
-    // -----------------------------
-
     tasks: { to: "/all-tasks", icon: <FaClipboardList />, label: "Tasks" },
     agent: { to: "/agent", icon: <FaUserTie />, label: "Agent" },
     supportRequests: {
@@ -90,13 +82,12 @@ const Sidebar = ({ isOpen, onClose }) => {
     updates: { to: "/updates", icon: <FaClock />, label: "Updates" },
   }), []);
 
-// Default permissions - memoized
   const defaultFallbackPermissions = useMemo(() => ({
     marketing: ["home", "tasks", "agent", "clients", "leave"],
     operations: ["home", "tasks", "agent", "clients", "leave"],
     "it/software": [
       "home",
-      "teamStatus", // <--- YAHAN ADD KAR DIYA
+      "teamStatus",
       "tasks",
       "agent",
       "supportRequests",
@@ -104,32 +95,28 @@ const Sidebar = ({ isOpen, onClose }) => {
       "leave",
       "updates",
     ],
-    // ... baki sab same rahega
     seo: ["home", "tasks", "agent", "clients", "leave"],
-    "human resource": ["home", "tasks", "agent", "clients", "leave"],
+    // ✅ HR ko "settings" access diya — wahan sirf Leave Management tab dikhega
+    "human resource": ["home", "tasks", "agent", "clients", "leave", "settings"],
     finance: ["home", "tasks", "agent", "clients", "leave"],
     administration: ["home", "tasks", "agent", "clients", "leave"],
     sales: ["home", "tasks", "agent", "clients", "leave", "invoicing"],
   }), []);
 
-  // Helper function - memoized with useCallback
   const normalizeDepartment = useCallback((dept) => {
     if (!dept) return "";
     return dept.toLowerCase().trim().replace(/\s+/g, " ");
   }, []);
 
-  // Load permissions - memoized with useCallback
   const loadPermissions = useCallback(async () => {
     if (permissionsLoadedRef.current) return;
     
-    // Admin gets everything
     if (role === "admin") {
       setAllowedMenuItems(Object.keys(menuItemConfig));
       permissionsLoadedRef.current = true;
       return;
     }
 
-    // Check if department exists
     if (!department || department === "null" || department === "undefined") {
       setAllowedMenuItems(["home", "tasks", "leave"]);
       permissionsLoadedRef.current = true;
@@ -160,6 +147,17 @@ const Sidebar = ({ isOpen, onClose }) => {
         }
       }
 
+      // ✅ HR ke liye "settings" force add karo — chahe backend mein ho ya na ho
+      const normalizedDeptCheck = normalizeDepartment(department);
+      if (
+        deptPermissions &&
+        Array.isArray(deptPermissions) &&
+        normalizedDeptCheck === "human resource" &&
+        !deptPermissions.includes("settings")
+      ) {
+        deptPermissions = [...deptPermissions, "settings"];
+      }
+
       if (
         deptPermissions &&
         Array.isArray(deptPermissions) &&
@@ -175,7 +173,6 @@ const Sidebar = ({ isOpen, onClose }) => {
           ];
         setAllowedMenuItems(fallback);
       }
-    // FIX: Removed unused variable from catch block
     } catch {
       const savedPermissions = localStorage.getItem("departmentPermissions");
 
@@ -200,9 +197,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             permissionsLoadedRef.current = true;
             return;
           }
-        // FIX: Removed unused variable from catch block
         } catch {
-            // Fallback to default if parsing fails
+          // Fallback to default if parsing fails
         }
       }
 
@@ -218,7 +214,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     permissionsLoadedRef.current = true;
   }, [role, department, menuItemConfig, defaultFallbackPermissions, normalizeDepartment]);
 
-  // Fetch pending leave count - memoized
   const fetchPendingLeaveCount = useCallback(async () => {
     try {
       const res = await axios.get(
@@ -231,7 +226,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   }, []);
 
-  // Fetch user department - memoized
   const fetchUserDepartment = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
@@ -268,7 +262,6 @@ const Sidebar = ({ isOpen, onClose }) => {
         setDepartment(userDept);
         localStorage.setItem("department", userDept);
       }
-    // FIX: Removed unused variable from catch block
     } catch {
       setDepartment("");
     } finally {
@@ -276,7 +269,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   }, [normalizeDepartment]);
 
-  // Initialize sidebar - single effect
   useEffect(() => {
     const initializeSidebar = async () => {
       const currentRole = localStorage.getItem("role");
@@ -306,14 +298,12 @@ const Sidebar = ({ isOpen, onClose }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
-  // Load permissions - separate effect
   useEffect(() => {
     if (role && (department || role === "admin") && !permissionsLoadedRef.current) {
       loadPermissions();
     }
   }, [role, department, loadPermissions]);
 
-  // Socket initialization - single effect
   useEffect(() => {
     if (socketInitializedRef.current) return;
     
@@ -341,7 +331,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     };
   }, [fetchPendingLeaveCount, loadPermissions]);
 
-  // Permission polling - only for non-admin
   useEffect(() => {
     if (role === "admin") return;
 
@@ -359,11 +348,10 @@ const Sidebar = ({ isOpen, onClose }) => {
           permissionsLoadedRef.current = false;
           loadPermissions();
         }
-      // FIX: Removed unused variable from catch block
       } catch {
         // Silent fail
       }
-    }, 30000); // Increased to 30 seconds to reduce load
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [role, loadPermissions]);
@@ -371,13 +359,11 @@ const Sidebar = ({ isOpen, onClose }) => {
   useMessageSocket(setInboxCount);
   useNotificationSocket(setNotificationCount);
 
-  // Helper function - memoized
   const shouldShowMenuItem = useCallback((menuKey) => {
     if (role === "admin") return true;
     return allowedMenuItems.includes(menuKey);
   }, [role, allowedMenuItems]);
 
-  // Loading state
   if (isLoadingDept) {
     return (
       <div className="hidden md:flex fixed left-0 top-0 h-screen z-[999] w-[70px] bg-gradient-to-b from-purple-50 to-indigo-50 items-center justify-center">
@@ -455,7 +441,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                 to={config.to}
                 expanded={expanded}
               />
-
             );
           })}
         </div>
@@ -562,7 +547,6 @@ const Sidebar = ({ isOpen, onClose }) => {
   );
 };
 
-// Memoized Helper Components to prevent unnecessary re-renders
 const SidebarItem = React.memo(({ icon, label, to, expanded, badge }) => (
   <NavLink
     to={to}
@@ -618,4 +602,4 @@ const MobileSidebarItem = React.memo(({ icon, label, to, onClick, badge }) => (
   </NavLink>
 ));
 
-export default Sidebar; 
+export default Sidebar;
