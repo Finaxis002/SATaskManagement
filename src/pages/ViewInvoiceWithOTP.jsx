@@ -8,12 +8,39 @@ export default function ViewInvoiceWithOTP() {
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState("");
 
+   const getInvoiceBaseUrl = () => {
+    // Check if we're in local development
+    const isLocalDev = 
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      process.env.NODE_ENV === 'development';
+    
+    console.log('🌍 Environment check:', {
+      hostname: window.location.hostname,
+      env: process.env.NODE_ENV,
+      isLocalDev: isLocalDev
+    });
+    
+    if (isLocalDev) {
+      return 'http://localhost:5174'; // Your local invoicing app
+    }
+    return 'https://invoicing.sharda.co.in'; // Production
+  };
+
+
   // Send OTP on mount or on button click
   const sendOtp = async () => {
     setLoading(true);
     setErrMsg("");
     try {
-      await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice", { 
+      // await axios.post("https://taskbe.sharda.co.in/api/send-otp-view-invoice", { 
+      //   email: "caanunaysharda@gmail.com" 
+      // });
+      const apiBase = window.location.hostname.includes('localhost')
+        ? 'http://localhost:1100'
+        : 'https://taskbe.sharda.co.in';
+      
+      await axios.post(`${apiBase}/api/send-otp-view-invoice`, { 
         email: "caanunaysharda@gmail.com" 
       });
       setOtpSent(true);
@@ -25,7 +52,9 @@ export default function ViewInvoiceWithOTP() {
 
   // Client-side fallback method
   const openWithClientSideMethods = (token) => {
-    const invoiceWindow = window.open('https://invoicing.sharda.co.in', '_blank');
+    // const invoiceWindow = window.open('https://invoicing.sharda.co.in', '_blank');
+    const invoiceBaseUrl = getInvoiceBaseUrl();
+    const invoiceWindow = window.open(invoiceBaseUrl, '_blank');
     
     if (!invoiceWindow) {
       setErrMsg("Popup blocked! Please allow popups for this site.");
@@ -36,7 +65,8 @@ export default function ViewInvoiceWithOTP() {
     const tryClientTransfer = (attempt = 0) => {
       if (attempt >= 3) {
         // Ultimate fallback - URL parameter
-        const fallbackUrl = `https://invoicing.sharda.co.in?authToken=${encodeURIComponent(token)}&fallback=true&timestamp=${Date.now()}`;
+        // const fallbackUrl = `https://invoicing.sharda.co.in?authToken=${encodeURIComponent(token)}&fallback=true&timestamp=${Date.now()}`;
+         const fallbackUrl = `${invoiceBaseUrl}?authToken=${encodeURIComponent(token)}&fallback=true&timestamp=${Date.now()}`;
         invoiceWindow.location.href = fallbackUrl;
         return;
       }
@@ -50,7 +80,8 @@ export default function ViewInvoiceWithOTP() {
             timestamp: Date.now(),
             source: 'client-fallback'
           },
-          'https://invoicing.sharda.co.in'
+          // 'https://invoicing.sharda.co.in'
+           invoiceBaseUrl
         );
         console.log(`Client token transfer attempt ${attempt + 1}`);
       } catch (e) {
@@ -66,18 +97,29 @@ export default function ViewInvoiceWithOTP() {
     const token = localStorage.getItem('authToken');
     if (token) {
       try {
-        const shareResponse = await axios.post('https://taskbe.sharda.co.in/api/token/share-auth-token', {
+         const apiBase = window.location.hostname.includes('localhost')
+          ? 'http://localhost:1100'
+          : 'https://taskbe.sharda.co.in';
+        // const shareResponse = await axios.post('https://taskbe.sharda.co.in/api/token/share-auth-token', {
+        //   token: token,
+        //   source: 'manual-fallback'
+        // });
+         const shareResponse = await axios.post(`${apiBase}/api/token/share-auth-token`, {
           token: token,
           source: 'manual-fallback'
         });
         
         if (shareResponse.data.success) {
-          const invoiceUrl = `https://invoicing.sharda.co.in?shareId=${shareResponse.data.shareId}`;
+          // const invoiceUrl = `https://invoicing.sharda.co.in?shareId=${shareResponse.data.shareId}`;
+           const invoiceBaseUrl = getInvoiceBaseUrl();
+          const invoiceUrl = `${invoiceBaseUrl}?shareId=${shareResponse.data.shareId}`;
           window.open(invoiceUrl, '_blank');
         }
       } catch (error) {
         // Fallback to URL parameter
-        const fallbackUrl = `https://invoicing.sharda.co.in?authToken=${encodeURIComponent(token)}&direct=true`;
+        // const fallbackUrl = `https://invoicing.sharda.co.in?authToken=${encodeURIComponent(token)}&direct=true`;
+        const invoiceBaseUrl = getInvoiceBaseUrl();
+        const fallbackUrl = `${invoiceBaseUrl}?authToken=${encodeURIComponent(token)}&direct=true`;
         window.open(fallbackUrl, '_blank');
       }
     } else {
@@ -91,9 +133,17 @@ export default function ViewInvoiceWithOTP() {
     setErrMsg("");
     
     try {
-      const res = await axios.post("https://taskbe.sharda.co.in/api/verify-otp-view-invoice", { 
+      // const res = await axios.post("https://taskbe.sharda.co.in/api/verify-otp-view-invoice", { 
+      //   otp: enteredOtp 
+      // });
+       const apiBase = window.location.hostname.includes('localhost')
+        ? 'http://localhost:1100'
+        : 'https://taskbe.sharda.co.in';
+      
+      const res = await axios.post(`${apiBase}/api/verify-otp-view-invoice`, { 
         otp: enteredOtp 
       });
+      
       
       if (res.data.success) {
         setOtpVerified(true);
@@ -107,19 +157,26 @@ export default function ViewInvoiceWithOTP() {
 
         // PRIMARY: Server-side token sharing
         try {
-          const shareResponse = await axios.post('https://taskbe.sharda.co.in/api/token/share-auth-token', {
+          // const shareResponse = await axios.post('https://taskbe.sharda.co.in/api/token/share-auth-token', {
+          //   token: token,
+          //   source: 'otp-verification'
+          // });
+           const shareResponse = await axios.post(`${apiBase}/api/token/share-auth-token`, {
             token: token,
             source: 'otp-verification'
           });
           
           if (shareResponse.data.success) {
             // Open invoice software with shareId
-            const invoiceUrl = `https://invoicing.sharda.co.in?shareId=${shareResponse.data.shareId}`;
+            // const invoiceUrl = `https://invoicing.sharda.co.in?shareId=${shareResponse.data.shareId}`;
+              const invoiceBaseUrl = getInvoiceBaseUrl();
+            const invoiceUrl = `${invoiceBaseUrl}?shareId=${shareResponse.data.shareId}`;
             window.open(invoiceUrl, '_blank');
             console.log('✅ Invoice opened with server-shared token');
           }
         } catch (serverError) {
           console.warn('Server token sharing failed, using fallback');
+            console.error('Server error:', serverError);
           // Fallback to client-side methods
           openWithClientSideMethods(token);
         }
@@ -138,7 +195,21 @@ export default function ViewInvoiceWithOTP() {
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full text-center">
           <h2 className="text-xl font-semibold mb-4 text-green-600">OTP Verified Successfully!!</h2>
-          <p className="mb-4">Invoice software should open automatically.</p>
+          {/* <p className="mb-4">Invoice software should open automatically.</p> */}
+             <p className="mb-4">
+            {window.location.hostname.includes('localhost') 
+              ? 'Local invoice software should open automatically.' 
+              : 'Invoice software should open automatically.'}
+          </p>
+          {/* Debug info for local development */}
+          {window.location.hostname.includes('localhost') && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4 text-left text-sm">
+              <p className="font-semibold">🔧 Local Development Info:</p>
+              <p>Invoicing URL: {getInvoiceBaseUrl()}</p>
+              <p>Backend URL: {window.location.hostname.includes('localhost') ? 'http://localhost:1100' : 'Production'}</p>
+              <p>Token: {localStorage.getItem('authToken') ? '✓ Present' : '✗ Missing'}</p>
+            </div>
+          )}
           
           {/* Backup button in case automatic opening fails */}
           <div className="space-y-3">
@@ -165,6 +236,13 @@ export default function ViewInvoiceWithOTP() {
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
         <h2 className="text-xl font-semibold mb-4">OTP Required</h2>
+          {/* Environment indicator */}
+        {window.location.hostname.includes('localhost') && (
+          <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-4 text-sm">
+            <span className="font-semibold">🔧 LOCAL DEVELOPMENT MODE</span>
+            <p className="text-xs mt-1">Will open invoicing at: {getInvoiceBaseUrl()}</p>
+          </div>
+        )}
         
         {otpSent ? (
           <>

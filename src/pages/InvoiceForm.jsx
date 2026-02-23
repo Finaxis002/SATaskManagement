@@ -465,6 +465,9 @@ export default function InvoiceForm({
           : null,
       };
       // Save the invoice to the backend
+      // Get userId from localStorage (stored during login)
+      const userId = localStorage.getItem("userId") || "";
+      
       const invoiceData = {
         invoiceNumber: finalNo,
         invoiceDate,
@@ -475,6 +478,7 @@ export default function InvoiceForm({
         items,
         totalAmount: totalAmountWithTax,
         notes,
+        userId, // ⭐ Added userId to associate invoice with creator
       };
 
       await axios.post("/invoices", invoiceData);
