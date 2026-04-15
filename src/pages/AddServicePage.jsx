@@ -10,16 +10,17 @@ const AddServicePage = () => {
   const [loading, setLoading] = useState(true);
 
   const services = [
-    { name: "Project Report", icon: "📊", description: "Comprehensive project analysis and reporting" },
-    { name: "MSME", icon: "🏢", description: "Micro, Small & Medium Enterprises registration" },
-    { name: "GST Registration", icon: "📋", description: "Goods and Services Tax registration" },
-    { name: "Income Tax Return", icon: "💰", description: "Annual income tax return filing" },
-    { name: "Subsidy Services", icon: "🎯", description: "Government subsidy application assistance" },
-    { name: "Trade Mark", icon: "®️", description: "Trademark registration and protection" },
-    { name: "Income Tax Audit", icon: "🔍", description: "Professional tax audit services" },
-    { name: "IEC Code", icon: "🌐", description: "Import Export Code registration" },
-    { name: "GST Return", icon: "📄", description: "Monthly/Quarterly GST return filing" }
-  ];
+  { name: "Project Report", icon: "📊", description: "Comprehensive project analysis and reporting" },
+  { name: "MSME", icon: "🏢", description: "Micro, Small & Medium Enterprises registration" },
+  { name: "GST Registration", icon: "📋", description: "Goods and Services Tax registration" },
+  { name: "Income Tax Return", icon: "💰", description: "Annual income tax return filing" },
+  { name: "Subsidy Services", icon: "🎯", description: "Government subsidy application assistance" },
+  { name: "Trade Mark", icon: "®️", description: "Trademark registration and protection" },
+  { name: "Income Tax Audit", icon: "🔍", description: "Professional tax audit services" },
+  { name: "IEC Code", icon: "🌐", description: "Import Export Code registration" },
+  { name: "GST Return", icon: "📄", description: "Monthly/Quarterly GST return filing" },
+  { name: "Vinimay", icon: "💻", description: "Vinimay software solutions" }
+];
 
   useEffect(() => {
     const fetchClientDetails = async () => {
@@ -30,7 +31,7 @@ const AddServicePage = () => {
         const servicesRes = await axios.get(`https://taskbe.sharda.co.in/api/clients/${clientId}/services`);
         setSelectedServices(servicesRes.data.services);
       } catch (err) {
-        // console.error("Error fetching client details", err);
+        console.error("Error fetching client details", err);
         Swal.fire({
           icon: "error",
           title: "Error",
@@ -207,7 +208,7 @@ const AddServicePage = () => {
               
               <div className="p-6">
                 <div className="grid md:grid-cols-2 gap-4 mb-8">
-                  {services.map((service, index) => {
+                  {services.map((service) => {
                     const isSelected = selectedServices.includes(service.name);
                     return (
                       <div 
