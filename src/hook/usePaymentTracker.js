@@ -43,7 +43,7 @@ export const usePaymentTracker = (userData) => {
         sortOrder: "desc"
       });
       
-      const res = await fetch(`${baseURL}/api/tasks?${params}`);
+      const res = await fetch(`${baseURL}/api/tasks/dropdown`);
       const data = await res.json();
       
       if (data.tasks && Array.isArray(data.tasks)) {
@@ -156,10 +156,14 @@ export const usePaymentTracker = (userData) => {
     return filtered;
   }, [tasks, filter, searchTerm]);
 
+  // useEffect(() => {
+  //   fetchTasks();
+  //   fetchAllTasks();
+  // }, [fetchTasks, fetchAllTasks]);
+
   useEffect(() => {
-    fetchTasks();
-    fetchAllTasks();
-  }, [fetchTasks, fetchAllTasks]);
+  Promise.all([fetchTasks(), fetchAllTasks()]);
+}, [fetchTasks, fetchAllTasks]);
 
   return {
     tasks,
