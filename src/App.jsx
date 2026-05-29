@@ -47,6 +47,7 @@ import AgentProfile from "./pages/Agent/AgentProfile";
 
 // 📝 Message Templates Import
 import MessageTemplatesManager from "./Components/Tasks/MessageTemplatesManager";
+import PaymentTrackerPage from './pages/PaymentTrackerPage'
 
 const App = () => {
 
@@ -72,7 +73,7 @@ const App = () => {
 
   return (
     <Router>
-     
+
       <NotesProvider>
         <ShortcutHandler>
           <Routes>
@@ -426,6 +427,17 @@ const App = () => {
                 <ProtectedRoute>
                   <MainLayout>
                     <DeveloperSupport />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/payment-tracker"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PaymentTrackerPage />
                   </MainLayout>
                 </ProtectedRoute>
               }

@@ -14,6 +14,7 @@ import {
   FaUserTie,
   FaRegEnvelopeOpen,
   FaUsersCog,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import { io } from "socket.io-client";
 import useMessageSocket from "../hook/useMessageSocket";
@@ -79,6 +80,11 @@ const Sidebar = ({ isOpen, onClose }) => {
       icon: <FaMoneyBill />,
       label: "Invoicing",
     },
+      paymentTracker: {
+    to: "/payment-tracker",
+    icon: <FaMoneyBillWave />,
+    label: "Payment Tracker",
+  },
     updates: { to: "/updates", icon: <FaClock />, label: "Updates" },
   }), []);
 
@@ -94,6 +100,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       "clients",
       "leave",
       "updates",
+      "paymentTracker",
     ],
     seo: ["home", "tasks", "agent", "clients", "leave"],
     // ✅ HR ko "settings" access diya — wahan sirf Leave Management tab dikhega
