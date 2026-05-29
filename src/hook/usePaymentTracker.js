@@ -69,10 +69,10 @@ export const usePaymentTracker = (userData) => {
         }
       );
       const data = await res.json();
-      if (data.success) {
-        await fetchTasks();
-        await fetchAllTasks();
-      }
+      // if (data.success) {
+      //   await fetchTasks();
+      //   await fetchAllTasks();
+      // }
       return data.success;
     } catch (err) {
       console.error("Save stages error:", err);
@@ -91,16 +91,20 @@ export const usePaymentTracker = (userData) => {
         }
       );
       const data = await res.json();
-      if (data.success) {
-        await fetchTasks();
-        await fetchAllTasks();
-      }
+      // if (data.success) {
+      //   await fetchTasks();
+      //   await fetchAllTasks();
+      // }
       return data.success;
     } catch (err) {
       console.error("Log payment error:", err);
       return false;
     }
   };
+
+  const refreshTasks = useCallback(async () => {
+  await Promise.all([fetchTasks(), fetchAllTasks()]);
+}, [fetchTasks, fetchAllTasks]);
 
   // Stats: Only count tasks with payment stages
   const stats = useMemo(() => {
@@ -171,5 +175,6 @@ export const usePaymentTracker = (userData) => {
     logPayment,
     fetchTasks,    // Exported for manual refresh
     fetchAllTasks, // Exported for manual refresh
+     refreshTasks,
   };
 };

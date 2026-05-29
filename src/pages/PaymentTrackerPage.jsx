@@ -37,24 +37,36 @@ const PaymentTrackerPage = () => {
   const [selectedTaskId, setSelectedTaskId] = useState("");
   const [selectedTask, setSelectedTask] = useState(null); // Full task data
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  
+
   // Stage editor state
   const [stagesForEdit, setStagesForEdit] = useState([]);
-  
+
   // Payment logger state
   const [selectedTaskForPayment, setSelectedTaskForPayment] = useState(null);
   const [paymentPercentage, setPaymentPercentage] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
-  
+
   // Loading states
   const [isSavingStages, setIsSavingStages] = useState(false);
   const [isLoggingPayment, setIsLoggingPayment] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingTaskDetails, setIsLoadingTaskDetails] = useState(false);
-  
+
   // Searchable dropdown states
   const [taskSearchInput, setTaskSearchInput] = useState("");
   const [showTaskDropdown, setShowTaskDropdown] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(""), 3000);
+  };
+  const showError = (msg) => {
+    setErrorMsg(msg);
+    setTimeout(() => setErrorMsg(""), 4000);
+  };
+
   const dropdownRef = useRef(null);
 
   const getTaskDescription = (task) =>
@@ -68,15 +80,20 @@ const PaymentTrackerPage = () => {
       setIsLoadingTaskDetails(true);
       const response = await fetch(`${baseURL}/api/tasks/${taskId}`);
       const data = await response.json();
-      
+
       if (data && data._id) {
         console.log("Fetched complete task details:", data);
         console.log("Payment stages:", data.paymentStages);
         setSelectedTask(data);
-        
+
         // Load stages for editing
         if (data.paymentStages && data.paymentStages.length > 0) {
-          setStagesForEdit([...data.paymentStages]);
+          const normalizedForEdit = data.paymentStages.map((stage) => ({
+            ...stage,
+            status: stage.status || "unpaid", // ✅ fill in missing status from old data
+          }));
+          setStagesForEdit(normalizedForEdit);
+          // setStagesForEdit([...data.paymentStages]);
         } else {
           setStagesForEdit([{ percentage: 0, description: "" }]);
         }
@@ -92,7 +109,7 @@ const PaymentTrackerPage = () => {
     setSelectedTaskId(task._id);
     setTaskSearchInput(task.taskName);
     setShowTaskDropdown(false);
-    
+
     // Fetch complete task details including payment stages
     await fetchCompleteTaskDetails(task._id);
   };
@@ -103,7 +120,7 @@ const PaymentTrackerPage = () => {
       alert("Please select a task first");
       return;
     }
-    
+
     console.log("Opening payment logger for:", selectedTask.taskName);
     setSelectedTaskForPayment(selectedTask);
     setPaymentPercentage(selectedTask.paidPercentage?.toString() || "0");
@@ -111,90 +128,185 @@ const PaymentTrackerPage = () => {
     setShowPaymentModal(true);
   };
 
+  // const handleSaveStages = async () => {
+  //   if (!selectedTask) {
+  //     alert("Please select a task first");
+  //     return;
+  //   }
+
+  //   // Filter out empty stages
+  //   const validStages = stagesForEdit.filter(
+  //     stage => stage.description && stage.description.trim() !== ""
+  //   );
+
+  //   if (validStages.length === 0) {
+  //     alert("Please add at least one valid stage with description");
+  //     return;
+  //   }
+
+  //   setIsSavingStages(true);
+
+  //   try {
+  //     console.log("Saving stages for task:", selectedTask._id, validStages);
+  //     const success = await saveStages(selectedTask._id, validStages);
+
+  //     if (success) {
+  //       console.log("Stages saved successfully");
+  //       // alert("Payment stages saved successfully!");
+  //        showSuccess("Payment stages saved successfully!");
+  //       // Refresh the selected task details
+  //       // await fetchCompleteTaskDetails(selectedTask._id);
+  //       // await refreshTasks();
+  //       await Promise.all([
+  //         fetchCompleteTaskDetails(selectedTask._id),
+  //         refreshTasks(),
+  //       ]);
+  //     } else {
+  //       alert("Failed to save stages. Please try again.");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving stages:", error);
+  //     alert("An error occurred while saving stages.");
+  //   } finally {
+  //     setIsSavingStages(false);
+  //   }
+  // };
+
+  // const handleLogPayment = async () => {
+  //   if (!selectedTaskForPayment) {
+  //     alert("Please select a task first");
+  //     return;
+  //   }
+
+  //   const percentage = parseFloat(paymentPercentage);
+  //   if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+  //     alert("Please enter a valid percentage between 0 and 100");
+  //     return;
+  //   }
+
+  //   setIsLoggingPayment(true);
+
+  //   try {
+  //     console.log("Logging payment for task:", selectedTaskForPayment._id, percentage);
+  //     const success = await logPayment(
+  //       selectedTaskForPayment._id,
+  //       percentage,
+  //       paymentNote,
+  //       userData.userName
+  //     );
+
+  //     if (success) {
+  //       console.log("Payment logged successfully");
+  //       alert("Payment logged successfully!");
+  //       setShowPaymentModal(false);
+  //       setPaymentPercentage("");
+  //       setPaymentNote("");
+  //       setSelectedTaskForPayment(null);
+
+  //       // Refresh the selected task details
+  //       if (selectedTask) {
+  //         // await fetchCompleteTaskDetails(selectedTask._id);
+  //         await Promise.all([
+  //           fetchCompleteTaskDetails(selectedTask._id),
+  //           refreshTasks(),
+  //         ]);
+  //       }
+  //       // await refreshTasks();
+  //     } else {
+  //       alert("Failed to log payment. Please try again.");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error logging payment:", error);
+  //     alert("An error occurred while logging payment.");
+  //   } finally {
+  //     setIsLoggingPayment(false);
+  //   }
+  // };
+
+
   const handleSaveStages = async () => {
     if (!selectedTask) {
-      alert("Please select a task first");
+      showError("Please select a task first");
       return;
     }
 
-    // Filter out empty stages
     const validStages = stagesForEdit.filter(
       stage => stage.description && stage.description.trim() !== ""
     );
-    
+
     if (validStages.length === 0) {
-      alert("Please add at least one valid stage with description");
+      showError("Please add at least one valid stage with description");
       return;
     }
-
+    console.log("Stages being saved:", JSON.stringify(validStages));
     setIsSavingStages(true);
-    
+
     try {
-      console.log("Saving stages for task:", selectedTask._id, validStages);
       const success = await saveStages(selectedTask._id, validStages);
-      
+
       if (success) {
-        console.log("Stages saved successfully");
-        alert("Payment stages saved successfully!");
-        
-        // Refresh the selected task details
-        await fetchCompleteTaskDetails(selectedTask._id);
-        await refreshTasks();
+        setIsSavingStages(false); // ✅ release button before background refresh
+        showSuccess("Payment stages saved successfully!");
+        await Promise.all([
+          fetchCompleteTaskDetails(selectedTask._id),
+          refreshTasks(),
+        ]);
       } else {
-        alert("Failed to save stages. Please try again.");
+        setIsSavingStages(false);
+        showError("Failed to save stages. Please try again.");
       }
     } catch (error) {
       console.error("Error saving stages:", error);
-      alert("An error occurred while saving stages.");
-    } finally {
       setIsSavingStages(false);
+      showError("An error occurred while saving stages.");
     }
+    // ❌ no finally — we set false manually in each branch above
   };
 
   const handleLogPayment = async () => {
     if (!selectedTaskForPayment) {
-      alert("Please select a task first");
+      showError("Please select a task first");
       return;
     }
 
     const percentage = parseFloat(paymentPercentage);
     if (isNaN(percentage) || percentage < 0 || percentage > 100) {
-      alert("Please enter a valid percentage between 0 and 100");
+      showError("Please enter a valid percentage between 0 and 100");
       return;
     }
-    
+
     setIsLoggingPayment(true);
-    
+
     try {
-      console.log("Logging payment for task:", selectedTaskForPayment._id, percentage);
       const success = await logPayment(
         selectedTaskForPayment._id,
         percentage,
         paymentNote,
         userData.userName
       );
-      
+
       if (success) {
-        console.log("Payment logged successfully");
-        alert("Payment logged successfully!");
+        setIsLoggingPayment(false); // ✅ release button before background refresh
         setShowPaymentModal(false);
         setPaymentPercentage("");
         setPaymentNote("");
         setSelectedTaskForPayment(null);
-        
-        // Refresh the selected task details
+        showSuccess("Payment logged successfully!");
+
         if (selectedTask) {
-          await fetchCompleteTaskDetails(selectedTask._id);
+          await Promise.all([
+            fetchCompleteTaskDetails(selectedTask._id),
+            refreshTasks(),
+          ]);
         }
-        await refreshTasks();
       } else {
-        alert("Failed to log payment. Please try again.");
+        setIsLoggingPayment(false);
+        showError("Failed to log payment. Please try again.");
       }
     } catch (error) {
       console.error("Error logging payment:", error);
-      alert("An error occurred while logging payment.");
-    } finally {
       setIsLoggingPayment(false);
+      showError("An error occurred while logging payment.");
     }
   };
 
@@ -277,7 +389,7 @@ const PaymentTrackerPage = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Select task for payment stages
             </label>
-            
+
             <div ref={dropdownRef} className="relative">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -299,7 +411,7 @@ const PaymentTrackerPage = () => {
                 />
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
-              
+
               {showTaskDropdown && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {loading ? (
@@ -369,9 +481,26 @@ const PaymentTrackerPage = () => {
                         </div>
                       )}
                     </div>
-                    <span className="shrink-0 rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
+                    {/* <span className="shrink-0 rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
                       {selectedTask.paidPercentage || 0}% paid
-                    </span>
+                    </span> */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
+                        {selectedTask.paidPercentage || 0}% paid
+                      </span>
+                      <button
+                        onClick={() => {
+                          setSelectedTask(null);
+                          setSelectedTaskId("");
+                          setTaskSearchInput("");
+                          setStagesForEdit([]);
+                        }}
+                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
+                        title="Close"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Stage Editor - Always visible */}
@@ -383,7 +512,7 @@ const PaymentTrackerPage = () => {
                       stages={stagesForEdit}
                       onChange={setStagesForEdit}
                       onAdd={() =>
-                        setStagesForEdit([...stagesForEdit, { percentage: 0, description: "" }])
+                        setStagesForEdit([...stagesForEdit, { percentage: 0, description: "", status: "unpaid" }])
                       }
                       onRemove={(idx) =>
                         setStagesForEdit(stagesForEdit.filter((_, i) => i !== idx))
@@ -503,6 +632,16 @@ const PaymentTrackerPage = () => {
               />
             </div>
           </div>
+        </div>
+      )}
+      {successMsg && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 text-sm flex items-center gap-2">
+          <span>✓</span> {successMsg}
+        </div>
+      )}
+      {errorMsg && (
+        <div className="fixed bottom-4 right-4 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 text-sm flex items-center gap-2">
+          <span>✕</span> {errorMsg}
         </div>
       )}
     </div>

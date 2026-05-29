@@ -44,7 +44,7 @@ const PaymentTaskCard = React.memo(({ task, onViewDetails, onEditStages, onLogPa
         </div>
       )}
 
-      {stages.length > 0 && (
+      {/* {stages.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1">
           {stages.slice(0, 3).map((stage, idx) => (
             <span
@@ -57,11 +57,47 @@ const PaymentTaskCard = React.memo(({ task, onViewDetails, onEditStages, onLogPa
             >
               {stage.percentage}%
             </span>
+            
           ))}
           {stages.length > 3 && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
               +{stages.length - 3}
             </span>
+          )}
+        </div>
+      )} */}
+
+      {stages.length > 0 && (
+        <div className="mt-3 space-y-1">
+          {stages.slice(0, 3).map((stage, idx) => (
+            <div key={idx} className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span
+                  className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium ${stage.percentage <= paidPercentage
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-500"
+                    }`}
+                >
+                  {stage.percentage}%
+                </span>
+                <span className="text-[10px] text-gray-500 truncate">
+                  {stage.description}
+                </span>
+              </div>
+              <span
+                className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium ${stage.status === "paid"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-50 text-red-600"
+                  }`}
+              >
+                {stage.status === "paid" ? "Paid" : "Unpaid"}
+              </span>
+            </div>
+          ))}
+          {stages.length > 3 && (
+            <p className="text-[10px] text-gray-400 pl-0.5">
+              +{stages.length - 3} more stages
+            </p>
           )}
         </div>
       )}
