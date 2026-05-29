@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
+import { API_URL, SOCKET_URL } from '../config'
 
-const socket = io("https://sataskmanagementbackend.onrender.com", {
+const socket = io(SOCKET_URL, {
   withCredentials: true,
 });
 
@@ -26,7 +27,7 @@ const useNotificationSocket = (setNotificationCount) => {
         const userToQuery = role === "admin" ? "admin" : email;
 
         // console.log("🔄 Fetching unread notification count from backend...");
-        const res = await axios.get(`https://sataskmanagementbackend.onrender.com/api/notifications/unread-count/${userToQuery}`, {
+        const res = await axios.get(`${API_URL}/api/notifications/unread-count/${userToQuery}`, {
           params: { role },
         });
 
