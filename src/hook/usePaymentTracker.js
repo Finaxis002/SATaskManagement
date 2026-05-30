@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 
-const baseURL = 'http://localhost:1100';
+const baseURL = 'https://taskbe.sharda.co.in';
 
 export const usePaymentTracker = (userData) => {
   const [tasks, setTasks] = useState([]);
@@ -69,10 +69,7 @@ export const usePaymentTracker = (userData) => {
         }
       );
       const data = await res.json();
-      // if (data.success) {
-      //   await fetchTasks();
-      //   await fetchAllTasks();
-      // }
+    
       return data.success;
     } catch (err) {
       console.error("Save stages error:", err);
@@ -177,8 +174,8 @@ export const usePaymentTracker = (userData) => {
     setSearchTerm,
     saveStages,
     logPayment,
-    fetchTasks,    // Exported for manual refresh
-    fetchAllTasks, // Exported for manual refresh
+    fetchTasks,    
+    fetchAllTasks, 
      refreshTasks,
   };
 };
