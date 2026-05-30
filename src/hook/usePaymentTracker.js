@@ -69,7 +69,10 @@ export const usePaymentTracker = (userData) => {
         }
       );
       const data = await res.json();
-    
+      // if (data.success) {
+      //   await fetchTasks();
+      //   await fetchAllTasks();
+      // }
       return data.success;
     } catch (err) {
       console.error("Save stages error:", err);
@@ -174,8 +177,8 @@ export const usePaymentTracker = (userData) => {
     setSearchTerm,
     saveStages,
     logPayment,
-    fetchTasks,    
-    fetchAllTasks, 
+    fetchTasks,    // Exported for manual refresh
+    fetchAllTasks, // Exported for manual refresh
      refreshTasks,
   };
 };
