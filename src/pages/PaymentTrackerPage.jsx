@@ -6,6 +6,7 @@ import PaymentFilters from "../Components/PaymentTracker/PaymentFilters";
 import PaymentTaskCard from "../Components/PaymentTracker/PaymentTaskCard";
 import StageEditor from "../Components/PaymentTracker/StageEditor";
 import PaymentLogger from "../Components/PaymentTracker/PaymentLogger";
+import PaymentTaskTable from "../Components/PaymentTracker/PaymentTaskTable";
 
 const baseURL = 'https://taskbe.sharda.co.in';
 
@@ -570,24 +571,37 @@ const PaymentTrackerPage = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTasks.map((task) => (
-              <PaymentTaskCard
-                key={task._id}
-                task={task}
-                onViewDetails={viewTaskDetails}
-                onEditStages={() => handleTaskSelect(task)}
-                onLogPayment={() => {
-                  setSelectedTaskId(task._id);
-                  setTaskSearchInput(task.taskName);
-                  setSelectedTaskForPayment(task);
-                  setPaymentPercentage(task.paidPercentage?.toString() || "0");
-                  setPaymentNote("");
-                  setShowPaymentModal(true);
-                }}
-              />
-            ))}
-          </div>
+          // <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          //   {filteredTasks.map((task) => (
+          //     <PaymentTaskCard
+          //       key={task._id}
+          //       task={task}
+          //       onViewDetails={viewTaskDetails}
+          //       onEditStages={() => handleTaskSelect(task)}
+          //       onLogPayment={() => {
+          //         setSelectedTaskId(task._id);
+          //         setTaskSearchInput(task.taskName);
+          //         setSelectedTaskForPayment(task);
+          //         setPaymentPercentage(task.paidPercentage?.toString() || "0");
+          //         setPaymentNote("");
+          //         setShowPaymentModal(true);
+          //       }}
+          //     />
+          //   ))}
+          // </div>
+          <PaymentTaskTable
+            tasks={filteredTasks}
+            onViewDetails={viewTaskDetails}
+            onEditStages={(task) => handleTaskSelect(task)}
+            onLogPayment={(task) => {
+              setSelectedTaskId(task._id);
+              setTaskSearchInput(task.taskName);
+              setSelectedTaskForPayment(task);
+              setPaymentPercentage(task.paidPercentage?.toString() || "0");
+              setPaymentNote("");
+              setShowPaymentModal(true);
+            }}
+          />
         )}
       </div>
 
