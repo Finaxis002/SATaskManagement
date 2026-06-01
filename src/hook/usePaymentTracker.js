@@ -165,6 +165,12 @@ export const usePaymentTracker = (userData) => {
   Promise.all([fetchTasks(), fetchAllTasks()]);
 }, [fetchTasks, fetchAllTasks]);
 
+const updateTaskLocally = useCallback((taskId, updates) => {
+  setTasks((prev) =>
+    prev.map((t) => (t._id === taskId ? { ...t, ...updates } : t))
+  );
+}, []);
+
   return {
     tasks,
     allTasks,
@@ -180,5 +186,6 @@ export const usePaymentTracker = (userData) => {
     fetchTasks,    // Exported for manual refresh
     fetchAllTasks, // Exported for manual refresh
      refreshTasks,
+     updateTaskLocally,
   };
 };
