@@ -33,6 +33,7 @@ const PaymentTrackerPage = () => {
     saveStages,
     logPayment,
     refreshTasks,
+    updateTaskLocally,
   } = usePaymentTracker(userData);
 
   const [selectedTaskId, setSelectedTaskId] = useState("");
@@ -129,101 +130,6 @@ const PaymentTrackerPage = () => {
     setShowPaymentModal(true);
   };
 
-  // const handleSaveStages = async () => {
-  //   if (!selectedTask) {
-  //     alert("Please select a task first");
-  //     return;
-  //   }
-
-  //   // Filter out empty stages
-  //   const validStages = stagesForEdit.filter(
-  //     stage => stage.description && stage.description.trim() !== ""
-  //   );
-
-  //   if (validStages.length === 0) {
-  //     alert("Please add at least one valid stage with description");
-  //     return;
-  //   }
-
-  //   setIsSavingStages(true);
-
-  //   try {
-  //     console.log("Saving stages for task:", selectedTask._id, validStages);
-  //     const success = await saveStages(selectedTask._id, validStages);
-
-  //     if (success) {
-  //       console.log("Stages saved successfully");
-  //       // alert("Payment stages saved successfully!");
-  //        showSuccess("Payment stages saved successfully!");
-  //       // Refresh the selected task details
-  //       // await fetchCompleteTaskDetails(selectedTask._id);
-  //       // await refreshTasks();
-  //       await Promise.all([
-  //         fetchCompleteTaskDetails(selectedTask._id),
-  //         refreshTasks(),
-  //       ]);
-  //     } else {
-  //       alert("Failed to save stages. Please try again.");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error saving stages:", error);
-  //     alert("An error occurred while saving stages.");
-  //   } finally {
-  //     setIsSavingStages(false);
-  //   }
-  // };
-
-  // const handleLogPayment = async () => {
-  //   if (!selectedTaskForPayment) {
-  //     alert("Please select a task first");
-  //     return;
-  //   }
-
-  //   const percentage = parseFloat(paymentPercentage);
-  //   if (isNaN(percentage) || percentage < 0 || percentage > 100) {
-  //     alert("Please enter a valid percentage between 0 and 100");
-  //     return;
-  //   }
-
-  //   setIsLoggingPayment(true);
-
-  //   try {
-  //     console.log("Logging payment for task:", selectedTaskForPayment._id, percentage);
-  //     const success = await logPayment(
-  //       selectedTaskForPayment._id,
-  //       percentage,
-  //       paymentNote,
-  //       userData.userName
-  //     );
-
-  //     if (success) {
-  //       console.log("Payment logged successfully");
-  //       alert("Payment logged successfully!");
-  //       setShowPaymentModal(false);
-  //       setPaymentPercentage("");
-  //       setPaymentNote("");
-  //       setSelectedTaskForPayment(null);
-
-  //       // Refresh the selected task details
-  //       if (selectedTask) {
-  //         // await fetchCompleteTaskDetails(selectedTask._id);
-  //         await Promise.all([
-  //           fetchCompleteTaskDetails(selectedTask._id),
-  //           refreshTasks(),
-  //         ]);
-  //       }
-  //       // await refreshTasks();
-  //     } else {
-  //       alert("Failed to log payment. Please try again.");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error logging payment:", error);
-  //     alert("An error occurred while logging payment.");
-  //   } finally {
-  //     setIsLoggingPayment(false);
-  //   }
-  // };
-
 
   const handleSaveStages = async () => {
     if (!selectedTask) {
@@ -288,6 +194,16 @@ const PaymentTrackerPage = () => {
 
       if (success) {
         setIsLoggingPayment(false); // ✅ release button before background refresh
+        updateTaskLocally(selectedTaskForPayment._id, {
+          paidPercentage: percentage,
+        });
+
+        // ✅ Also update selectedTask so the task detail panel reflects it
+        setSelectedTask((prev) =>
+          prev && prev._id === selectedTaskForPayment._id
+            ? { ...prev, paidPercentage: percentage }
+            : prev
+        );
         setShowPaymentModal(false);
         setPaymentPercentage("");
         setPaymentNote("");
@@ -295,10 +211,10 @@ const PaymentTrackerPage = () => {
         showSuccess("Payment logged successfully!");
 
         if (selectedTask) {
-          await Promise.all([
+          Promise.all([
             fetchCompleteTaskDetails(selectedTask._id),
             refreshTasks(),
-          ]);
+          ]).catch(console.error);
         }
       } else {
         setIsLoggingPayment(false);
@@ -334,6 +250,7 @@ const PaymentTrackerPage = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
 
   // Filter tasks for dropdown
   const filteredTaskOptions = useMemo(() => {
