@@ -776,7 +776,7 @@ const Inbox = () => {
     "w-full max-w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-center text-xs sm:text-sm leading-snug text-indigo-800 break-words";
 
   return (
-    <div className="w-full max-h-screen p-2 sm:p-4 flex flex-col md:flex-row gap-2 md:gap-4 bg-gray-100 overflow-hidden">
+    <div className="w-full h-[calc(100dvh-56px)] sm:h-[calc(100dvh-72px)] p-0 sm:p-4 flex flex-col md:flex-row gap-2 md:gap-4 bg-gray-100 overflow-hidden">
 
       {/* Left column for groups (Sidebar) */}
       {(!isFullScreen || screenWidth >= 768) && (
@@ -813,12 +813,12 @@ const Inbox = () => {
       {(selectedUser || selectedGroup) && (isFullScreen || screenWidth >= 768) && (
         <div
           className={`${isFullScreen && screenWidth < 768
-            ? "w-full h-screen"
+            ? "fixed left-0 right-0 top-[52px] bottom-0 z-40 w-full bg-blue-100"
             : "w-full md:w-3/4 md:pl-4"
-            } flex flex-col `} // Added padding-top to push content down on mobile view
+            } flex min-h-0 flex-col overflow-hidden `} // Added padding-top to push content down on mobile view
 
         >
-          <div className="sticky top-0 left-0 w-full z-10 bg-white shadow-md">
+          <div className="shrink-0 sticky top-0 left-0 w-full z-10 bg-white shadow-md">
             <ChatHeader
               selectedUser={selectedUser}
               selectedGroup={selectedGroup}
@@ -830,7 +830,7 @@ const Inbox = () => {
           </div>
 
 
-          <div className="relative mb-4 gap-4 flex flex-col">
+          <div className="relative flex min-h-0 flex-1 flex-col bg-blue-100">
             <ChatMessages
               selectedUser={selectedUser}
               messages={messages}
@@ -844,6 +844,7 @@ const Inbox = () => {
               groups={groups}
               users={users}
             />
+            <div className="fixed inset-x-0 bottom-0 z-50 bg-white/95 p-2 shadow-[0_-4px_14px_rgba(15,23,42,0.08)] md:relative md:inset-auto md:z-auto md:shrink-0 md:p-3">
             <MessageInput
               dragActive={dragActive}
               showEmojiPicker={showEmojiPicker}
@@ -863,8 +864,9 @@ const Inbox = () => {
               onEmojiClick={onEmojiClick}
               filePreviews={filePreviews}
             />
+            </div>
             {sharedFilesNotice && (
-              <div className={sharedFilesNoticeClass}>
+              <div className={`${sharedFilesNoticeClass} shrink-0`}>
                 {sharedFilesNotice}
               </div>
             )}

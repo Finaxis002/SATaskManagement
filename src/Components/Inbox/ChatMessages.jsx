@@ -24,6 +24,19 @@ const ChatMessages = ({
   const modalRef = useRef(null); // Reference for modal positioning
   const [availableRecipients, setAvailableRecipients] = useState([]);
   const messageEndRef = useRef(null); // Reference for scroll position
+  const normalizeUserKey = (value) => (value || "").trim().toLowerCase();
+  const isCurrentUserMessage = (msg) => {
+    const sender = normalizeUserKey(msg?.sender);
+    const currentName = normalizeUserKey(currentUser.name);
+    const currentRole = normalizeUserKey(currentUser.role);
+    const currentUserId = normalizeUserKey(currentUser.userId);
+
+    return (
+      sender === currentName ||
+      sender === currentUserId ||
+      (sender === "admin" && (currentRole === "admin" || currentName === "admin"))
+    );
+  };
   {/*useEffect(() => {
     // Scroll to the bottom when the messages array changes (new message received)
     if (messageEndRef.current) {
@@ -150,11 +163,11 @@ const ChatMessages = ({
       );
     } else if (fileUrl.match(/\.pdf$/i)) {
       return (
-        <div className="flex items-center justify-between gap-3 bg-white text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs">
+        <div className="flex items-center justify-between gap-3 bg-white text-gray-800 border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-[70vw] sm:max-w-xs">
           <div className="flex items-center gap-2">
             <FaFile className="text-red-500 text-xl" />
             <div>
-              <p className="text-sm font-medium truncate">
+              <p className="max-w-[42vw] sm:max-w-[160px] text-sm font-medium truncate">
                 {fileUrl.split("/").pop()}
               </p>
               <p className="text-xs text-gray-500">PDF Document</p>
@@ -179,7 +192,7 @@ const ChatMessages = ({
       );
     } else if (isFileTypeSupported(fileUrl)) {
       return (
-        <div className="flex items-center gap-2 bg-white text-black border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs text-sm">
+        <div className="flex items-center gap-2 bg-white text-black border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-[70vw] sm:max-w-xs text-sm">
           <FaFile className="text-blue-500 text-lg" />
           <span className="truncate">{fileUrl.split("/").pop()}</span>
           <div className="flex gap-1 ml-auto">
@@ -283,15 +296,13 @@ const handleSeenByClick = (msg, e) => {
 
       <div
         ref={scrollRef}
-        className="flex-1 relative overflow-y-auto p-0 bg-gray-50"
+        className="flex-1 min-h-0 overflow-y-auto bg-blue-100 px-3 sm:px-4 pt-5 sm:pt-6 pb-28 md:pb-6 space-y-4"
       >
-        <div className="flex-1 overflow-y-auto bg-blue-100 px-4 py-6 space-y-4 mb-4 pb-28 md:pb-6   h-[65vh]   ">
-          <div className="flex-1 overflow-y-auto bg-blue-100 to-white px-4 py-6 space-y-4 mb-4">
             {Array.isArray(messages) && messages.length > 0 ? (
               <>
                 {/* ✅ Only this block is needed */}
                 {sortedMessages.map((msg, idx) => {
-                  const isCurrentUser = msg.sender === currentUser.name;
+                  const isCurrentUser = isCurrentUserMessage(msg);
                   const filesArray =
                     msg.fileUrls &&
                       Array.isArray(msg.fileUrls) &&
@@ -320,7 +331,7 @@ const handleSeenByClick = (msg, e) => {
                         </div>
                       )}
                       <div
-                        className={`max-w-sm p-3 rounded-xl shadow-md ${isCurrentUser
+                        className={`w-fit min-w-[120px] max-w-[78vw] sm:max-w-sm p-3 rounded-xl shadow-md ${isCurrentUser
                           ? "bg-indigo-500 text-white ml-auto rounded-br-none" // Dark background for current user
                           : msg.readBy?.includes(currentUser.name)
                             ? "bg-gray-100 text-gray-800 mr-auto rounded-bl-none" // Light background for read messages
@@ -420,7 +431,6 @@ const handleSeenByClick = (msg, e) => {
                 No messages available.
               </div>
             )}
-          </div>
           {showSeenByModal && selectedMessage && (
             <div
               ref={modalRef}
@@ -464,7 +474,6 @@ const handleSeenByClick = (msg, e) => {
 
           {/* Scroll to Bottom Indicator */}
           <div ref={messageEndRef} />
-        </div>
       </div>
     </>
   );
