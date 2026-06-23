@@ -908,7 +908,7 @@ const Dashboard = () => {
             </div>
             <div>
               <h1 className="text-xl lg:text-3xl font-bold text-gray-900 tracking-tight">
-                Anunay Sharda & Associatesssssss
+                Anunay Sharda & Associates
               </h1>
               <p className="text-[#018f95] text-sm font-semibold tracking-wider uppercase hidden md:block">
                 Strategic Business Solutions
