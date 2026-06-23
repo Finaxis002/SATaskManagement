@@ -2,24 +2,33 @@
   "name": "SA Task Management",
   "short_name": "SA Tasks",
   "description": "Office task management and team inbox",
+  "id": "/?app=sataskmanagement",
   "theme_color": "#4f46e5",
   "background_color": "#ffffff",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "scope": "/",
-  "start_url": "/inbox",
+  "start_url": "/?source=pwa",
+  "categories": ["productivity", "business"],
   "icons": [
     {
-      "src": "/service.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon.png",
-      "sizes": "1563x1563",
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "share_target": {
@@ -44,6 +53,7 @@
             "text/plain",
             "text/csv",
             "image/*",
+            "application/octet-stream",
             ".pdf",
             ".doc",
             ".docx",
