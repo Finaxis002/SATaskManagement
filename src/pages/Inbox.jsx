@@ -772,8 +772,11 @@ const Inbox = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const sharedFilesNoticeClass =
+    "w-full max-w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-center text-xs sm:text-sm leading-snug text-indigo-800 break-words";
+
   return (
-    <div className="w-full max-h-screen p-2 sm:p-4 flex bg-gray-100">
+    <div className="w-full max-h-screen p-2 sm:p-4 flex flex-col md:flex-row gap-2 md:gap-4 bg-gray-100 overflow-hidden">
 
       {/* Left column for groups (Sidebar) */}
       {(!isFullScreen || screenWidth >= 768) && (
@@ -799,8 +802,8 @@ const Inbox = () => {
 
 
       {!selectedUser && !selectedGroup && sharedFilesNotice && (
-        <div className="flex flex-1 items-center justify-center px-4">
-          <div className="max-w-md rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-center text-sm text-indigo-800">
+        <div className="w-full md:flex-1 px-1 md:px-4">
+          <div className={sharedFilesNoticeClass}>
             {sharedFilesNotice}
           </div>
         </div>
@@ -811,7 +814,7 @@ const Inbox = () => {
         <div
           className={`${isFullScreen && screenWidth < 768
             ? "w-full h-screen"
-            : "w-full md:w-3/4 pl-4"
+            : "w-full md:w-3/4 md:pl-4"
             } flex flex-col `} // Added padding-top to push content down on mobile view
 
         >
@@ -861,7 +864,7 @@ const Inbox = () => {
               filePreviews={filePreviews}
             />
             {sharedFilesNotice && (
-              <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
+              <div className={sharedFilesNoticeClass}>
                 {sharedFilesNotice}
               </div>
             )}
