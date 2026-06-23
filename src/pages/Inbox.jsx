@@ -13,6 +13,52 @@ const socket = io("https://taskbe.sharda.co.in", {
   withCredentials: true,
 });
 
+const SHARE_DB_NAME = "sataskmanagement-share-target";
+const SHARE_STORE_NAME = "shares";
+const SHARE_DB_VERSION = 1;
+
+const openShareDb = () =>
+  new Promise((resolve, reject) => {
+    const request = indexedDB.open(SHARE_DB_NAME, SHARE_DB_VERSION);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(SHARE_STORE_NAME)) {
+        db.createObjectStore(SHARE_STORE_NAME, {
+          keyPath: "id",
+          autoIncrement: true,
+        });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+
+const consumeSharedPayloads = async () => {
+  if (!("indexedDB" in window)) return [];
+
+  const db = await openShareDb();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(SHARE_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(SHARE_STORE_NAME);
+    const getAllRequest = store.getAll();
+
+    getAllRequest.onsuccess = () => {
+      const payloads = getAllRequest.result || [];
+      store.clear();
+      resolve(payloads);
+    };
+    getAllRequest.onerror = () => reject(getAllRequest.error);
+    transaction.oncomplete = () => db.close();
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
+  });
+};
+
 const Inbox = () => {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
@@ -40,6 +86,7 @@ const Inbox = () => {
   const [files, setFiles] = useState([]); // Array of File objects
   const [filePreviews, setFilePreviews] = useState([]); // Array of preview URLs
   const [uploadProgress, setUploadProgress] = useState([]); // Array of progress numbers
+  const [sharedFilesNotice, setSharedFilesNotice] = useState("");
 
   //recentUserChat
 
@@ -238,6 +285,60 @@ const Inbox = () => {
     setUploadProgress(selectedFiles.map(() => 0));
   };
 
+  useEffect(() => {
+    const loadSharedFiles = async () => {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has("shared")) return;
+
+      try {
+        const payloads = await consumeSharedPayloads();
+        const latestPayload = payloads.sort(
+          (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+        )[0];
+
+        if (!latestPayload) return;
+
+        const sharedFiles = (latestPayload.files || []).filter(
+          (file) => file instanceof File
+        );
+        const sharedText = [
+          latestPayload.title,
+          latestPayload.text,
+          latestPayload.url,
+        ]
+          .filter(Boolean)
+          .join("\n")
+          .trim();
+
+        if (sharedFiles.length > 0) {
+          setFiles((prev) => [...prev, ...sharedFiles]);
+          setFilePreviews((prev) => [
+            ...prev,
+            ...sharedFiles.map((file) => URL.createObjectURL(file)),
+          ]);
+          setUploadProgress((prev) => [
+            ...prev,
+            ...sharedFiles.map(() => 0),
+          ]);
+          setSharedFilesNotice(
+            `${sharedFiles.length} shared file${sharedFiles.length > 1 ? "s" : ""} ready to send. Select a chat and press send.`
+          );
+        }
+
+        if (sharedText) {
+          setMessageText((prev) => [prev, sharedText].filter(Boolean).join("\n"));
+        }
+
+        window.history.replaceState({}, document.title, "/inbox");
+      } catch (err) {
+        console.error("Failed to load shared files:", err);
+        setSharedFilesNotice("Could not load the shared file. Please try again.");
+      }
+    };
+
+    loadSharedFiles();
+  }, []);
+
   const sendMessage = async () => {
     if (!messageText.trim() && files.length === 0) {
       return; // Nothing to send
@@ -326,6 +427,7 @@ const Inbox = () => {
       setFiles([]);
       setFilePreviews([]);
       setUploadProgress([]);
+      setSharedFilesNotice("");
       messageInputRef.current?.focus();
     }
   };
@@ -696,6 +798,14 @@ const Inbox = () => {
       )}
 
 
+      {!selectedUser && !selectedGroup && sharedFilesNotice && (
+        <div className="flex flex-1 items-center justify-center px-4">
+          <div className="max-w-md rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-center text-sm text-indigo-800">
+            {sharedFilesNotice}
+          </div>
+        </div>
+      )}
+
       {/* Right column for chat messages */}
       {(selectedUser || selectedGroup) && (isFullScreen || screenWidth >= 768) && (
         <div
@@ -750,6 +860,11 @@ const Inbox = () => {
               onEmojiClick={onEmojiClick}
               filePreviews={filePreviews}
             />
+            {sharedFilesNotice && (
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
+                {sharedFilesNotice}
+              </div>
+            )}
           </div>
         </div>
       )}
