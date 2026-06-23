@@ -43,16 +43,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      if ("caches" in self) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
-      }
-
-      await self.clients.claim();
-    })()
-  );
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("fetch", (event) => {
@@ -79,9 +70,5 @@ self.addEventListener("fetch", (event) => {
     );
   }
 
-  if (event.request.mode === "navigate" && event.request.method === "GET") {
-    event.respondWith(
-      fetch(event.request, { cache: "no-store" }).catch(() => fetch(event.request))
-    );
-  }
+  // Normal app requests are intentionally not intercepted.
 });
