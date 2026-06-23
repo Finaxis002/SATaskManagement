@@ -43,7 +43,16 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      if ("caches" in self) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      }
+
+      await self.clients.claim();
+    })()
+  );
 });
 
 self.addEventListener("fetch", (event) => {
@@ -67,6 +76,12 @@ self.addEventListener("fetch", (event) => {
 
         return Response.redirect("/inbox?shared=1", 303);
       })()
+    );
+  }
+
+  if (event.request.mode === "navigate" && event.request.method === "GET") {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" }).catch(() => fetch(event.request))
     );
   }
 });

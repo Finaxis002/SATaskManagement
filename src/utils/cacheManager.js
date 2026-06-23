@@ -2,6 +2,7 @@
 class CacheManager {
   static VERSION_KEY = 'app_cache_version';
   static BUILD_TIME_KEY = 'app_build_time';
+  static SHARE_TARGET_DB_NAME = 'sataskmanagement-share-target';
 
   // Initialize cache version
   static init() {
@@ -38,10 +39,12 @@ class CacheManager {
       sessionStorage.clear();
 
       // Clear IndexedDB (if used)
-      if ('indexedDB' in window) {
+      if ('indexedDB' in window && indexedDB.databases) {
         const databases = await indexedDB.databases();
         databases.forEach(db => {
-          if (db.name) indexedDB.deleteDatabase(db.name);
+          if (db.name && db.name !== this.SHARE_TARGET_DB_NAME) {
+            indexedDB.deleteDatabase(db.name);
+          }
         });
       }
 
