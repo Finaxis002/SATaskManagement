@@ -13,19 +13,19 @@
   "categories": ["productivity", "business"],
   "icons": [
     {
-      "src": "/salogo-pwa-192x192.png",
+      "src": "/sa-logo-bw-192-v2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/salogo-pwa-512x512.png",
+      "src": "/sa-logo-bw-512-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/salogo-maskable-512x512.png",
+      "src": "/sa-logo-bw-maskable-512-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

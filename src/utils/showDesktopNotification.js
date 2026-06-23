@@ -1,5 +1,5 @@
 // utils/showDesktopNotification.js
-const showDesktopNotification = (title, message, icon = "/app-icon.png") => {
+const showDesktopNotification = (title, message, icon = "/sa-app-icon-bw-v2.png") => {
   if ("Notification" in window) {
     if (Notification.permission === "granted") {
       const notification = new Notification(title, {
