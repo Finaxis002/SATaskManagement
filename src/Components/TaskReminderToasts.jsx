@@ -68,7 +68,7 @@ const TaskReminderToasts = () => {
     if (Notification.permission === "granted") {
       const notification = new Notification("Task Reminder", {
         body: rawNotificationMessage,
-        icon: "/icon.png", // optional: path to your favicon or bell icon
+        icon: "/app-icon.png", // optional: path to your favicon or bell icon
       });
 
       // Optional: Focus the tab on click

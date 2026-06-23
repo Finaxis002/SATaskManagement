@@ -190,7 +190,7 @@ const ReminderAlertManager = () => {
     if ("Notification" in window && Notification.permission === "granted") {
       new Notification(title, {
         body: message,
-        icon: "/icon.png",
+        icon: "/app-icon.png",
         requireInteraction: true,
       });
     }
