@@ -23,25 +23,14 @@ import NotificationInitializer from "./Components/NotificationInitializer.jsx";
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-// Register only outside iOS. iOS had app launch issues with the previous service worker setup,
-// and the Android share target is the only flow that needs this right now.
+// Register only outside iOS. Keep this registration passive so it cannot interrupt app/login loads.
 if (!isIOS && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/service-worker.js", { updateViaCache: "none" })
-      .then((registration) => {
-        registration.update();
-      })
       .catch((error) => {
         console.error("Service Worker registration failed: ", error);
       });
-  });
-
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
   });
 }
 
