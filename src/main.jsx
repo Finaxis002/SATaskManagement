@@ -21,17 +21,19 @@ import NotificationInitializer from "./Components/NotificationInitializer.jsx";
 //   },
 // })
 
-// // Register the service worker for offline support
-// if ('serviceWorker' in navigator) {
-//   navigator.serviceWorker
-//     .register('/service-worker.js')
-//     .then((registration) => {
-//       console.log('Service Worker registered with scope: ', registration.scope);
-//     })
-//     .catch((error) => {
-//       console.error('Service Worker registration failed: ', error);
-//     });
-// }
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+// Register only outside iOS. iOS had app launch issues with the previous service worker setup,
+// and the Android share target is the only flow that needs this right now.
+if (!isIOS && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js")
+      .catch((error) => {
+        console.error("Service Worker registration failed: ", error);
+      });
+  });
+}
 
 // Initialize cache manager with current version
 const initializeApp = () => {
@@ -74,8 +76,6 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
-
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 // createRoot(document.getElementById("root")).render(
 //   <React.StrictMode>
