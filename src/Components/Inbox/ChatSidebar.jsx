@@ -3,6 +3,7 @@ import { User2, Users } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FaUsers } from "react-icons/fa";
+import axios from "axios";
 
 const ChatSidebar = ({
   showGroups,
@@ -24,6 +25,10 @@ const ChatSidebar = ({
 }) => {
   const scrollRefUsers = useRef(null); // Reference to the users chat container
   const scrollRefGroups = useRef(null); // Reference to the groups chat container
+  const [recentActivity, setRecentActivity] = useState({
+    groups: {},
+    users: {},
+  });
 
   useEffect(() => {
     // Scroll to the bottom for groups only when new messages are added
@@ -45,15 +50,6 @@ const ChatSidebar = ({
       scrollRefGroups.current.scrollTop = scrollRefGroups.current.scrollHeight;
     }
   };
-// Add the filtered list of users based on the searchTerm
-const filteredAdmins = admins.filter((admin) =>
-  admin.name.toLowerCase().includes(searchTerm.toLowerCase())
-);
-
-const filteredRegularUsers = regularUsers.filter((user) =>
-  user.name.toLowerCase().includes(searchTerm.toLowerCase())
-);
-
   // Handle user selection
   const handleUserSelection = (user) => {
     handleUserClick(user);
@@ -73,6 +69,93 @@ const filteredRegularUsers = regularUsers.filter((user) =>
     } ${ampm}`;
     return formattedTime;
   };
+
+  const getMessageTime = (msg) => {
+    const rawTime = msg?.createdAt || msg?.updatedAt || msg?.timestamp;
+    if (!rawTime) return 0;
+
+    const parsed = new Date(rawTime).getTime();
+    if (!Number.isNaN(parsed)) return parsed;
+
+    const todayTime = new Date(`${new Date().toDateString()} ${rawTime}`).getTime();
+    return Number.isNaN(todayTime) ? 0 : todayTime;
+  };
+
+  const getLastMessageTime = (chatMessages = []) =>
+    chatMessages.reduce((latest, msg) => Math.max(latest, getMessageTime(msg)), 0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchRecentActivity = async () => {
+      try {
+        const groupEntries = await Promise.all(
+          groups.map(async (group) => {
+            try {
+              const res = await axios.get(
+                `https://taskbe.sharda.co.in/api/messages/${encodeURIComponent(group)}`
+              );
+              return [group, getLastMessageTime(res.data?.messages || [])];
+            } catch {
+              return [group, 0];
+            }
+          })
+        );
+
+        const chatUsers = [...admins, ...regularUsers].filter(
+          (user) => user.name && user.name !== currentUser.name
+        );
+
+        const userEntries = await Promise.all(
+          chatUsers.map(async (user) => {
+            try {
+              const res = await axios.get(
+                `https://taskbe.sharda.co.in/api/messages/user/${user.name}`
+              );
+              const directMessages = (res.data?.messages || []).filter((msg) => {
+                const sender = (msg.sender || "").trim().toLowerCase();
+                const recipient = (msg.recipient || "").trim().toLowerCase();
+                const currentName = currentUser.name.trim().toLowerCase();
+                const userName = user.name.trim().toLowerCase();
+
+                return (
+                  !msg.group &&
+                  ((sender === currentName && recipient === userName) ||
+                    (sender === userName && recipient === currentName))
+                );
+              });
+
+              return [user.name || user.userId, getLastMessageTime(directMessages)];
+            } catch {
+              return [user.name || user.userId, 0];
+            }
+          })
+        );
+
+        if (!cancelled) {
+          setRecentActivity({
+            groups: Object.fromEntries(groupEntries),
+            users: Object.fromEntries(userEntries),
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch recent chat activity:", err.message);
+      }
+    };
+
+    fetchRecentActivity();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [groups, admins, regularUsers, currentUser.name]);
+
+  const sortByRecentActivity = (a, b) => {
+    const recentDiff = (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0);
+    if (recentDiff !== 0) return recentDiff;
+    return (b.unreadCount || 0) - (a.unreadCount || 0);
+  };
+
   const sortedGroups = groups
     .map((group) => {
       const groupMessages = messages.filter(
@@ -80,12 +163,10 @@ const filteredRegularUsers = regularUsers.filter((user) =>
       );
 
       // If there are messages in the group, get the most recent one
-      const lastMessageTimestamp =
-        groupMessages.length > 0
-          ? Math.max(
-              ...groupMessages.map((msg) => new Date(msg.createdAt).getTime())
-            )
-          : 0; // If no messages, set timestamp to 0
+      const lastMessageTimestamp = Math.max(
+        recentActivity.groups[group] || 0,
+        getLastMessageTime(groupMessages)
+      );
 
       const unreadCount = groupUnreadCounts[group] || 0; // Unread count for the group
 
@@ -95,78 +176,44 @@ const filteredRegularUsers = regularUsers.filter((user) =>
         lastMessageTimestamp, // Timestamp of the last message
       };
     })
-    .sort((a, b) => {
-      // First, sort by last message timestamp (most recent first)
-      if (b.lastMessageTimestamp !== a.lastMessageTimestamp) {
-        return b.lastMessageTimestamp - b.lastMessageTimestamp; // Most recent first
-      }
+    .sort(sortByRecentActivity);
 
-      // If timestamps are equal, sort by unread message count
-      return b.unreadCount - a.unreadCount; // Most unread messages first
-    });
-
-  // Sorting Admins by unread count and recency
-  const sortedAdmins = admins
-    .map((admin) => {
-      // Get the last message timestamp for the admin (if available)
-      const lastMessageTimestamp = messages
-        .filter(
-          (msg) => msg.sender === admin.name || msg.recipient === admin.name
-        ) // Check messages related to this admin
-        .map((msg) => new Date(msg.timestamp).getTime()) // Convert timestamp to get comparable value
-        .sort((a, b) => b - a)[0]; // Get the most recent message timestamp, if available
-
-      return {
-        ...admin,
-        unreadCount: userUnreadCounts[admin.name || admin.userId] || 0, // Get unread count
-        lastMessageTimestamp, // Add the last message timestamp for sorting
-      };
-    })
-    .sort((a, b) => {
-      // First, sort by unread count (descending)
-      if (b.unreadCount !== a.unreadCount) return b.unreadCount - a.unreadCount;
-
-      // If unread counts are equal, sort by recency (timestamp)
-      return (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0); // Sort by timestamp (most recent first)
-    });
-
-  // Sorting Regular Users by unread count and recency
-  const sortedRegularUsers = regularUsers
-    .map((user) => {
-      // Get the last message timestamp for the regular user (if available)
-      const lastMessageTimestamp = messages
-        .filter(
-          (msg) => msg.sender === user.name || msg.recipient === user.name
-        ) // Check messages related to this user
-        .map((msg) => new Date(msg.timestamp).getTime()) // Convert timestamp to get comparable value
-        .sort((a, b) => b - a)[0]; // Get the most recent message timestamp, if available
-
+  const buildSortedUsers = (userList) =>
+    userList
+      .filter((user) =>
+        user.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .map((user) => {
+        const userKey = user.name || user.userId;
+        const openChatLastMessage = getLastMessageTime(
+          messages.filter((msg) => msg.sender === user.name || msg.recipient === user.name)
+        );
       return {
         ...user,
-        unreadCount: userUnreadCounts[user.name || user.userId] || 0, // Get unread count
-        lastMessageTimestamp, // Add the last message timestamp for sorting
+        unreadCount: userUnreadCounts[userKey] || 0,
+        lastMessageTimestamp: Math.max(
+          recentActivity.users[userKey] || 0,
+          openChatLastMessage
+        ),
       };
-    })
-    .sort((a, b) => {
-      // First, sort by unread count (descending)
-      if (b.unreadCount !== a.unreadCount) return b.unreadCount - a.unreadCount;
+      })
+      .sort(sortByRecentActivity);
 
-      // If unread counts are equal, sort by recency (timestamp)
-      return (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0); // Sort by timestamp (most recent first)
-    });
+  const sortedAdmins = buildSortedUsers(admins);
+  const sortedRegularUsers = buildSortedUsers(regularUsers);
 
   return (
-<div className="w-full sm:w-1/3 md:w-1/4 
-  bg-gradient-to-b from-gray-200 to-gray-100 
-  p-4 sm:p-5 rounded-2xl shadow-lg border border-gray-300
-  flex flex-col h-screen sm:h-full max-h-screen">
+<div className="w-full md:w-1/4 min-w-0 
+  bg-gray-100 md:bg-gradient-to-b md:from-gray-200 md:to-gray-100 
+  p-3 sm:p-4 md:p-5 rounded-none sm:rounded-xl md:rounded-2xl shadow-none sm:shadow-lg border-0 sm:border sm:border-gray-300
+  flex min-h-0 flex-col h-full max-h-full overflow-hidden">
 
   {/* Sticky Title/Toggle container */}
-  <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border border-slate-200 rounded-xl mb-3">
-    <div className="grid grid-cols-2 gap-2 p-2">
+  <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border border-slate-200 rounded-xl mb-3">
+    <div className="grid grid-cols-2 gap-2 p-1.5 sm:p-2">
       <button
         onClick={() => setShowGroups(true)}
-        className={`w-full relative px-3 py-2 text-sm rounded-lg transition-transform transform hover:scale-105 duration-200
+        className={`w-full relative px-3 py-2 text-sm rounded-lg transition-colors duration-200
           ${showGroups ? "bg-white shadow-lg text-indigo-700" : "bg-gray-200 text-gray-700 hover:text-gray-900"}`}
       >
         Groups
@@ -179,7 +226,7 @@ const filteredRegularUsers = regularUsers.filter((user) =>
 
       <button
         onClick={() => setShowGroups(false)}
-        className={`w-full relative px-3 py-2 text-sm rounded-lg transition-transform transform hover:scale-105 duration-200
+        className={`w-full relative px-3 py-2 text-sm rounded-lg transition-colors duration-200
           ${!showGroups ? "bg-white shadow-lg text-indigo-700" : "bg-gray-200 text-gray-700 hover:text-gray-900"}`}
       >
         {currentUser.role === "user" ? "Personal Chat" : "Users"}
@@ -195,8 +242,8 @@ const filteredRegularUsers = regularUsers.filter((user) =>
 
       {/* Groups/Users Section */}
       {showGroups ? (
-        <div className="flex-1 overflow-auto mb-6">
-          <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">
+        <div className="flex-1 min-h-0 overflow-y-auto pb-3">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 md:mb-4 text-center text-gray-800">
             {currentUser.role === "user" ? "Your Groups" : "Groups"}
           </h3>
           {sortedGroups.length === 0 ? (
@@ -209,15 +256,15 @@ const filteredRegularUsers = regularUsers.filter((user) =>
                 <li
                   key={group.name}
                   onClick={() => handleGroupSelection(group.name)}
-                  className={`relative cursor-pointer p-3 rounded-lg flex justify-between items-center transition-all duration-200 border ${
+                  className={`relative cursor-pointer px-3 py-2.5 sm:p-3 rounded-lg flex justify-between items-center transition-colors duration-200 border ${
                     selectedGroup === group.name
                       ? "bg-indigo-100 border-indigo-300"
                       : "hover:bg-gray-50 border-gray-200"
                   }`}
                 >
                   <div className="flex flex-row items-center gap-2">
-                    <span className="text-indigo-600 flex gap-4 items-center font-medium text-sm hover:underline relative">
-                      <FaUsers className="text-indigo-600 text-lg" />
+                    <span className="text-indigo-600 flex gap-3 sm:gap-4 items-center font-medium text-sm hover:underline relative">
+                      <FaUsers className="text-indigo-600 text-base sm:text-lg shrink-0" />
                       {group.name}
                     </span>
                     {group.unreadCount > 0 && (
@@ -239,8 +286,8 @@ const filteredRegularUsers = regularUsers.filter((user) =>
           )}
         </div>
       ) : (
-        <div className="border-t border-gray-200 h-[70vh] overflow-y-auto">
-          <h3 className="text-xl font-bold mb-3 text-center text-gray-700">
+        <div className="border-t border-gray-200 flex-1 min-h-0 overflow-y-auto pb-3">
+          <h3 className="text-lg sm:text-xl font-bold my-3 text-center text-gray-700">
             {currentUser.role === "user" ? "Personal Chat" : "Users"}
           </h3>
           <div className="overflow-y-auto space-y-2 pr-1">
@@ -266,12 +313,12 @@ const filteredRegularUsers = regularUsers.filter((user) =>
               )}
             </div>
 
-            {filteredAdmins.length > 0 && (
+            {sortedAdmins.length > 0 && (
   <>
     <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2">
       Administrators
     </h4>
-    {filteredAdmins.map((admin) => (
+    {sortedAdmins.map((admin) => (
       <div
         key={admin._id || admin.userId}
         onClick={() => handleUserSelection(admin)}
@@ -307,12 +354,12 @@ const filteredRegularUsers = regularUsers.filter((user) =>
   </>
 )}
 
-{filteredRegularUsers.length > 0 && (
+{sortedRegularUsers.length > 0 && (
   <>
     <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2 mt-4">
       Team Members
     </h4>
-    {filteredRegularUsers.map((user) => (
+    {sortedRegularUsers.map((user) => (
       <div
         key={user._id || user.userId}
         onClick={() => handleUserSelection(user)}
@@ -347,47 +394,6 @@ const filteredRegularUsers = regularUsers.filter((user) =>
     ))}
   </>
 )}
-
-            {sortedRegularUsers.length > 0 && (
-              <>
-                <h4 className="text-sm font-semibold text-gray-500 mb-2 px-2 mt-4">
-                  Team Members
-                </h4>
-                {sortedRegularUsers.map((user) => (
-                  <div
-                    key={user._id || user.userId}
-                    onClick={() => handleUserSelection(user)}
-                    className={`cursor-pointer px-4 py-2 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-between border ${
-                      selectedUser?._id === user._id ||
-                      selectedUser?.userId === user.userId
-                        ? "bg-indigo-100 border-indigo-300"
-                        : "bg-white hover:bg-gray-100 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                        {user.name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-800 block">
-                          {user.name}
-                        </span>
-                        {user.position && (
-                          <span className="text-xs text-gray-500 block">
-                            {user.position}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {userUnreadCounts[user.name] > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                        {userUnreadCounts[user.name]}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
 
             {users.length === 0 && (
               <p className="text-sm text-gray-400 text-center">

@@ -23,7 +23,7 @@ const MessageInput = ({
 }) => {
   return (
     <div
-        className={`message-input-container relative bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-200 mt-auto
+        className={`message-input-container relative shrink-0 bg-white px-3 sm:px-4 py-2 rounded-xl shadow-lg border border-gray-200
     ${dragActive ? "ring-2 ring-indigo-500" : ""}`}
 
       onDragOver={(e) => {
@@ -59,7 +59,7 @@ const MessageInput = ({
       }}
     >
       {" "}
-      <div className="flex items-center">
+      <div className="flex items-center min-w-0">
         {/* Emoji Picker Button */}
         <div>
           <button
@@ -113,7 +113,7 @@ const MessageInput = ({
 
         <label
           htmlFor="fileInput"
-          className="ml-2 cursor-pointer text-indigo-600"
+          className="ml-1 sm:ml-2 cursor-pointer text-indigo-600 shrink-0"
         >
           <FaPaperclip />
         </label>
@@ -121,7 +121,7 @@ const MessageInput = ({
       
 
         {files.length > 0 && (
-          <div className="absolute bottom-14 left-0 bg-white border border-gray-200 p-3 rounded-lg shadow-md w-80 z-50">
+          <div className="absolute bottom-14 left-0 right-0 sm:right-auto bg-white border border-gray-200 p-3 rounded-lg shadow-md w-full sm:w-80 z-50">
             {files.map((file, idx) => (
               <div key={idx} className="flex items-start gap-3 mb-2">
                 {file.type.startsWith("image/") ? (
@@ -193,12 +193,12 @@ const MessageInput = ({
           onChange={handleChange} // This updates the state when typing
           onKeyDown={handleKeyPress} // Handle enter key press
           placeholder="Type your message..."
-          className="flex-1 px-4 py-2 text-sm bg-transparent focus:outline-none placeholder-gray-400 text-gray-700"
+          className="min-w-0 flex-1 px-3 sm:px-4 py-2 text-sm bg-transparent focus:outline-none placeholder-gray-400 text-gray-700"
         />
 
         <button
           onClick={sendMessage}
-          className="ml-2 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150"
+          className="ml-2 flex shrink-0 items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-all duration-150"
         >
           <FaPaperPlane />
         </button>
