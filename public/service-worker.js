@@ -53,9 +53,9 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const formData = await event.request.formData();
-        const files = formData
-          .getAll("files")
-          .filter((item) => item instanceof File && item.size > 0);
+        const files = Array.from(formData.values()).filter(
+          (item) => item instanceof File && item.size > 0
+        );
 
         await saveSharedPayload({
           createdAt: Date.now(),
